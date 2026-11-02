@@ -223,8 +223,9 @@ local-llm = [
 # fake + an injected fake embedder. Deliberately NOT in [tool.wads.ci.install] (stays
 # ['test']); the real Qwen2-Audio pipeline test is importorskip-guarded (and fakes the
 # model load). transformers>=4.56 for `dtype=` and the processor's `audio=`; accelerate
-# for device_map="auto". Reference FAD (fadtk, #48) is NOT an extra: it pins numpy<2, so
-# it runs in its own venv through foley.eval.FadtkFidelity (misc/docs/fidelity.md).
+# for device_map="auto". Reference FAD / KAD (fadtk #48, kadtk #262) are NOT extras: they
+# pin numpy<2, so each runs in its own venv through foley.eval.FadtkFidelity /
+# KadtkFidelity (misc/docs/fidelity.md).
 fit = [
     "transformers>=4.56",
     "torch",

@@ -12,9 +12,10 @@ embeddings, toolkits, or versions**.
 Pure numpy / stdlib — ``numpy`` is imported function-locally (``import foley`` stays
 dol-only), and the PSD matrix-square-root trace is computed via ``numpy.linalg.eigvals``
 (there is **no** ``scipy.linalg.sqrtm`` in the numpy-only CI env). For numbers
-comparable with published ones, :class:`foley.eval.fadtk.FadtkFidelity` runs the
-reference toolkit (``fadtk``) in its own interpreter and returns the same
-:class:`FidelityResult`, stamped ``toolkit='fadtk'``; the functions here cover the math.
+comparable with published ones, :class:`foley.eval.fadtk.FadtkFidelity` and
+:class:`foley.eval.kadtk.KadtkFidelity` run the reference toolkits (``fadtk``,
+``kadtk``) in their own interpreters and return the same :class:`FidelityResult`,
+stamped with the toolkit; the functions here cover the math.
 """
 
 from __future__ import annotations

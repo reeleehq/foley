@@ -31,6 +31,7 @@ from .baseline import (
 from . import bradley_terry, panel
 from .panel_page import render_panel_html
 from .fadtk import FadtkFidelity
+from .kadtk import KadtkFidelity
 from .fidelity import (
     FidelityResult,
     FidelityStamp,
@@ -139,6 +140,7 @@ __all__ = [
     "generation_fidelity",
     "FidelityStamp",
     "FadtkFidelity",
+    "KadtkFidelity",
     "FidelityResult",
     # --- the tasteful-weave eval (#45) ---
     "run_taste_eval",

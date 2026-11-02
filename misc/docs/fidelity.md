@@ -1,11 +1,12 @@
 # Generation fidelity and the audio-LM judge
 
-Two Tier-2 evaluation backends that need more than foley's own environment: reference FAD from Microsoft's [fadtk](https://github.com/microsoft/fadtk), run as a separate program, and the Qwen2-Audio "does this clip contain {event}?" judge. Both are for nightly or pre-release comparisons, never a per-PR gate.
+Tier-2 evaluation backends that need more than foley's own environment: reference FAD from Microsoft's [fadtk](https://github.com/microsoft/fadtk) and reference KAD from [kadtk](https://github.com/YoonjinXD/kadtk), each run as a separate program, and the Qwen2-Audio "does this clip contain {event}?" judge. All are for nightly or pre-release comparisons, never a per-PR gate.
 
 | Backend | What it scores | How it runs | Install | Download |
 |---|---|---|---|---|
 | `foley.eval.generation_fidelity` (default) | FAD or KAD between two embedding sets, pure numpy | in process | nothing | whatever your embedder needs |
-| `foley.eval.FadtkFidelity` | FAD with fadtk's own models, loading and statistics, comparable with published fadtk numbers | `python -I fadtk_driver.py` in a fadtk virtualenv | its own venv (below) | about 90 MB for the default `encodec-emb` |
+| `foley.eval.FadtkFidelity` | FAD with fadtk's own models, loading and statistics, comparable with published fadtk numbers | `python -I toolkit_driver.py` in a fadtk virtualenv | its own venv (below) | about 90 MB for the default `encodec-emb` |
+| `foley.eval.KadtkFidelity` | KAD with kadtk's own models, loading and kernel, comparable with published kadtk numbers | the same driver in a kadtk virtualenv | its own venv (below) | about 90 MB for the default `encodec-emb` |
 | `foley.agent.AudioLMJudge` | P(yes) that a clip contains the wanted event (AQAScore) | in process | `pip install 'foley[fit]'` | about 15 GB (Qwen2-Audio-7B-Instruct, bf16) on first use |
 
 ## Reference FAD with fadtk
@@ -35,6 +36,32 @@ Each call writes the two sets as WAVs to a temporary directory, runs fadtk's emb
 foley does not call `python -m fadtk`: that command builds every model fadtk knows before choosing one, and the two CLAP constructors download their checkpoints (about 2.5 GB) even when you asked for EnCodec. The driver builds only the model you name.
 
 fadtk's FAD is over embedding frames (every frame of every clip), so it is not the number `generation_fidelity` gives with one vector per clip. Fed the same frames, foley's numpy `frechet_distance` agrees with fadtk to about 1e-5 relative; the remainder is fadtk taking each clip's mean in float16. Numbers are only comparable within one embedding, toolkit and version, which is why the stamp carries all three.
+
+Both toolkits run through one mechanism, `foley.eval.external_fidelity.ExternalFidelity`: writing the sets, the clip-layout and interpreter guards, the driver (`foley/eval/toolkit_driver.py`, which builds the one model named, whichever toolkit) and the stamped result. A toolkit adapter only names its package, metric, models, interpreter variable and install line, and how many frames a set needs.
+
+## Reference KAD with kadtk
+
+kadtk 1.1 (a fork of fadtk by the KAD paper's authors) needs Python below 3.12, `numpy<2`, `torch<2.6` and `transformers<4.47`, and pulls tensorflow; its venv is about 2.2 GB:
+
+```bash
+uv venv ~/venvs/kadtk --python 3.11 --managed-python
+uv pip install --python ~/venvs/kadtk/bin/python kadtk torchaudio==2.5.1
+```
+
+`--managed-python` because kadtk imports `turtle`, so the interpreter needs Tk, which uv's Python builds have and Homebrew's often lack. `torchaudio==2.5.1` because kadtk resolves torch 2.5.1 but would leave the newest torchaudio, whose native library does not load against it. Then:
+
+```python
+from foley.eval import KadtkFidelity
+
+kad = KadtkFidelity(python="~/venvs/kadtk/bin/python")  # or set FOLEY_KADTK_PYTHON
+result = kad(reference_wavs, generated_wavs, sr=48000)
+result.value  # kadtk's KAD
+result.stamp  # FidelityStamp(embedding='encodec-emb', toolkit='kadtk', version='1.1.0', n_ref=8, n_gen=8)
+```
+
+Arguments, guards and errors are fadtk's (`model=`, `models=`, `workers=`, `env=`, `timeout=`, a missing interpreter, channel-first clips), plus `bandwidth=` (the RBF bandwidth) and `device=` (where kadtk sums the kernels, default `"cpu"`). `model=` also offers the PANNs models (`panns-cnn14-32k`, `panns-cnn14-16k`, `panns-wavegram-logmel`). KAD has no covariance, so a set needs only two embedding frames, not more frames than dimensions. kadtk's EnCodec embedding is pooled to one frame per second of audio, and a trailing partial second is dropped, so clips shorter than a second contribute nothing.
+
+kadtk's number is not the one `kernel_audio_distance` gives by default, for two reasons. kadtk reports the MMD² times 100. Its default bandwidth is torch's median (the lower of the two middle values) of the pairwise distances between the generated set's frames, where foley's default pools both sets. Fed kadtk's own frames with that bandwidth, `100 * kernel_audio_distance(ref, gen, bandwidth=...)` agrees with kadtk to about 5e-5 relative; the remainder is kadtk's float32 arithmetic.
 
 ## The Qwen2-Audio judge
 

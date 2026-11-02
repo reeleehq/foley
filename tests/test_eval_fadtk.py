@@ -54,7 +54,7 @@ class _Runner:
         return subprocess.CompletedProcess(cmd, self.returncode, "", self.stderr)
 
 
-_ANSWER = {"score": 12.5, "model": "encodec-emb", "fadtk_version": "1.1.0",
+_ANSWER = {"score": 12.5, "model": "encodec-emb", "version": "1.1.0",
            "n_ref_frames": 600, "n_gen_frames": 450, "dim": 128}  # fmt: skip
 
 
@@ -70,6 +70,7 @@ def test_runs_the_driver_in_the_given_interpreter_and_stamps_the_result():
     )  # fmt: skip  -- the frames FAD was computed over, not the clip counts
     assert run.cmd[:3] == [sys.executable, "-I", str(DRIVER)]
     assert (run.spec["loader"], run.spec["args"], run.spec["workers"]) == ("EncodecEmbModel", ["24k"], 2)
+    assert run.spec["toolkit"] == "fadtk"  # the shared driver imports this package
     assert run.counts == {"ref": 4, "gen": 3} and run.rates == {SR}
     assert Path(run.kw["cwd"]) == Path(run.spec["ref"]).parent  # runs in the temp dir
 
@@ -148,13 +149,13 @@ def test_run_program_passes_cwd_only_when_given(tmp_path):
 
 
 def test_driver_loads_without_fadtk():
-    """The driver imports fadtk only inside main(), so foley's env can load it."""
+    """The driver imports the toolkits only inside its functions, so foley's env can load it."""
     import importlib.util
 
-    spec = importlib.util.spec_from_file_location("fadtk_driver", DRIVER)
+    spec = importlib.util.spec_from_file_location("toolkit_driver", DRIVER)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    assert callable(module.main)
+    assert callable(module.main) and set(module.TOOLKITS) >= {"fadtk", "kadtk"}
 
 
 @pytest.mark.skipif(
