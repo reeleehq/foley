@@ -92,7 +92,7 @@ def parse_symbolic_anchor(
     return Placement(anchor=anchor, ref=ref)
 
 
-def _nearest_word(ref: Optional[str], word_timeline: "list[dict]") -> Optional[dict]:
+def nearest_word(ref: Optional[str], word_timeline: "list[dict]") -> Optional[dict]:
     """Return the ``word_timeline`` entry best matching ``ref`` (fuzzy/lemmatised, earliest wins).
 
     Matches the phrase's first token exactly if present, else the closest word by
@@ -168,7 +168,7 @@ def _span_onset(
         float(word_timeline[0].get("start", 0.0)),
         float(word_timeline[-1].get("end", word_timeline[-1].get("start", 0.0))),
     )
-    w = _nearest_word(ref, word_timeline)
+    w = nearest_word(ref, word_timeline)
     if w is None:
         return whole
     for seg in _segment_sentences(word_timeline):
@@ -235,7 +235,7 @@ def resolve_anchor(
     if placement.anchor is Anchor.absolute or not word_timeline:
         onset = placement.onset
     elif placement.anchor is Anchor.word:
-        w = _nearest_word(placement.ref, word_timeline)
+        w = nearest_word(placement.ref, word_timeline)
         onset = float(w["start"]) if w else placement.onset
     elif placement.anchor is Anchor.sentence:
         start, end = _span_onset(placement.ref, word_timeline)

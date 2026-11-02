@@ -11,8 +11,10 @@ Tier-2 fit-judging (#10b) — "does this clip match the intent?" — lives along
 in :mod:`~foley.eval.fit` (the judge-based fit harness), :mod:`~foley.eval.reliability`
 (Krippendorff's α + judge-vs-human calibration), and :mod:`~foley.eval.fidelity`
 (set-level FAD/KAD generation fidelity). Tier-2 is nightly/pre-release + cost-gated —
-NOT a per-PR gate — and never touches the retrieval ranking. All numpy imports are
-function-local so ``import foley`` stays dol-only.
+NOT a per-PR gate — and never touches the retrieval ranking. The tasteful-weave eval (#45),
+:mod:`~foley.eval.taste`, reports the restraint / licence / placement / loudness of a whole
+sound design over a passage set, with a pluggable ``designer`` (``foley.score`` by
+default). All numpy imports are function-local so ``import foley`` stays dol-only.
 """
 
 from __future__ import annotations
@@ -53,6 +55,19 @@ from .reliability import (
     reliability_band,
 )
 from .embedder import HashingBowEmbedder
+from .taste import (
+    LICENCE_CLEAN_TARGET,
+    LOUDNESS_TOLERANCE_LU,
+    PLACEMENT_TOLERANCE_S,
+    SOUNDS_PER_SENTENCE_BAND,
+    Passage,
+    PassageTaste,
+    TasteReport,
+    TasteThresholds,
+    load_passages,
+    run_taste_eval,
+    score_designer,
+)
 from .golden import (
     GoldenItem,
     build_eval_library,
@@ -123,4 +138,16 @@ __all__ = [
     "generation_fidelity",
     "FidelityStamp",
     "FidelityResult",
+    # --- the tasteful-weave eval (#45) ---
+    "run_taste_eval",
+    "score_designer",
+    "load_passages",
+    "Passage",
+    "PassageTaste",
+    "TasteReport",
+    "TasteThresholds",
+    "SOUNDS_PER_SENTENCE_BAND",
+    "LICENCE_CLEAN_TARGET",
+    "PLACEMENT_TOLERANCE_S",
+    "LOUDNESS_TOLERANCE_LU",
 ]

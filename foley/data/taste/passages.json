@@ -1,0 +1,52 @@
+[
+  {
+    "id": "storm_window",
+    "segments": [
+      "She pressed her forehead to the cold glass.",
+      "Outside, rain hammered on the window and the wind howled through the trees.",
+      "She thought of nothing at all."
+    ]
+  },
+  {
+    "id": "door_exit",
+    "segments": [
+      "He had said everything he came to say.",
+      "He stormed out, and the heavy oak door slammed shut behind him.",
+      "For a long moment nobody spoke."
+    ]
+  },
+  {
+    "id": "corridor",
+    "segments": [
+      "The building was empty by then.",
+      "Her footsteps echoed down the long corridor.",
+      "She stopped at the last office and listened.",
+      "Somewhere, water was dripping into a sink."
+    ]
+  },
+  {
+    "id": "toast",
+    "segments": [
+      "They had waited ten years for this evening.",
+      "He raised his glass, and their glasses clinked across the table.",
+      "Nobody mentioned the letter."
+    ]
+  },
+  {
+    "id": "quiet_memory",
+    "segments": [
+      "She remembered the summer her father taught her to read.",
+      "He was patient in a way he never was again.",
+      "She kept the book for thirty years."
+    ]
+  },
+  {
+    "id": "night_walk",
+    "segments": [
+      "A gust of wind swept the empty street.",
+      "His footsteps were the only sound on the wet pavement.",
+      "Behind him a door slammed, and he did not turn around.",
+      "The rain began again."
+    ]
+  }
+]
