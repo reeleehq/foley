@@ -34,6 +34,7 @@ from .panel_page import render_panel_html
 from .aesthetics import AestheticsScore, AudioboxAesthetics, aesthetics_verdict
 from .fadtk import FadtkFidelity
 from .kadtk import KadtkFidelity
+from .pam import Pam, PamScore
 from .fidelity import (
     FidelityResult,
     FidelityStamp,
@@ -146,6 +147,8 @@ __all__ = [
     "aesthetics_verdict",
     "FadtkFidelity",
     "KadtkFidelity",
+    "Pam",
+    "PamScore",
     "FidelityResult",
     # --- the tasteful-weave eval (#45) ---
     "run_taste_eval",

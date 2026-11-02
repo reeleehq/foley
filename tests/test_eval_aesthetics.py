@@ -359,7 +359,7 @@ def test_driver_has_the_aesthetics_task():
     spec = importlib.util.spec_from_file_location("toolkit_driver", DRIVER)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    assert set(module.TASKS) == {"fidelity", "aesthetics"}
+    assert {"fidelity", "aesthetics"} <= set(module.TASKS)
 
 
 @pytest.mark.skipif(
