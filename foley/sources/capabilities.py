@@ -37,10 +37,12 @@ def capabilities_of(config: dict) -> dict:
     ``min_duration_s`` / ``sample_rate`` (``None`` when undeclared).
     ``deterministic`` and ``loopable`` are ``None`` for retrieve sources (they only
     describe the generating kinds, ``'generate'`` and ``'procedural'``). A ``config['capabilities']`` dict adds facts a config cannot
-    imply (e.g. ``watermarked``); it may not redefine a derived key.
+    imply (e.g. ``watermarked``); it may not redefine a derived key, except to narrow
+    a derived ``True`` to ``False`` (pyfxr takes a seed, but its noise waveform does
+    not reproduce, so it declares ``deterministic: False``).
 
     Raises:
-        ValueError: If ``config['capabilities']`` collides with a derived key.
+        ValueError: If ``config['capabilities']`` widens or retypes a derived key.
     """
     affordances = list(config.get("supported_affordances") or ())
     native = config.get("native_defaults") or {}
@@ -59,11 +61,15 @@ def capabilities_of(config: dict) -> dict:
         "sample_rate": native.get("sample_rate"),
     }
     declared = config.get("capabilities") or {}
-    clash = sorted(set(declared) & set(view))
+    clash = sorted(
+        k
+        for k in set(declared) & set(view)
+        if not (view[k] is True and declared[k] is False)  # narrowing is allowed
+    )
     if clash:
         raise ValueError(
             f"source {config.get('name')!r}: capabilities {clash} are derived from "
-            "the config; declare only extra facts"
+            "the config; declare only extra facts (or narrow a True to False)"
         )
     return {**view, **declared}
 

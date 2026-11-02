@@ -16,6 +16,7 @@ pyfxr = pytest.importorskip("pyfxr")
 
 import foley  # noqa: E402
 from foley.base import GENERATION_AFFORDANCES, IntendedUse  # noqa: E402
+from foley.sources.base import pad_to_qc_minimum  # noqa: E402
 from foley.index import MemoryIndex, SoundLibrary  # noqa: E402
 from foley.licensing import LICENSE_FLAGS, LICENSE_META, keep  # noqa: E402
 from foley.provenance import disclosure  # noqa: E402
@@ -75,8 +76,8 @@ def test_procedural_is_a_generating_kind_with_its_own_licence_row():
     assert "procedural-free" in LICENSE_META
 
 
-def test_the_config_presets_are_the_canonical_ones_and_its_params_pyfxrs():
-    assert set(SOURCE_CONFIG["presets"]) == set(GENERATION_AFFORDANCES["preset"].choices)
+def test_the_config_is_the_preset_ssot_and_its_params_are_pyfxrs():
+    assert GENERATION_AFFORDANCES["preset"].choices is None  # the source's config says
     assert set(SOURCE_CONFIG["preset_keywords"]) == set(SOURCE_CONFIG["presets"])
     assert all(callable(getattr(pyfxr, f)) for f in SOURCE_CONFIG["presets"].values())
     native = {k for k, v in vars(pyfxr.SFX).items() if isinstance(v, pyfxr.FloatParam)}
@@ -105,10 +106,13 @@ def test_not_ai_generated_license_keeps_provenance_without_disclosure():
 def test_capabilities_and_price():
     view = capabilities_of(SOURCE_CONFIG)
     assert view["kind"] == "procedural"
-    assert view["offline_capable"] is True and view["deterministic"] is True
+    # it takes a seed, but its noise waveform does not reproduce: narrowed to False
+    assert view["offline_capable"] is True and view["deterministic"] is False
     assert view["watermarked"] is False and view["modes"] == ["t2a"]
     assert list_backends(kind="procedural") == ["pyfxr"]
     assert "pyfxr" in list_backends(supports="offline_capable")
+    assert "pyfxr" in list_backends(supports="seed")
+    assert "pyfxr" not in list_backends(supports="deterministic")
     assert foley.estimate("generate", backend="pyfxr") == 0.0
     from foley.sources.generate import DEFAULT_GENERATE_ORDER
 
@@ -159,12 +163,22 @@ def test_the_global_random_is_never_reseeded():
     state = random.getstate()
     PyfxrAdapter().generate("", preset="pickup", seed=5)
     assert random.getstate() == state
+    assert pyfxr.random is random  # the swap was put back
 
 
 def test_noise_waveform_clips_carry_a_reproducibility_note():
     clip = PyfxrAdapter().generate("", preset="explosion", seed=1)
-    assert clip.candidate.sound.license.generation_params["wave_type"] == 3
+    lic = clip.candidate.sound.license
+    assert lic.generation_params["wave_type"] == 3
+    assert lic.generation_params["bit_exact"] is False
+    assert lic.generation_reproducible is False
     assert any("not bit-reproducible" in n for n in clip.notes)
+
+
+def test_a_non_noise_clip_is_reproducible():
+    lic = PyfxrAdapter().generate("", preset="laser", seed=1).candidate.sound.license
+    assert "bit_exact" not in lic.generation_params
+    assert lic.generation_reproducible is True
 
 
 @pytest.mark.parametrize(
@@ -172,7 +186,7 @@ def test_noise_waveform_clips_carry_a_reproducibility_note():
     [
         ("a coin pickup", "pickup"),
         ("blaster fire", "laser"),
-        ("a big BOOM", "explosion"),
+        ("a big EXPLOSION", "explosion"),
         ("a level up chime", "powerup"),
         ("ouch", "hurt"),
         ("boing", "jump"),
@@ -184,6 +198,25 @@ def test_the_prompt_picks_the_preset(prompt, preset):
     clip = PyfxrAdapter().generate(prompt, seed=1)
     assert clip.candidate.sound.license.generation_params["preset"] == preset
     assert any("matched from the prompt" in n for n in clip.notes)
+
+
+@pytest.mark.parametrize(
+    "prompt",
+    [
+        "a church bell tolls",
+        "a blast of cold wind",
+        "a hit on the door",
+        "hit-hat cymbal",
+        "the gun shoots",
+        "a pickup truck idles",
+        "a sonic boom",
+        "a microwave beep",
+        "select a menu item",
+    ],
+)
+def test_ordinary_sounds_are_not_mistaken_for_a_preset(prompt):
+    with pytest.raises(UnsupportedParameter):
+        PyfxrAdapter().generate(prompt, seed=1)
 
 
 def test_no_preset_and_no_match_is_refused_before_any_work(library):
@@ -204,12 +237,23 @@ def test_the_order_skips_a_procedural_source_with_nothing_to_play(monkeypatch, l
     )
     assert spy.calls == 0
     assert clip.sound.license.source == "stable_audio"
-    assert any("pyfxr" in n for n in clip.notes)
+    assert any(
+        n.startswith("generation order: skipped pyfxr: UnsupportedParameter")
+        and "none matches the prompt" in n
+        for n in clip.notes
+    )
 
 
-def test_an_unknown_preset_is_refused(library):
-    with pytest.raises(ValueError, match="preset"):
-        foley.generate("zap", backend="pyfxr", preset="coin", library=library)
+def test_an_unknown_preset_is_refused_by_the_sources_own_list(library):
+    spy = SpyAdapter()
+    with pytest.raises(UnsupportedParameter, match="no preset 'coin'"):
+        foley.generate("zap", backend="pyfxr", preset="coin", library=library, adapter=spy)
+    assert spy.calls == 0
+
+
+def test_a_preset_matched_at_plan_time_is_noted_once(library):
+    clip = foley.generate("a laser zap", backend="pyfxr", seed=1, library=library)
+    assert sum("matched from the prompt" in n for n in clip.notes) == 1
 
 
 def test_provider_params_override_the_draw_and_are_recorded(library):
@@ -240,6 +284,17 @@ def test_an_unsupported_affordance_is_noted(library):
     assert any("duration_s" in n for n in clip.notes)
     direct = PyfxrAdapter().generate("zap", seed=1, steps=8)
     assert any("'steps'" in n for n in direct.notes)
+
+
+def test_pad_to_qc_minimum_pads_only_a_short_clip():
+    notes = []
+    short, padded = pad_to_qc_minimum(np.ones(441, dtype="float32"), 44100, notes=notes)
+    assert padded == 0.1 and len(short) == 4410 and short[440] == 1 and short[441] == 0
+    assert len(notes) == 1
+    stereo, _ = pad_to_qc_minimum(np.ones((441, 2), dtype="float32"), 44100, notes=[])
+    assert stereo.shape == (4410, 2)
+    long = np.ones(44100, dtype="float32")
+    assert pad_to_qc_minimum(long, 44100, notes=notes)[1] is None and len(notes) == 1
 
 
 def test_a_short_blip_is_padded_to_the_qc_minimum():

@@ -8,8 +8,9 @@ build a ``pyfxr.SFX``; its full resolved parameter set (every field, defaults in
 is recorded in ``generation_params``, so the clip can be rebuilt from parameters alone.
 
 pyfxr renders mono 16-bit PCM at ``pyfxr.SAMPLE_RATE`` (44.1 kHz) at full scale; the
-adapter scales it to float with the config's headroom gain, pads a blip shorter than
-Tier-0 QC admits with trailing silence, and encodes it with :func:`foley.audio.encode`. The licence is
+adapter scales it to float with the config's ``render`` gain, pads a blip shorter than
+Tier-0 QC admits (:func:`~foley.sources.base.pad_to_qc_minimum`), and encodes it with
+:func:`foley.audio.encode`. A noise-waveform clip records ``bit_exact: False``. The licence is
 ``procedural-free`` with ``is_ai_generated=False`` (no disclosure, no watermark). The
 adapter does no storage: :func:`foley.generate` ingests the clip.
 """
@@ -26,6 +27,7 @@ from ..base import (
     draw_seed,
     generated_license,
     merge_provider_params,
+    pad_to_qc_minimum,
     recorded_params,
     resolve_preset,
     unsupported_notes,
@@ -43,7 +45,7 @@ def _pyfxr():
     return pyfxr
 
 
-def seeded_draw(pyfxr, preset_fn: str, seed: int):
+def _seeded_draw(pyfxr, preset_fn: str, seed: int):
     """The ``SFX`` pyfxr's ``preset_fn`` draws with its ``random`` seeded by ``seed``."""
     with _DRAW_LOCK:
         module_random = pyfxr.random
@@ -54,7 +56,7 @@ def seeded_draw(pyfxr, preset_fn: str, seed: int):
             pyfxr.random = module_random
 
 
-def full_params(sfx) -> dict:
+def _full_params(sfx) -> dict:
     """Every native parameter of ``sfx``, defaults included (``wave_type`` as an int)."""
     params = {name: getattr(sfx, name) for name in SFX_PARAMS}
     params["wave_type"] = params["wave_type"].value
@@ -109,27 +111,26 @@ class PyfxrAdapter:
             self.config, loop=loop, output_format=output_format, **kw
         )
         preset, matched = resolve_preset(self.config, prompt, preset)
-        if matched is not None:
-            notes.append(f"preset {preset!r} matched from the prompt word {matched!r}")
+        notes += [matched] if matched else []
         seed = int(seed) if seed is not None else draw_seed()
 
         pyfxr = _pyfxr()
-        drawn = seeded_draw(pyfxr, self.config["presets"][preset], seed)
+        drawn = _seeded_draw(pyfxr, self.config["presets"][preset], seed)
         params = merge_provider_params(
-            full_params(drawn), provider_params, policy=self.config["provider_params"]
+            _full_params(drawn), provider_params, policy=self.config["provider_params"]
         )
         sfx = pyfxr.SFX(**params)
-        params = full_params(sfx)  # normalised by pyfxr (a wave_type name -> its int)
-        nd = self.config["native_defaults"]
-        if params["wave_type"] == nd["noise_wave_type"]:
+        params = _full_params(sfx)  # normalised by pyfxr (a wave_type name -> its int)
+        render = self.config["render"]
+        audio_bytes, rendered = _render(
+            sfx, pyfxr.SAMPLE_RATE, gain_db=render["output_gain_db"], notes=notes
+        )
+        if params["wave_type"] == render["noise_wave_type"]:
+            rendered["bit_exact"] = False
             notes.append(
                 "noise waveform: pyfxr renders noise with C rand, so the same seed and "
                 "params give a different noise each time (not bit-reproducible)"
             )
-
-        audio_bytes, rendered = _render(
-            sfx, pyfxr.SAMPLE_RATE, gain_db=nd["output_gain_db"], notes=notes
-        )
         lic = generated_license(
             source=self.name,
             license_id=self.config["license"]["default_license_id"],
@@ -161,20 +162,13 @@ def _render(
     import numpy as np
 
     from ...audio import encode
-    from ...qc import DEFAULT_QC_THRESHOLDS
 
     pcm = np.frombuffer(memoryview(sfx.build()), dtype=np.int16)
     samples = pcm.astype(np.float32) * np.float32(10 ** (gain_db / 20) / 32768.0)
-    min_s = DEFAULT_QC_THRESHOLDS.duration_min_s
-    shortfall = int(np.ceil(min_s * sample_rate)) - samples.size
+    samples, padded_to_s = pad_to_qc_minimum(samples, sample_rate, notes=notes)
     rendered = {"gain_db": gain_db}
-    if shortfall > 0:
-        samples = np.concatenate([samples, np.zeros(shortfall, dtype=np.float32)])
-        rendered["padded_to_s"] = min_s
-        notes.append(
-            f"padded with {shortfall / sample_rate * 1000:.0f} ms of silence to the "
-            f"{min_s:g} s QC minimum (the blip is {pcm.size / sample_rate:.3f} s)"
-        )
+    if padded_to_s is not None:
+        rendered["padded_to_s"] = padded_to_s
     return encode(samples, sample_rate), rendered
 
 

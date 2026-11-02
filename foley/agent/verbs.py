@@ -410,6 +410,7 @@ def foley_generate(
     commercial_ok: bool = DEFAULT_INTENDED_USE.commercial,
     session: str = "default",
     territory: Optional[str] = None,
+    preset: Optional[str] = None,
 ) -> dict:
     """Generate a sound from a text prompt (local backends only when offline).
 
@@ -425,6 +426,8 @@ def foley_generate(
     (``foley.generations.get(cache_key)``, on the host — bytes never travel over MCP).
     ``territory``: where the sound is used (an ISO country code, or ``"WORLD"``); a
     backend whose licence excludes territories (HunyuanVideo-Foley) needs it stated.
+    ``preset``: a category preset for a procedural backend (``backend='pyfxr'``:
+    ``laser``, ``pickup``, ``explosion``, ...); other backends ignore it with a note.
     """
     from .. import GenerationError, generate
     from ..cost import BudgetExceeded, spend_scope
@@ -486,6 +489,7 @@ def foley_generate(
                 backend=order if len(order) > 1 else order[0],
                 library=_lib(),
                 intended_use=use,
+                **({"preset": preset} if preset is not None else {}),
             )
         backend = cand.sound.license.source or backend  # the one that served it
     except (

@@ -63,7 +63,8 @@
       "backend": "auto",
       "commercial_ok": true,
       "session": "default",
-      "territory": null
+      "territory": null,
+      "preset": null
     },
     "foley_plan": {
       "session": "default",

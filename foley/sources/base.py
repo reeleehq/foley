@@ -61,6 +61,7 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 __all__ = [
     "GENERATING_KINDS",
     "resolve_preset",
+    "pad_to_qc_minimum",
     "check_prompt_influence",
     "check_provider_params",
     "require_params_mapping",
@@ -253,8 +254,9 @@ def check_provider_params(
     foley estimated and reserved from its own request) are refused, before anything
     is sent or paid for. So is a grouped ``append`` value that would close its
     ``(...)`` group: checked here, a search refuses it before its try, as it does a
-    reserved key, rather than recording it as a failed search (#181). A policy that
-    lists the source's native params as ``known`` refuses any other key (a typo).
+    reserved key, rather than recording it as a failed search (#181). ``known`` is the
+    one allow-list among these deny-lists: a policy that lists the source's native
+    params there refuses any other key (a typo), before any call.
 
     >>> check_provider_params({"steps": 8}, policy={"reserved": ["prompt"]})
     {'steps': 8}
@@ -651,16 +653,17 @@ def unsupported_notes(
 def resolve_preset(
     config: dict, prompt: str, preset: Optional[str] = None
 ) -> "tuple[str, Optional[str]]":
-    """``(preset, matched word)``: the category preset a procedural source plays (#76).
+    """``(preset, note)``: the category preset a procedural source plays (#76).
 
-    ``preset`` when given (the matched word is then ``None``); else the preset whose
-    keyword (``config['preset_keywords']``, a plural ``s`` allowed) comes first in
-    ``prompt``.
+    ``preset`` when given (the note is then ``None``); else the preset whose keyword
+    (``config['preset_keywords']``, a plural ``s`` allowed) comes first in ``prompt``,
+    with a note saying so. The source's ``config['presets']`` is the SSOT of what it
+    plays, so a new procedural source adds presets in its config alone.
 
     >>> cfg = {"name": "x", "presets": {"laser": "laser", "jump": "jump"},
-    ...        "preset_keywords": {"laser": ["zap"], "jump": ["hop"]}}
-    >>> resolve_preset(cfg, "two zaps, then a hop")
-    ('laser', 'zap')
+    ...        "preset_keywords": {"laser": ["zap"], "jump": ["boing"]}}
+    >>> resolve_preset(cfg, "two zaps, then a boing")
+    ('laser', "preset 'laser' matched from the prompt word 'zap'")
     >>> resolve_preset(cfg, "", "jump")
     ('jump', None)
 
@@ -691,7 +694,34 @@ def resolve_preset(
             f"{prompt!r}: pass preset= (one of {listed}) or name one in the prompt"
         )
     _, _, name, word = min(hits)
-    return name, word
+    return name, f"preset {name!r} matched from the prompt word {word!r}"
+
+
+def pad_to_qc_minimum(
+    samples, sample_rate: int, *, notes: list
+) -> "tuple[object, Optional[float]]":
+    """``(samples, padded_to_s)``: a clip shorter than Tier-0 QC admits, padded with
+    trailing silence to that minimum (noted), else unchanged with ``None``.
+
+    For a source whose sounds are legitimately that short (a 50 ms UI blip), which
+    :func:`foley.qc.run_qc` would otherwise reject as too short. ``samples`` is a float
+    array, time-first (mono, or ``(frames, channels)``).
+    """
+    import numpy as np
+
+    from ..qc import DEFAULT_QC_THRESHOLDS
+
+    min_s = DEFAULT_QC_THRESHOLDS.duration_min_s
+    frames = len(samples)
+    shortfall = int(np.ceil(min_s * sample_rate)) - frames
+    if shortfall <= 0:
+        return samples, None
+    pad = np.zeros((shortfall, *np.shape(samples)[1:]), dtype=np.asarray(samples).dtype)
+    notes.append(
+        f"padded with {shortfall / sample_rate * 1000:.0f} ms of silence to the "
+        f"{min_s:g} s QC minimum (the sound is {frames / sample_rate:.3f} s)"
+    )
+    return np.concatenate([samples, pad]), min_s
 
 
 def auth_env_vars(config: dict) -> "tuple[str, ...]":

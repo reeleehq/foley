@@ -563,7 +563,8 @@ def plan_generation(
         config, affordances, on_unsupported=on_unsupported
     )
     if config.get("presets"):  # a preset source with nothing to play refuses here (#76)
-        resolve_preset(config, prompt, kept.get("preset"))
+        kept["preset"], matched = resolve_preset(config, prompt, kept.get("preset"))
+        notes += [matched] if matched else []
     priced = _priced(config, kept)
     kept = _cover_the_input(config, kept, priced, notes)
     plan = GenerationPlan(
