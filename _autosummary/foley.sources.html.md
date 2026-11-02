@@ -887,27 +887,28 @@ the default `rings` — it is opt-in only.
 
 ### Modules
 
-| [`base`](foley.sources.base.html.md#module-foley.sources.base)                           | The bulk-corpus source contract — a downloaded corpus as an ingestable stream.                                   |
-|-----------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
-| [`bbc_remarc`](foley.sources.bbc_remarc.html.md#module-foley.sources.bbc_remarc)               | BBC RemArc (Rewind Archive) — a Ring-2, quarantined corpus.                                                      |
-| [`capabilities`](foley.sources.capabilities.html.md#module-foley.sources.capabilities)           | What each live source emits, and what foley plans to support: `list_backends` + `ledger`.                        |
-| [`clotho`](foley.sources.clotho.html.md#module-foley.sources.clotho)                       | Clotho-eval — a captioned Ring-0 corpus that doubles as a retrieval fixture.                                     |
-| [`edit`](foley.sources.edit.html.md#module-foley.sources.edit)                           | Edits of a sound (#162): audio-to-audio, inpaint, extend — the parts an edit adds to generation.                 |
-| [`elevenlabs`](foley.sources.elevenlabs.html.md#module-foley.sources.elevenlabs)               | ElevenLabs Sound Effects generate source (hosted; #6).                                                           |
-| [`fal`](foley.sources.fal.html.md#module-foley.sources.fal)                             | fal-hosted generate sources, executed through `falaw` (#73).                                                     |
-| [`foleyset`](foley.sources.foleyset.html.md#module-foley.sources.foleyset)                   | FoleySet — a CC-BY, Foley-native starter corpus (Ring 0).                                                        |
-| [`freesound`](foley.sources.freesound.html.md#module-foley.sources.freesound)                 | Freesound APIv2 retrieve source — CC0 sounds, stored by-reference (`foley[freesound]`).                          |
-| [`fsd50k`](foley.sources.fsd50k.html.md#module-foley.sources.fsd50k)                       | FSD50K — the labeled, commercial-safe backbone corpus (Ring 1).                                                  |
-| [`http`](foley.sources.http.html.md#module-foley.sources.http)                           | Injectable HTTP transport for foley's live source adapters.                                                      |
-| [`internet_archive`](foley.sources.internet_archive.html.md#module-foley.sources.internet_archive)   | Internet Archive retrieve source: keyless, opt-in, uploader-asserted licences (`foley[internet-archive]`).       |
-| [`music_library`](foley.sources.music_library.html.md#module-foley.sources.music_library)         | Acquire a licensed music library, with provenance: verified files, a tracks table, attribution.                  |
-| [`openverse`](foley.sources.openverse.html.md#module-foley.sources.openverse)                 | Openverse retrieve source: keyless, licence-rich audio search (`foley[openverse]`).                              |
-| [`pull`](foley.sources.pull.html.md#module-foley.sources.pull)                           | `add_from` — the live-source pull façade (SOURCE → INDEX in one call).                                           |
-| [`pyfxr`](foley.sources.pyfxr.html.md#module-foley.sources.pyfxr)                         | pyfxr procedural source: sfxr-family category presets, free, offline and seeded (#76).                           |
-| [`registry`](foley.sources.registry.html.md#module-foley.sources.registry)                   | Live-source adapter registry: auto-discovery + lazy loading (arioso's registry, ported).                         |
-| [`resilience`](foley.sources.resilience.html.md#module-foley.sources.resilience)               | Graceful degradation for HTTP source adapters — throttle · backoff · circuit-break (#12).                        |
-| [`sonniss`](foley.sources.sonniss.html.md#module-foley.sources.sonniss)                     | Sonniss GameAudioGDC — a Ring-2, quarantined corpus.                                                             |
-| [`stable_audio`](foley.sources.stable_audio.html.md#module-foley.sources.stable_audio)           | Stable Audio Open 1.0 generate source (local default; #6).                                                       |
-| [`stable_audio_3`](foley.sources.stable_audio_3.html.md#module-foley.sources.stable_audio_3)       | Stable Audio 3 Small-SFX generate source (local, CPU, no GPU and no HF token; #72).                              |
-| [`video`](foley.sources.video.html.md#module-foley.sources.video)                         | Media inputs of generation (#74, #162): what `video=` (and an edit's `audio=`) may be, its identity, its length. |
-| [`wikimedia_commons`](foley.sources.wikimedia_commons.html.md#module-foley.sources.wikimedia_commons) | Wikimedia Commons retrieve source: keyless, licence per file (`foley[wikimedia-commons]`).                       |
+| [`base`](foley.sources.base.html.md#module-foley.sources.base)                           | The bulk-corpus source contract — a downloaded corpus as an ingestable stream.                                 |
+|-----------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| [`bbc_remarc`](foley.sources.bbc_remarc.html.md#module-foley.sources.bbc_remarc)               | BBC RemArc (Rewind Archive) — a Ring-2, quarantined corpus.                                                    |
+| [`capabilities`](foley.sources.capabilities.html.md#module-foley.sources.capabilities)           | What each live source emits, and what foley plans to support: `list_backends` + `ledger`.                      |
+| [`clotho`](foley.sources.clotho.html.md#module-foley.sources.clotho)                       | Clotho-eval — a captioned Ring-0 corpus that doubles as a retrieval fixture.                                   |
+| [`edit`](foley.sources.edit.html.md#module-foley.sources.edit)                           | Edits of a sound (#162): audio-to-audio, inpaint, extend — the parts an edit adds to generation.               |
+| [`elevenlabs`](foley.sources.elevenlabs.html.md#module-foley.sources.elevenlabs)               | ElevenLabs Sound Effects generate source (hosted; #6).                                                         |
+| [`fal`](foley.sources.fal.html.md#module-foley.sources.fal)                             | fal-hosted generate sources, executed through `falaw` (#73).                                                   |
+| [`foleyset`](foley.sources.foleyset.html.md#module-foley.sources.foleyset)                   | FoleySet — a CC-BY, Foley-native starter corpus (Ring 0).                                                      |
+| [`freesound`](foley.sources.freesound.html.md#module-foley.sources.freesound)                 | Freesound APIv2 retrieve source — CC0 sounds, stored by-reference (`foley[freesound]`).                        |
+| [`fsd50k`](foley.sources.fsd50k.html.md#module-foley.sources.fsd50k)                       | FSD50K — the labeled, commercial-safe backbone corpus (Ring 1).                                                |
+| [`http`](foley.sources.http.html.md#module-foley.sources.http)                           | Injectable HTTP transport for foley's live source adapters.                                                    |
+| [`internet_archive`](foley.sources.internet_archive.html.md#module-foley.sources.internet_archive)   | Internet Archive retrieve source: keyless, opt-in, uploader-asserted licences (`foley[internet-archive]`).     |
+| [`media`](foley.sources.media.html.md#module-foley.sources.media)                         | Media inputs of generation (#74, #162, #215): what `video=` and an edit's `audio=` may be, and their identity. |
+| [`music_library`](foley.sources.music_library.html.md#module-foley.sources.music_library)         | Acquire a licensed music library, with provenance: verified files, a tracks table, attribution.                |
+| [`openverse`](foley.sources.openverse.html.md#module-foley.sources.openverse)                 | Openverse retrieve source: keyless, licence-rich audio search (`foley[openverse]`).                            |
+| [`pull`](foley.sources.pull.html.md#module-foley.sources.pull)                           | `add_from` — the live-source pull façade (SOURCE → INDEX in one call).                                         |
+| [`pyfxr`](foley.sources.pyfxr.html.md#module-foley.sources.pyfxr)                         | pyfxr procedural source: sfxr-family category presets, free, offline and seeded (#76).                         |
+| [`registry`](foley.sources.registry.html.md#module-foley.sources.registry)                   | Live-source adapter registry: auto-discovery + lazy loading (arioso's registry, ported).                       |
+| [`resilience`](foley.sources.resilience.html.md#module-foley.sources.resilience)               | Graceful degradation for HTTP source adapters — throttle · backoff · circuit-break (#12).                      |
+| [`sonniss`](foley.sources.sonniss.html.md#module-foley.sources.sonniss)                     | Sonniss GameAudioGDC — a Ring-2, quarantined corpus.                                                           |
+| [`stable_audio`](foley.sources.stable_audio.html.md#module-foley.sources.stable_audio)           | Stable Audio Open 1.0 generate source (local default; #6).                                                     |
+| [`stable_audio_3`](foley.sources.stable_audio_3.html.md#module-foley.sources.stable_audio_3)       | Stable Audio 3 Small-SFX generate source (local, CPU, no GPU and no HF token; #72).                            |
+| [`video`](foley.sources.video.html.md#module-foley.sources.video)                         | Video inputs of generation (#74): a video's length, and the audio of a muxed video answer.                     |
+| [`wikimedia_commons`](foley.sources.wikimedia_commons.html.md#module-foley.sources.wikimedia_commons) | Wikimedia Commons retrieve source: keyless, licence per file (`foley[wikimedia-commons]`).                     |

@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=27c60a7f"></script>
+    <script src="../_static/documentation_options.js?v=c4e26d2d"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.109" />
+  <meta name="docsearch:version" content="0.0.110" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -413,6 +413,7 @@
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.fsd50k.html">foley.sources.fsd50k</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.http.html">foley.sources.http</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.internet_archive.html">foley.sources.internet_archive</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.media.html">foley.sources.media</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.music_library.html">foley.sources.music_library</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.openverse.html">foley.sources.openverse</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.pull.html">foley.sources.pull</a></li>
@@ -2499,7 +2500,7 @@ stays at least 192 kHz): the limiter uses the same, so the two agree.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.RemoteVideo">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">RemoteVideo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sha256</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/video.html#RemoteVideo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.RemoteVideo" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">RemoteVideo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sha256</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/media.html#RemoteVideo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.RemoteVideo" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>A remote video <code class="docutils literal notranslate"><span class="pre">url</span></code> with the SHA-256 of its bytes: keyed, and replayed, by content.</p>
 <p>A bare <code class="docutils literal notranslate"><span class="pre">https://</span></code> URL is keyed as the URL, which foley cannot see behind, so an

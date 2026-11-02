@@ -1,4 +1,4 @@
-> built 2026-11-02 02:14 UTC from ffe65e8 (main) · foley 0.0.109. Details: build_info.json
+> built 2026-11-02 02:26 UTC from 7ba6eec (main) · foley 0.0.110. Details: build_info.json
 
 # index.html.md
 
@@ -15778,7 +15778,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chime', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'ta dum', 'netflix sound', 'netflix chime', 'netflix intro', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel jingle', 'intel inside', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta-dum', 'netflix sound', 'ta dum', 'tudum', 'netflix chime', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel bong', 'intel inside', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -20213,30 +20213,31 @@ the default `rings` — it is opt-in only.
 
 ### Modules
 
-| [`base`](_autosummary/foley.sources.base.html.md#module-foley.sources.base)                           | The bulk-corpus source contract — a downloaded corpus as an ingestable stream.                                   |
-|-----------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
-| [`bbc_remarc`](_autosummary/foley.sources.bbc_remarc.html.md#module-foley.sources.bbc_remarc)               | BBC RemArc (Rewind Archive) — a Ring-2, quarantined corpus.                                                      |
-| [`capabilities`](_autosummary/foley.sources.capabilities.html.md#module-foley.sources.capabilities)           | What each live source emits, and what foley plans to support: `list_backends` + `ledger`.                        |
-| [`clotho`](_autosummary/foley.sources.clotho.html.md#module-foley.sources.clotho)                       | Clotho-eval — a captioned Ring-0 corpus that doubles as a retrieval fixture.                                     |
-| [`edit`](_autosummary/foley.sources.edit.html.md#module-foley.sources.edit)                           | Edits of a sound (#162): audio-to-audio, inpaint, extend — the parts an edit adds to generation.                 |
-| [`elevenlabs`](_autosummary/foley.sources.elevenlabs.html.md#module-foley.sources.elevenlabs)               | ElevenLabs Sound Effects generate source (hosted; #6).                                                           |
-| [`fal`](_autosummary/foley.sources.fal.html.md#module-foley.sources.fal)                             | fal-hosted generate sources, executed through `falaw` (#73).                                                     |
-| [`foleyset`](_autosummary/foley.sources.foleyset.html.md#module-foley.sources.foleyset)                   | FoleySet — a CC-BY, Foley-native starter corpus (Ring 0).                                                        |
-| [`freesound`](_autosummary/foley.sources.freesound.html.md#module-foley.sources.freesound)                 | Freesound APIv2 retrieve source — CC0 sounds, stored by-reference (`foley[freesound]`).                          |
-| [`fsd50k`](_autosummary/foley.sources.fsd50k.html.md#module-foley.sources.fsd50k)                       | FSD50K — the labeled, commercial-safe backbone corpus (Ring 1).                                                  |
-| [`http`](_autosummary/foley.sources.http.html.md#module-foley.sources.http)                           | Injectable HTTP transport for foley's live source adapters.                                                      |
-| [`internet_archive`](_autosummary/foley.sources.internet_archive.html.md#module-foley.sources.internet_archive)   | Internet Archive retrieve source: keyless, opt-in, uploader-asserted licences (`foley[internet-archive]`).       |
-| [`music_library`](_autosummary/foley.sources.music_library.html.md#module-foley.sources.music_library)         | Acquire a licensed music library, with provenance: verified files, a tracks table, attribution.                  |
-| [`openverse`](_autosummary/foley.sources.openverse.html.md#module-foley.sources.openverse)                 | Openverse retrieve source: keyless, licence-rich audio search (`foley[openverse]`).                              |
-| [`pull`](_autosummary/foley.sources.pull.html.md#module-foley.sources.pull)                           | `add_from` — the live-source pull façade (SOURCE → INDEX in one call).                                           |
-| [`pyfxr`](_autosummary/foley.sources.pyfxr.html.md#module-foley.sources.pyfxr)                         | pyfxr procedural source: sfxr-family category presets, free, offline and seeded (#76).                           |
-| [`registry`](_autosummary/foley.sources.registry.html.md#module-foley.sources.registry)                   | Live-source adapter registry: auto-discovery + lazy loading (arioso's registry, ported).                         |
-| [`resilience`](_autosummary/foley.sources.resilience.html.md#module-foley.sources.resilience)               | Graceful degradation for HTTP source adapters — throttle · backoff · circuit-break (#12).                        |
-| [`sonniss`](_autosummary/foley.sources.sonniss.html.md#module-foley.sources.sonniss)                     | Sonniss GameAudioGDC — a Ring-2, quarantined corpus.                                                             |
-| [`stable_audio`](_autosummary/foley.sources.stable_audio.html.md#module-foley.sources.stable_audio)           | Stable Audio Open 1.0 generate source (local default; #6).                                                       |
-| [`stable_audio_3`](_autosummary/foley.sources.stable_audio_3.html.md#module-foley.sources.stable_audio_3)       | Stable Audio 3 Small-SFX generate source (local, CPU, no GPU and no HF token; #72).                              |
-| [`video`](_autosummary/foley.sources.video.html.md#module-foley.sources.video)                         | Media inputs of generation (#74, #162): what `video=` (and an edit's `audio=`) may be, its identity, its length. |
-| [`wikimedia_commons`](_autosummary/foley.sources.wikimedia_commons.html.md#module-foley.sources.wikimedia_commons) | Wikimedia Commons retrieve source: keyless, licence per file (`foley[wikimedia-commons]`).                       |
+| [`base`](_autosummary/foley.sources.base.html.md#module-foley.sources.base)                           | The bulk-corpus source contract — a downloaded corpus as an ingestable stream.                                 |
+|-----------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| [`bbc_remarc`](_autosummary/foley.sources.bbc_remarc.html.md#module-foley.sources.bbc_remarc)               | BBC RemArc (Rewind Archive) — a Ring-2, quarantined corpus.                                                    |
+| [`capabilities`](_autosummary/foley.sources.capabilities.html.md#module-foley.sources.capabilities)           | What each live source emits, and what foley plans to support: `list_backends` + `ledger`.                      |
+| [`clotho`](_autosummary/foley.sources.clotho.html.md#module-foley.sources.clotho)                       | Clotho-eval — a captioned Ring-0 corpus that doubles as a retrieval fixture.                                   |
+| [`edit`](_autosummary/foley.sources.edit.html.md#module-foley.sources.edit)                           | Edits of a sound (#162): audio-to-audio, inpaint, extend — the parts an edit adds to generation.               |
+| [`elevenlabs`](_autosummary/foley.sources.elevenlabs.html.md#module-foley.sources.elevenlabs)               | ElevenLabs Sound Effects generate source (hosted; #6).                                                         |
+| [`fal`](_autosummary/foley.sources.fal.html.md#module-foley.sources.fal)                             | fal-hosted generate sources, executed through `falaw` (#73).                                                   |
+| [`foleyset`](_autosummary/foley.sources.foleyset.html.md#module-foley.sources.foleyset)                   | FoleySet — a CC-BY, Foley-native starter corpus (Ring 0).                                                      |
+| [`freesound`](_autosummary/foley.sources.freesound.html.md#module-foley.sources.freesound)                 | Freesound APIv2 retrieve source — CC0 sounds, stored by-reference (`foley[freesound]`).                        |
+| [`fsd50k`](_autosummary/foley.sources.fsd50k.html.md#module-foley.sources.fsd50k)                       | FSD50K — the labeled, commercial-safe backbone corpus (Ring 1).                                                |
+| [`http`](_autosummary/foley.sources.http.html.md#module-foley.sources.http)                           | Injectable HTTP transport for foley's live source adapters.                                                    |
+| [`internet_archive`](_autosummary/foley.sources.internet_archive.html.md#module-foley.sources.internet_archive)   | Internet Archive retrieve source: keyless, opt-in, uploader-asserted licences (`foley[internet-archive]`).     |
+| [`media`](_autosummary/foley.sources.media.html.md#module-foley.sources.media)                         | Media inputs of generation (#74, #162, #215): what `video=` and an edit's `audio=` may be, and their identity. |
+| [`music_library`](_autosummary/foley.sources.music_library.html.md#module-foley.sources.music_library)         | Acquire a licensed music library, with provenance: verified files, a tracks table, attribution.                |
+| [`openverse`](_autosummary/foley.sources.openverse.html.md#module-foley.sources.openverse)                 | Openverse retrieve source: keyless, licence-rich audio search (`foley[openverse]`).                            |
+| [`pull`](_autosummary/foley.sources.pull.html.md#module-foley.sources.pull)                           | `add_from` — the live-source pull façade (SOURCE → INDEX in one call).                                         |
+| [`pyfxr`](_autosummary/foley.sources.pyfxr.html.md#module-foley.sources.pyfxr)                         | pyfxr procedural source: sfxr-family category presets, free, offline and seeded (#76).                         |
+| [`registry`](_autosummary/foley.sources.registry.html.md#module-foley.sources.registry)                   | Live-source adapter registry: auto-discovery + lazy loading (arioso's registry, ported).                       |
+| [`resilience`](_autosummary/foley.sources.resilience.html.md#module-foley.sources.resilience)               | Graceful degradation for HTTP source adapters — throttle · backoff · circuit-break (#12).                      |
+| [`sonniss`](_autosummary/foley.sources.sonniss.html.md#module-foley.sources.sonniss)                     | Sonniss GameAudioGDC — a Ring-2, quarantined corpus.                                                           |
+| [`stable_audio`](_autosummary/foley.sources.stable_audio.html.md#module-foley.sources.stable_audio)           | Stable Audio Open 1.0 generate source (local default; #6).                                                     |
+| [`stable_audio_3`](_autosummary/foley.sources.stable_audio_3.html.md#module-foley.sources.stable_audio_3)       | Stable Audio 3 Small-SFX generate source (local, CPU, no GPU and no HF token; #72).                            |
+| [`video`](_autosummary/foley.sources.video.html.md#module-foley.sources.video)                         | Video inputs of generation (#74): a video's length, and the audio of a muxed video answer.                     |
+| [`wikimedia_commons`](_autosummary/foley.sources.wikimedia_commons.html.md#module-foley.sources.wikimedia_commons) | Wikimedia Commons retrieve source: keyless, licence per file (`foley[wikimedia-commons]`).                     |
 
 
 # _autosummary/foley.sources.http.html.md
@@ -20474,6 +20475,428 @@ this package stays dol-only.
 | [`adapter`](_autosummary/foley.sources.internet_archive.adapter.html.md#module-foley.sources.internet_archive.adapter)   | Internet Archive retrieve adapter: opt-in discovery of archival sounds, never auto-verified.   |
 |----------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
 | [`config`](_autosummary/foley.sources.internet_archive.config.html.md#module-foley.sources.internet_archive.config)     | `SOURCE_CONFIG` for the Internet Archive retrieve source (#79 · report 14 §3.4).               |
+
+
+# _autosummary/foley.sources.media.html.md
+
+# foley.sources.media
+
+Media inputs of generation (#74, #162, #215): what `video=` and an edit’s `audio=` may be, and their identity.
+
+A backend that sounds a picture (video-to-audio) takes a `video=`; a backend that
+edits a source clip takes an `audio=`. Both are **media inputs** ([`MEDIA`](_autosummary/foley.sources.media.html.md#foley.sources.media.MEDIA),
+[`MEDIA_INPUTS`](_autosummary/foley.sources.media.html.md#foley.sources.media.MEDIA_INPUTS)) and take the same forms: a **URL** (`http(s)://` or a
+`data:` URI, sent as is), a [`RemoteVideo`](_autosummary/foley.sources.media.html.md#foley.sources.media.RemoteVideo) (a URL with the SHA-256 of its
+content), a **local path**, or raw **bytes** (both uploaded by the backend’s adapter).
+These questions are answered here, once, for every media input:
+
+* [`media_key()`](_autosummary/foley.sources.media.html.md#foley.sources.media.media_key): what the generations cache keys the input as. The **content**
+  (`sha256:<hex>` of the bytes, the file or a [`RemoteVideo`](_autosummary/foley.sources.media.html.md#foley.sources.media.RemoteVideo)’s digest), never
+  its path, so a moved file hits the cache and an edited one cannot; a bare remote URL
+  is keyed as the URL.
+* [`is_media_key()`](_autosummary/foley.sources.media.html.md#foley.sources.media.is_media_key): whether a value is already such a key (as a cache entry keeps it).
+* [`replayable()`](_autosummary/foley.sources.media.html.md#foley.sources.media.replayable): whether an identical request may be served from the cache. Not
+  for a bare remote URL: the content behind it may have changed (#173).
+* [`recorded_media_key()`](_autosummary/foley.sources.media.html.md#foley.sources.media.recorded_media_key): the key as it is **written down** (a cache entry, a run
+  manifest, a licence): a bare URL without its query, fragment or credentials, so a
+  presigned URL’s token never reaches a record (#184). The request digest still
+  hashes [`media_key()`](_autosummary/foley.sources.media.html.md#foley.sources.media.media_key).
+* [`media_url()`](_autosummary/foley.sources.media.html.md#foley.sources.media.media_url): the URL a backend fetches the input from itself, if it is one.
+* [`local_media_file()`](_autosummary/foley.sources.media.html.md#foley.sources.media.local_media_file): a local file for an uploader (bytes are written to a
+  temporary file whose suffix is sniffed from them: [`video_suffix()`](_autosummary/foley.sources.media.html.md#foley.sources.media.video_suffix), or the
+  input’s own sniffer, [`MediaInput.suffix()`](_autosummary/foley.sources.media.html.md#foley.sources.media.MediaInput.suffix)).
+* [`keyed()`](_autosummary/foley.sources.media.html.md#foley.sources.media.keyed): affordances as they may be recorded (the cache entry, the run
+  manifest): each media input replaced by its recorded key, so neither its bytes nor a
+  local path (nor an upload’s capability URL, nor a presigned URL’s token) is written
+  down.
+
+Each media input is one row of [`MEDIA`](_autosummary/foley.sources.media.html.md#foley.sources.media.MEDIA) (its mode, its upload suffix sniffer, its
+length probe): a video’s suffix is sniffed by [`video_suffix()`](_autosummary/foley.sources.media.html.md#foley.sources.media.video_suffix) and its length read
+by [`foley.sources.video.video_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds); an edit’s source clip’s by
+[`audio_suffix()`](_autosummary/foley.sources.media.html.md#foley.sources.media.audio_suffix) and [`audio_seconds()`](_autosummary/foley.sources.media.html.md#foley.sources.media.audio_seconds).
+
+What only a video has (its length by `ffprobe`/mixing, the audio track of a muxed
+answer) is in [`foley.sources.video`](_autosummary/foley.sources.video.html.md#module-foley.sources.video), which also keeps this module’s helpers
+importable under their former `video_*` names.
+
+Stdlib only (soundfile and falaw are used when installed, never required).
+
+### Module Attributes
+
+| [`MEDIA`](_autosummary/foley.sources.media.html.md#foley.sources.media.MEDIA)                | the media inputs a backend is given (keyed by content, never by path), in precedence order (a video decides the mode over an audio).   |
+|-----------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| [`MEDIA_INPUTS`](_autosummary/foley.sources.media.html.md#foley.sources.media.MEDIA_INPUTS)         | The affordances of [`MEDIA`](_autosummary/foley.sources.media.html.md#foley.sources.media.MEDIA).                                                             |
+| [`REMOTE_SCHEMES`](_autosummary/foley.sources.media.html.md#foley.sources.media.REMOTE_SCHEMES)       | Schemes of a URL the backend fetches from a server (what it serves may change).                                                        |
+| [`URL_SCHEMES`](_autosummary/foley.sources.media.html.md#foley.sources.media.URL_SCHEMES)          | URL schemes sent to a backend as is (no upload); a `data:` URI holds its content.                                                      |
+| [`URL_KEY_PREFIX`](_autosummary/foley.sources.media.html.md#foley.sources.media.URL_KEY_PREFIX)       | The key prefix of a media input known only by its URL (its content unseen).                                                            |
+| [`MediaValue`](_autosummary/foley.sources.media.html.md#foley.sources.media.MediaValue)           | a URL, a [`RemoteVideo`](_autosummary/foley.sources.media.html.md#foley.sources.media.RemoteVideo), a local path, or the bytes.                                     |
+| [`REDACTED_QUERY`](_autosummary/foley.sources.media.html.md#foley.sources.media.REDACTED_QUERY)       | What stands in for a recorded URL's query and fragment.                                                                                |
+| [`DEFAULT_VIDEO_SUFFIX`](_autosummary/foley.sources.media.html.md#foley.sources.media.DEFAULT_VIDEO_SUFFIX) | The suffix of video bytes no signature matches (and of every other ISO BMFF brand).                                                    |
+| [`DEFAULT_AUDIO_SUFFIX`](_autosummary/foley.sources.media.html.md#foley.sources.media.DEFAULT_AUDIO_SUFFIX) | The suffix of audio bytes no signature matches.                                                                                        |
+
+### Functions
+
+| [`audio_seconds`](_autosummary/foley.sources.media.html.md#foley.sources.media.audio_seconds)(audio)                        | The length of an audio input (bytes or a local path) in seconds, or `None`.                                                                                                                                                                                                                                                                              |
+|----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`audio_suffix`](_autosummary/foley.sources.media.html.md#foley.sources.media.audio_suffix)(data)                          | The file suffix of encoded audio `data` (flac, wav, mp3, ogg), sniffed from its first bytes.                                                                                                                                                                                                                                                             |
+| [`fal_immutable_url`](_autosummary/foley.sources.media.html.md#foley.sources.media.fal_immutable_url)(url)                      | falaw's `is_immutable_url` (fal's own CDN mints a new URL per upload), else `False` when falaw is not installed: an unknown URL is taken as mutable.                                                                                                                                                                                                     |
+| [`is_media_key`](_autosummary/foley.sources.media.html.md#foley.sources.media.is_media_key)(value)                         | Whether `value` is already a key [`media_key()`](_autosummary/foley.sources.media.html.md#foley.sources.media.media_key) makes (as a cache entry keeps it).                                                                                                                                                                                                                         |
+| [`is_url`](_autosummary/foley.sources.media.html.md#foley.sources.media.is_url)(media)                               | Whether `media` is a URL a backend can fetch itself.                                                                                                                                                                                                                                                                                                     |
+| [`keyed`](_autosummary/foley.sources.media.html.md#foley.sources.media.keyed)(affordances, \*[, key])               | `affordances` with each media input ([`MEDIA_INPUTS`](_autosummary/foley.sources.media.html.md#foley.sources.media.MEDIA_INPUTS)) replaced by its `key`.                                                                                                                                                                                                                               |
+| [`local_media_file`](_autosummary/foley.sources.media.html.md#foley.sources.media.local_media_file)(media, \*[, suffix])       | A local path holding `media` (bytes are written to a temporary file).                                                                                                                                                                                                                                                                                    |
+| [`media_key`](_autosummary/foley.sources.media.html.md#foley.sources.media.media_key)(media)                            | The cache identity of `media`: its content digest, or a bare remote URL as is.                                                                                                                                                                                                                                                                           |
+| [`media_url`](_autosummary/foley.sources.media.html.md#foley.sources.media.media_url)(media)                            | The URL a backend fetches `media` from itself, or `None` (a path or bytes).                                                                                                                                                                                                                                                                              |
+| [`recorded_media_key`](_autosummary/foley.sources.media.html.md#foley.sources.media.recorded_media_key)(media)                   | [`media_key()`](_autosummary/foley.sources.media.html.md#foley.sources.media.media_key) as it is written down: a bare URL keeps its scheme, host and path only (#184): its query, fragment and `;` path parameters (a presigned URL's signature, a session id) become [`REDACTED_QUERY`](_autosummary/foley.sources.media.html.md#foley.sources.media.REDACTED_QUERY), and credentials before the host are dropped. |
+| [`remote_media_input`](_autosummary/foley.sources.media.html.md#foley.sources.media.remote_media_input)(affordances)             | The name of the first media input given as a bare remote URL, or `None`.                                                                                                                                                                                                                                                                                 |
+| [`replayable`](_autosummary/foley.sources.media.html.md#foley.sources.media.replayable)(affordances, \*[, is_immutable]) | Whether an identical request may be served from the cache (#173).                                                                                                                                                                                                                                                                                        |
+| [`video_suffix`](_autosummary/foley.sources.media.html.md#foley.sources.media.video_suffix)(data)                          | The file suffix of encoded video `data`, sniffed from its first bytes.                                                                                                                                                                                                                                                                                   |
+
+### Classes
+
+| [`MediaInput`](_autosummary/foley.sources.media.html.md#foley.sources.media.MediaInput)(name, mode, does, covers, ...)   | One media input of generation (a row of [`MEDIA`](_autosummary/foley.sources.media.html.md#foley.sources.media.MEDIA)): the affordance that carries it, the mode it puts a call in, and how foley reads it.   |
+|----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`RemoteVideo`](_autosummary/foley.sources.media.html.md#foley.sources.media.RemoteVideo)(\*, url, sha256)                | A remote video `url` with the SHA-256 of its bytes: keyed, and replayed, by content.                                                                                                   |
+
+### foley.sources.media.DEFAULT_AUDIO_SUFFIX *= '.wav'*
+
+The suffix of audio bytes no signature matches.
+
+### foley.sources.media.DEFAULT_VIDEO_SUFFIX *= '.mp4'*
+
+The suffix of video bytes no signature matches (and of every other ISO BMFF brand).
+
+### foley.sources.media.MEDIA *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [MediaInput](_autosummary/foley.sources.media.html.md#foley.sources.media.MediaInput)]* *= {'audio': MediaInput(name='audio', mode='edit', does='edits a source clip', covers='to match the source clip', suffix_of='media.audio_suffix', seconds_of='media.audio_seconds'), 'video': MediaInput(name='video', mode='v2a', does='sounds a picture', covers='to cover the video', suffix_of='media.video_suffix', seconds_of='video.video_seconds')}*
+
+the media inputs a backend is given (keyed by content, never by path), in
+precedence order (a video decides the mode over an audio).
+
+* **Type:**
+  SSOT
+
+### foley.sources.media.MEDIA_INPUTS *= ('video', 'audio')*
+
+The affordances of [`MEDIA`](_autosummary/foley.sources.media.html.md#foley.sources.media.MEDIA).
+
+### *class* foley.sources.media.MediaInput(name, mode, does, covers, suffix_of, seconds_of)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One media input of generation (a row of [`MEDIA`](_autosummary/foley.sources.media.html.md#foley.sources.media.MEDIA)): the affordance that
+carries it, the mode it puts a call in, and how foley reads it.
+
+#### name
+
+The affordance (`video`, `audio`).
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### mode
+
+The generation mode a call given it is in (`v2a`, `edit`).
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### does
+
+What a source taking it does (said when it is missing).
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### covers
+
+How a `duration_s` set to its length is noted.
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### suffix_of
+
+The sniffer of its bytes’ file suffix, as `'<module>.<name>'` in
+[`foley.sources`](_autosummary/foley.sources.html.md#module-foley.sources).
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### seconds_of
+
+The probe of its length, likewise. Both are looked up when
+called, so a test can stand in for the probe.
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### *property* needed *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
+
+What a source taking it says when a call lacks it.
+
+```pycon
+>>> MEDIA["audio"].needed
+'needs an audio= (it edits a source clip)'
+```
+
+#### seconds(value)
+
+Its length in seconds, or `None` (a URL, an unreadable input).
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+#### suffix(data)
+
+The file suffix its `data` is uploaded under (sniffed from its first bytes).
+
+```pycon
+>>> MEDIA["audio"].suffix(b"fLaC\x00"), MEDIA["video"].suffix(b"?")
+('.flac', '.mp4')
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.sources.media.MediaValue
+
+a URL, a [`RemoteVideo`](_autosummary/foley.sources.media.html.md#foley.sources.media.RemoteVideo), a local path, or the bytes.
+
+* **Type:**
+  What a media input accepts
+
+alias of [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`RemoteVideo`](_autosummary/foley.sources.media.html.md#foley.sources.media.RemoteVideo) | `os.PathLike[str]` | [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
+
+### foley.sources.media.REDACTED_QUERY *= '?…'*
+
+What stands in for a recorded URL’s query and fragment.
+
+### foley.sources.media.REMOTE_SCHEMES *= ('http://', 'https://')*
+
+Schemes of a URL the backend fetches from a server (what it serves may change).
+
+### *class* foley.sources.media.RemoteVideo(, url, sha256)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+A remote video `url` with the SHA-256 of its bytes: keyed, and replayed, by content.
+
+A bare `https://` URL is keyed as the URL, which foley cannot see behind, so an
+identical request for it is never served from the generations cache (the picture
+may have changed: `.../latest.mp4`). A caller who knows the content passes this
+instead, and a repeat is replayed while the digest is the same (#173).
+
+The digest is **trusted, not checked** (foley does not fetch the URL): it is
+recorded as the input’s identity in the cache key and the licence’s
+`generation_params`, as a digest foley computed would be.
+
+```pycon
+>>> RemoteVideo(url="https://x/clip.mp4", sha256="sha256:" + "ab" * 32).sha256[:4]
+'abab'
+>>> RemoteVideo(url="clip.mp4", sha256="ab" * 32)
+Traceback (most recent call last):
+...
+ValueError: RemoteVideo.url must be an http(s) URL, got 'clip.mp4'
+```
+
+### foley.sources.media.URL_KEY_PREFIX *= 'url:'*
+
+The key prefix of a media input known only by its URL (its content unseen).
+
+### foley.sources.media.URL_SCHEMES *= ('http://', 'https://', 'data:')*
+
+URL schemes sent to a backend as is (no upload); a `data:` URI holds its content.
+
+### foley.sources.media.audio_seconds(audio)
+
+The length of an audio input (bytes or a local path) in seconds, or `None`.
+
+`None` for a URL (not fetched), without `soundfile`, or when it cannot be read.
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+### foley.sources.media.audio_suffix(data)
+
+The file suffix of encoded audio `data` (flac, wav, mp3, ogg), sniffed from its first bytes.
+
+Anything unrecognised is [`DEFAULT_AUDIO_SUFFIX`](_autosummary/foley.sources.media.html.md#foley.sources.media.DEFAULT_AUDIO_SUFFIX).
+
+```pycon
+>>> audio_suffix(b"fLaC\x00"), audio_suffix(b"RIFF\x00\x00\x00\x00WAVEfmt ")
+('.flac', '.wav')
+>>> audio_suffix(b"ID3\x04"), audio_suffix(b"\xff\xfb\x90"), audio_suffix(b"OggS")
+('.mp3', '.mp3', '.ogg')
+>>> audio_suffix(b"?")
+'.wav'
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.sources.media.fal_immutable_url(url)
+
+falaw’s `is_immutable_url` (fal’s own CDN mints a new URL per upload), else
+`False` when falaw is not installed: an unknown URL is taken as mutable.
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+### foley.sources.media.is_media_key(value)
+
+Whether `value` is already a key [`media_key()`](_autosummary/foley.sources.media.html.md#foley.sources.media.media_key) makes (as a cache entry keeps it).
+
+```pycon
+>>> is_media_key("sha256:" + "ab" * 32), is_media_key("url:https://x/a.mp4")
+(True, True)
+>>> is_media_key("clip.mp4"), is_media_key(b"sha256:")
+(False, False)
+```
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+### foley.sources.media.is_url(media)
+
+Whether `media` is a URL a backend can fetch itself.
+
+```pycon
+>>> is_url("https://x/clip.mp4"), is_url("clip.mp4"), is_url(b"...")
+(True, False, False)
+```
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+### foley.sources.media.keyed(affordances, \*, key=<function recorded_media_key>)
+
+`affordances` with each media input ([`MEDIA_INPUTS`](_autosummary/foley.sources.media.html.md#foley.sources.media.MEDIA_INPUTS)) replaced by its `key`.
+
+The default is the key as it is written down ([`recorded_media_key()`](_autosummary/foley.sources.media.html.md#foley.sources.media.recorded_media_key)); the
+request digest passes `key=media_key`, the full identity, which is only hashed.
+Unchanged when the call has no media input.
+
+```pycon
+>>> keyed({"video": b"abc", "duration_s": 2})["video"][:15], keyed({"seed": 1})
+('sha256:ba7816bf', {'seed': 1})
+>>> keyed({"audio": b"abc"})["audio"] == keyed({"video": b"abc"})["video"]
+True
+```
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.sources.media.local_media_file(media, , suffix=None)
+
+A local path holding `media` (bytes are written to a temporary file).
+
+`suffix` names the temporary file’s format; default: [`video_suffix()`](_autosummary/foley.sources.media.html.md#foley.sources.media.video_suffix) of the
+bytes. A path is yielded as is.
+
+* **Return type:**
+  [`Iterator`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.sources.media.media_key(media)
+
+The cache identity of `media`: its content digest, or a bare remote URL as is.
+
+```pycon
+>>> media_key(b"abc")[:15]
+'sha256:ba7816bf'
+>>> media_key("https://x/clip.mp4")
+'url:https://x/clip.mp4'
+>>> media_key(RemoteVideo(url="https://x/clip.mp4", sha256="ab" * 32))[:11]
+'sha256:abab'
+```
+
+* **Raises:**
+  * [**FileNotFoundError**](https://docs.python.org/3/builtins/exceptions.html#FileNotFoundError) – If `media` names a local file that does not exist.
+  * [**TypeError**](https://docs.python.org/3/builtins/exceptions.html#TypeError) – If `media` is none of a URL, a path or bytes.
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.sources.media.media_url(media)
+
+The URL a backend fetches `media` from itself, or `None` (a path or bytes).
+
+```pycon
+>>> media_url("https://x/clip.mp4"), media_url("clip.mp4"), media_url(b"...")
+('https://x/clip.mp4', None, None)
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.sources.media.recorded_media_key(media)
+
+[`media_key()`](_autosummary/foley.sources.media.html.md#foley.sources.media.media_key) as it is written down: a bare URL keeps its scheme, host and
+path only (#184): its query, fragment and `;` path parameters (a presigned URL’s
+signature, a session id) become [`REDACTED_QUERY`](_autosummary/foley.sources.media.html.md#foley.sources.media.REDACTED_QUERY), and credentials before
+the host are dropped. Two URLs that differ only there record (and are found by
+[`find()`](_autosummary/foley.stores.html.md#foley.stores.GenerationsCache.find)) as one, as a re-signed URL should.
+An already recorded or bare `url:` key is redacted the same way.
+
+```pycon
+>>> recorded_media_key("https://u:p@bucket.s3.example/a.mp4?X-Amz-Signature=s3cr3t")
+'url:https://bucket.s3.example/a.mp4?…'
+>>> recorded_media_key("https://[::1]:8080/a.mp4;jsessionid=X#t=2")
+'url:https://[::1]:8080/a.mp4?…'
+>>> recorded_media_key("https://x/a.mp4"), recorded_media_key(b"abc")[:11]
+('url:https://x/a.mp4', 'sha256:ba78')
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.sources.media.remote_media_input(affordances)
+
+The name of the first media input given as a bare remote URL, or `None`.
+
+```pycon
+>>> remote_media_input({"audio": "https://x/a.wav"}), remote_media_input({"video": b"x"})
+('audio', None)
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.sources.media.replayable(affordances, \*, is_immutable=<function fal_immutable_url>)
+
+Whether an identical request may be served from the cache (#173).
+
+Not when a media input ([`MEDIA_INPUTS`](_autosummary/foley.sources.media.html.md#foley.sources.media.MEDIA_INPUTS)) is a bare remote URL whose content
+foley never saw, unless `is_immutable(url)` says it never serves other bytes
+(default: [`fal_immutable_url()`](_autosummary/foley.sources.media.html.md#foley.sources.media.fal_immutable_url), fal’s own CDN). Decided from the values
+alone: no file is read.
+
+```pycon
+>>> replayable({"video": "https://x/latest.mp4"}), replayable({"video": b"abc"})
+(False, True)
+>>> replayable({"video": "https://x/a.mp4"}, is_immutable=lambda url: True)
+True
+>>> replayable({"seed": 1}), replayable({"audio": "https://x/take.wav"})
+(True, False)
+```
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+### foley.sources.media.video_suffix(data)
+
+The file suffix of encoded video `data`, sniffed from its first bytes.
+
+An uploader (and ffmpeg) names the format by the suffix, so a WebM written as
+`.mp4` goes out mislabelled. Anything unrecognised is `.mp4`.
+
+```pycon
+>>> video_suffix(b"\x00\x00\x00\x18ftypqt  \x00"), video_suffix(b"\x00\x00\x00\x18ftypisom")
+('.mov', '.mp4')
+>>> video_suffix(b"\x1a\x45\xdf\xa3\x9f\x42\x82\x84webm"), video_suffix(b"\x1a\x45\xdf\xa3")
+('.webm', '.mkv')
+>>> video_suffix(b"RIFF\x00\x00\x00\x00AVI "), video_suffix(b"OggS"), video_suffix(b"?")
+('.avi', '.ogv', '.mp4')
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 
 # _autosummary/foley.sources.music_library.acquisition.html.md
@@ -23269,94 +23692,54 @@ use via the module `__getattr__` below, so `import foley` stays dol-only.
 
 # foley.sources.video
 
-Media inputs of generation (#74, #162): what `video=` (and an edit’s `audio=`) may be, its identity, its length.
+Video inputs of generation (#74): a video’s length, and the audio of a muxed video answer.
 
-A video-to-audio (V2A) backend takes the picture the sound must follow. foley accepts
-it as a **URL** (`http(s)://` or a `data:` URI, sent as is), a
-[`RemoteVideo`](_autosummary/foley.sources.video.html.md#foley.sources.video.RemoteVideo) (a URL with the SHA-256 of its content), a **local path**, or raw
-**bytes** (both uploaded by the backend’s adapter). These questions are answered here,
-once, for every V2A backend:
+A video-to-audio (V2A) backend takes the picture the sound must follow (`video=`).
+How a media input is keyed, recorded, replayed and uploaded (a video and an edit’s
+`audio=` alike) is in [`foley.sources.media`](_autosummary/foley.sources.media.html.md#module-foley.sources.media); what only a video needs is here:
 
-* [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key): what the generations cache keys the video as. The **content**
-  (`sha256:<hex>` of the bytes, the file or a [`RemoteVideo`](_autosummary/foley.sources.video.html.md#foley.sources.video.RemoteVideo)’s digest), never
-  its path, so a moved file hits the cache and an edited one cannot; a bare remote URL
-  is keyed as the URL.
-* [`replayable()`](_autosummary/foley.sources.video.html.md#foley.sources.video.replayable): whether an identical request may be served from the cache. Not
-  for a bare remote URL: the content behind it may have changed (#173).
-* [`recorded_video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.recorded_video_key): the key as it is **written down** (a cache entry, a run
-  manifest, a licence): a bare URL without its query, fragment or credentials, so a
-  presigned URL’s token never reaches a record (#184). The request digest still
-  hashes [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key).
 * [`video_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds): its length, for a backend priced per second of the video
   (`probe=`; default [`default_probe()`](_autosummary/foley.sources.video.html.md#foley.sources.video.default_probe): `ffprobe` on `PATH`, else mixing’s
   `probe_duration` through mixing’s ffmpeg resolver; `None` when it cannot be read,
   which prices the call as an unknown cost, needing approval).
 * [`has_audio_stream()`](_autosummary/foley.sources.video.html.md#foley.sources.video.has_audio_stream): whether a media file has an audio stream (`ffprobe`,
   else `soundfile`; `None` when it cannot tell).
-* [`local_video_file()`](_autosummary/foley.sources.video.html.md#foley.sources.video.local_video_file): a local file for an uploader (bytes are written to a
-  temporary file whose suffix is sniffed from them: [`video_suffix()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_suffix)).
 * [`audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track): the audio of a backend’s muxed video answer (MMAudio,
   ThinkSound and HunyuanVideo-Foley return the video with the sound in it), via
   `ffmpeg` ([`ffmpeg_path()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffmpeg_path)).
-* [`keyed()`](_autosummary/foley.sources.video.html.md#foley.sources.video.keyed): affordances as they may be recorded (the cache entry, the run
-  manifest): the video replaced by its recorded key, so neither its bytes nor a local
-  path (nor an upload’s capability URL, nor a presigned URL’s token) is written down.
 
-The source clip of an edit (`audio=`, #162) is a media input too
-([`MEDIA_INPUTS`](_autosummary/foley.sources.video.html.md#foley.sources.video.MEDIA_INPUTS)): it takes the same forms, and is keyed, recorded and replayed by
-the same functions ([`keyed()`](_autosummary/foley.sources.video.html.md#foley.sources.video.keyed), [`replayable()`](_autosummary/foley.sources.video.html.md#foley.sources.video.replayable)). Each media input is one row of
-[`MEDIA`](_autosummary/foley.sources.video.html.md#foley.sources.video.MEDIA) (its mode, its upload suffix sniffer, its length probe): the edit’s
-upload suffix is sniffed by [`audio_suffix()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_suffix) and its length read by
-[`audio_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_seconds).
+The helpers that now serve every media input (#215) were named for the video and are
+still importable from here under those names, as plain aliases of their
+[`foley.sources.media`](_autosummary/foley.sources.media.html.md#module-foley.sources.media) versions: `video_key()` ([`media_key()`](_autosummary/foley.sources.media.html.md#foley.sources.media.media_key)),
+`is_video_key()` ([`is_media_key()`](_autosummary/foley.sources.media.html.md#foley.sources.media.is_media_key)),
+`recorded_video_key()` ([`recorded_media_key()`](_autosummary/foley.sources.media.html.md#foley.sources.media.recorded_media_key)),
+`video_url()` ([`media_url()`](_autosummary/foley.sources.media.html.md#foley.sources.media.media_url)),
+`local_video_file()` ([`local_media_file()`](_autosummary/foley.sources.media.html.md#foley.sources.media.local_media_file)) and
+[`VideoInput`](_autosummary/foley.sources.video.html.md#foley.sources.video.VideoInput) ([`MediaValue`](_autosummary/foley.sources.media.html.md#foley.sources.media.MediaValue)); the rest of that module’s
+names (`MEDIA`, `keyed()`, `replayable()`, `RemoteVideo`, …) are
+re-exported as they are.
 
 Stdlib only (mixing and soundfile are used when installed, never required).
 
 ### Module Attributes
 
-| [`MEDIA`](_autosummary/foley.sources.video.html.md#foley.sources.video.MEDIA)                 | the media inputs a backend is given (keyed by content, never by path), in precedence order (a video decides the mode over an audio).   |
-|------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
-| [`MEDIA_INPUTS`](_autosummary/foley.sources.video.html.md#foley.sources.video.MEDIA_INPUTS)          | The affordances of [`MEDIA`](_autosummary/foley.sources.video.html.md#foley.sources.video.MEDIA).                                                             |
-| [`REMOTE_SCHEMES`](_autosummary/foley.sources.video.html.md#foley.sources.video.REMOTE_SCHEMES)        | Schemes of a URL the backend fetches from a server (what it serves may change).                                                        |
-| [`URL_SCHEMES`](_autosummary/foley.sources.video.html.md#foley.sources.video.URL_SCHEMES)           | URL schemes sent to a backend as is (no upload); a `data:` URI holds its content.                                                      |
-| [`URL_KEY_PREFIX`](_autosummary/foley.sources.video.html.md#foley.sources.video.URL_KEY_PREFIX)        | The key prefix of a video known only by its URL (its content unseen).                                                                  |
-| [`VideoInput`](_autosummary/foley.sources.video.html.md#foley.sources.video.VideoInput)            | a URL, a [`RemoteVideo`](_autosummary/foley.sources.video.html.md#foley.sources.video.RemoteVideo), a local path, or the bytes.                                     |
-| [`AUDIO_TRACK_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.AUDIO_TRACK_TIMEOUT_S) | The most [`audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track) lets ffmpeg run (s).                                           |
-| [`PROBE_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.PROBE_TIMEOUT_S)       | The most [`ffprobe_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds) lets ffprobe run (s).                                      |
-| [`DEFAULT_VIDEO_SUFFIX`](_autosummary/foley.sources.video.html.md#foley.sources.video.DEFAULT_VIDEO_SUFFIX)  | The suffix of bytes no signature matches (and of every other ISO BMFF brand).                                                          |
-| [`Probe`](_autosummary/foley.sources.video.html.md#foley.sources.video.Probe)                 | how [`video_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds) reads a local file's length.                                      |
-| [`AudioStreamCheck`](_autosummary/foley.sources.video.html.md#foley.sources.video.AudioStreamCheck)      | whether a media file has an audio stream (`None`: it cannot tell).                                                                     |
-| [`REDACTED_QUERY`](_autosummary/foley.sources.video.html.md#foley.sources.video.REDACTED_QUERY)        | What stands in for a recorded URL's query and fragment.                                                                                |
-| [`DEFAULT_AUDIO_SUFFIX`](_autosummary/foley.sources.video.html.md#foley.sources.video.DEFAULT_AUDIO_SUFFIX)  | The suffix of audio bytes no signature matches.                                                                                        |
+| [`VideoInput`](_autosummary/foley.sources.video.html.md#foley.sources.video.VideoInput)            | What `video=` accepts ([`MediaValue`](_autosummary/foley.sources.media.html.md#foley.sources.media.MediaValue)).   |
+|------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
+| [`AUDIO_TRACK_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.AUDIO_TRACK_TIMEOUT_S) | The most [`audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track) lets ffmpeg run (s).                          |
+| [`PROBE_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.PROBE_TIMEOUT_S)       | The most [`ffprobe_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds) lets ffprobe run (s).                     |
+| [`Probe`](_autosummary/foley.sources.video.html.md#foley.sources.video.Probe)                 | how [`video_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds) reads a local file's length.                     |
+| [`AudioStreamCheck`](_autosummary/foley.sources.video.html.md#foley.sources.video.AudioStreamCheck)      | whether a media file has an audio stream (`None`: it cannot tell).                                                    |
 
 ### Functions
 
-| [`audio_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_seconds)(audio)                            | The length of an audio input (bytes or a local path) in seconds, or `None`.                                                                                                                                                                                                                                                                              |
-|--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`audio_suffix`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_suffix)(data)                              | The file suffix of encoded audio `data` (flac, wav, mp3, ogg), sniffed from its first bytes.                                                                                                                                                                                                                                                             |
-| [`audio_track`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track)(container, \*[, ffmpeg, timeout_s]) | The audio of a muxed video, as WAV bytes (16-bit PCM, its own rate and channels).                                                                                                                                                                                                                                                                        |
-| [`default_probe`](_autosummary/foley.sources.video.html.md#foley.sources.video.default_probe)(path)                             | [`ffprobe_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds) (bounded by [`PROBE_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.PROBE_TIMEOUT_S)) when `ffprobe` is on `PATH`, else [`mixing_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.mixing_seconds).                                                                                                    |
-| [`fal_immutable_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.fal_immutable_url)(url)                          | falaw's `is_immutable_url` (fal's own CDN mints a new URL per upload), else `False` when falaw is not installed: an unknown URL is taken as mutable.                                                                                                                                                                                                     |
-| [`ffmpeg_path`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffmpeg_path)()                                   | An `ffmpeg` binary: mixing's resolver (a pip-bundled one too), else `PATH`.                                                                                                                                                                                                                                                                              |
-| [`ffprobe_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds)(path, \*[, ffprobe])            | The length of the video file at `path` by `ffprobe` (default: the one on `PATH`), or `None` when there is none or it cannot read it.                                                                                                                                                                                                                     |
-| [`has_audio_stream`](_autosummary/foley.sources.video.html.md#foley.sources.video.has_audio_stream)(path, \*[, ffprobe])           | Whether the media file at `path` has an audio stream, or `None` when that cannot be told.                                                                                                                                                                                                                                                                |
-| [`is_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.is_url)(video)                                   | Whether `video` is a URL a backend can fetch itself.                                                                                                                                                                                                                                                                                                     |
-| [`is_video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.is_video_key)(value)                             | Whether `value` is already a key [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) makes (as a cache entry keeps it).                                                                                                                                                                                                                         |
-| [`keyed`](_autosummary/foley.sources.video.html.md#foley.sources.video.keyed)(affordances, \*[, key])                   | `affordances` with each media input ([`MEDIA_INPUTS`](_autosummary/foley.sources.video.html.md#foley.sources.video.MEDIA_INPUTS)) replaced by its `key`.                                                                                                                                                                                                                               |
-| [`local_video_file`](_autosummary/foley.sources.video.html.md#foley.sources.video.local_video_file)(video, \*[, suffix])           | A local path holding `video` (bytes are written to a temporary file).                                                                                                                                                                                                                                                                                    |
-| [`mixing_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.mixing_seconds)(path)                            | The length by mixing's `probe_duration` (`ffmpeg -i` through mixing's ffmpeg resolver, a pip-bundled ffmpeg too), or `None` when mixing's video stack is not installed or finds no ffmpeg.                                                                                                                                                               |
-| [`recorded_video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.recorded_video_key)(video)                       | [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) as it is written down: a bare URL keeps its scheme, host and path only (#184): its query, fragment and `;` path parameters (a presigned URL's signature, a session id) become [`REDACTED_QUERY`](_autosummary/foley.sources.video.html.md#foley.sources.video.REDACTED_QUERY), and credentials before the host are dropped. |
-| [`remote_media_input`](_autosummary/foley.sources.video.html.md#foley.sources.video.remote_media_input)(affordances)                 | The name of the first media input given as a bare remote URL, or `None`.                                                                                                                                                                                                                                                                                 |
-| [`replayable`](_autosummary/foley.sources.video.html.md#foley.sources.video.replayable)(affordances, \*[, is_immutable])     | Whether an identical request may be served from the cache (#173).                                                                                                                                                                                                                                                                                        |
-| [`video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key)(video)                                | The cache identity of `video`: its content digest, or a bare remote URL as is.                                                                                                                                                                                                                                                                           |
-| [`video_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds)(video, \*[, probe])               | The length of a local `video` in seconds, or `None` when it cannot be read.                                                                                                                                                                                                                                                                              |
-| [`video_suffix`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_suffix)(data)                              | The file suffix of encoded video `data`, sniffed from its first bytes.                                                                                                                                                                                                                                                                                   |
-| [`video_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_url)(video)                                | The URL a backend fetches `video` from itself, or `None` (a path or bytes).                                                                                                                                                                                                                                                                              |
-
-### Classes
-
-| [`MediaInput`](_autosummary/foley.sources.video.html.md#foley.sources.video.MediaInput)(name, mode, does, covers, ...)   | One media input of generation (a row of [`MEDIA`](_autosummary/foley.sources.video.html.md#foley.sources.video.MEDIA)): the affordance that carries it, the mode it puts a call in, and how foley reads it.   |
-|----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`RemoteVideo`](_autosummary/foley.sources.video.html.md#foley.sources.video.RemoteVideo)(\*, url, sha256)                | A remote video `url` with the SHA-256 of its bytes: keyed, and replayed, by content.                                                                                                   |
+| [`audio_track`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track)(container, \*[, ffmpeg, timeout_s])   | The audio of a muxed video, as WAV bytes (16-bit PCM, its own rate and channels).                                                                                                                                                                     |
+|----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`default_probe`](_autosummary/foley.sources.video.html.md#foley.sources.video.default_probe)(path)                               | [`ffprobe_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds) (bounded by [`PROBE_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.PROBE_TIMEOUT_S)) when `ffprobe` is on `PATH`, else [`mixing_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.mixing_seconds). |
+| [`ffmpeg_path`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffmpeg_path)()                                     | An `ffmpeg` binary: mixing's resolver (a pip-bundled one too), else `PATH`.                                                                                                                                                                           |
+| [`ffprobe_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds)(path, \*[, ffprobe])              | The length of the video file at `path` by `ffprobe` (default: the one on `PATH`), or `None` when there is none or it cannot read it.                                                                                                                  |
+| [`has_audio_stream`](_autosummary/foley.sources.video.html.md#foley.sources.video.has_audio_stream)(path, \*[, ffprobe])             | Whether the media file at `path` has an audio stream, or `None` when that cannot be told.                                                                                                                                                             |
+| [`mixing_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.mixing_seconds)(path)                              | The length by mixing's `probe_duration` (`ffmpeg -i` through mixing's ffmpeg resolver, a pip-bundled ffmpeg too), or `None` when mixing's video stack is not installed or finds no ffmpeg.                                                            |
+| [`video_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds)(video, \*[, probe])                 | The length of a local `video` in seconds, or `None` when it cannot be read.                                                                                                                                                                           |
 
 ### foley.sources.video.AUDIO_TRACK_TIMEOUT_S *= 120.0*
 
@@ -23372,99 +23755,6 @@ whether a media file has an audio stream
 
 alias of [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool) | [`None`](https://docs.python.org/3/builtins/constants.html#None)]
 
-### foley.sources.video.DEFAULT_AUDIO_SUFFIX *= '.wav'*
-
-The suffix of audio bytes no signature matches.
-
-### foley.sources.video.DEFAULT_VIDEO_SUFFIX *= '.mp4'*
-
-The suffix of bytes no signature matches (and of every other ISO BMFF brand).
-
-### foley.sources.video.MEDIA *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [MediaInput](_autosummary/foley.sources.video.html.md#foley.sources.video.MediaInput)]* *= {'audio': MediaInput(name='audio', mode='edit', does='edits a source clip', covers='to match the source clip', suffix_of='audio_suffix', seconds_of='audio_seconds'), 'video': MediaInput(name='video', mode='v2a', does='sounds a picture', covers='to cover the video', suffix_of='video_suffix', seconds_of='video_seconds')}*
-
-the media inputs a backend is given (keyed by content, never by path), in
-precedence order (a video decides the mode over an audio).
-
-* **Type:**
-  SSOT
-
-### foley.sources.video.MEDIA_INPUTS *= ('video', 'audio')*
-
-The affordances of [`MEDIA`](_autosummary/foley.sources.video.html.md#foley.sources.video.MEDIA).
-
-### *class* foley.sources.video.MediaInput(name, mode, does, covers, suffix_of, seconds_of)
-
-Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
-
-One media input of generation (a row of [`MEDIA`](_autosummary/foley.sources.video.html.md#foley.sources.video.MEDIA)): the affordance that
-carries it, the mode it puts a call in, and how foley reads it.
-
-#### name
-
-The affordance (`video`, `audio`).
-
-* **Type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
-#### mode
-
-The generation mode a call given it is in (`v2a`, `edit`).
-
-* **Type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
-#### does
-
-What a source taking it does (said when it is missing).
-
-* **Type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
-#### covers
-
-How a `duration_s` set to its length is noted.
-
-* **Type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
-#### suffix_of
-
-The name of this module’s sniffer of its bytes’ file suffix.
-
-* **Type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
-#### seconds_of
-
-The name of this module’s probe of its length. Both are looked up
-when called, so a test can stand in for the probe.
-
-* **Type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
-#### *property* needed *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
-
-What a source taking it says when a call lacks it.
-
-```pycon
->>> MEDIA["audio"].needed
-'needs an audio= (it edits a source clip)'
-```
-
-#### seconds(value)
-
-Its length in seconds, or `None` (a URL, an unreadable input).
-
-* **Return type:**
-  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
-
-#### suffix(data)
-
-The file suffix its `data` is uploaded under (sniffed from its first bytes).
-
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
 ### foley.sources.video.PROBE_TIMEOUT_S *= 30.0*
 
 The most [`ffprobe_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds) lets ffprobe run (s).
@@ -23478,81 +23768,11 @@ how [`video_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.v
 
 alias of [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`float`](https://docs.python.org/3/builtins/functions.html#float) | [`None`](https://docs.python.org/3/builtins/constants.html#None)]
 
-### foley.sources.video.REDACTED_QUERY *= '?…'*
-
-What stands in for a recorded URL’s query and fragment.
-
-### foley.sources.video.REMOTE_SCHEMES *= ('http://', 'https://')*
-
-Schemes of a URL the backend fetches from a server (what it serves may change).
-
-### *class* foley.sources.video.RemoteVideo(, url, sha256)
-
-Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
-
-A remote video `url` with the SHA-256 of its bytes: keyed, and replayed, by content.
-
-A bare `https://` URL is keyed as the URL, which foley cannot see behind, so an
-identical request for it is never served from the generations cache (the picture
-may have changed: `.../latest.mp4`). A caller who knows the content passes this
-instead, and a repeat is replayed while the digest is the same (#173).
-
-The digest is **trusted, not checked** (foley does not fetch the URL): it is
-recorded as the input’s identity in the cache key and the licence’s
-`generation_params`, as a digest foley computed would be.
-
-```pycon
->>> RemoteVideo(url="https://x/clip.mp4", sha256="sha256:" + "ab" * 32).sha256[:4]
-'abab'
->>> RemoteVideo(url="clip.mp4", sha256="ab" * 32)
-Traceback (most recent call last):
-...
-ValueError: RemoteVideo.url must be an http(s) URL, got 'clip.mp4'
-```
-
-### foley.sources.video.URL_KEY_PREFIX *= 'url:'*
-
-The key prefix of a video known only by its URL (its content unseen).
-
-### foley.sources.video.URL_SCHEMES *= ('http://', 'https://', 'data:')*
-
-URL schemes sent to a backend as is (no upload); a `data:` URI holds its content.
-
 ### foley.sources.video.VideoInput
 
-a URL, a [`RemoteVideo`](_autosummary/foley.sources.video.html.md#foley.sources.video.RemoteVideo), a local path, or the bytes.
+What `video=` accepts ([`MediaValue`](_autosummary/foley.sources.media.html.md#foley.sources.media.MediaValue)).
 
-* **Type:**
-  What `video=` accepts
-
-alias of [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`RemoteVideo`](_autosummary/foley.sources.video.html.md#foley.sources.video.RemoteVideo) | `os.PathLike[str]` | [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
-
-### foley.sources.video.audio_seconds(audio)
-
-The length of an audio input (bytes or a local path) in seconds, or `None`.
-
-`None` for a URL (not fetched), without `soundfile`, or when it cannot be read.
-
-* **Return type:**
-  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
-
-### foley.sources.video.audio_suffix(data)
-
-The file suffix of encoded audio `data` (flac, wav, mp3, ogg), sniffed from its first bytes.
-
-Anything unrecognised is [`DEFAULT_AUDIO_SUFFIX`](_autosummary/foley.sources.video.html.md#foley.sources.video.DEFAULT_AUDIO_SUFFIX).
-
-```pycon
->>> audio_suffix(b"fLaC\x00"), audio_suffix(b"RIFF\x00\x00\x00\x00WAVEfmt ")
-('.flac', '.wav')
->>> audio_suffix(b"ID3\x04"), audio_suffix(b"\xff\xfb\x90"), audio_suffix(b"OggS")
-('.mp3', '.mp3', '.ogg')
->>> audio_suffix(b"?")
-'.wav'
-```
-
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+alias of [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`RemoteVideo`](_autosummary/foley.sources.media.html.md#foley.sources.media.RemoteVideo) | `os.PathLike[str]` | [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
 
 ### foley.sources.video.audio_track(container, , ffmpeg=None, timeout_s=120.0)
 
@@ -23575,14 +23795,6 @@ stall mixing’s unbounded `ffmpeg -i` too.
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
-
-### foley.sources.video.fal_immutable_url(url)
-
-falaw’s `is_immutable_url` (fal’s own CDN mints a new URL per upload), else
-`False` when falaw is not installed: an unknown URL is taken as mutable.
-
-* **Return type:**
-  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
 ### foley.sources.video.ffmpeg_path()
 
@@ -23615,60 +23827,6 @@ nothing). A caller that needs an answer treats `None` as no (fail closed).
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`bool`](https://docs.python.org/3/builtins/functions.html#bool)]
 
-### foley.sources.video.is_url(video)
-
-Whether `video` is a URL a backend can fetch itself.
-
-```pycon
->>> is_url("https://x/clip.mp4"), is_url("clip.mp4"), is_url(b"...")
-(True, False, False)
-```
-
-* **Return type:**
-  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
-
-### foley.sources.video.is_video_key(value)
-
-Whether `value` is already a key [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) makes (as a cache entry keeps it).
-
-```pycon
->>> is_video_key("sha256:" + "ab" * 32), is_video_key("url:https://x/a.mp4")
-(True, True)
->>> is_video_key("clip.mp4"), is_video_key(b"sha256:")
-(False, False)
-```
-
-* **Return type:**
-  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
-
-### foley.sources.video.keyed(affordances, \*, key=<function recorded_video_key>)
-
-`affordances` with each media input ([`MEDIA_INPUTS`](_autosummary/foley.sources.video.html.md#foley.sources.video.MEDIA_INPUTS)) replaced by its `key`.
-
-The default is the key as it is written down ([`recorded_video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.recorded_video_key)); the
-request digest passes `key=video_key`, the full identity, which is only hashed.
-Unchanged when the call has no media input.
-
-```pycon
->>> keyed({"video": b"abc", "duration_s": 2})["video"][:15], keyed({"seed": 1})
-('sha256:ba7816bf', {'seed': 1})
->>> keyed({"audio": b"abc"})["audio"] == keyed({"video": b"abc"})["video"]
-True
-```
-
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
-
-### foley.sources.video.local_video_file(video, , suffix=None)
-
-A local path holding `video` (bytes are written to a temporary file).
-
-`suffix` names the temporary file’s format; default: [`video_suffix()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_suffix) of the
-bytes. A path is yielded as is.
-
-* **Return type:**
-  [`Iterator`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
-
 ### foley.sources.video.mixing_seconds(path)
 
 The length by mixing’s `probe_duration` (`ffmpeg -i` through mixing’s ffmpeg
@@ -23678,79 +23836,6 @@ installed or finds no ffmpeg. Unbounded: mixing’s probe has no timeout yet
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
-
-### foley.sources.video.recorded_video_key(video)
-
-[`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) as it is written down: a bare URL keeps its scheme, host and
-path only (#184): its query, fragment and `;` path parameters (a presigned URL’s
-signature, a session id) become [`REDACTED_QUERY`](_autosummary/foley.sources.video.html.md#foley.sources.video.REDACTED_QUERY), and credentials before
-the host are dropped. Two URLs that differ only there record (and are found by
-[`find()`](_autosummary/foley.stores.html.md#foley.stores.GenerationsCache.find)) as one, as a re-signed URL should.
-An already recorded or bare `url:` key is redacted the same way.
-
-```pycon
->>> recorded_video_key("https://u:p@bucket.s3.example/a.mp4?X-Amz-Signature=s3cr3t")
-'url:https://bucket.s3.example/a.mp4?…'
->>> recorded_video_key("https://[::1]:8080/a.mp4;jsessionid=X#t=2")
-'url:https://[::1]:8080/a.mp4?…'
->>> recorded_video_key("https://x/a.mp4"), recorded_video_key(b"abc")[:11]
-('url:https://x/a.mp4', 'sha256:ba78')
-```
-
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
-### foley.sources.video.remote_media_input(affordances)
-
-The name of the first media input given as a bare remote URL, or `None`.
-
-```pycon
->>> remote_media_input({"audio": "https://x/a.wav"}), remote_media_input({"video": b"x"})
-('audio', None)
-```
-
-* **Return type:**
-  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
-
-### foley.sources.video.replayable(affordances, \*, is_immutable=<function fal_immutable_url>)
-
-Whether an identical request may be served from the cache (#173).
-
-Not when a media input ([`MEDIA_INPUTS`](_autosummary/foley.sources.video.html.md#foley.sources.video.MEDIA_INPUTS)) is a bare remote URL whose content
-foley never saw, unless `is_immutable(url)` says it never serves other bytes
-(default: [`fal_immutable_url()`](_autosummary/foley.sources.video.html.md#foley.sources.video.fal_immutable_url), fal’s own CDN). Decided from the values
-alone: no file is read.
-
-```pycon
->>> replayable({"video": "https://x/latest.mp4"}), replayable({"video": b"abc"})
-(False, True)
->>> replayable({"video": "https://x/a.mp4"}, is_immutable=lambda url: True)
-True
->>> replayable({"seed": 1}), replayable({"audio": "https://x/take.wav"})
-(True, False)
-```
-
-* **Return type:**
-  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
-
-### foley.sources.video.video_key(video)
-
-The cache identity of `video`: its content digest, or a bare remote URL as is.
-
-```pycon
->>> video_key(b"abc")[:15]
-'sha256:ba7816bf'
->>> video_key("https://x/clip.mp4")
-'url:https://x/clip.mp4'
->>> video_key(RemoteVideo(url="https://x/clip.mp4", sha256="ab" * 32))[:11]
-'sha256:abab'
-```
-
-* **Raises:**
-  * [**FileNotFoundError**](https://docs.python.org/3/builtins/exceptions.html#FileNotFoundError) – If `video` names a local file that does not exist.
-  * [**TypeError**](https://docs.python.org/3/builtins/exceptions.html#TypeError) – If `video` is none of a URL, a path or bytes.
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### foley.sources.video.video_seconds(video, , probe=None)
 
@@ -23769,37 +23854,6 @@ True
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
-
-### foley.sources.video.video_suffix(data)
-
-The file suffix of encoded video `data`, sniffed from its first bytes.
-
-An uploader (and ffmpeg) names the format by the suffix, so a WebM written as
-`.mp4` goes out mislabelled. Anything unrecognised is `.mp4`.
-
-```pycon
->>> video_suffix(b"\x00\x00\x00\x18ftypqt  \x00"), video_suffix(b"\x00\x00\x00\x18ftypisom")
-('.mov', '.mp4')
->>> video_suffix(b"\x1a\x45\xdf\xa3\x9f\x42\x82\x84webm"), video_suffix(b"\x1a\x45\xdf\xa3")
-('.webm', '.mkv')
->>> video_suffix(b"RIFF\x00\x00\x00\x00AVI "), video_suffix(b"OggS"), video_suffix(b"?")
-('.avi', '.ogv', '.mp4')
-```
-
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
-### foley.sources.video.video_url(video)
-
-The URL a backend fetches `video` from itself, or `None` (a path or bytes).
-
-```pycon
->>> video_url("https://x/clip.mp4"), video_url("clip.mp4"), video_url(b"...")
-('https://x/clip.mp4', None, None)
-```
-
-* **Return type:**
-  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 
 # _autosummary/foley.sources.wikimedia_commons.adapter.html.md
@@ -25983,7 +26037,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 02:14 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/ffe65e8e482a8e2da1c67b6594349ee57760e15e"><code>ffe65e8</code></a> on branch <code>main</code>, for **foley 0.0.109** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 02:26 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/7ba6eec63dc956db66fd4cb2d0764d9b9d88819d"><code>7ba6eec</code></a> on branch <code>main</code>, for **foley 0.0.110** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -25992,7 +26046,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/ffe65e8e482a8e2da1c67b6594349ee57760e15e"><code>ffe65e8e482a8e2da1c67b6594349ee57760e15e</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/7ba6eec63dc956db66fd4cb2d0764d9b9d88819d"><code>7ba6eec63dc956db66fd4cb2d0764d9b9d88819d</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -26003,9 +26057,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41376424725">41376424725</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41377527895">41377527895</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>ffe65e8e482a8e2da1c67b6594349ee57760e15e</code> (in the history of the built commit) |
+| Event commit | <code>7ba6eec63dc956db66fd4cb2d0764d9b9d88819d</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -26030,13 +26084,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.109/">0.0.109</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.110/">0.0.110</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout ffe65e8e482a8e2da1c67b6594349ee57760e15e
+git checkout 7ba6eec63dc956db66fd4cb2d0764d9b9d88819d
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

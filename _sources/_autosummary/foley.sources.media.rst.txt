@@ -1,0 +1,45 @@
+foley.sources.media
+===================
+
+.. automodule:: foley.sources.media
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      MEDIA
+      MEDIA_INPUTS
+      REMOTE_SCHEMES
+      URL_SCHEMES
+      URL_KEY_PREFIX
+      MediaValue
+      REDACTED_QUERY
+      DEFAULT_VIDEO_SUFFIX
+      DEFAULT_AUDIO_SUFFIX
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      audio_seconds
+      audio_suffix
+      fal_immutable_url
+      is_media_key
+      is_url
+      keyed
+      local_media_file
+      media_key
+      media_url
+      recorded_media_key
+      remote_media_input
+      replayable
+      video_suffix
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      MediaInput
+      RemoteVideo
+   

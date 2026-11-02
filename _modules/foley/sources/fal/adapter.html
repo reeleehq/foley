@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=27c60a7f"></script>
+    <script src="../../../../_static/documentation_options.js?v=c4e26d2d"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.109" />
+  <meta name="docsearch:version" content="0.0.110" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -987,7 +987,7 @@ window.runMermaid = runMermaid;</script>
 <span class="w">        </span><span class="sd">"""The exact payload this adapter sends for ``prompt`` and translated ``affordances``."""</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.._dispatch</span><span class="w"> </span><span class="kn">import</span> <span class="n">native_request</span>
 
-        <span class="kn">from</span><span class="w"> </span><span class="nn">..video</span><span class="w"> </span><span class="kn">import</span> <span class="n">MEDIA</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..media</span><span class="w"> </span><span class="kn">import</span> <span class="n">MEDIA</span>
 
         <span class="n">reject_renamed</span><span class="p">(</span><span class="n">affordances</span><span class="p">)</span>  <span class="c1"># generate() builds its payload here too</span>
         <span class="n">nd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"native_defaults"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
@@ -1057,17 +1057,17 @@ window.runMermaid = runMermaid;</script>
     <span class="k">def</span><span class="w"> </span><span class="nf">_media_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">media</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"video"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""The URL fal fetches a media input from: a URL as is, a path or bytes uploaded</span>
 <span class="sd">        (bytes through a temporary file named by their sniffed format,</span>
-<span class="sd">        :meth:`foley.sources.video.MediaInput.suffix`)."""</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">..video</span><span class="w"> </span><span class="kn">import</span> <span class="n">MEDIA</span><span class="p">,</span> <span class="n">local_video_file</span><span class="p">,</span> <span class="n">video_url</span>
+<span class="sd">        :meth:`foley.sources.media.MediaInput.suffix`)."""</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..media</span><span class="w"> </span><span class="kn">import</span> <span class="n">MEDIA</span><span class="p">,</span> <span class="n">local_media_file</span><span class="p">,</span> <span class="n">media_url</span>
 
-        <span class="n">url</span> <span class="o">=</span> <span class="n">video_url</span><span class="p">(</span><span class="n">media</span><span class="p">)</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">media_url</span><span class="p">(</span><span class="n">media</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">url</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">url</span>
         <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_key</span>  <span class="c1"># a missing key is its own, clearer refusal</span>
         <span class="n">raw</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">media</span><span class="p">,</span> <span class="p">(</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">))</span>
         <span class="n">suffix</span> <span class="o">=</span> <span class="n">MEDIA</span><span class="p">[</span><span class="n">kind</span><span class="p">]</span><span class="o">.</span><span class="n">suffix</span><span class="p">(</span><span class="n">media</span><span class="p">)</span> <span class="k">if</span> <span class="n">raw</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="k">with</span> <span class="n">local_video_file</span><span class="p">(</span><span class="n">media</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="n">suffix</span><span class="p">)</span> <span class="k">as</span> <span class="n">path</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">local_media_file</span><span class="p">(</span><span class="n">media</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="n">suffix</span><span class="p">)</span> <span class="k">as</span> <span class="n">path</span><span class="p">:</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_uploader</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">api_key</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># nothing was generated, so nothing was billed</span>
             <span class="k">raise</span> <span class="n">SourceConfigurationError</span><span class="p">(</span>  <span class="c1"># the type only: no path or URL in notes</span>
@@ -1107,13 +1107,13 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        The key is also what the request was keyed on, so the answered request matches</span>
 <span class="sd">        the planned one and a repeat is served from the generations cache.</span>
 <span class="sd">        """</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">..video</span><span class="w"> </span><span class="kn">import</span> <span class="n">MEDIA_INPUTS</span><span class="p">,</span> <span class="n">recorded_video_key</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..media</span><span class="w"> </span><span class="kn">import</span> <span class="n">MEDIA_INPUTS</span><span class="p">,</span> <span class="n">recorded_media_key</span>
 
         <span class="n">out</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">MEDIA_INPUTS</span><span class="p">:</span>
             <span class="n">field</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"native_name"</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">out</span> <span class="ow">and</span> <span class="n">affordances</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">out</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="n">recorded_video_key</span><span class="p">(</span><span class="n">affordances</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+                <span class="n">out</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="n">recorded_media_key</span><span class="p">(</span><span class="n">affordances</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">out</span>
 
 <div class="viewcode-block" id="FalAdapter.generate">
@@ -1280,7 +1280,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_audio_seconds</span><span class="p">(</span><span class="n">audio</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The length of encoded ``audio`` in seconds, or ``None`` when it cannot be read."""</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">..video</span><span class="w"> </span><span class="kn">import</span> <span class="n">audio_seconds</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..media</span><span class="w"> </span><span class="kn">import</span> <span class="n">audio_seconds</span>
 
     <span class="k">return</span> <span class="n">audio_seconds</span><span class="p">(</span><span class="n">audio</span><span class="p">)</span>
 

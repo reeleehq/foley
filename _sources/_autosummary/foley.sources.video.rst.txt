@@ -8,49 +8,21 @@ foley.sources.video
 
    .. autosummary::
    
-      MEDIA
-      MEDIA_INPUTS
-      REMOTE_SCHEMES
-      URL_SCHEMES
-      URL_KEY_PREFIX
       VideoInput
       AUDIO_TRACK_TIMEOUT_S
       PROBE_TIMEOUT_S
-      DEFAULT_VIDEO_SUFFIX
       Probe
       AudioStreamCheck
-      REDACTED_QUERY
-      DEFAULT_AUDIO_SUFFIX
    
    .. rubric:: Functions
 
    .. autosummary::
    
-      audio_seconds
-      audio_suffix
       audio_track
       default_probe
-      fal_immutable_url
       ffmpeg_path
       ffprobe_seconds
       has_audio_stream
-      is_url
-      is_video_key
-      keyed
-      local_video_file
       mixing_seconds
-      recorded_video_key
-      remote_media_input
-      replayable
-      video_key
       video_seconds
-      video_suffix
-      video_url
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      MediaInput
-      RemoteVideo
    
