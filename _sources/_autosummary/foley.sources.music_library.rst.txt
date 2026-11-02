@@ -13,6 +13,7 @@ foley.sources.music\_library
       direct
       fetch_audio
       files_store
+      held_rows
       kept_digests
       kept_sources
       library_source_config
@@ -23,6 +24,7 @@ foley.sources.music\_library
       polite_transport
       probe_available
       probe_verify
+      read_tracks_table
       register_music_library
       require_probe
       safe_file_name
@@ -45,6 +47,7 @@ foley.sources.music\_library
 
    .. autosummary::
    
+      DroppedColumnsWarning
       MusicLibraryError
       MusicToolMissing
    

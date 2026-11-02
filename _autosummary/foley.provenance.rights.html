@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=f31ae747"></script>
+    <script src="../_static/documentation_options.js?v=3893778a"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.113" />
+  <meta name="docsearch:version" content="0.0.114" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -540,6 +540,15 @@ credits layer (title, author, licence URL, attribution line); no flag is re-deri
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.rights.DEFAULT_EXPORT_FORMAT" title="foley.provenance.rights.DEFAULT_EXPORT_FORMAT"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DEFAULT_EXPORT_FORMAT</span></code></a></p></td>
 <td><p>The format an export is encoded in when none is named.</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.rights.RIGHTS_FIELDS" title="foley.provenance.rights.RIGHTS_FIELDS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RIGHTS_FIELDS</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">lacing.Rights</span></code>' field names, the keys of <a class="reference internal" href="#foley.provenance.rights.sound_rights" title="foley.provenance.rights.sound_rights"><code class="xref py py-func docutils literal notranslate"><span class="pre">sound_rights()</span></code></a> (lacing#34; a test pins them to lacing's model when lacing is installed).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.rights.ASSET_SOURCE_EXTRAS" title="foley.provenance.rights.ASSET_SOURCE_EXTRAS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ASSET_SOURCE_EXTRAS</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">an</span></code>'s <code class="docutils literal notranslate"><span class="pre">AssetSource</span></code> fields that <code class="docutils literal notranslate"><span class="pre">lacing.Rights</span></code> has no name for (a test pins them to an's model when an is installed).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.rights.PROVENANCE_FIELDS" title="foley.provenance.rights.PROVENANCE_FIELDS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PROVENANCE_FIELDS</span></code></a></p></td>
+<td><p>a foley row's own metadata must not use one, or it would read as that record's claim.</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -565,9 +574,35 @@ credits layer (title, author, licence URL, attribution line); no flag is re-deri
 </table>
 </div>
 <dl class="py data">
+<dt class="sig sig-object py" id="foley.provenance.rights.ASSET_SOURCE_EXTRAS">
+<span class="sig-prename descclassname"><span class="pre">foley.provenance.rights.</span></span><span class="sig-name descname"><span class="pre">ASSET_SOURCE_EXTRAS</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('url',</span> <span class="pre">'sha256',</span> <span class="pre">'cost_usd',</span> <span class="pre">'extra')</span></span><a class="headerlink" href="#foley.provenance.rights.ASSET_SOURCE_EXTRAS" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">an</span></code>’s <code class="docutils literal notranslate"><span class="pre">AssetSource</span></code> fields that <code class="docutils literal notranslate"><span class="pre">lacing.Rights</span></code> has no name for (a test pins
+them to an’s model when an is installed).</p>
+</dd></dl>
+
+<dl class="py data">
 <dt class="sig sig-object py" id="foley.provenance.rights.DEFAULT_EXPORT_FORMAT">
 <span class="sig-prename descclassname"><span class="pre">foley.provenance.rights.</span></span><span class="sig-name descname"><span class="pre">DEFAULT_EXPORT_FORMAT</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'wav'</span></span><a class="headerlink" href="#foley.provenance.rights.DEFAULT_EXPORT_FORMAT" title="Link to this definition">#</a></dt>
 <dd><p>The format an export is encoded in when none is named.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.provenance.rights.PROVENANCE_FIELDS">
+<span class="sig-prename descclassname"><span class="pre">foley.provenance.rights.</span></span><span class="sig-name descname"><span class="pre">PROVENANCE_FIELDS</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('provider',</span> <span class="pre">'id',</span> <span class="pre">'title',</span> <span class="pre">'license',</span> <span class="pre">'license_url',</span> <span class="pre">'attribution',</span> <span class="pre">'source_page_url',</span> <span class="pre">'author',</span> <span class="pre">'author_url',</span> <span class="pre">'cacheable',</span> <span class="pre">'url',</span> <span class="pre">'sha256',</span> <span class="pre">'cost_usd',</span> <span class="pre">'extra')</span></span><a class="headerlink" href="#foley.provenance.rights.PROVENANCE_FIELDS" title="Link to this definition">#</a></dt>
+<dd><p>a foley row’s own
+metadata must not use one, or it would read as that record’s claim.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Every provenance field name a downstream record gives an asset</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.provenance.rights.RIGHTS_FIELDS">
+<span class="sig-prename descclassname"><span class="pre">foley.provenance.rights.</span></span><span class="sig-name descname"><span class="pre">RIGHTS_FIELDS</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('provider',</span> <span class="pre">'id',</span> <span class="pre">'title',</span> <span class="pre">'license',</span> <span class="pre">'license_url',</span> <span class="pre">'attribution',</span> <span class="pre">'source_page_url',</span> <span class="pre">'author',</span> <span class="pre">'author_url',</span> <span class="pre">'cacheable')</span></span><a class="headerlink" href="#foley.provenance.rights.RIGHTS_FIELDS" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">lacing.Rights</span></code>’ field names, the keys of <a class="reference internal" href="#foley.provenance.rights.sound_rights" title="foley.provenance.rights.sound_rights"><code class="xref py py-func docutils literal notranslate"><span class="pre">sound_rights()</span></code></a> (lacing#34; a test
+pins them to lacing’s model when lacing is installed).</p>
 </dd></dl>
 
 <dl class="py function">
@@ -727,7 +762,10 @@ recorded (the credit line falls back to the source name; a rights record does no
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.ASSET_SOURCE_EXTRAS"><code class="docutils literal notranslate"><span class="pre">ASSET_SOURCE_EXTRAS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.DEFAULT_EXPORT_FORMAT"><code class="docutils literal notranslate"><span class="pre">DEFAULT_EXPORT_FORMAT</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.PROVENANCE_FIELDS"><code class="docutils literal notranslate"><span class="pre">PROVENANCE_FIELDS</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.RIGHTS_FIELDS"><code class="docutils literal notranslate"><span class="pre">RIGHTS_FIELDS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.excluded_territories"><code class="docutils literal notranslate"><span class="pre">excluded_territories()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.export_sound"><code class="docutils literal notranslate"><span class="pre">export_sound()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.rights_provider"><code class="docutils literal notranslate"><span class="pre">rights_provider()</span></code></a></li>

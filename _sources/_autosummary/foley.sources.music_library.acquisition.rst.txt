@@ -13,9 +13,13 @@ foley.sources.music\_library.acquisition
       FAILED
       REFUSED
       WISHLIST
+      STATUSES
       HELD
       TRACK_COLUMNS
       METADATA_COLUMNS
+      LICENSE_COLUMNS
+      LIST_SEPARATOR
+      BYTE_ORDER_MARK
       DURATION_DECIMALS
       Kept
    
@@ -27,8 +31,10 @@ foley.sources.music\_library.acquisition
       attribution_text
       fetch_verified
       files_store
+      held_rows
       kept_digests
       kept_sources
+      read_tracks_table
       tracks_table
    
    .. rubric:: Classes
@@ -36,4 +42,10 @@ foley.sources.music\_library.acquisition
    .. autosummary::
    
       AcquiredTrack
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      DroppedColumnsWarning
    

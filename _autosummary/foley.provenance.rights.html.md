@@ -38,8 +38,11 @@ credits layer (title, author, licence URL, attribution line); no flag is re-deri
 
 ### Module Attributes
 
-| [`DEFAULT_EXPORT_FORMAT`](#foley.provenance.rights.DEFAULT_EXPORT_FORMAT)   | The format an export is encoded in when none is named.   |
-|--------------------------------------------------------------------------|----------------------------------------------------------|
+| [`DEFAULT_EXPORT_FORMAT`](#foley.provenance.rights.DEFAULT_EXPORT_FORMAT)   | The format an export is encoded in when none is named.                                                                                                                              |
+|--------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`RIGHTS_FIELDS`](#foley.provenance.rights.RIGHTS_FIELDS)           | `lacing.Rights`' field names, the keys of [`sound_rights()`](#foley.provenance.rights.sound_rights) (lacing#34; a test pins them to lacing's model when lacing is installed). |
+| [`ASSET_SOURCE_EXTRAS`](#foley.provenance.rights.ASSET_SOURCE_EXTRAS)     | `an`'s `AssetSource` fields that `lacing.Rights` has no name for (a test pins them to an's model when an is installed).                                                             |
+| [`PROVENANCE_FIELDS`](#foley.provenance.rights.PROVENANCE_FIELDS)       | a foley row's own metadata must not use one, or it would read as that record's claim.                                                                                               |
 
 ### Functions
 
@@ -50,9 +53,27 @@ credits layer (title, author, licence URL, attribution line); no flag is re-deri
 | [`sound_provenance`](#foley.provenance.rights.sound_provenance)(record, \*, archived_sha256, ...) | What an export must carry that `Rights` has no field for (JSON-native).      |
 | [`sound_rights`](#foley.provenance.rights.sound_rights)(record)                               | `record`'s rights as a dict keyed by `lacing.Rights` field names.            |
 
+### foley.provenance.rights.ASSET_SOURCE_EXTRAS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('url', 'sha256', 'cost_usd', 'extra')*
+
+`an`’s `AssetSource` fields that `lacing.Rights` has no name for (a test pins
+them to an’s model when an is installed).
+
 ### foley.provenance.rights.DEFAULT_EXPORT_FORMAT *= 'wav'*
 
 The format an export is encoded in when none is named.
+
+### foley.provenance.rights.PROVENANCE_FIELDS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('provider', 'id', 'title', 'license', 'license_url', 'attribution', 'source_page_url', 'author', 'author_url', 'cacheable', 'url', 'sha256', 'cost_usd', 'extra')*
+
+a foley row’s own
+metadata must not use one, or it would read as that record’s claim.
+
+* **Type:**
+  Every provenance field name a downstream record gives an asset
+
+### foley.provenance.rights.RIGHTS_FIELDS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('provider', 'id', 'title', 'license', 'license_url', 'attribution', 'source_page_url', 'author', 'author_url', 'cacheable')*
+
+`lacing.Rights`’ field names, the keys of [`sound_rights()`](#foley.provenance.rights.sound_rights) (lacing#34; a test
+pins them to lacing’s model when lacing is installed).
 
 ### foley.provenance.rights.excluded_territories(lic)
 

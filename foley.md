@@ -1,4 +1,4 @@
-> built 2026-11-02 03:19 UTC from 1604ddf (main) · foley 0.0.113. Details: build_info.json
+> built 2026-11-02 03:33 UTC from 608bdc4 (main) · foley 0.0.114. Details: build_info.json
 
 # index.html.md
 
@@ -16434,7 +16434,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chime', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta-dum', 'tudum', 'ta dum', 'netflix sound', 'netflix intro', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm roar', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel chime', 'intel jingle', 'intel inside', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer doh', 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'netflix intro', 'netflix chime', 'ta-dum', 'tudum', 'ta dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm roar', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel jingle', 'intel chime', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -16934,8 +16934,11 @@ credits layer (title, author, licence URL, attribution line); no flag is re-deri
 
 ### Module Attributes
 
-| [`DEFAULT_EXPORT_FORMAT`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.DEFAULT_EXPORT_FORMAT)   | The format an export is encoded in when none is named.   |
-|--------------------------------------------------------------------------|----------------------------------------------------------|
+| [`DEFAULT_EXPORT_FORMAT`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.DEFAULT_EXPORT_FORMAT)   | The format an export is encoded in when none is named.                                                                                                                              |
+|--------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`RIGHTS_FIELDS`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.RIGHTS_FIELDS)           | `lacing.Rights`' field names, the keys of [`sound_rights()`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.sound_rights) (lacing#34; a test pins them to lacing's model when lacing is installed). |
+| [`ASSET_SOURCE_EXTRAS`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.ASSET_SOURCE_EXTRAS)     | `an`'s `AssetSource` fields that `lacing.Rights` has no name for (a test pins them to an's model when an is installed).                                                             |
+| [`PROVENANCE_FIELDS`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.PROVENANCE_FIELDS)       | a foley row's own metadata must not use one, or it would read as that record's claim.                                                                                               |
 
 ### Functions
 
@@ -16946,9 +16949,27 @@ credits layer (title, author, licence URL, attribution line); no flag is re-deri
 | [`sound_provenance`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.sound_provenance)(record, \*, archived_sha256, ...) | What an export must carry that `Rights` has no field for (JSON-native).      |
 | [`sound_rights`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.sound_rights)(record)                               | `record`'s rights as a dict keyed by `lacing.Rights` field names.            |
 
+### foley.provenance.rights.ASSET_SOURCE_EXTRAS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('url', 'sha256', 'cost_usd', 'extra')*
+
+`an`’s `AssetSource` fields that `lacing.Rights` has no name for (a test pins
+them to an’s model when an is installed).
+
 ### foley.provenance.rights.DEFAULT_EXPORT_FORMAT *= 'wav'*
 
 The format an export is encoded in when none is named.
+
+### foley.provenance.rights.PROVENANCE_FIELDS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('provider', 'id', 'title', 'license', 'license_url', 'attribution', 'source_page_url', 'author', 'author_url', 'cacheable', 'url', 'sha256', 'cost_usd', 'extra')*
+
+a foley row’s own
+metadata must not use one, or it would read as that record’s claim.
+
+* **Type:**
+  Every provenance field name a downstream record gives an asset
+
+### foley.provenance.rights.RIGHTS_FIELDS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('provider', 'id', 'title', 'license', 'license_url', 'attribution', 'source_page_url', 'author', 'author_url', 'cacheable')*
+
+`lacing.Rights`’ field names, the keys of [`sound_rights()`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.sound_rights) (lacing#34; a test
+pins them to lacing’s model when lacing is installed).
 
 ### foley.provenance.rights.excluded_territories(lic)
 
@@ -21798,7 +21819,10 @@ so a rerun resumes. A paid library fetches nothing: its rows are `wishlist` rows
 
 [`AcquiredTrack.row()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack.row) is a flat, JSON-safe dict (a caller such as `an` bridges
 it into its own asset rows without foley knowing it); [`tracks_table()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.tracks_table) is those
-rows as CSV, and [`attribution_text()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.attribution_text) the blocks to paste under a video.
+rows as CSV, and [`attribution_text()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.attribution_text) the blocks to paste under a video. The way
+back is [`read_tracks_table()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.read_tracks_table) (the CSV’s rows, as written) and
+[`AcquiredTrack.from_row()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack.from_row) (a row as the track it records, its licence rebuilt
+from the library’s registry); [`held_rows()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.held_rows) keeps those whose file is held.
 
 ### Module Attributes
 
@@ -21808,27 +21832,38 @@ rows as CSV, and [`attribution_text()`](_autosummary/foley.sources.music_library
 | [`FAILED`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.FAILED)            | the licence gate refused the title for the intended use (nothing fetched); `wishlist`: a paid library's title.                                                              |
 | [`REFUSED`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.REFUSED)           | the licence gate refused the title for the intended use (nothing fetched); `wishlist`: a paid library's title.                                                              |
 | [`WISHLIST`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.WISHLIST)          | the licence gate refused the title for the intended use (nothing fetched); `wishlist`: a paid library's title.                                                              |
+| [`STATUSES`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.STATUSES)          | Every status a row may have.                                                                                                                                                |
 | [`HELD`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.HELD)              | The statuses whose file is in `out` (what a rerun may keep, what is credited).                                                                                              |
 | [`TRACK_COLUMNS`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.TRACK_COLUMNS)     | The tracks table's columns, in order (a row's other metadata, a catalogue's `feel` or `genre`, follows in name order).                                                      |
 | [`METADATA_COLUMNS`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.METADATA_COLUMNS)  | The metadata keys a titles file may set that are columns (the rest the library states).                                                                                     |
+| [`LICENSE_COLUMNS`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.LICENSE_COLUMNS)   | what the library states, which [`AcquiredTrack.from_row()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack.from_row) checks a row's cells against.                                      |
+| [`LIST_SEPARATOR`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.LIST_SEPARATOR)    | How a list is joined in one cell of the tracks table (`credited_by`).                                                                                                       |
+| [`BYTE_ORDER_MARK`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.BYTE_ORDER_MARK)   | The byte-order mark an editor (Excel) writes before a UTF-8 CSV's first column.                                                                                             |
 | [`DURATION_DECIMALS`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.DURATION_DECIMALS) | Decimal places a duration is written with.                                                                                                                                  |
 | [`Kept`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.Kept)              | a file's recorded sha256, or `{"sha256", "url", "mirror"}` ([`kept_sources()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.kept_sources)), whose `url` / `mirror` a kept row carries on. |
 
 ### Functions
 
-| [`acquire`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.acquire)(library, titles, \*, out[, fetch, ...])   | Download `titles` of `library` into `out`, verified, one row each.                                                                                                                                                                                                                |
-|----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`attribution_text`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.attribution_text)(rows)                            | The attribution blocks to paste under a video, one per track that has one (acquired or kept), blank-line separated, each once.                                                                                                                                                    |
-| [`fetch_verified`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.fetch_verified)(url, \*, mirrors, fetch, verify)   | `(bytes, seconds, the URL that served them, its mirror's name)` from the first of `mirrors` whose bytes `verify` accepts; every mirror's reason in one `MusicLibraryError` when none does.                                                                                        |
-| [`files_store`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.files_store)(out)                                  | `out` as a `{file name: bytes}` store: a mapping is used as it is; a folder becomes foley's file store over it ([`foley.stores.make_byte_store()`](_autosummary/foley.stores.html.md#foley.stores.make_byte_store), which makes the folder on its first write).         |
-| [`kept_digests`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.kept_digests)(table)                               | `{file: sha256}` of the acquired or kept rows of a tracks table: what a rerun may keep.                                                                                                                                                                                           |
-| [`kept_sources`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.kept_sources)(table)                               | `{file: {"sha256", "url", "mirror"}}` of the acquired or kept rows of a tracks table: [`kept_digests()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.kept_digests) with where each file came from, so a kept row still says which URL and mirror served it (`acquire(kept=...)` takes either). |
-| [`tracks_table`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.tracks_table)(rows)                                | The tracks table as CSV text: [`TRACK_COLUMNS`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.TRACK_COLUMNS), then any metadata the rows carry, in name order.                                                                                                                                    |
+| [`acquire`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.acquire)(library, titles, \*, out[, fetch, ...])   | Download `titles` of `library` into `out`, verified, one row each.                                                                                                                                                                                                                                                                                                                                                |
+|----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`attribution_text`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.attribution_text)(rows)                            | The attribution blocks to paste under a video, one per track that has one (acquired or kept), blank-line separated, each once.                                                                                                                                                                                                                                                                                    |
+| [`fetch_verified`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.fetch_verified)(url, \*, mirrors, fetch, verify)   | `(bytes, seconds, the URL that served them, its mirror's name)` from the first of `mirrors` whose bytes `verify` accepts; every mirror's reason in one `MusicLibraryError` when none does.                                                                                                                                                                                                                        |
+| [`files_store`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.files_store)(out)                                  | `out` as a `{file name: bytes}` store: a mapping is used as it is; a folder becomes foley's file store over it ([`foley.stores.make_byte_store()`](_autosummary/foley.stores.html.md#foley.stores.make_byte_store), which makes the folder on its first write).                                                                                                                                         |
+| [`held_rows`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.held_rows)(table)                                  | The acquired or kept rows (with a file and a digest) of a tracks table, as row dicts: `table` is [`tracks_table()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.tracks_table)'s CSV text ([`read_tracks_table()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.read_tracks_table)) or the rows themselves ([`AcquiredTrack`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack) or their [`row()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack.row) dicts). |
+| [`kept_digests`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.kept_digests)(table)                               | `{file: sha256}` of the acquired or kept rows of a tracks table: what a rerun may keep.                                                                                                                                                                                                                                                                                                                           |
+| [`kept_sources`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.kept_sources)(table)                               | `{file: {"sha256", "url", "mirror"}}` of the acquired or kept rows of a tracks table: [`kept_digests()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.kept_digests) with where each file came from, so a kept row still says which URL and mirror served it (`acquire(kept=...)` takes either).                                                                                                                                 |
+| [`read_tracks_table`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.read_tracks_table)(text)                           | The rows of a tracks table ([`tracks_table()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.tracks_table)'s CSV text), as written; a byte-order mark an editor added (Excel does) is not part of the first column.                                                                                                                                                                                                              |
+| [`tracks_table`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.tracks_table)(rows)                                | The tracks table as CSV text: [`TRACK_COLUMNS`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.TRACK_COLUMNS), then any metadata the rows carry, in name order ([`read_tracks_table()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.read_tracks_table) reads it back).                                                                                                                                                                               |
 
 ### Classes
 
 | [`AcquiredTrack`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack)(title, library, status, license)   | One row of the tracks table: a title, what became of it, and its provenance.   |
 |---------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
+
+### Exceptions
+
+| [`DroppedColumnsWarning`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.DroppedColumnsWarning)   | A tracks-table row named columns that set nothing, and [`AcquiredTrack.from_row()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack.from_row) dropped them.   |
+|--------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
 
 ### foley.sources.music_library.acquisition.ACQUIRED *= 'acquired'*
 
@@ -21848,6 +21883,33 @@ One row of the tracks table: a title, what became of it, and its provenance.
 name, `page_url` the library’s own address for the title; `credited_by` the
 videos that credit it and `metadata` a titles file’s other fields (`feel`,
 `genre`, …).
+
+#### *classmethod* from_row(row, , libraries=None)
+
+The track a tracks-table `row` records: the inverse of [`row()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack.row).
+
+`row` is a [`row()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack.row) dict (or one read back from JSON), or a line of the
+table ([`read_tracks_table()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.read_tracks_table): every cell text, an empty one nothing). Its
+`library` is looked up in `libraries` (default
+[`MUSIC_LIBRARIES`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MUSIC_LIBRARIES)) and its licence
+rebuilt from it (`track_license()`), never read from the row. The row’s
+licence cells ([`LICENSE_COLUMNS`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.LICENSE_COLUMNS)) must still say what the library states
+now: a cell someone edited, or a library re-registered under other terms since
+the table was written, is refused rather than silently widened or narrowed.
+
+A column outside [`TRACK_COLUMNS`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.TRACK_COLUMNS) is metadata, as the table wrote it (a
+list or mapping a titles file gave comes back as its cell’s text). A column a
+titles file may not set (a downstream provenance field such as `cost_usd`
+or `cacheable`, a licence flag) is dropped with a
+[`DroppedColumnsWarning`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.DroppedColumnsWarning): it never sets anything.
+
+* **Raises:**
+  [**MusicLibraryError**](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibraryError) – For a row with a key that is not text, a blank title,
+      no library or status, a status not in [`STATUSES`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.STATUSES), a library that
+      is not registered, a `duration_s` that is not a finite number, or
+      licence cells that differ from the library’s (naming them).
+* **Return type:**
+  [`AcquiredTrack`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack)
 
 #### row()
 
@@ -21869,9 +21931,20 @@ by
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
 
+### foley.sources.music_library.acquisition.BYTE_ORDER_MARK *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= '\\ufeff'*
+
+The byte-order mark an editor (Excel) writes before a UTF-8 CSV’s first column.
+
 ### foley.sources.music_library.acquisition.DURATION_DECIMALS *: [int](https://docs.python.org/3/builtins/functions.html#int)* *= 3*
 
 Decimal places a duration is written with.
+
+### *exception* foley.sources.music_library.acquisition.DroppedColumnsWarning
+
+Bases: [`UserWarning`](https://docs.python.org/3/builtins/exceptions.html#UserWarning)
+
+A tracks-table row named columns that set nothing, and [`AcquiredTrack.from_row()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack.from_row)
+dropped them.
 
 ### foley.sources.music_library.acquisition.FAILED *= 'failed'*
 
@@ -21903,6 +21976,18 @@ a file’s recorded sha256, or `{"sha256", "url", "mirror"}`
 
 alias of [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]]
 
+### foley.sources.music_library.acquisition.LICENSE_COLUMNS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('license', 'license_url', 'rights_verified', 'commercial_ok', 'author', 'attribution')*
+
+what the library
+states, which [`AcquiredTrack.from_row()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack.from_row) checks a row’s cells against.
+
+* **Type:**
+  The columns [`AcquiredTrack.row()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack.row) reads off the licence
+
+### foley.sources.music_library.acquisition.LIST_SEPARATOR *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= '; '*
+
+How a list is joined in one cell of the tracks table (`credited_by`).
+
 ### foley.sources.music_library.acquisition.METADATA_COLUMNS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('credited_by',)*
 
 The metadata keys a titles file may set that are columns (the rest the library states).
@@ -21914,6 +21999,10 @@ intended use (nothing fetched); `wishlist`: a paid library’s title.
 
 * **Type:**
   The row statuses. `refused`
+
+### foley.sources.music_library.acquisition.STATUSES *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('acquired', 'kept', 'failed', 'refused', 'wishlist')*
+
+Every status a row may have.
 
 ### foley.sources.music_library.acquisition.TRACK_COLUMNS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('title', 'library', 'status', 'file', 'duration_s', 'sha256', 'license', 'license_url', 'rights_verified', 'commercial_ok', 'author', 'url', 'source_page_url', 'mirror', 'attribution', 'credited_by', 'error')*
 
@@ -22003,6 +22092,16 @@ makes the folder on its first write).
 * **Return type:**
   [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]
 
+### foley.sources.music_library.acquisition.held_rows(table)
+
+The acquired or kept rows (with a file and a digest) of a tracks table, as
+row dicts: `table` is [`tracks_table()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.tracks_table)’s CSV text ([`read_tracks_table()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.read_tracks_table))
+or the rows themselves ([`AcquiredTrack`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack) or their [`row()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack.row)
+dicts).
+
+* **Return type:**
+  [`Iterator`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator)[[`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]]
+
 ### foley.sources.music_library.acquisition.kept_digests(table)
 
 `{file: sha256}` of the acquired or kept rows of a tracks table: what a rerun
@@ -22022,10 +22121,26 @@ still says which URL and mirror served it (`acquire(kept=...)` takes either).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]]
 
+### foley.sources.music_library.acquisition.read_tracks_table(text)
+
+The rows of a tracks table ([`tracks_table()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.tracks_table)’s CSV text), as written; a
+byte-order mark an editor added (Excel does) is not part of the first column.
+
+```pycon
+>>> read_tracks_table("\ufefftitle,library\r\nA,incompetech\r\n")
+[{'title': 'A', 'library': 'incompetech'}]
+```
+
+* **Raises:**
+  [**MusicLibraryError**](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibraryError) – For a header that names a column twice, or a line with
+      more cells than the header has columns (naming its line).
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
+
 ### foley.sources.music_library.acquisition.tracks_table(rows)
 
 The tracks table as CSV text: [`TRACK_COLUMNS`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.TRACK_COLUMNS), then any metadata the
-rows carry, in name order.
+rows carry, in name order ([`read_tracks_table()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.read_tracks_table) reads it back).
 
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
@@ -22479,9 +22594,16 @@ print(attribution_text(rows))
   mirrors ([`direct()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.direct), [`wayback()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.wayback)); [`probe_verify()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.probe_verify) checks each file
   has an audio stream and a length, with foley’s media probes.
 - **Rows are portable** ([`AcquiredTrack`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.AcquiredTrack)): `.row()` is flat and JSON-safe,
-  [`tracks_table()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.tracks_table) writes them as CSV and [`kept_digests()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_digests) (or
-  [`kept_sources()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_sources), with each file’s URL) reads a table back, so a rerun fetches
-  > only what it lacks.
+  [`tracks_table()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.tracks_table) writes them as CSV, [`read_tracks_table()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.read_tracks_table) reads it back
+  > (an editor’s byte-order mark dropped) and `AcquiredTrack.from_row` turns a row
+  > into its track again, the licence rebuilt from the registry, never the row’s
+  > cells (which must agree with it; a column that sets nothing is dropped with a
+
+  [`DroppedColumnsWarning`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.DroppedColumnsWarning)). [`held_rows()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.held_rows) are those whose file is held, and [`kept_digests()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_digests) (or
+  [`kept_sources()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_sources), with each file’s URL) what a rerun keeps, so it fetches only
+  > what it lacks. A titles file’s metadata may not name a row’s column, a licence
+  > flag, or a downstream provenance field
+  > ([`foley.provenance.rights.PROVENANCE_FIELDS`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.PROVENANCE_FIELDS)).
 - **Each free library is also a live retrieve source** of its own name (#212):
   `foley.add_from("incompetech", query="Sneaky Snitch")` (a title, a list of
   titles, or a credits description) puts each title through the licence gate
@@ -22505,31 +22627,33 @@ Stdlib only at import; `requests` loads on the first real download.
 
 ### Functions
 
-| [`acquire`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.acquire)(library, titles, \*, out[, fetch, ...])    | Download `titles` of `library` into `out`, verified, one row each.                                                                                                                                                                                                                |
-|-----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`attribution_text`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.attribution_text)(rows)                             | The attribution blocks to paste under a video, one per track that has one (acquired or kept), blank-line separated, each once.                                                                                                                                                    |
-| [`direct`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.direct)(url)                                        | The URL itself: the library's own server.                                                                                                                                                                                                                                         |
-| [`fetch_audio`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.fetch_audio)(url, \*, http[, config])               | `url`'s bytes, asked for with the config's user agent.                                                                                                                                                                                                                            |
-| [`files_store`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.files_store)(out)                                   | `out` as a `{file name: bytes}` store: a mapping is used as it is; a folder becomes foley's file store over it ([`foley.stores.make_byte_store()`](_autosummary/foley.stores.html.md#foley.stores.make_byte_store), which makes the folder on its first write).         |
-| [`kept_digests`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_digests)(table)                                | `{file: sha256}` of the acquired or kept rows of a tracks table: what a rerun may keep.                                                                                                                                                                                           |
-| [`kept_sources`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_sources)(table)                                | `{file: {"sha256", "url", "mirror"}}` of the acquired or kept rows of a tracks table: [`kept_digests()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_digests) with where each file came from, so a kept row still says which URL and mirror served it (`acquire(kept=...)` takes either). |
-| [`library_source_config`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.library_source_config)(library)                     | The `SOURCE_CONFIG` of the free `library`.                                                                                                                                                                                                                                        |
-| [`make_fetch`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.make_fetch)(\*[, transport, config, clock, sleep])  | The default `url -> bytes`: [`fetch_audio()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.fetch_audio) over [`polite_transport()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.polite_transport) (`config` laid over `MUSIC_LIBRARY_HTTP`).                                                                    |
-| [`mirror_name`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.mirror_name)(mirror)                                | The name a row records for `mirror` (its function name).                                                                                                                                                                                                                          |
-| [`music_library`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.music_library)(library, \*[, libraries])            | `library` itself, or the registered library of that name.                                                                                                                                                                                                                         |
-| [`music_library_config`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.music_library_config)([config])                     | `config` laid over `MUSIC_LIBRARY_HTTP` (top-level keys: a `retry` or `rate` given replaces the default one whole).                                                                                                                                                               |
-| [`polite_transport`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.polite_transport)([transport, config, clock, ...])  | `transport` (default [`requests_transport()`](_autosummary/foley.sources.http.html.md#foley.sources.http.requests_transport)) with a resilient wrapper per host, built from `config` (see the module docstring).                                                              |
-| [`probe_available`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.probe_available)()                                  | Whether [`probe_verify()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.probe_verify)'s probes can run here: `ffprobe` on `PATH`, or both mixing's video probe with an `ffmpeg` (the length) and `soundfile` (the audio stream).                                                                |
-| [`probe_verify`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.probe_verify)(data, \*[, probe, has_audio, suffix]) | The duration of the audio `data`, in seconds.                                                                                                                                                                                                                                     |
-| [`register_music_library`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.register_music_library)(library, \*[, replace])     | Add `library` to `MUSIC_LIBRARIES` (`replace` to redefine one).                                                                                                                                                                                                                   |
-| [`require_probe`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.require_probe)()                                    | Raise [`MusicToolMissing`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicToolMissing) unless [`probe_available()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.probe_available).                                                                                                                                |
-| [`safe_file_name`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.safe_file_name)(title, \*[, suffix])                | `title` as a file name: NFC, path separators as `-`, no leading dot.                                                                                                                                                                                                              |
-| [`title_url`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.title_url)(template)                                | The `title -> URL` rule that puts the URL-quoted title in `template`'s `{title}`.                                                                                                                                                                                                 |
-| [`titles_by_library`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.titles_by_library)(description, \*[, libraries])    | The titles a video description credits, by library (default: the registered ones).                                                                                                                                                                                                |
-| [`titles_from_json`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.titles_from_json)(text)                             | A titles file's JSON: a list of titles, or `{title: {metadata}}`.                                                                                                                                                                                                                 |
-| [`track_license`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.track_license)(library, title, \*[, page_url, ...]) | The [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) of `title` from `library`.                                                                                                                                                            |
-| [`tracks_table`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.tracks_table)(rows)                                 | The tracks table as CSV text: `TRACK_COLUMNS`, then any metadata the rows carry, in name order.                                                                                                                                                                                   |
-| [`wayback`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.wayback)(url)                                       | The Internet Archive's raw copy of `url` (`WAYBACK_RAW`).                                                                                                                                                                                                                         |
+| [`acquire`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.acquire)(library, titles, \*, out[, fetch, ...])    | Download `titles` of `library` into `out`, verified, one row each.                                                                                                                                                                                                                                                                                                                                                |
+|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`attribution_text`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.attribution_text)(rows)                             | The attribution blocks to paste under a video, one per track that has one (acquired or kept), blank-line separated, each once.                                                                                                                                                                                                                                                                                    |
+| [`direct`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.direct)(url)                                        | The URL itself: the library's own server.                                                                                                                                                                                                                                                                                                                                                                         |
+| [`fetch_audio`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.fetch_audio)(url, \*, http[, config])               | `url`'s bytes, asked for with the config's user agent.                                                                                                                                                                                                                                                                                                                                                            |
+| [`files_store`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.files_store)(out)                                   | `out` as a `{file name: bytes}` store: a mapping is used as it is; a folder becomes foley's file store over it ([`foley.stores.make_byte_store()`](_autosummary/foley.stores.html.md#foley.stores.make_byte_store), which makes the folder on its first write).                                                                                                                                         |
+| [`held_rows`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.held_rows)(table)                                   | The acquired or kept rows (with a file and a digest) of a tracks table, as row dicts: `table` is [`tracks_table()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.tracks_table)'s CSV text ([`read_tracks_table()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.read_tracks_table)) or the rows themselves ([`AcquiredTrack`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.AcquiredTrack) or their [`row()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.AcquiredTrack.row) dicts). |
+| [`kept_digests`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_digests)(table)                                | `{file: sha256}` of the acquired or kept rows of a tracks table: what a rerun may keep.                                                                                                                                                                                                                                                                                                                           |
+| [`kept_sources`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_sources)(table)                                | `{file: {"sha256", "url", "mirror"}}` of the acquired or kept rows of a tracks table: [`kept_digests()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_digests) with where each file came from, so a kept row still says which URL and mirror served it (`acquire(kept=...)` takes either).                                                                                                                                 |
+| [`library_source_config`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.library_source_config)(library)                     | The `SOURCE_CONFIG` of the free `library`.                                                                                                                                                                                                                                                                                                                                                                        |
+| [`make_fetch`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.make_fetch)(\*[, transport, config, clock, sleep])  | The default `url -> bytes`: [`fetch_audio()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.fetch_audio) over [`polite_transport()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.polite_transport) (`config` laid over `MUSIC_LIBRARY_HTTP`).                                                                                                                                                                                                    |
+| [`mirror_name`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.mirror_name)(mirror)                                | The name a row records for `mirror` (its function name).                                                                                                                                                                                                                                                                                                                                                          |
+| [`music_library`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.music_library)(library, \*[, libraries])            | `library` itself, or the registered library of that name.                                                                                                                                                                                                                                                                                                                                                         |
+| [`music_library_config`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.music_library_config)([config])                     | `config` laid over `MUSIC_LIBRARY_HTTP` (top-level keys: a `retry` or `rate` given replaces the default one whole).                                                                                                                                                                                                                                                                                               |
+| [`polite_transport`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.polite_transport)([transport, config, clock, ...])  | `transport` (default [`requests_transport()`](_autosummary/foley.sources.http.html.md#foley.sources.http.requests_transport)) with a resilient wrapper per host, built from `config` (see the module docstring).                                                                                                                                                                                              |
+| [`probe_available`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.probe_available)()                                  | Whether [`probe_verify()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.probe_verify)'s probes can run here: `ffprobe` on `PATH`, or both mixing's video probe with an `ffmpeg` (the length) and `soundfile` (the audio stream).                                                                                                                                                                                                |
+| [`probe_verify`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.probe_verify)(data, \*[, probe, has_audio, suffix]) | The duration of the audio `data`, in seconds.                                                                                                                                                                                                                                                                                                                                                                     |
+| [`read_tracks_table`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.read_tracks_table)(text)                            | The rows of a tracks table ([`tracks_table()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.tracks_table)'s CSV text), as written; a byte-order mark an editor added (Excel does) is not part of the first column.                                                                                                                                                                                                              |
+| [`register_music_library`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.register_music_library)(library, \*[, replace])     | Add `library` to `MUSIC_LIBRARIES` (`replace` to redefine one).                                                                                                                                                                                                                                                                                                                                                   |
+| [`require_probe`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.require_probe)()                                    | Raise [`MusicToolMissing`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicToolMissing) unless [`probe_available()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.probe_available).                                                                                                                                                                                                                                                                |
+| [`safe_file_name`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.safe_file_name)(title, \*[, suffix])                | `title` as a file name: NFC, path separators as `-`, no leading dot.                                                                                                                                                                                                                                                                                                                                              |
+| [`title_url`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.title_url)(template)                                | The `title -> URL` rule that puts the URL-quoted title in `template`'s `{title}`.                                                                                                                                                                                                                                                                                                                                 |
+| [`titles_by_library`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.titles_by_library)(description, \*[, libraries])    | The titles a video description credits, by library (default: the registered ones).                                                                                                                                                                                                                                                                                                                                |
+| [`titles_from_json`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.titles_from_json)(text)                             | A titles file's JSON: a list of titles, or `{title: {metadata}}`.                                                                                                                                                                                                                                                                                                                                                 |
+| [`track_license`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.track_license)(library, title, \*[, page_url, ...]) | The [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) of `title` from `library`.                                                                                                                                                                                                                                                                                            |
+| [`tracks_table`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.tracks_table)(rows)                                 | The tracks table as CSV text: `TRACK_COLUMNS`, then any metadata the rows carry, in name order ([`read_tracks_table()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.read_tracks_table) reads it back).                                                                                                                                                                                                                              |
+| [`wayback`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.wayback)(url)                                       | The Internet Archive's raw copy of `url` (`WAYBACK_RAW`).                                                                                                                                                                                                                                                                                                                                                         |
 
 ### Classes
 
@@ -22540,9 +22664,10 @@ Stdlib only at import; `requests` loads on the first real download.
 
 ### Exceptions
 
-| [`MusicLibraryError`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibraryError)   | A library, a title or a file that cannot be used, and why.             |
-|----------------------------------------------------------------------|------------------------------------------------------------------------|
-| [`MusicToolMissing`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicToolMissing)    | A tool every title needs is missing: the batch stops before it starts. |
+| [`DroppedColumnsWarning`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.DroppedColumnsWarning)   | A tracks-table row named columns that set nothing, and [`AcquiredTrack.from_row()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.AcquiredTrack.from_row) dropped them.   |
+|--------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`MusicLibraryError`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibraryError)       | A library, a title or a file that cannot be used, and why.                                                                                       |
+| [`MusicToolMissing`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicToolMissing)        | A tool every title needs is missing: the batch stops before it starts.                                                                           |
 
 ### *class* foley.sources.music_library.AcquiredTrack(title, library, status, license, file=None, sha256=None, duration_s=None, url=None, mirror=None, page_url=None, credited_by=(), metadata=dict(), error=None)
 
@@ -22554,6 +22679,33 @@ One row of the tracks table: a title, what became of it, and its provenance.
 name, `page_url` the library’s own address for the title; `credited_by` the
 videos that credit it and `metadata` a titles file’s other fields (`feel`,
 `genre`, …).
+
+#### *classmethod* from_row(row, , libraries=None)
+
+The track a tracks-table `row` records: the inverse of [`row()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.AcquiredTrack.row).
+
+`row` is a [`row()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.AcquiredTrack.row) dict (or one read back from JSON), or a line of the
+table ([`read_tracks_table()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.read_tracks_table): every cell text, an empty one nothing). Its
+`library` is looked up in `libraries` (default
+[`MUSIC_LIBRARIES`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MUSIC_LIBRARIES)) and its licence
+rebuilt from it ([`track_license()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.track_license)), never read from the row. The row’s
+licence cells (`LICENSE_COLUMNS`) must still say what the library states
+now: a cell someone edited, or a library re-registered under other terms since
+the table was written, is refused rather than silently widened or narrowed.
+
+A column outside `TRACK_COLUMNS` is metadata, as the table wrote it (a
+list or mapping a titles file gave comes back as its cell’s text). A column a
+titles file may not set (a downstream provenance field such as `cost_usd`
+or `cacheable`, a licence flag) is dropped with a
+[`DroppedColumnsWarning`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.DroppedColumnsWarning): it never sets anything.
+
+* **Raises:**
+  [**MusicLibraryError**](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibraryError) – For a row with a key that is not text, a blank title,
+      no library or status, a status not in `STATUSES`, a library that
+      is not registered, a `duration_s` that is not a finite number, or
+      licence cells that differ from the library’s (naming them).
+* **Return type:**
+  [`AcquiredTrack`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack)
 
 #### row()
 
@@ -22574,6 +22726,13 @@ by
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
+
+### *exception* foley.sources.music_library.DroppedColumnsWarning
+
+Bases: [`UserWarning`](https://docs.python.org/3/builtins/exceptions.html#UserWarning)
+
+A tracks-table row named columns that set nothing, and [`AcquiredTrack.from_row()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.AcquiredTrack.from_row)
+dropped them.
 
 ### *class* foley.sources.music_library.MusicLibrary(name, author, license_url=None, track_url=None, attribution='"{title}" {author}', author_url=None, aliases=(), file_name=<function safe_file_name>)
 
@@ -22728,6 +22887,16 @@ makes the folder on its first write).
 * **Return type:**
   [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]
 
+### foley.sources.music_library.held_rows(table)
+
+The acquired or kept rows (with a file and a digest) of a tracks table, as
+row dicts: `table` is [`tracks_table()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.tracks_table)’s CSV text ([`read_tracks_table()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.read_tracks_table))
+or the rows themselves ([`AcquiredTrack`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.AcquiredTrack) or their [`row()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.AcquiredTrack.row)
+dicts).
+
+* **Return type:**
+  [`Iterator`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator)[[`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]]
+
 ### foley.sources.music_library.kept_digests(table)
 
 `{file: sha256}` of the acquired or kept rows of a tracks table: what a rerun
@@ -22846,6 +23015,22 @@ foley.sources.music_library.libraries.MusicLibraryError: the file has no readabl
       cannot be confirmed), or has no readable duration.
 * **Return type:**
   [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+### foley.sources.music_library.read_tracks_table(text)
+
+The rows of a tracks table ([`tracks_table()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.tracks_table)’s CSV text), as written; a
+byte-order mark an editor added (Excel does) is not part of the first column.
+
+```pycon
+>>> read_tracks_table("\ufefftitle,library\r\nA,incompetech\r\n")
+[{'title': 'A', 'library': 'incompetech'}]
+```
+
+* **Raises:**
+  [**MusicLibraryError**](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibraryError) – For a header that names a column twice, or a line with
+      more cells than the header has columns (naming its line).
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
 ### foley.sources.music_library.register_music_library(library, , replace=False)
 
@@ -22967,7 +23152,7 @@ library’s attribution for the title. A paid library’s claims nothing:
 ### foley.sources.music_library.tracks_table(rows)
 
 The tracks table as CSV text: `TRACK_COLUMNS`, then any metadata the
-rows carry, in name order.
+rows carry, in name order ([`read_tracks_table()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.read_tracks_table) reads it back).
 
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
@@ -26906,7 +27091,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 03:19 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/1604ddf17d40558fb2ff7bb62aa2c543977edca9"><code>1604ddf</code></a> on branch <code>main</code>, for **foley 0.0.113** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 03:33 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/608bdc42ceaac0c4d35b61b862752a7584df063d"><code>608bdc4</code></a> on branch <code>main</code>, for **foley 0.0.114** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -26915,7 +27100,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/1604ddf17d40558fb2ff7bb62aa2c543977edca9"><code>1604ddf17d40558fb2ff7bb62aa2c543977edca9</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/608bdc42ceaac0c4d35b61b862752a7584df063d"><code>608bdc42ceaac0c4d35b61b862752a7584df063d</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -26926,9 +27111,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41382088377">41382088377</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41383538032">41383538032</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>1604ddf17d40558fb2ff7bb62aa2c543977edca9</code> (in the history of the built commit) |
+| Event commit | <code>608bdc42ceaac0c4d35b61b862752a7584df063d</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -26953,13 +27138,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.113/">0.0.113</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.114/">0.0.114</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 1604ddf17d40558fb2ff7bb62aa2c543977edca9
+git checkout 608bdc42ceaac0c4d35b61b862752a7584df063d
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

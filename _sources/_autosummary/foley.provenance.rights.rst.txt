@@ -9,6 +9,9 @@ foley.provenance.rights
    .. autosummary::
    
       DEFAULT_EXPORT_FORMAT
+      RIGHTS_FIELDS
+      ASSET_SOURCE_EXTRAS
+      PROVENANCE_FIELDS
    
    .. rubric:: Functions
 
