@@ -385,6 +385,7 @@ def weave(
     master: "Union[str, MasterProfile]" = "podcast",
     library=None,
     transcript: Optional[str] = None,
+    language: Optional[str] = None,
     aligner: Optional[Aligner] = None,
     apply_strategy: Optional[ApplyStrategy] = None,
     sr: int = 48_000,
@@ -414,6 +415,10 @@ def weave(
         library: The :class:`foley.index.SoundLibrary` (or a mapping) holding the clips.
         transcript: The narration transcript, for forced alignment (skipped when the
             timeline already carries a ``word_timeline``).
+        language: The narration's language code (``"fr"``, …), passed to the aligner
+            (MFA and aeneas pick their models by it; #225). ``None`` (default): the
+            aligner's own default, English for the built-ins. Like ``transcript``, it is
+            unused when the timeline already carries a ``word_timeline`` (a note says so).
         aligner: The forced-alignment seam (default: WhisperX if installed, else fake).
         apply_strategy: The per-item placement seam (default :class:`FullRender`).
         sr: Working/render sample rate in Hz.
@@ -455,12 +460,18 @@ def weave(
             lib,
             sr=sr,
             transcript=transcript,
+            language=language,
             aligner=aligner,
             apply_strategy=apply_strategy,
             cache=cache,
         )
         rendered = result.timeline
         notes = _alignment_notes(result.alignment, rendered)
+        if language is not None and result.alignment == "cached":
+            notes.append(
+                f"language={language!r} was not used: the timeline already carried word "
+                "timings, so nothing was re-aligned (clear its word_timeline to re-align)"
+            )
         run_id = getattr(getattr(run, "manifest", None), "run_id", None)
         _emit_weave_steps(run, result)
         run.set_plan_ref(
@@ -469,6 +480,7 @@ def weave(
                 "n_items": len(rendered.items),
                 "master": rendered.master.to_dict(),
                 "aligner": result.alignment,
+                "language": language,
                 "run_manifest_ref": run_id,
             }
         )
