@@ -26,14 +26,26 @@ SSOT bridge from SELECT’s sparse `TimelineItem.onset` string to a
 
 ### Functions
 
-| [`parse_symbolic_anchor`](#foley.weave.anchor.parse_symbolic_anchor)(onset, \*[, layer, loop])   | Parse SELECT's sparse symbolic `onset` string into a resolved-later `Placement`.   |
-|----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------|
-| [`resolve_anchor`](#foley.weave.anchor.resolve_anchor)(placement, word_timeline, \*)      | Resolve a `Placement` to a concrete `(onset_seconds, duration_seconds)`.           |
+| [`nearest_word`](#foley.weave.anchor.nearest_word)(ref, word_timeline)                | Return the `word_timeline` entry best matching `ref` (fuzzy/lemmatised, earliest wins).   |
+|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| [`parse_symbolic_anchor`](#foley.weave.anchor.parse_symbolic_anchor)(onset, \*[, layer, loop]) | Parse SELECT's sparse symbolic `onset` string into a resolved-later `Placement`.          |
+| [`resolve_anchor`](#foley.weave.anchor.resolve_anchor)(placement, word_timeline, \*)    | Resolve a `Placement` to a concrete `(onset_seconds, duration_seconds)`.                  |
 
 ### foley.weave.anchor.SEGMENT_GAP_S *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.35*
 
 Inter-word gap (seconds) that ends a sentence segment (report 06 §2.4 uses
 `> ~350 ms` as a lightweight sentence segmenter over the aligned transcript).
+
+### foley.weave.anchor.nearest_word(ref, word_timeline)
+
+Return the `word_timeline` entry best matching `ref` (fuzzy/lemmatised, earliest wins).
+
+Matches the phrase’s first token exactly if present, else the closest word by
+lexical (`difflib`) ratio over any token; `None` when nothing is close or
+`ref` is empty.
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
 ### foley.weave.anchor.parse_symbolic_anchor(onset, , layer=Layer.sfx_fg, loop=False)
 

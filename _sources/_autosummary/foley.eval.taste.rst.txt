@@ -1,0 +1,43 @@
+foley.eval.taste
+================
+
+.. automodule:: foley.eval.taste
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      SOUNDS_PER_SENTENCE_BAND
+      LICENCE_CLEAN_TARGET
+      PLACEMENT_TOLERANCE_S
+      LOUDNESS_TOLERANCE_LU
+      SENTENCE_ABBREVIATIONS
+      PLACEMENT_CAVEAT
+      Designer
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      count_sentences
+      eval_library
+      licence_rows
+      load_passages
+      loudness_row
+      measure_passage
+      passage_sentences
+      placement_rows
+      restraint
+      run_taste_eval
+      score_designer
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Passage
+      PassageTaste
+      TasteReport
+      TasteThresholds
+   

@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link rel="alternate" type="text/markdown" href="foley.eval.taste.html.md">
+<link rel="describedby" href="../llms.txt" type="text/markdown">
+<link rel="alternate" type="text/markdown" href="foley.eval.taste.html.md">
+<link rel="describedby" href="llms.txt">
+    <title>foley.eval.taste &#8212; foley</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_autodoc_typehints.css?v=057ac668" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/epythet.css?v=e39d37f2" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../_static/documentation_options.js?v=cdca99f8"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=fd10adb8"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_autosummary/foley.eval.taste';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="foley.provenance" href="foley.provenance.html" />
+    <link rel="prev" title="foley.eval.retrieval" href="foley.eval.retrieval.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0.121" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">foley</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/foley" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/foley" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button type="button" id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="foley.html">foley</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="foley.repair.html">foley.repair</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.audio.html">foley.audio</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="foley.index.html">foley.index</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.taxonomy.html">foley.index.taxonomy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.embedders.html">foley.index.embedders</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.indexes.html">foley.index.indexes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.ingest.html">foley.index.ingest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.library.html">foley.index.library</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.license_sidecar.html">foley.index.license_sidecar</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.licensed_library.html">foley.index.licensed_library</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.onnx_clap.html">foley.index.onnx_clap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.protocols.html">foley.index.protocols</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.search.html">foley.index.search</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.taggers.html">foley.index.taggers</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="foley.obs.html">foley.obs</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="foley.obs.recorder.html">foley.obs.recorder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.obs.redact.html">foley.obs.redact</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.obs.run_artifact.html">foley.obs.run_artifact</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.obs.trace.html">foley.obs.trace</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="foley.agent.html">foley.agent</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.decompose.html">foley.agent.decompose</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.llm.html">foley.agent.llm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.local_llm.html">foley.agent.local_llm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.mcp.html">foley.agent.mcp</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.policy.html">foley.agent.policy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.preview.html">foley.agent.preview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.protocols.html">foley.agent.protocols</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.refine.html">foley.agent.refine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.session.html">foley.agent.session</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.tools.html">foley.agent.tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.verbs.html">foley.agent.verbs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.verify.html">foley.agent.verify</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="foley.weave.html">foley.weave</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.align.html">foley.weave.align</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.anchor.html">foley.weave.anchor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.broadcast.html">foley.weave.broadcast</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.cli_aligners.html">foley.weave.cli_aligners</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.master.html">foley.weave.master</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.mix.html">foley.weave.mix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.protocols.html">foley.weave.protocols</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.reaction.html">foley.weave.reaction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.requirements.html">foley.weave.requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.timeline.html">foley.weave.timeline</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="foley.eval.html">foley.eval</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.bradley_terry.html">foley.eval.bradley_terry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.panel.html">foley.eval.panel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.baseline.html">foley.eval.baseline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.embedder.html">foley.eval.embedder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.fidelity.html">foley.eval.fidelity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.fit.html">foley.eval.fit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.golden.html">foley.eval.golden</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.panel_page.html">foley.eval.panel_page</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.prompt_match.html">foley.eval.prompt_match</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.reliability.html">foley.eval.reliability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.retrieval.html">foley.eval.retrieval</a></li>
+<li class="toctree-l3 current active"><a aria-current="page" class="current reference internal" href="#">foley.eval.taste</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="foley.provenance.html">foley.provenance</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="foley.provenance.credits.html">foley.provenance.credits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.provenance.disclosure.html">foley.provenance.disclosure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.provenance.rights.html">foley.provenance.rights</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.provenance.signing.html">foley.provenance.signing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.agent_kit.html">foley.agent_kit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.base.html">foley.base</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.cli.html">foley.cli</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.cost.html">foley.cost</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.embedded_metadata.html">foley.embedded_metadata</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.level.html">foley.level</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.licensing.html">foley.licensing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.prompt_match.html">foley.prompt_match</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.qc.html">foley.qc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.requirements.html">foley.requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.runtime.html">foley.runtime</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="foley.sources.html">foley.sources</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.base.html">foley.sources.base</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.bbc_remarc.html">foley.sources.bbc_remarc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.capabilities.html">foley.sources.capabilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.clotho.html">foley.sources.clotho</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.edit.html">foley.sources.edit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.elevenlabs.html">foley.sources.elevenlabs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.fal.html">foley.sources.fal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.foleyset.html">foley.sources.foleyset</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.freesound.html">foley.sources.freesound</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.fsd50k.html">foley.sources.fsd50k</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.http.html">foley.sources.http</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.internet_archive.html">foley.sources.internet_archive</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.media.html">foley.sources.media</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.music_library.html">foley.sources.music_library</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.openverse.html">foley.sources.openverse</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.pull.html">foley.sources.pull</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.pyfxr.html">foley.sources.pyfxr</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.registry.html">foley.sources.registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.resilience.html">foley.sources.resilience</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.sonniss.html">foley.sources.sonniss</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.stable_audio.html">foley.sources.stable_audio</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.stable_audio_3.html">foley.sources.stable_audio_3</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.video.html">foley.sources.video</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.wikimedia_commons.html">foley.sources.wikimedia_commons</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.stores.html">foley.stores</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../api.html" class="nav-link">API reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="foley.html" class="nav-link">foley</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="foley.eval.html" class="nav-link">foley.eval</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">foley.eval.taste</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-foley.eval.taste">
+<span id="foley-eval-taste"></span><h1>foley.eval.taste<a class="headerlink" href="#module-foley.eval.taste" title="Link to this heading">#</a></h1>
+<p>The “tasteful weave” eval: does a sound designer produce a <em>restrained, clean, well-placed</em> result?</p>
+<p>Runs a <code class="docutils literal notranslate"><span class="pre">designer</span></code> (<code class="docutils literal notranslate"><span class="pre">passage</span> <span class="pre">-&gt;</span> <span class="pre">ScoreResult</span></code>) over a fixed passage set and REPORTS, per
+passage and aggregated, the four things #45 asks of a tasteful design (report, never a gate):</p>
+<ul class="simple">
+<li><p><strong>restraint</strong>: sounds per sentence, under the ceiling of <a class="reference internal" href="#foley.eval.taste.SOUNDS_PER_SENTENCE_BAND" title="foley.eval.taste.SOUNDS_PER_SENTENCE_BAND"><code class="xref py py-data docutils literal notranslate"><span class="pre">SOUNDS_PER_SENTENCE_BAND</span></code></a>
+per passage and inside the band over the whole set;</p></li>
+<li><p><strong>licence cleanliness</strong>: the share of placed sounds <a class="reference internal" href="foley.html#foley.keep" title="foley.keep"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.keep()</span></code></a> accepts under the
+intended use (target <a class="reference internal" href="#foley.eval.taste.LICENCE_CLEAN_TARGET" title="foley.eval.taste.LICENCE_CLEAN_TARGET"><code class="xref py py-data docutils literal notranslate"><span class="pre">LICENCE_CLEAN_TARGET</span></code></a>, i.e. 100%); a sound with no library
+record is unclean (fail-closed, the same lookup the weave’s rights gate uses);</p></li>
+<li><p><strong>placement sanity</strong>: each placed sound starts within <a class="reference internal" href="#foley.eval.taste.PLACEMENT_TOLERANCE_S" title="foley.eval.taste.PLACEMENT_TOLERANCE_S"><code class="xref py py-data docutils literal notranslate"><span class="pre">PLACEMENT_TOLERANCE_S</span></code></a> of
+where its cue says (its trigger word, less its pre-roll, clamped at 0 as the render does).
+The trigger is read from SELECT’s <em>symbolic</em> anchor (<code class="docutils literal notranslate"><span class="pre">&quot;on</span> <span class="pre">'door'&quot;</span></code>), which edits never
+erase, and resolved against the timeline’s word anchors (<code class="docutils literal notranslate"><span class="pre">word_timeline</span></code>).
+<strong>What it can and cannot catch:</strong> it resolves the cue with the same resolver
+(<a class="reference internal" href="foley.weave.anchor.html#foley.weave.anchor.nearest_word" title="foley.weave.anchor.nearest_word"><code class="xref py py-func docutils literal notranslate"><span class="pre">nearest_word()</span></code></a>) and the same word timings the weave used, so an
+<em>unedited</em> cue passes by construction and inherits that resolver’s false matches (#257).
+What it catches is everything else: a nudged or absolute-pinned sound, a cue word that is
+never spoken, a spot effect with no cue. Word timings from the fake aligner (evenly spaced
+estimates, the default without <code class="docutils literal notranslate"><span class="pre">foley[align]</span></code>) are flagged <code class="docutils literal notranslate"><span class="pre">aligned=False</span></code>;</p></li>
+<li><p><strong>loudness</strong>: the woven mix’s integrated LUFS, re-measured, vs the master target, within
+<a class="reference internal" href="#foley.eval.taste.LOUDNESS_TOLERANCE_LU" title="foley.eval.taste.LOUDNESS_TOLERANCE_LU"><code class="xref py py-data docutils literal notranslate"><span class="pre">LOUDNESS_TOLERANCE_LU</span></code></a> (only for passages that carry narration audio).</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">designer</span></code> seam: the default, <a class="reference internal" href="#foley.eval.taste.score_designer" title="foley.eval.taste.score_designer"><code class="xref py py-func docutils literal notranslate"><span class="pre">score_designer()</span></code></a>, is <code class="docutils literal notranslate"><span class="pre">foley.score</span></code> over the Ring-0
+wav fixture with the deterministic fake LLM and generation off, so the eval runs offline in
+CI. The point of the harness, though, is the <strong>agent-driven designer</strong>: a fresh agent with
+only <code class="docutils literal notranslate"><span class="pre">foley</span></code> and the shipped <code class="docutils literal notranslate"><span class="pre">foley-sound-design</span></code> skill (<code class="docutils literal notranslate"><span class="pre">foley.install_agent_kit(dest)</span></code>)
+given one passage and asked for a sound design. Plug it in as any callable that returns a
+<a class="reference internal" href="foley.html#foley.ScoreResult" title="foley.score.ScoreResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScoreResult</span></code></a>; the metrics read only <code class="docutils literal notranslate"><span class="pre">.timeline</span></code> and <code class="docutils literal notranslate"><span class="pre">.weave</span></code>, so an
+agent that hands back timeline JSON is wrapped as
+<code class="docutils literal notranslate"><span class="pre">ScoreResult(timeline=SoundDesignTimeline.from_dict(d),</span> <span class="pre">events=[])</span></code>. Pass the <code class="docutils literal notranslate"><span class="pre">library</span></code>
+that agent drew from, so the licence check judges the same records. It is never run in tests.</p>
+<p>Fit (“is this the right sound?”) is not re-judged here: that is <a class="reference internal" href="foley.eval.fit.html#foley.eval.fit.run_fit_eval" title="foley.eval.fit.run_fit_eval"><code class="xref py py-func docutils literal notranslate"><span class="pre">run_fit_eval()</span></code></a>.</p>
+<p class="rubric">Module Attributes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.taste.SOUNDS_PER_SENTENCE_BAND" title="foley.eval.taste.SOUNDS_PER_SENTENCE_BAND"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SOUNDS_PER_SENTENCE_BAND</span></code></a></p></td>
+<td><p>more sounds than sentences is &quot;sound soup&quot;.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.taste.LICENCE_CLEAN_TARGET" title="foley.eval.taste.LICENCE_CLEAN_TARGET"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LICENCE_CLEAN_TARGET</span></code></a></p></td>
+<td><p>Share of placed sounds the licence gate must keep.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.taste.PLACEMENT_TOLERANCE_S" title="foley.eval.taste.PLACEMENT_TOLERANCE_S"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PLACEMENT_TOLERANCE_S</span></code></a></p></td>
+<td><p>How far (s) a sound may land from its trigger word.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.taste.LOUDNESS_TOLERANCE_LU" title="foley.eval.taste.LOUDNESS_TOLERANCE_LU"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LOUDNESS_TOLERANCE_LU</span></code></a></p></td>
+<td><p>How far (LU) the woven mix may sit from the master target (EBU R128's ±1 LU).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.taste.SENTENCE_ABBREVIATIONS" title="foley.eval.taste.SENTENCE_ABBREVIATIONS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SENTENCE_ABBREVIATIONS</span></code></a></p></td>
+<td><p>Words whose trailing period does not end a sentence (lower case, no period).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.taste.PLACEMENT_CAVEAT" title="foley.eval.taste.PLACEMENT_CAVEAT"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PLACEMENT_CAVEAT</span></code></a></p></td>
+<td><p>What the placement metric can see (echoed in the report so a reader does not over-read it).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.taste.Designer" title="foley.eval.taste.Designer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Designer</span></code></a></p></td>
+<td><p>the seam this eval measures.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Functions</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.taste.count_sentences" title="foley.eval.taste.count_sentences"><code class="xref py py-obj docutils literal notranslate"><span class="pre">count_sentences</span></code></a>(text, *[, abbreviations])</p></td>
+<td><p>Sentences in <code class="docutils literal notranslate"><span class="pre">text</span></code>: terminators (<code class="docutils literal notranslate"><span class="pre">.!?</span></code>, closing quotes allowed) plus an open tail.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.taste.eval_library" title="foley.eval.taste.eval_library"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval_library</span></code></a>()</p></td>
+<td><p>The offline default library: the Ring-0 wav fixture (6 CC0 clips, wav-backed, so it weaves).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.taste.licence_rows" title="foley.eval.taste.licence_rows"><code class="xref py py-obj docutils literal notranslate"><span class="pre">licence_rows</span></code></a>(items, library, intended_use)</p></td>
+<td><p>One <code class="docutils literal notranslate"><span class="pre">{clip_ref,</span> <span class="pre">clean,</span> <span class="pre">reason}</span></code> row per placed sound, judged by its library record.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.taste.load_passages" title="foley.eval.taste.load_passages"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_passages</span></code></a>([path])</p></td>
+<td><p>Load a passage set: a JSON list of <code class="docutils literal notranslate"><span class="pre">{id,</span> <span class="pre">segments,</span> <span class="pre">audio?}</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.taste.loudness_row" title="foley.eval.taste.loudness_row"><code class="xref py py-obj docutils literal notranslate"><span class="pre">loudness_row</span></code></a>(weave, *[, tolerance_lu])</p></td>
+<td><p>The woven mix's integrated LUFS (re-measured) vs its master target; <code class="docutils literal notranslate"><span class="pre">None</span></code> unwoven.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.taste.measure_passage" title="foley.eval.taste.measure_passage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">measure_passage</span></code></a>(passage, result, *, library, ...)</p></td>
+<td><p>Measure one designer result for <code class="docutils literal notranslate"><span class="pre">passage</span></code> (reads only <code class="docutils literal notranslate"><span class="pre">.timeline</span></code> and <code class="docutils literal notranslate"><span class="pre">.weave</span></code>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.taste.passage_sentences" title="foley.eval.taste.passage_sentences"><code class="xref py py-obj docutils literal notranslate"><span class="pre">passage_sentences</span></code></a>(passage)</p></td>
+<td><p>Sentences in a passage: counted per segment, each non-empty segment at least one.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.taste.placement_rows" title="foley.eval.taste.placement_rows"><code class="xref py py-obj docutils literal notranslate"><span class="pre">placement_rows</span></code></a>(timeline, *[, tolerance_s])</p></td>
+<td><p>One row per enabled item of a <em>hydrated</em> timeline: expected vs actual onset.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.taste.restraint" title="foley.eval.taste.restraint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">restraint</span></code></a>(n_sounds, n_sentences, *[, band])</p></td>
+<td><p>Sounds per sentence and whether it stays under <code class="docutils literal notranslate"><span class="pre">band</span></code>'s ceiling (one passage).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.taste.run_taste_eval" title="foley.eval.taste.run_taste_eval"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_taste_eval</span></code></a>([passages, designer, ...])</p></td>
+<td><p>Run <code class="docutils literal notranslate"><span class="pre">designer</span></code> over <code class="docutils literal notranslate"><span class="pre">passages</span></code> and report restraint / licence / placement / loudness.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.taste.score_designer" title="foley.eval.taste.score_designer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">score_designer</span></code></a>(*[, library, intended_use, ...])</p></td>
+<td><p>A designer that is <code class="docutils literal notranslate"><span class="pre">foley.score</span></code> on a passage's segments (and audio, when it has some).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.taste.Passage" title="foley.eval.taste.Passage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Passage</span></code></a>(id, segments[, audio])</p></td>
+<td><p>One narration passage: its segments (what <code class="docutils literal notranslate"><span class="pre">foley.score</span></code> takes) and optional audio.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.taste.PassageTaste" title="foley.eval.taste.PassageTaste"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PassageTaste</span></code></a>(passage_id[, restraint, ...])</p></td>
+<td><p>The four measurements for one passage (JSON-safe via <code class="xref py py-meth docutils literal notranslate"><span class="pre">to_dict()</span></code>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.taste.TasteReport" title="foley.eval.taste.TasteReport"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TasteReport</span></code></a>(designer, passages[, thresholds])</p></td>
+<td><p>The tasteful-weave eval over a passage set: per passage + aggregated, plus thresholds.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.taste.TasteThresholds" title="foley.eval.taste.TasteThresholds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TasteThresholds</span></code></a>([sounds_per_sentence, ...])</p></td>
+<td><p>The eval's thresholds in one place (defaults: the module constants).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.eval.taste.Designer">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.taste.</span></span><span class="sig-name descname"><span class="pre">Designer</span></span><a class="headerlink" href="#foley.eval.taste.Designer" title="Link to this definition">#</a></dt>
+<dd><p>the seam this eval measures.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">passage</span> <span class="pre">-&gt;</span> <span class="pre">ScoreResult</span></code></p>
+</dd>
+</dl>
+<p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code>[[<a class="reference internal" href="#foley.eval.taste.Passage" title="foley.eval.taste.Passage"><code class="xref py py-class docutils literal notranslate"><span class="pre">Passage</span></code></a>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ScoreResult</span></code>]</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.eval.taste.LICENCE_CLEAN_TARGET">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.taste.</span></span><span class="sig-name descname"><span class="pre">LICENCE_CLEAN_TARGET</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#foley.eval.taste.LICENCE_CLEAN_TARGET" title="Link to this definition">#</a></dt>
+<dd><p>Share of placed sounds the licence gate must keep. Anything under it is a defect.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.eval.taste.LOUDNESS_TOLERANCE_LU">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.taste.</span></span><span class="sig-name descname"><span class="pre">LOUDNESS_TOLERANCE_LU</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#foley.eval.taste.LOUDNESS_TOLERANCE_LU" title="Link to this definition">#</a></dt>
+<dd><p>How far (LU) the woven mix may sit from the master target (EBU R128’s ±1 LU).</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.eval.taste.PLACEMENT_CAVEAT">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.taste.</span></span><span class="sig-name descname"><span class="pre">PLACEMENT_CAVEAT</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'catches</span> <span class="pre">nudged/pinned</span> <span class="pre">sounds</span> <span class="pre">and</span> <span class="pre">unspoken</span> <span class="pre">or</span> <span class="pre">missing</span> <span class="pre">cues;</span> <span class="pre">an</span> <span class="pre">unedited</span> <span class="pre">cue</span> <span class="pre">passes</span> <span class="pre">by</span> <span class="pre">construction</span> <span class="pre">(same</span> <span class="pre">resolver</span> <span class="pre">and</span> <span class="pre">word</span> <span class="pre">timings</span> <span class="pre">as</span> <span class="pre">the</span> <span class="pre">weave)'</span></span><a class="headerlink" href="#foley.eval.taste.PLACEMENT_CAVEAT" title="Link to this definition">#</a></dt>
+<dd><p>What the placement metric can see (echoed in the report so a reader does not over-read it).</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.eval.taste.PLACEMENT_TOLERANCE_S">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.taste.</span></span><span class="sig-name descname"><span class="pre">PLACEMENT_TOLERANCE_S</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.25</span></span><a class="headerlink" href="#foley.eval.taste.PLACEMENT_TOLERANCE_S" title="Link to this definition">#</a></dt>
+<dd><p>How far (s) a sound may land from its trigger word. Word aligners are ~±50 ms and a
+pre-roll is folded back in, so this only flags misplacements, not alignment jitter.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.eval.taste.Passage">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.eval.taste.</span></span><span class="sig-name descname"><span class="pre">Passage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">segments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">audio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/taste.html#Passage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.taste.Passage" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>One narration passage: its segments (what <code class="docutils literal notranslate"><span class="pre">foley.score</span></code> takes) and optional audio.</p>
+<p><code class="docutils literal notranslate"><span class="pre">audio</span></code> (a path, bytes, or a 48 kHz ndarray) makes the default designer weave, which
+is what the loudness metric needs.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="foley.eval.taste.Passage.text">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">text</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><a class="headerlink" href="#foley.eval.taste.Passage.text" title="Link to this definition">#</a></dt>
+<dd><p>The passage as one transcript.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.eval.taste.PassageTaste">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.eval.taste.</span></span><span class="sig-name descname"><span class="pre">PassageTaste</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">passage_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restraint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">dict()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">licence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">list()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">placement</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">list()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alignment</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loudness</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/taste.html#PassageTaste"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.taste.PassageTaste" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>The four measurements for one passage (JSON-safe via <a class="reference internal" href="#foley.eval.taste.PassageTaste.to_dict" title="foley.eval.taste.PassageTaste.to_dict"><code class="xref py py-meth docutils literal notranslate"><span class="pre">to_dict()</span></code></a>).</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="foley.eval.taste.PassageTaste.aligned">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">aligned</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a></span><a class="headerlink" href="#foley.eval.taste.PassageTaste.aligned" title="Link to this definition">#</a></dt>
+<dd><p>Whether the word timings came from a real alignment (not the fake’s estimates).</p>
+<p><code class="docutils literal notranslate"><span class="pre">&quot;cached&quot;</span></code> timings (carried on the timeline from an earlier weave) count as
+aligned: the eval cannot tell what produced them, so a cache of estimates passes.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="foley.eval.taste.PassageTaste.licence_clean_share">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">licence_clean_share</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#foley.eval.taste.PassageTaste.licence_clean_share" title="Link to this definition">#</a></dt>
+<dd><p>Share of placed sounds the licence gate keeps (<code class="docutils literal notranslate"><span class="pre">None</span></code> when nothing was placed).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="foley.eval.taste.PassageTaste.placement_ok_share">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">placement_ok_share</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#foley.eval.taste.PassageTaste.placement_ok_share" title="Link to this definition">#</a></dt>
+<dd><p>Share of placed sounds within the placement tolerance.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.eval.taste.PassageTaste.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/taste.html#PassageTaste.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.taste.PassageTaste.to_dict" title="Link to this definition">#</a></dt>
+<dd><p>Plain, JSON-safe dict (with the derived shares).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.eval.taste.SENTENCE_ABBREVIATIONS">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.taste.</span></span><span class="sig-name descname"><span class="pre">SENTENCE_ABBREVIATIONS</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('mr',</span> <span class="pre">'mrs',</span> <span class="pre">'ms',</span> <span class="pre">'dr',</span> <span class="pre">'prof',</span> <span class="pre">'st',</span> <span class="pre">'sr',</span> <span class="pre">'jr',</span> <span class="pre">'vs',</span> <span class="pre">'mt',</span> <span class="pre">'lt',</span> <span class="pre">'col',</span> <span class="pre">'gen',</span> <span class="pre">'capt',</span> <span class="pre">'sgt',</span> <span class="pre">'rev',</span> <span class="pre">'fr',</span> <span class="pre">'approx')</span></span><a class="headerlink" href="#foley.eval.taste.SENTENCE_ABBREVIATIONS" title="Link to this definition">#</a></dt>
+<dd><p>Words whose trailing period does not end a sentence (lower case, no period). Single
+letters (initials, <code class="docutils literal notranslate"><span class="pre">e.g.</span></code>, <code class="docutils literal notranslate"><span class="pre">U.S.</span></code>) are skipped as well.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.eval.taste.SOUNDS_PER_SENTENCE_BAND">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.taste.</span></span><span class="sig-name descname"><span class="pre">SOUNDS_PER_SENTENCE_BAND</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(0.1,</span> <span class="pre">1.0)</span></span><a class="headerlink" href="#foley.eval.taste.SOUNDS_PER_SENTENCE_BAND" title="Link to this definition">#</a></dt>
+<dd><p>more
+sounds than sentences is “sound soup”. The floor holds over the whole set only, since a
+quiet passage left quiet is taste, while a designer that scores nothing anywhere is mute.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Sane density band (sounds per sentence, inclusive). The ceiling holds per passage</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.eval.taste.TasteReport">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.eval.taste.</span></span><span class="sig-name descname"><span class="pre">TasteReport</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">designer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">passages</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thresholds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">TasteThresholds()</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/taste.html#TasteReport"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.taste.TasteReport" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>The tasteful-weave eval over a passage set: per passage + aggregated, plus thresholds.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.eval.taste.TasteReport.summary">
+<span class="sig-name descname"><span class="pre">summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/taste.html#TasteReport.summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.taste.TasteReport.summary" title="Link to this definition">#</a></dt>
+<dd><p>The aggregate numbers (pooled over sounds, or over passages for the band/loudness).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.eval.taste.TasteReport.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/taste.html#TasteReport.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.taste.TasteReport.to_dict" title="Link to this definition">#</a></dt>
+<dd><p>Plain, JSON-safe dict: designer, thresholds, summary, per-passage rows.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.eval.taste.TasteReport.to_markdown">
+<span class="sig-name descname"><span class="pre">to_markdown</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/taste.html#TasteReport.to_markdown"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.taste.TasteReport.to_markdown" title="Link to this definition">#</a></dt>
+<dd><p>A short markdown rendering: the aggregate table, then one row per passage.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.eval.taste.TasteThresholds">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.eval.taste.</span></span><span class="sig-name descname"><span class="pre">TasteThresholds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sounds_per_sentence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(0.1,</span> <span class="pre">1.0)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">licence_clean_target</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">placement_tolerance_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loudness_tolerance_lu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/taste.html#TasteThresholds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.taste.TasteThresholds" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>The eval’s thresholds in one place (defaults: the module constants).</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.eval.taste.TasteThresholds.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/taste.html#TasteThresholds.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.taste.TasteThresholds.to_dict" title="Link to this definition">#</a></dt>
+<dd><p>Plain, JSON-safe dict.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.taste.count_sentences">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.taste.</span></span><span class="sig-name descname"><span class="pre">count_sentences</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">abbreviations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('mr',</span> <span class="pre">'mrs',</span> <span class="pre">'ms',</span> <span class="pre">'dr',</span> <span class="pre">'prof',</span> <span class="pre">'st',</span> <span class="pre">'sr',</span> <span class="pre">'jr',</span> <span class="pre">'vs',</span> <span class="pre">'mt',</span> <span class="pre">'lt',</span> <span class="pre">'col',</span> <span class="pre">'gen',</span> <span class="pre">'capt',</span> <span class="pre">'sgt',</span> <span class="pre">'rev',</span> <span class="pre">'fr',</span> <span class="pre">'approx')</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/taste.html#count_sentences"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.taste.count_sentences" title="Link to this definition">#</a></dt>
+<dd><p>Sentences in <code class="docutils literal notranslate"><span class="pre">text</span></code>: terminators (<code class="docutils literal notranslate"><span class="pre">.!?</span></code>, closing quotes allowed) plus an open tail.</p>
+<p>An ellipsis does not end a sentence, nor does the period of an abbreviation
+(<code class="docutils literal notranslate"><span class="pre">abbreviations</span></code>) or of a single letter (initials, <code class="docutils literal notranslate"><span class="pre">e.g.</span></code>, <code class="docutils literal notranslate"><span class="pre">U.S.</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.taste.eval_library">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.taste.</span></span><span class="sig-name descname"><span class="pre">eval_library</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/taste.html#eval_library"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.taste.eval_library" title="Link to this definition">#</a></dt>
+<dd><p>The offline default library: the Ring-0 wav fixture (6 CC0 clips, wav-backed, so it weaves).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.taste.licence_rows">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.taste.</span></span><span class="sig-name descname"><span class="pre">licence_rows</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">items</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">library</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intended_use</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/taste.html#licence_rows"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.taste.licence_rows" title="Link to this definition">#</a></dt>
+<dd><p>One <code class="docutils literal notranslate"><span class="pre">{clip_ref,</span> <span class="pre">clean,</span> <span class="pre">reason}</span></code> row per placed sound, judged by its library record.</p>
+<p>The weave’s own rights re-check (<a class="reference internal" href="foley.licensing.html#foley.licensing.refusals" title="foley.licensing.refusals"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.licensing.refusals()</span></code></a> over
+<a class="reference internal" href="foley.licensing.html#foley.licensing.placed_record" title="foley.licensing.placed_record"><code class="xref py py-func docutils literal notranslate"><span class="pre">placed_record()</span></code></a>), so the rule and its wording are the same:
+fail-closed, a sound with no readable record is refused.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.taste.load_passages">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.taste.</span></span><span class="sig-name descname"><span class="pre">load_passages</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/home/runner/work/foley/foley/foley/data/taste/passages.json')</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/taste.html#load_passages"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.taste.load_passages" title="Link to this definition">#</a></dt>
+<dd><p>Load a passage set: a JSON list of <code class="docutils literal notranslate"><span class="pre">{id,</span> <span class="pre">segments,</span> <span class="pre">audio?}</span></code>.</p>
+<p>A relative <code class="docutils literal notranslate"><span class="pre">audio</span></code> path resolves against the JSON file’s folder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference internal" href="#foley.eval.taste.Passage" title="foley.eval.taste.Passage"><code class="xref py py-class docutils literal notranslate"><span class="pre">Passage</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.taste.loudness_row">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.taste.</span></span><span class="sig-name descname"><span class="pre">loudness_row</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weave</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance_lu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/taste.html#loudness_row"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.taste.loudness_row" title="Link to this definition">#</a></dt>
+<dd><p>The woven mix’s integrated LUFS (re-measured) vs its master target; <code class="docutils literal notranslate"><span class="pre">None</span></code> unwoven.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.taste.measure_passage">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.taste.</span></span><span class="sig-name descname"><span class="pre">measure_passage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">passage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">library</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intended_use</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thresholds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">TasteThresholds(sounds_per_sentence=(0.1,</span> <span class="pre">1.0),</span> <span class="pre">licence_clean_target=1.0,</span> <span class="pre">placement_tolerance_s=0.25,</span> <span class="pre">loudness_tolerance_lu=1.0)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/taste.html#measure_passage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.taste.measure_passage" title="Link to this definition">#</a></dt>
+<dd><p>Measure one designer result for <code class="docutils literal notranslate"><span class="pre">passage</span></code> (reads only <code class="docutils literal notranslate"><span class="pre">.timeline</span></code> and <code class="docutils literal notranslate"><span class="pre">.weave</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#foley.eval.taste.PassageTaste" title="foley.eval.taste.PassageTaste"><code class="xref py py-class docutils literal notranslate"><span class="pre">PassageTaste</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.taste.passage_sentences">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.taste.</span></span><span class="sig-name descname"><span class="pre">passage_sentences</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">passage</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/taste.html#passage_sentences"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.taste.passage_sentences" title="Link to this definition">#</a></dt>
+<dd><p>Sentences in a passage: counted per segment, each non-empty segment at least one.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.taste.placement_rows">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.taste.</span></span><span class="sig-name descname"><span class="pre">placement_rows</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeline</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.25</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/taste.html#placement_rows"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.taste.placement_rows" title="Link to this definition">#</a></dt>
+<dd><p>One row per enabled item of a <em>hydrated</em> timeline: expected vs actual onset.</p>
+<p>The expected onset is the trigger less the item’s pre-roll, clamped at 0 exactly as
+the render clamps it (so a sound cued on the first word is not read as pre-roll late).
+An item with no trigger is <code class="docutils literal notranslate"><span class="pre">ok=False</span></code> (<code class="docutils literal notranslate"><span class="pre">trigger_s=None</span></code>): a spot effect must hang
+on a word. See <a class="reference internal" href="#foley.eval.taste.PLACEMENT_CAVEAT" title="foley.eval.taste.PLACEMENT_CAVEAT"><code class="xref py py-data docutils literal notranslate"><span class="pre">PLACEMENT_CAVEAT</span></code></a> for what this can and cannot catch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.taste.restraint">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.taste.</span></span><span class="sig-name descname"><span class="pre">restraint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_sounds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_sentences</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">band</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(0.1,</span> <span class="pre">1.0)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/taste.html#restraint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.taste.restraint" title="Link to this definition">#</a></dt>
+<dd><p>Sounds per sentence and whether it stays under <code class="docutils literal notranslate"><span class="pre">band</span></code>’s ceiling (one passage).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.taste.run_taste_eval">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.taste.</span></span><span class="sig-name descname"><span class="pre">run_taste_eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">passages</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">designer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">library</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intended_use</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thresholds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">TasteThresholds(sounds_per_sentence=(0.1,</span> <span class="pre">1.0),</span> <span class="pre">licence_clean_target=1.0,</span> <span class="pre">placement_tolerance_s=0.25,</span> <span class="pre">loudness_tolerance_lu=1.0)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/taste.html#run_taste_eval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.taste.run_taste_eval" title="Link to this definition">#</a></dt>
+<dd><p>Run <code class="docutils literal notranslate"><span class="pre">designer</span></code> over <code class="docutils literal notranslate"><span class="pre">passages</span></code> and report restraint / licence / placement / loudness.</p>
+<p>Report-only: nothing here fails a build. A passage whose <em>designer</em> raises is recorded
+with its error and left out of the aggregates; a malformed passage set is refused up
+front (<code class="docutils literal notranslate"><span class="pre">ValueError</span></code> naming every bad passage), and a metric bug raises.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>passages</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Union</span></code></a>[<span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>]</span>) – The passage set: <code class="docutils literal notranslate"><span class="pre">None</span></code> (the shipped set), a JSON path, or an iterable
+of <a class="reference internal" href="#foley.eval.taste.Passage" title="foley.eval.taste.Passage"><code class="xref py py-class docutils literal notranslate"><span class="pre">Passage</span></code></a> / <code class="docutils literal notranslate"><span class="pre">{id,</span> <span class="pre">segments,</span> <span class="pre">audio?}</span></code> dicts.</p></li>
+<li><p><strong>designer</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<a class="reference internal" href="#foley.eval.taste.Passage" title="foley.eval.taste.Passage"><code class="xref py py-class docutils literal notranslate"><span class="pre">Passage</span></code></a>], <a class="reference internal" href="foley.html#foley.ScoreResult" title="foley.score.ScoreResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScoreResult</span></code></a>]]</span>) – <code class="docutils literal notranslate"><span class="pre">passage</span> <span class="pre">-&gt;</span> <span class="pre">ScoreResult</span></code> (default: <a class="reference internal" href="#foley.eval.taste.score_designer" title="foley.eval.taste.score_designer"><code class="xref py py-func docutils literal notranslate"><span class="pre">score_designer()</span></code></a> over <code class="docutils literal notranslate"><span class="pre">library</span></code>).</p></li>
+<li><p><strong>library</strong> – The library the designer draws from, used for the licence check. Default:
+<a class="reference internal" href="#foley.eval.taste.eval_library" title="foley.eval.taste.eval_library"><code class="xref py py-func docutils literal notranslate"><span class="pre">eval_library()</span></code></a> with the default designer, else <code class="docutils literal notranslate"><span class="pre">foley</span></code>’s default library.</p></li>
+<li><p><strong>intended_use</strong> – The rights intent (default: commercial publishing, as <code class="docutils literal notranslate"><span class="pre">foley.score</span></code>).</p></li>
+<li><p><strong>thresholds</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#foley.eval.taste.TasteThresholds" title="foley.eval.taste.TasteThresholds"><code class="xref py py-class docutils literal notranslate"><span class="pre">TasteThresholds</span></code></a></span>) – A <a class="reference internal" href="#foley.eval.taste.TasteThresholds" title="foley.eval.taste.TasteThresholds"><code class="xref py py-class docutils literal notranslate"><span class="pre">TasteThresholds</span></code></a> (default: the module constants); echoed
+in the report.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#foley.eval.taste.TasteReport" title="foley.eval.taste.TasteReport"><code class="xref py py-class docutils literal notranslate"><span class="pre">TasteReport</span></code></a></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A <a class="reference internal" href="#foley.eval.taste.TasteReport" title="foley.eval.taste.TasteReport"><code class="xref py py-class docutils literal notranslate"><span class="pre">TasteReport</span></code></a> (<code class="docutils literal notranslate"><span class="pre">to_dict()</span></code> for JSON, <code class="docutils literal notranslate"><span class="pre">to_markdown()</span></code> for people).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.taste.score_designer">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.taste.</span></span><span class="sig-name descname"><span class="pre">score_designer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">library</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intended_use</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">llm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'fake'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aligner</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">score_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/taste.html#score_designer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.taste.score_designer" title="Link to this definition">#</a></dt>
+<dd><p>A designer that is <code class="docutils literal notranslate"><span class="pre">foley.score</span></code> on a passage’s segments (and audio, when it has some).</p>
+<p>Defaults are the offline, deterministic ones: the fake LLM, no generation fallback
+(<code class="docutils literal notranslate"><span class="pre">Budget(allow_generate=False,</span> <span class="pre">max_usd=0)</span></code>) and the fake aligner (even with
+<code class="docutils literal notranslate"><span class="pre">foley[align]</span></code> installed), so nothing is fetched, generated or paid and runs repeat.
+<code class="docutils literal notranslate"><span class="pre">generate=True</span></code>, <code class="docutils literal notranslate"><span class="pre">llm=None</span></code> (<code class="docutils literal notranslate"><span class="pre">$FOLEY_LLM</span></code>) and a real <code class="docutils literal notranslate"><span class="pre">aligner</span></code> give the
+production behaviour.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<a class="reference internal" href="#foley.eval.taste.Passage" title="foley.eval.taste.Passage"><code class="xref py py-class docutils literal notranslate"><span class="pre">Passage</span></code></a>], <a class="reference internal" href="foley.html#foley.ScoreResult" title="foley.score.ScoreResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScoreResult</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="foley.eval.retrieval.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">foley.eval.retrieval</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="foley.provenance.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">foley.provenance</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.Designer"><code class="docutils literal notranslate"><span class="pre">Designer</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.LICENCE_CLEAN_TARGET"><code class="docutils literal notranslate"><span class="pre">LICENCE_CLEAN_TARGET</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.LOUDNESS_TOLERANCE_LU"><code class="docutils literal notranslate"><span class="pre">LOUDNESS_TOLERANCE_LU</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.PLACEMENT_CAVEAT"><code class="docutils literal notranslate"><span class="pre">PLACEMENT_CAVEAT</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.PLACEMENT_TOLERANCE_S"><code class="docutils literal notranslate"><span class="pre">PLACEMENT_TOLERANCE_S</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.Passage"><code class="docutils literal notranslate"><span class="pre">Passage</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.Passage.text"><code class="docutils literal notranslate"><span class="pre">Passage.text</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.PassageTaste"><code class="docutils literal notranslate"><span class="pre">PassageTaste</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.PassageTaste.aligned"><code class="docutils literal notranslate"><span class="pre">PassageTaste.aligned</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.PassageTaste.licence_clean_share"><code class="docutils literal notranslate"><span class="pre">PassageTaste.licence_clean_share</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.PassageTaste.placement_ok_share"><code class="docutils literal notranslate"><span class="pre">PassageTaste.placement_ok_share</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.PassageTaste.to_dict"><code class="docutils literal notranslate"><span class="pre">PassageTaste.to_dict()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.SENTENCE_ABBREVIATIONS"><code class="docutils literal notranslate"><span class="pre">SENTENCE_ABBREVIATIONS</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.SOUNDS_PER_SENTENCE_BAND"><code class="docutils literal notranslate"><span class="pre">SOUNDS_PER_SENTENCE_BAND</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.TasteReport"><code class="docutils literal notranslate"><span class="pre">TasteReport</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.TasteReport.summary"><code class="docutils literal notranslate"><span class="pre">TasteReport.summary()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.TasteReport.to_dict"><code class="docutils literal notranslate"><span class="pre">TasteReport.to_dict()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.TasteReport.to_markdown"><code class="docutils literal notranslate"><span class="pre">TasteReport.to_markdown()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.TasteThresholds"><code class="docutils literal notranslate"><span class="pre">TasteThresholds</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.TasteThresholds.to_dict"><code class="docutils literal notranslate"><span class="pre">TasteThresholds.to_dict()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.count_sentences"><code class="docutils literal notranslate"><span class="pre">count_sentences()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.eval_library"><code class="docutils literal notranslate"><span class="pre">eval_library()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.licence_rows"><code class="docutils literal notranslate"><span class="pre">licence_rows()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.load_passages"><code class="docutils literal notranslate"><span class="pre">load_passages()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.loudness_row"><code class="docutils literal notranslate"><span class="pre">loudness_row()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.measure_passage"><code class="docutils literal notranslate"><span class="pre">measure_passage()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.passage_sentences"><code class="docutils literal notranslate"><span class="pre">passage_sentences()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.placement_rows"><code class="docutils literal notranslate"><span class="pre">placement_rows()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.restraint"><code class="docutils literal notranslate"><span class="pre">restraint()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.run_taste_eval"><code class="docutils literal notranslate"><span class="pre">run_taste_eval()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.taste.score_designer"><code class="docutils literal notranslate"><span class="pre">score_designer()</span></code></a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../_sources/_autosummary/foley.eval.taste.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.23.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

@@ -1,4 +1,4 @@
-> built 2026-11-02 05:20 UTC from 3a4923e (main) · foley 0.0.120. Details: build_info.json
+> built 2026-11-02 05:57 UTC from 94ecc95 (main) · foley 0.0.121. Details: build_info.json
 
 # index.html.md
 
@@ -4971,8 +4971,10 @@ Tier-2 fit-judging (#10b) — “does this clip match the intent?” — lives a
 in [`fit`](_autosummary/foley.eval.fit.html.md#module-foley.eval.fit) (the judge-based fit harness), [`reliability`](_autosummary/foley.eval.reliability.html.md#module-foley.eval.reliability)
 (Krippendorff’s α + judge-vs-human calibration), and [`fidelity`](_autosummary/foley.eval.fidelity.html.md#module-foley.eval.fidelity)
 (set-level FAD/KAD generation fidelity). Tier-2 is nightly/pre-release + cost-gated —
-NOT a per-PR gate — and never touches the retrieval ranking. All numpy imports are
-function-local so `import foley` stays dol-only.
+NOT a per-PR gate — and never touches the retrieval ranking. The tasteful-weave eval (#45),
+[`taste`](_autosummary/foley.eval.taste.html.md#module-foley.eval.taste), reports the restraint / licence / placement / loudness of a whole
+sound design over a passage set, with a pluggable `designer` (`foley.score` by
+default). All numpy imports are function-local so `import foley` stays dol-only.
 
 ### Functions
 
@@ -5007,6 +5009,9 @@ function-local so `import foley` stays dol-only.
 | [`frechet_distance`](_autosummary/foley.eval.html.md#foley.eval.frechet_distance)(x_ref, x_gen)                     | Fréchet distance between two embedding sets (the FAD formula).                                                                                           |
 | [`kernel_audio_distance`](_autosummary/foley.eval.html.md#foley.eval.kernel_audio_distance)(x_ref, x_gen, \*[, ...])     | Kernel Audio Distance — the unbiased RBF-MMD² between two embedding sets.                                                                                |
 | [`generation_fidelity`](_autosummary/foley.eval.html.md#foley.eval.generation_fidelity)(ref_wavs, gen_wavs, \*, ...)   | Embed two wav sets through an injected embedder and compute FAD or KAD.                                                                                  |
+| [`run_taste_eval`](_autosummary/foley.eval.html.md#foley.eval.run_taste_eval)([passages, designer, ...])          | Run `designer` over `passages` and report restraint / licence / placement / loudness.                                                                    |
+| [`score_designer`](_autosummary/foley.eval.html.md#foley.eval.score_designer)(\*[, library, intended_use, ...])   | A designer that is `foley.score` on a passage's segments (and audio, when it has some).                                                                  |
+| [`load_passages`](_autosummary/foley.eval.html.md#foley.eval.load_passages)([path])                              | Load a passage set: a JSON list of `{id, segments, audio?}`.                                                                                             |
 
 ### Classes
 
@@ -5018,6 +5023,10 @@ function-local so `import foley` stays dol-only.
 | [`AlphaResult`](_autosummary/foley.eval.html.md#foley.eval.AlphaResult)(alpha, level, n_units, n_raters, ...) | A judge-vs-human calibration record (surfaced as `FitReport.calibration`).                     |
 | [`FidelityStamp`](_autosummary/foley.eval.html.md#foley.eval.FidelityStamp)(embedding, toolkit, version, ...)   | Mandatory provenance for a FAD/KAD score — it is meaningless without it.                       |
 | [`FidelityResult`](_autosummary/foley.eval.html.md#foley.eval.FidelityResult)(metric, value, stamp)              | A stamped set-level fidelity score (attached to `FitReport.fidelity`).                         |
+| [`Passage`](_autosummary/foley.eval.html.md#foley.eval.Passage)(id, segments[, audio])                    | One narration passage: its segments (what `foley.score` takes) and optional audio.             |
+| [`PassageTaste`](_autosummary/foley.eval.html.md#foley.eval.PassageTaste)(passage_id[, restraint, ...])        | The four measurements for one passage (JSON-safe via `to_dict()`).                             |
+| [`TasteReport`](_autosummary/foley.eval.html.md#foley.eval.TasteReport)(designer, passages[, thresholds])     | The tasteful-weave eval over a passage set: per passage + aggregated, plus thresholds.         |
+| [`TasteThresholds`](_autosummary/foley.eval.html.md#foley.eval.TasteThresholds)([sounds_per_sentence, ...])       | The eval's thresholds in one place (defaults: the module constants).                           |
 
 ### *class* foley.eval.AlphaResult(alpha, level, n_units, n_raters, percent_agreement, band, promoted)
 
@@ -5154,6 +5163,47 @@ offline retrieval regression; real retrieval uses CLAP.
 
 Embed `text` (or a list of texts) -> a `(n, dim)` float32 array.
 
+### *class* foley.eval.Passage(id, segments, audio=None)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One narration passage: its segments (what `foley.score` takes) and optional audio.
+
+`audio` (a path, bytes, or a 48 kHz ndarray) makes the default designer weave, which
+is what the loudness metric needs.
+
+#### *property* text *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
+
+The passage as one transcript.
+
+### *class* foley.eval.PassageTaste(passage_id, restraint=dict(), licence=list(), placement=list(), alignment=None, loudness=None, error=None)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+The four measurements for one passage (JSON-safe via [`to_dict()`](_autosummary/foley.eval.html.md#foley.eval.PassageTaste.to_dict)).
+
+#### *property* aligned *: [bool](https://docs.python.org/3/builtins/functions.html#bool)*
+
+Whether the word timings came from a real alignment (not the fake’s estimates).
+
+`"cached"` timings (carried on the timeline from an earlier weave) count as
+aligned: the eval cannot tell what produced them, so a cache of estimates passes.
+
+#### *property* licence_clean_share *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[float](https://docs.python.org/3/builtins/functions.html#float)]*
+
+Share of placed sounds the licence gate keeps (`None` when nothing was placed).
+
+#### *property* placement_ok_share *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[float](https://docs.python.org/3/builtins/functions.html#float)]*
+
+Share of placed sounds within the placement tolerance.
+
+#### to_dict()
+
+Plain, JSON-safe dict (with the derived shares).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
 ### *class* foley.eval.RetrievalReport(per_query=dict(), mean=dict(), ranks=dict(), k=10)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
@@ -5166,6 +5216,46 @@ A human diff for a failing gate: mean vs baseline + the worst queries.
 
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### *class* foley.eval.TasteReport(designer, passages, thresholds=TasteThresholds())
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+The tasteful-weave eval over a passage set: per passage + aggregated, plus thresholds.
+
+#### summary()
+
+The aggregate numbers (pooled over sounds, or over passages for the band/loudness).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+#### to_dict()
+
+Plain, JSON-safe dict: designer, thresholds, summary, per-passage rows.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+#### to_markdown()
+
+A short markdown rendering: the aggregate table, then one row per passage.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### *class* foley.eval.TasteThresholds(sounds_per_sentence=(0.1, 1.0), licence_clean_target=1.0, placement_tolerance_s=0.25, loudness_tolerance_lu=1.0)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+The eval’s thresholds in one place (defaults: the module constants).
+
+#### to_dict()
+
+Plain, JSON-safe dict.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 ### foley.eval.average_precision_at_k(qrels_q, run_q, k=10, , rel_lvl=1)
 
@@ -5374,6 +5464,15 @@ Load and validate the frozen golden set from `path` (JSON list).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`GoldenItem`](_autosummary/foley.eval.golden.html.md#foley.eval.golden.GoldenItem)]
 
+### foley.eval.load_passages(path=PosixPath('/home/runner/work/foley/foley/foley/data/taste/passages.json'))
+
+Load a passage set: a JSON list of `{id, segments, audio?}`.
+
+A relative `audio` path resolves against the JSON file’s folder.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Passage`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.Passage)]
+
 ### foley.eval.mean_over_queries(values)
 
 Macro-average of per-query metric values (0.0 for an empty list).
@@ -5493,6 +5592,41 @@ resulting runs against the golden qrels.
 * **Returns:**
   A [`RetrievalReport`](_autosummary/foley.eval.html.md#foley.eval.RetrievalReport) (per-query + mean [nDCG@10](mailto:nDCG@10) / recall / mAP / MRR).
 
+### foley.eval.run_taste_eval(passages=None, , designer=None, library=None, intended_use=None, thresholds=TasteThresholds(sounds_per_sentence=(0.1, 1.0), licence_clean_target=1.0, placement_tolerance_s=0.25, loudness_tolerance_lu=1.0))
+
+Run `designer` over `passages` and report restraint / licence / placement / loudness.
+
+Report-only: nothing here fails a build. A passage whose *designer* raises is recorded
+with its error and left out of the aggregates; a malformed passage set is refused up
+front (`ValueError` naming every bad passage), and a metric bug raises.
+
+* **Parameters:**
+  * **passages** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`None`](https://docs.python.org/3/builtins/constants.html#None), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path), [`Iterable`](https://docs.python.org/3/library/typing.html#typing.Iterable)]) – The passage set: `None` (the shipped set), a JSON path, or an iterable
+    of [`Passage`](_autosummary/foley.eval.html.md#foley.eval.Passage) / `{id, segments, audio?}` dicts.
+  * **designer** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Passage`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.Passage)], [`ScoreResult`](_autosummary/foley.html.md#foley.ScoreResult)]]) – `passage -> ScoreResult` (default: [`score_designer()`](_autosummary/foley.eval.html.md#foley.eval.score_designer) over `library`).
+  * **library** – The library the designer draws from, used for the licence check. Default:
+    `eval_library()` with the default designer, else `foley`’s default library.
+  * **intended_use** – The rights intent (default: commercial publishing, as `foley.score`).
+  * **thresholds** ([`TasteThresholds`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.TasteThresholds)) – A [`TasteThresholds`](_autosummary/foley.eval.html.md#foley.eval.TasteThresholds) (default: the module constants); echoed
+    in the report.
+* **Return type:**
+  [`TasteReport`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.TasteReport)
+* **Returns:**
+  A [`TasteReport`](_autosummary/foley.eval.html.md#foley.eval.TasteReport) (`to_dict()` for JSON, `to_markdown()` for people).
+
+### foley.eval.score_designer(, library=None, intended_use=None, llm='fake', generate=False, aligner=None, \*\*score_kwargs)
+
+A designer that is `foley.score` on a passage’s segments (and audio, when it has some).
+
+Defaults are the offline, deterministic ones: the fake LLM, no generation fallback
+(`Budget(allow_generate=False, max_usd=0)`) and the fake aligner (even with
+`foley[align]` installed), so nothing is fetched, generated or paid and runs repeat.
+`generate=True`, `llm=None` (`$FOLEY_LLM`) and a real `aligner` give the
+production behaviour.
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Passage`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.Passage)], [`ScoreResult`](_autosummary/foley.html.md#foley.ScoreResult)]
+
 ### foley.eval.stratified_sample(units, , strata_keys, sample, seed)
 
 Deterministic seeded stratified draw over `units` — the cost gate.
@@ -5561,6 +5695,7 @@ once its numbers are stable, which records that judge in `run`.
 | [`prompt_match`](_autosummary/foley.eval.prompt_match.html.md#module-foley.eval.prompt_match)     | Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).               |
 | [`reliability`](_autosummary/foley.eval.reliability.html.md#module-foley.eval.reliability)       | Inter-rater reliability — Krippendorff's α + the judge-vs-human calibration guardrail.                |
 | [`retrieval`](_autosummary/foley.eval.retrieval.html.md#module-foley.eval.retrieval)           | Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.                           |
+| [`taste`](_autosummary/foley.eval.taste.html.md#module-foley.eval.taste)                   | The "tasteful weave" eval: does a sound designer produce a *restrained, clean, well-placed* result?   |
 
 
 # _autosummary/foley.eval.panel.html.md
@@ -6193,6 +6328,310 @@ Fraction of ALL relevant docs (grade ≥ `rel_lvl`) retrieved in the top-`k`.
 
 * **Return type:**
   [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+
+# _autosummary/foley.eval.taste.html.md
+
+# foley.eval.taste
+
+The “tasteful weave” eval: does a sound designer produce a *restrained, clean, well-placed* result?
+
+Runs a `designer` (`passage -> ScoreResult`) over a fixed passage set and REPORTS, per
+passage and aggregated, the four things #45 asks of a tasteful design (report, never a gate):
+
+* **restraint**: sounds per sentence, under the ceiling of [`SOUNDS_PER_SENTENCE_BAND`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.SOUNDS_PER_SENTENCE_BAND)
+  per passage and inside the band over the whole set;
+* **licence cleanliness**: the share of placed sounds [`foley.keep()`](_autosummary/foley.html.md#foley.keep) accepts under the
+  intended use (target [`LICENCE_CLEAN_TARGET`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.LICENCE_CLEAN_TARGET), i.e. 100%); a sound with no library
+  record is unclean (fail-closed, the same lookup the weave’s rights gate uses);
+* **placement sanity**: each placed sound starts within [`PLACEMENT_TOLERANCE_S`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.PLACEMENT_TOLERANCE_S) of
+  where its cue says (its trigger word, less its pre-roll, clamped at 0 as the render does).
+  The trigger is read from SELECT’s *symbolic* anchor (`"on 'door'"`), which edits never
+  erase, and resolved against the timeline’s word anchors (`word_timeline`).
+  **What it can and cannot catch:** it resolves the cue with the same resolver
+  ([`nearest_word()`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.nearest_word)) and the same word timings the weave used, so an
+  *unedited* cue passes by construction and inherits that resolver’s false matches (#257).
+  What it catches is everything else: a nudged or absolute-pinned sound, a cue word that is
+  never spoken, a spot effect with no cue. Word timings from the fake aligner (evenly spaced
+  estimates, the default without `foley[align]`) are flagged `aligned=False`;
+* **loudness**: the woven mix’s integrated LUFS, re-measured, vs the master target, within
+  [`LOUDNESS_TOLERANCE_LU`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.LOUDNESS_TOLERANCE_LU) (only for passages that carry narration audio).
+
+The `designer` seam: the default, [`score_designer()`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.score_designer), is `foley.score` over the Ring-0
+wav fixture with the deterministic fake LLM and generation off, so the eval runs offline in
+CI. The point of the harness, though, is the **agent-driven designer**: a fresh agent with
+only `foley` and the shipped `foley-sound-design` skill (`foley.install_agent_kit(dest)`)
+given one passage and asked for a sound design. Plug it in as any callable that returns a
+[`ScoreResult`](_autosummary/foley.html.md#foley.ScoreResult); the metrics read only `.timeline` and `.weave`, so an
+agent that hands back timeline JSON is wrapped as
+`ScoreResult(timeline=SoundDesignTimeline.from_dict(d), events=[])`. Pass the `library`
+that agent drew from, so the licence check judges the same records. It is never run in tests.
+
+Fit (“is this the right sound?”) is not re-judged here: that is [`run_fit_eval()`](_autosummary/foley.eval.fit.html.md#foley.eval.fit.run_fit_eval).
+
+### Module Attributes
+
+| [`SOUNDS_PER_SENTENCE_BAND`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.SOUNDS_PER_SENTENCE_BAND)   | more sounds than sentences is "sound soup".                                                 |
+|-----------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| [`LICENCE_CLEAN_TARGET`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.LICENCE_CLEAN_TARGET)       | Share of placed sounds the licence gate must keep.                                          |
+| [`PLACEMENT_TOLERANCE_S`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.PLACEMENT_TOLERANCE_S)      | How far (s) a sound may land from its trigger word.                                         |
+| [`LOUDNESS_TOLERANCE_LU`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.LOUDNESS_TOLERANCE_LU)      | How far (LU) the woven mix may sit from the master target (EBU R128's ±1 LU).               |
+| [`SENTENCE_ABBREVIATIONS`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.SENTENCE_ABBREVIATIONS)     | Words whose trailing period does not end a sentence (lower case, no period).                |
+| [`PLACEMENT_CAVEAT`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.PLACEMENT_CAVEAT)           | What the placement metric can see (echoed in the report so a reader does not over-read it). |
+| [`Designer`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.Designer)                   | the seam this eval measures.                                                                |
+
+### Functions
+
+| [`count_sentences`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.count_sentences)(text, \*[, abbreviations])         | Sentences in `text`: terminators (`.!?`, closing quotes allowed) plus an open tail.          |
+|-----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
+| [`eval_library`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.eval_library)()                                     | The offline default library: the Ring-0 wav fixture (6 CC0 clips, wav-backed, so it weaves). |
+| [`licence_rows`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.licence_rows)(items, library, intended_use)         | One `{clip_ref, clean, reason}` row per placed sound, judged by its library record.          |
+| [`load_passages`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.load_passages)([path])                              | Load a passage set: a JSON list of `{id, segments, audio?}`.                                 |
+| [`loudness_row`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.loudness_row)(weave, \*[, tolerance_lu])            | The woven mix's integrated LUFS (re-measured) vs its master target; `None` unwoven.          |
+| [`measure_passage`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.measure_passage)(passage, result, \*, library, ...) | Measure one designer result for `passage` (reads only `.timeline` and `.weave`).             |
+| [`passage_sentences`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.passage_sentences)(passage)                         | Sentences in a passage: counted per segment, each non-empty segment at least one.            |
+| [`placement_rows`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.placement_rows)(timeline, \*[, tolerance_s])        | One row per enabled item of a *hydrated* timeline: expected vs actual onset.                 |
+| [`restraint`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.restraint)(n_sounds, n_sentences, \*[, band])       | Sounds per sentence and whether it stays under `band`'s ceiling (one passage).               |
+| [`run_taste_eval`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.run_taste_eval)([passages, designer, ...])          | Run `designer` over `passages` and report restraint / licence / placement / loudness.        |
+| [`score_designer`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.score_designer)(\*[, library, intended_use, ...])   | A designer that is `foley.score` on a passage's segments (and audio, when it has some).      |
+
+### Classes
+
+| [`Passage`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.Passage)(id, segments[, audio])                | One narration passage: its segments (what `foley.score` takes) and optional audio.     |
+|------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| [`PassageTaste`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.PassageTaste)(passage_id[, restraint, ...])    | The four measurements for one passage (JSON-safe via `to_dict()`).                     |
+| [`TasteReport`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.TasteReport)(designer, passages[, thresholds]) | The tasteful-weave eval over a passage set: per passage + aggregated, plus thresholds. |
+| [`TasteThresholds`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.TasteThresholds)([sounds_per_sentence, ...])   | The eval's thresholds in one place (defaults: the module constants).                   |
+
+### foley.eval.taste.Designer
+
+the seam this eval measures.
+
+* **Type:**
+  `passage -> ScoreResult`
+
+alias of `Callable`[[[`Passage`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.Passage)], `ScoreResult`]
+
+### foley.eval.taste.LICENCE_CLEAN_TARGET *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 1.0*
+
+Share of placed sounds the licence gate must keep. Anything under it is a defect.
+
+### foley.eval.taste.LOUDNESS_TOLERANCE_LU *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 1.0*
+
+How far (LU) the woven mix may sit from the master target (EBU R128’s ±1 LU).
+
+### foley.eval.taste.PLACEMENT_CAVEAT *= 'catches nudged/pinned sounds and unspoken or missing cues; an unedited cue passes by construction (same resolver and word timings as the weave)'*
+
+What the placement metric can see (echoed in the report so a reader does not over-read it).
+
+### foley.eval.taste.PLACEMENT_TOLERANCE_S *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.25*
+
+How far (s) a sound may land from its trigger word. Word aligners are ~±50 ms and a
+pre-roll is folded back in, so this only flags misplacements, not alignment jitter.
+
+### *class* foley.eval.taste.Passage(id, segments, audio=None)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One narration passage: its segments (what `foley.score` takes) and optional audio.
+
+`audio` (a path, bytes, or a 48 kHz ndarray) makes the default designer weave, which
+is what the loudness metric needs.
+
+#### *property* text *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
+
+The passage as one transcript.
+
+### *class* foley.eval.taste.PassageTaste(passage_id, restraint=dict(), licence=list(), placement=list(), alignment=None, loudness=None, error=None)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+The four measurements for one passage (JSON-safe via [`to_dict()`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.PassageTaste.to_dict)).
+
+#### *property* aligned *: [bool](https://docs.python.org/3/builtins/functions.html#bool)*
+
+Whether the word timings came from a real alignment (not the fake’s estimates).
+
+`"cached"` timings (carried on the timeline from an earlier weave) count as
+aligned: the eval cannot tell what produced them, so a cache of estimates passes.
+
+#### *property* licence_clean_share *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[float](https://docs.python.org/3/builtins/functions.html#float)]*
+
+Share of placed sounds the licence gate keeps (`None` when nothing was placed).
+
+#### *property* placement_ok_share *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[float](https://docs.python.org/3/builtins/functions.html#float)]*
+
+Share of placed sounds within the placement tolerance.
+
+#### to_dict()
+
+Plain, JSON-safe dict (with the derived shares).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.eval.taste.SENTENCE_ABBREVIATIONS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('mr', 'mrs', 'ms', 'dr', 'prof', 'st', 'sr', 'jr', 'vs', 'mt', 'lt', 'col', 'gen', 'capt', 'sgt', 'rev', 'fr', 'approx')*
+
+Words whose trailing period does not end a sentence (lower case, no period). Single
+letters (initials, `e.g.`, `U.S.`) are skipped as well.
+
+### foley.eval.taste.SOUNDS_PER_SENTENCE_BAND *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[float](https://docs.python.org/3/builtins/functions.html#float), [float](https://docs.python.org/3/builtins/functions.html#float)]* *= (0.1, 1.0)*
+
+more
+sounds than sentences is “sound soup”. The floor holds over the whole set only, since a
+quiet passage left quiet is taste, while a designer that scores nothing anywhere is mute.
+
+* **Type:**
+  Sane density band (sounds per sentence, inclusive). The ceiling holds per passage
+
+### *class* foley.eval.taste.TasteReport(designer, passages, thresholds=TasteThresholds())
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+The tasteful-weave eval over a passage set: per passage + aggregated, plus thresholds.
+
+#### summary()
+
+The aggregate numbers (pooled over sounds, or over passages for the band/loudness).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+#### to_dict()
+
+Plain, JSON-safe dict: designer, thresholds, summary, per-passage rows.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+#### to_markdown()
+
+A short markdown rendering: the aggregate table, then one row per passage.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### *class* foley.eval.taste.TasteThresholds(sounds_per_sentence=(0.1, 1.0), licence_clean_target=1.0, placement_tolerance_s=0.25, loudness_tolerance_lu=1.0)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+The eval’s thresholds in one place (defaults: the module constants).
+
+#### to_dict()
+
+Plain, JSON-safe dict.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.eval.taste.count_sentences(text, , abbreviations=('mr', 'mrs', 'ms', 'dr', 'prof', 'st', 'sr', 'jr', 'vs', 'mt', 'lt', 'col', 'gen', 'capt', 'sgt', 'rev', 'fr', 'approx'))
+
+Sentences in `text`: terminators (`.!?`, closing quotes allowed) plus an open tail.
+
+An ellipsis does not end a sentence, nor does the period of an abbreviation
+(`abbreviations`) or of a single letter (initials, `e.g.`, `U.S.`).
+
+* **Return type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
+
+### foley.eval.taste.eval_library()
+
+The offline default library: the Ring-0 wav fixture (6 CC0 clips, wav-backed, so it weaves).
+
+### foley.eval.taste.licence_rows(items, library, intended_use)
+
+One `{clip_ref, clean, reason}` row per placed sound, judged by its library record.
+
+The weave’s own rights re-check ([`foley.licensing.refusals()`](_autosummary/foley.licensing.html.md#foley.licensing.refusals) over
+[`placed_record()`](_autosummary/foley.licensing.html.md#foley.licensing.placed_record)), so the rule and its wording are the same:
+fail-closed, a sound with no readable record is refused.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.eval.taste.load_passages(path=PosixPath('/home/runner/work/foley/foley/foley/data/taste/passages.json'))
+
+Load a passage set: a JSON list of `{id, segments, audio?}`.
+
+A relative `audio` path resolves against the JSON file’s folder.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Passage`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.Passage)]
+
+### foley.eval.taste.loudness_row(weave, , tolerance_lu=1.0)
+
+The woven mix’s integrated LUFS (re-measured) vs its master target; `None` unwoven.
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.eval.taste.measure_passage(passage, result, , library, intended_use, thresholds=TasteThresholds(sounds_per_sentence=(0.1, 1.0), licence_clean_target=1.0, placement_tolerance_s=0.25, loudness_tolerance_lu=1.0))
+
+Measure one designer result for `passage` (reads only `.timeline` and `.weave`).
+
+* **Return type:**
+  [`PassageTaste`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.PassageTaste)
+
+### foley.eval.taste.passage_sentences(passage)
+
+Sentences in a passage: counted per segment, each non-empty segment at least one.
+
+* **Return type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
+
+### foley.eval.taste.placement_rows(timeline, , tolerance_s=0.25)
+
+One row per enabled item of a *hydrated* timeline: expected vs actual onset.
+
+The expected onset is the trigger less the item’s pre-roll, clamped at 0 exactly as
+the render clamps it (so a sound cued on the first word is not read as pre-roll late).
+An item with no trigger is `ok=False` (`trigger_s=None`): a spot effect must hang
+on a word. See [`PLACEMENT_CAVEAT`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.PLACEMENT_CAVEAT) for what this can and cannot catch.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.eval.taste.restraint(n_sounds, n_sentences, , band=(0.1, 1.0))
+
+Sounds per sentence and whether it stays under `band`’s ceiling (one passage).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.eval.taste.run_taste_eval(passages=None, , designer=None, library=None, intended_use=None, thresholds=TasteThresholds(sounds_per_sentence=(0.1, 1.0), licence_clean_target=1.0, placement_tolerance_s=0.25, loudness_tolerance_lu=1.0))
+
+Run `designer` over `passages` and report restraint / licence / placement / loudness.
+
+Report-only: nothing here fails a build. A passage whose *designer* raises is recorded
+with its error and left out of the aggregates; a malformed passage set is refused up
+front (`ValueError` naming every bad passage), and a metric bug raises.
+
+* **Parameters:**
+  * **passages** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`None`](https://docs.python.org/3/builtins/constants.html#None), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path), [`Iterable`](https://docs.python.org/3/library/typing.html#typing.Iterable)]) – The passage set: `None` (the shipped set), a JSON path, or an iterable
+    of [`Passage`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.Passage) / `{id, segments, audio?}` dicts.
+  * **designer** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Passage`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.Passage)], [`ScoreResult`](_autosummary/foley.html.md#foley.ScoreResult)]]) – `passage -> ScoreResult` (default: [`score_designer()`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.score_designer) over `library`).
+  * **library** – The library the designer draws from, used for the licence check. Default:
+    [`eval_library()`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.eval_library) with the default designer, else `foley`’s default library.
+  * **intended_use** – The rights intent (default: commercial publishing, as `foley.score`).
+  * **thresholds** ([`TasteThresholds`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.TasteThresholds)) – A [`TasteThresholds`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.TasteThresholds) (default: the module constants); echoed
+    in the report.
+* **Return type:**
+  [`TasteReport`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.TasteReport)
+* **Returns:**
+  A [`TasteReport`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.TasteReport) (`to_dict()` for JSON, `to_markdown()` for people).
+
+### foley.eval.taste.score_designer(, library=None, intended_use=None, llm='fake', generate=False, aligner=None, \*\*score_kwargs)
+
+A designer that is `foley.score` on a passage’s segments (and audio, when it has some).
+
+Defaults are the offline, deterministic ones: the fake LLM, no generation fallback
+(`Budget(allow_generate=False, max_usd=0)`) and the fake aligner (even with
+`foley[align]` installed), so nothing is fetched, generated or paid and runs repeat.
+`generate=True`, `llm=None` (`$FOLEY_LLM`) and a real `aligner` give the
+production behaviour.
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Passage`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.Passage)], [`ScoreResult`](_autosummary/foley.html.md#foley.ScoreResult)]
 
 
 # _autosummary/foley.html.md
@@ -8235,7 +8674,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Which rung of the verification ladder produced a `Verdict`.
 
-### *class* foley.WeaveResult(audio, sr, timeline, credits, captions_vtt, captions_srt, master_report, run_manifest_ref=None, content_credential=None, watermark=None, notes=list())
+### *class* foley.WeaveResult(audio, sr, timeline, credits, captions_vtt, captions_srt, master_report, run_manifest_ref=None, content_credential=None, watermark=None, notes=list(), alignment=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -8243,6 +8682,14 @@ The output of [`weave()`](_autosummary/foley.weave.html.md#module-foley.weave) �
 
 A mastered mix + an editable, re-renderable timeline + credits + SDH captions + a
 reproducible run-artifact join, plus the fail-safe provenance re-assertion.
+
+#### alignment *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= None*
+
+the aligner’s name (`fake` = evenly spaced
+estimates, `whisperx`, `mfa`, …) or `cached` (the timeline already had them).
+
+* **Type:**
+  Where the word timings came from
 
 #### notes *: [list](https://docs.python.org/3/builtins/stdtypes.html#list)*
 
@@ -17022,7 +17469,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'netflix intro', 'netflix chime', 'ta-dum', 'netflix sound', 'ta dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel chime', 'intel bong', 'intel inside', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer doh', 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chime', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta-dum', 'ta dum', 'netflix intro', 'netflix sound', 'tudum', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel bong', 'intel inside', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -26418,14 +26865,26 @@ SSOT bridge from SELECT’s sparse `TimelineItem.onset` string to a
 
 ### Functions
 
-| [`parse_symbolic_anchor`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.parse_symbolic_anchor)(onset, \*[, layer, loop])   | Parse SELECT's sparse symbolic `onset` string into a resolved-later `Placement`.   |
-|----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------|
-| [`resolve_anchor`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.resolve_anchor)(placement, word_timeline, \*)      | Resolve a `Placement` to a concrete `(onset_seconds, duration_seconds)`.           |
+| [`nearest_word`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.nearest_word)(ref, word_timeline)                | Return the `word_timeline` entry best matching `ref` (fuzzy/lemmatised, earliest wins).   |
+|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| [`parse_symbolic_anchor`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.parse_symbolic_anchor)(onset, \*[, layer, loop]) | Parse SELECT's sparse symbolic `onset` string into a resolved-later `Placement`.          |
+| [`resolve_anchor`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.resolve_anchor)(placement, word_timeline, \*)    | Resolve a `Placement` to a concrete `(onset_seconds, duration_seconds)`.                  |
 
 ### foley.weave.anchor.SEGMENT_GAP_S *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.35*
 
 Inter-word gap (seconds) that ends a sentence segment (report 06 §2.4 uses
 `> ~350 ms` as a lightweight sentence segmenter over the aligned transcript).
+
+### foley.weave.anchor.nearest_word(ref, word_timeline)
+
+Return the `word_timeline` entry best matching `ref` (fuzzy/lemmatised, earliest wins).
+
+Matches the phrase’s first token exactly if present, else the closest word by
+lexical (`difflib`) ratio over any token; `None` when nothing is close or
+`ref` is empty.
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
 ### foley.weave.anchor.parse_symbolic_anchor(onset, , layer=Layer.sfx_fg, loop=False)
 
@@ -27634,7 +28093,7 @@ Peak ceiling of the final limiter (dBFS).
 * **Type:**
   [`float`](https://docs.python.org/3/builtins/functions.html#float)
 
-### *class* foley.weave.WeaveResult(audio, sr, timeline, credits, captions_vtt, captions_srt, master_report, run_manifest_ref=None, content_credential=None, watermark=None, notes=list())
+### *class* foley.weave.WeaveResult(audio, sr, timeline, credits, captions_vtt, captions_srt, master_report, run_manifest_ref=None, content_credential=None, watermark=None, notes=list(), alignment=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -27642,6 +28101,14 @@ The output of [`weave()`](_autosummary/foley.weave.html.md#foley.weave.weave) �
 
 A mastered mix + an editable, re-renderable timeline + credits + SDH captions + a
 reproducible run-artifact join, plus the fail-safe provenance re-assertion.
+
+#### alignment *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= None*
+
+the aligner’s name (`fake` = evenly spaced
+estimates, `whisperx`, `mfa`, …) or `cached` (the timeline already had them).
+
+* **Type:**
+  Where the word timings came from
 
 #### notes *: [list](https://docs.python.org/3/builtins/stdtypes.html#list)*
 
@@ -28766,16 +29233,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 05:20 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/3a4923eea4f0f26c7f7ac489f0d2394601a7f039"><code>3a4923e</code></a> on branch <code>main</code>, for **foley 0.0.120** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 05:57 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/94ecc952a653f636db245a9e63b6009bd84975f7"><code>94ecc95</code></a> on branch <code>main</code>, for **foley 0.0.121** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.121) is behind the latest release on PyPI (0.0.122): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/3a4923eea4f0f26c7f7ac489f0d2394601a7f039"><code>3a4923eea4f0f26c7f7ac489f0d2394601a7f039</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/94ecc952a653f636db245a9e63b6009bd84975f7"><code>94ecc952a653f636db245a9e63b6009bd84975f7</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -28786,9 +29255,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41393161103">41393161103</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41396721713">41396721713</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>3a4923eea4f0f26c7f7ac489f0d2394601a7f039</code> (in the history of the built commit) |
+| Event commit | <code>94ecc952a653f636db245a9e63b6009bd84975f7</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -28813,13 +29282,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.120/">0.0.120</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.122/">0.0.122</a>, newer than the documented version (0.0.121).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 3a4923eea4f0f26c7f7ac489f0d2394601a7f039
+git checkout 94ecc952a653f636db245a9e63b6009bd84975f7
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

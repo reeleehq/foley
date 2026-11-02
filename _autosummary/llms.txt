@@ -66,6 +66,7 @@
 - [foley.eval.prompt_match](foley.eval.prompt_match.html.md): Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).
 - [foley.eval.reliability](foley.eval.reliability.html.md): Inter-rater reliability — Krippendorff’s α + the judge-vs-human calibration guardrail.
 - [foley.eval.retrieval](foley.eval.retrieval.html.md): Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.
+- [foley.eval.taste](foley.eval.taste.html.md): The “tasteful weave” eval: does a sound designer produce a &#42;restrained, clean, well-placed&#42; result?
 - [foley.provenance](foley.provenance.html.md): Provenance layer for foley — attribution/credits (and, later, disclosure).
 - [foley.provenance.credits](foley.provenance.credits.html.md): TASL attribution / credits generator — the provenance render layer (#9a).
 - [foley.provenance.disclosure](foley.provenance.disclosure.html.md): Disclosure, watermarking &amp; safety for AI-generated audio (#9b).

@@ -394,7 +394,7 @@ Peak ceiling of the final limiter (dBFS).
 * **Type:**
   [`float`](https://docs.python.org/3/builtins/functions.html#float)
 
-### *class* foley.weave.WeaveResult(audio, sr, timeline, credits, captions_vtt, captions_srt, master_report, run_manifest_ref=None, content_credential=None, watermark=None, notes=list())
+### *class* foley.weave.WeaveResult(audio, sr, timeline, credits, captions_vtt, captions_srt, master_report, run_manifest_ref=None, content_credential=None, watermark=None, notes=list(), alignment=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -402,6 +402,14 @@ The output of [`weave()`](#foley.weave.weave) — the v1 Definition-of-Done deli
 
 A mastered mix + an editable, re-renderable timeline + credits + SDH captions + a
 reproducible run-artifact join, plus the fail-safe provenance re-assertion.
+
+#### alignment *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= None*
+
+the aligner’s name (`fake` = evenly spaced
+estimates, `whisperx`, `mfa`, …) or `cached` (the timeline already had them).
+
+* **Type:**
+  Where the word timings came from
 
 #### notes *: [list](https://docs.python.org/3/builtins/stdtypes.html#list)*
 

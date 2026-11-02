@@ -38,6 +38,9 @@ foley.eval
       frechet_distance
       kernel_audio_distance
       generation_fidelity
+      run_taste_eval
+      score_designer
+      load_passages
    
    .. rubric:: Classes
 
@@ -50,6 +53,10 @@ foley.eval
       AlphaResult
       FidelityStamp
       FidelityResult
+      Passage
+      PassageTaste
+      TasteReport
+      TasteThresholds
    
 .. rubric:: Modules
 
@@ -68,3 +75,4 @@ foley.eval
    prompt_match
    reliability
    retrieval
+   taste

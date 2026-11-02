@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=69b21de1"></script>
+    <script src="../../../_static/documentation_options.js?v=cdca99f8"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.120" />
+  <meta name="docsearch:version" content="0.0.121" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -815,7 +815,9 @@ window.runMermaid = runMermaid;</script>
 
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_nearest_word</span><span class="p">(</span><span class="n">ref</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">word_timeline</span><span class="p">:</span> <span class="s2">"list[dict]"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<div class="viewcode-block" id="nearest_word">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.anchor.html#foley.weave.nearest_word">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">nearest_word</span><span class="p">(</span><span class="n">ref</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">word_timeline</span><span class="p">:</span> <span class="s2">"list[dict]"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""Return the ``word_timeline`` entry best matching ``ref`` (fuzzy/lemmatised, earliest wins).</span>
 
 <span class="sd">    Matches the phrase's first token exactly if present, else the closest word by</span>
@@ -846,7 +848,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">ratio</span> <span class="o">=</span> <span class="n">difflib</span><span class="o">.</span><span class="n">SequenceMatcher</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">token</span><span class="p">,</span> <span class="n">nw</span><span class="p">)</span><span class="o">.</span><span class="n">ratio</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">ratio</span> <span class="o">&gt;</span> <span class="n">best_ratio</span><span class="p">:</span>
                 <span class="n">best</span><span class="p">,</span> <span class="n">best_ratio</span> <span class="o">=</span> <span class="n">w</span><span class="p">,</span> <span class="n">ratio</span>
-    <span class="k">return</span> <span class="n">best</span> <span class="k">if</span> <span class="n">best_ratio</span> <span class="o">&gt;=</span> <span class="mf">0.6</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">best</span> <span class="k">if</span> <span class="n">best_ratio</span> <span class="o">&gt;=</span> <span class="mf">0.6</span> <span class="k">else</span> <span class="kc">None</span></div>
+
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_segment_sentences</span><span class="p">(</span>
@@ -891,7 +894,7 @@ window.runMermaid = runMermaid;</script>
         <span class="nb">float</span><span class="p">(</span><span class="n">word_timeline</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"start"</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)),</span>
         <span class="nb">float</span><span class="p">(</span><span class="n">word_timeline</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"end"</span><span class="p">,</span> <span class="n">word_timeline</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"start"</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))),</span>
     <span class="p">)</span>
-    <span class="n">w</span> <span class="o">=</span> <span class="n">_nearest_word</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">word_timeline</span><span class="p">)</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="n">nearest_word</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">word_timeline</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">w</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">whole</span>
     <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="n">_segment_sentences</span><span class="p">(</span><span class="n">word_timeline</span><span class="p">):</span>
@@ -960,7 +963,7 @@ window.runMermaid = runMermaid;</script>
     <span class="k">if</span> <span class="n">placement</span><span class="o">.</span><span class="n">anchor</span> <span class="ow">is</span> <span class="n">Anchor</span><span class="o">.</span><span class="n">absolute</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">word_timeline</span><span class="p">:</span>
         <span class="n">onset</span> <span class="o">=</span> <span class="n">placement</span><span class="o">.</span><span class="n">onset</span>
     <span class="k">elif</span> <span class="n">placement</span><span class="o">.</span><span class="n">anchor</span> <span class="ow">is</span> <span class="n">Anchor</span><span class="o">.</span><span class="n">word</span><span class="p">:</span>
-        <span class="n">w</span> <span class="o">=</span> <span class="n">_nearest_word</span><span class="p">(</span><span class="n">placement</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span> <span class="n">word_timeline</span><span class="p">)</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">nearest_word</span><span class="p">(</span><span class="n">placement</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span> <span class="n">word_timeline</span><span class="p">)</span>
         <span class="n">onset</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">w</span><span class="p">[</span><span class="s2">"start"</span><span class="p">])</span> <span class="k">if</span> <span class="n">w</span> <span class="k">else</span> <span class="n">placement</span><span class="o">.</span><span class="n">onset</span>
     <span class="k">elif</span> <span class="n">placement</span><span class="o">.</span><span class="n">anchor</span> <span class="ow">is</span> <span class="n">Anchor</span><span class="o">.</span><span class="n">sentence</span><span class="p">:</span>
         <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="n">_span_onset</span><span class="p">(</span><span class="n">placement</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span> <span class="n">word_timeline</span><span class="p">)</span>

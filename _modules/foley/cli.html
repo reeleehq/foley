@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=69b21de1"></script>
+    <script src="../../_static/documentation_options.js?v=cdca99f8"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.120" />
+  <meta name="docsearch:version" content="0.0.121" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -945,6 +945,22 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="mi">0</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_cmd_eval_taste</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``eval-taste``: the tasteful-weave report (restraint / licence / placement / loudness)."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.eval.taste</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_taste_eval</span>
+
+    <span class="n">report</span> <span class="o">=</span> <span class="n">run_taste_eval</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">passages</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">json</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">report</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">report</span><span class="o">.</span><span class="n">to_markdown</span><span class="p">())</span>
+    <span class="c1"># Report-only (#45): non-zero only when nothing could be designed at all.</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+    <span class="k">return</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="s2">"n_passages"</span><span class="p">]</span> <span class="ow">and</span> <span class="n">s</span><span class="p">[</span><span class="s2">"n_failed"</span><span class="p">]</span> <span class="o">==</span> <span class="n">s</span><span class="p">[</span><span class="s2">"n_passages"</span><span class="p">]</span> <span class="k">else</span> <span class="mi">0</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_fit_baseline_command</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">report</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""``eval-fit --update-baseline`` (re-stamp) or ``--baseline`` (gate against the stamp)."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.eval.baseline</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -1276,6 +1292,18 @@ window.runMermaid = runMermaid;</script>
         <span class="n">help</span><span class="o">=</span><span class="s2">"re-stamp the committed fit baseline from this run (a reviewable diff)"</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">p_eval_fit</span><span class="o">.</span><span class="n">set_defaults</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">_cmd_eval_fit</span><span class="p">)</span>
+
+    <span class="n">p_eval_taste</span> <span class="o">=</span> <span class="n">sub</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span>
+        <span class="s2">"eval-taste"</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"tasteful-weave eval of foley.score over a passage set (report-only)"</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">p_eval_taste</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">"--passages"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"a passage-set JSON (default: the shipped set)"</span>
+    <span class="p">)</span>
+    <span class="n">p_eval_taste</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">"--json"</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">"store_true"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"emit the full TasteReport as JSON"</span>
+    <span class="p">)</span>
+    <span class="n">p_eval_taste</span><span class="o">.</span><span class="n">set_defaults</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">_cmd_eval_taste</span><span class="p">)</span>
 
     <span class="n">p_search</span> <span class="o">=</span> <span class="n">sub</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span><span class="s2">"search"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"hybrid search of the default library"</span><span class="p">)</span>
     <span class="n">p_search</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"query"</span><span class="p">)</span>
