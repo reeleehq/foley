@@ -30,8 +30,8 @@ from ..base import Anchor, Layer, Placement
 #: ``> ~350 ms`` as a lightweight sentence segmenter over the aligned transcript).
 SEGMENT_GAP_S: float = 0.35
 
-#: A prefix match (``slam`` → ``slammed``) needs the shorter word to have at least this
-#: many characters and this share of the longer one, so ``a`` never claims ``apple``.
+#: A stem match needs at least this many letters; a cue shorter than the spoken word
+#: must also hold this share of it (``slam`` → ``slammed``), so ``a`` never claims ``apple``.
 PREFIX_MIN_CHARS: int = 3
 PREFIX_MIN_SHARE: float = 0.5
 
@@ -103,11 +103,12 @@ def parse_symbolic_anchor(
 
 
 def nearest_word(ref: Optional[str], word_timeline: "list[dict]") -> Optional[dict]:
-    """Return the ``word_timeline`` entry best matching ``ref`` (fuzzy/lemmatised, earliest wins).
+    """Return the ``word_timeline`` entry best matching ``ref`` (earliest wins).
 
-    Matches the phrase's first token exactly if present, else the closest word by
-    lexical (``difflib``) ratio over any token; ``None`` when nothing is close or
-    ``ref`` is empty.
+    Matches the phrase's first token exactly if present, else a word sharing its stem
+    (:func:`_is_stem_match`), else the closest word by lexical (``difflib``) ratio over
+    any token among words at least :data:`FUZZY_MIN_LENGTH_SHARE` of its length;
+    ``None`` when nothing is close or ``ref`` is empty.
     """
     if not ref or not word_timeline:
         return None
@@ -120,9 +121,10 @@ def nearest_word(ref: Optional[str], word_timeline: "list[dict]") -> Optional[di
     for nw, w in normed:
         if nw == head:
             return w
-    # 2) prefix on the head (an inflection: slam / slammed), not a short stub.
+    # 2) a stem: an inflection (slam / slammed) or the spoken part of a compound cue
+    #    (gunshot / gun, footsteps / steps), never a short stub (a / apple).
     for nw, w in normed:
-        if nw and _is_prefix_match(head, nw):
+        if nw and _is_stem_match(head, nw):
             return w
     # 3) closest lexical match over the full phrase, earliest of the best.
     best, best_ratio = None, 0.0
@@ -136,17 +138,27 @@ def nearest_word(ref: Optional[str], word_timeline: "list[dict]") -> Optional[di
     return best if best_ratio >= FUZZY_MIN_RATIO else None
 
 
-def _is_prefix_match(a: str, b: str) -> bool:
-    """Whether one of ``a``, ``b`` starts the other and is long enough to mean it.
+def _is_stem_match(cue: str, word: str) -> bool:
+    """Whether the spoken ``word`` and the ``cue`` share a stem long enough to mean it.
 
-    >>> _is_prefix_match("slam", "slammed"), _is_prefix_match("apple", "a")
-    (True, False)
+    The spoken word may be the cue's stem at either end (``gun`` for ``gunshot``,
+    ``steps`` for ``footsteps``) once it has :data:`PREFIX_MIN_CHARS` letters. A cue
+    shorter than the word must start it and hold :data:`PREFIX_MIN_SHARE` of it (an
+    inflection, ``slam`` for ``slammed``), so a short cue never claims a longer word.
+
+    >>> _is_stem_match("slam", "slammed"), _is_stem_match("gunshot", "gun")
+    (True, True)
+    >>> _is_stem_match("footsteps", "steps"), _is_stem_match("apple", "a"), _is_stem_match("car", "carpets")
+    (True, False, False)
     """
-    short, long_ = sorted((a, b), key=len)
+    if len(word) <= len(cue):
+        return len(word) >= PREFIX_MIN_CHARS and (
+            cue.startswith(word) or cue.endswith(word)
+        )
     return (
-        long_.startswith(short)
-        and len(short) >= PREFIX_MIN_CHARS
-        and len(short) >= PREFIX_MIN_SHARE * len(long_)
+        word.startswith(cue)
+        and len(cue) >= PREFIX_MIN_CHARS
+        and len(cue) >= PREFIX_MIN_SHARE * len(word)
     )
 
 

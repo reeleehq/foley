@@ -111,3 +111,7 @@ def test_a_short_unrelated_word_never_claims_a_cue():
     assert nearest_word("slam", wt)["word"] == "slammed."  # an inflection still matches
     assert nearest_word("doors", wt)["word"] == "door"
     assert nearest_word("rainy", wt)["word"] == "rain"  # fuzzy, long enough
+    gun = [{"word": w, "start": i * 0.5, "end": (i + 1) * 0.5}
+           for i, w in enumerate("A gun went off. Heavy steps followed.".split())]  # fmt: skip
+    assert nearest_word("gunshot", gun)["word"] == "gun"  # a compound cue's spoken stem
+    assert nearest_word("footsteps", gun)["word"] == "steps"
