@@ -29,7 +29,12 @@ from pathlib import Path
 from typing import Optional
 
 from ..base import AcquisitionMethod, LicenseRecord
-from ..licensing import ASSERTABLE_LICENSE_IDS, LICENSE_FLAGS, apply_license_flags
+from ..licensing import (
+    ASSERTABLE_LICENSE_IDS,
+    LICENSE_FLAGS,
+    apply_license_flags,
+    license_meta,
+)
 
 #: Sidecar file names, by precedence within one folder.
 SIDECAR_NAMES = ("foley-license.toml", "foley-license.json")
@@ -74,7 +79,11 @@ def find_sidecar(path, *, root=None) -> Optional[Path]:
     if stop is not None and stop != folder and stop not in folder.parents:
         raise SidecarError(f"{path} is not under the library root {root}")
     for candidate in (folder, *folder.parents):
-        found = [candidate / n for n in SIDECAR_NAMES if (candidate / n).exists()]
+        found = [
+            candidate / n
+            for n in SIDECAR_NAMES
+            if (candidate / n).exists() or (candidate / n).is_symlink()
+        ]
         if len(found) > 1 or any(not f.is_file() for f in found):
             raise SidecarError(
                 f"{candidate}: expected one sidecar file, found {[f.name for f in found]}"
@@ -134,13 +143,19 @@ def read_sidecar(sidecar) -> dict:
     return data
 
 
+def _licence_name(license_id: str, pack: Optional[str]) -> Optional[str]:
+    """The licence's display name with the pack it covers, or ``None`` (the row's own)."""
+    return f"{license_meta(license_id).display_name} ({pack})" if pack else None
+
+
 def sidecar_license(path, *, root=None) -> LicenseRecord:
     """The :class:`~foley.base.LicenseRecord` the nearest sidecar asserts for ``path``.
 
     ``rights_verified`` is ``True`` (the user asserted it, as with
     ``foley.ingest(path, license=...)``), the flags come from the licence row, and
     ``ai_training = false`` narrows the row's flag (``true`` never widens it). The
-    pack and the licensor are recorded as the rights holder and in ``license_name``.
+    licensor is the rights holder; the pack is named in ``license_name`` after the
+    licence's own name (``"CC0 1.0 Universal (Public Domain Dedication) (GDC 2024)"``).
 
     Raises:
         SidecarError: If no sidecar covers ``path`` (up to ``root``), or it is invalid.
@@ -156,7 +171,7 @@ def sidecar_license(path, *, root=None) -> LicenseRecord:
     record = LicenseRecord(
         source=SIDECAR_SOURCE,
         license_id=data["license"],
-        license_name=data.get("pack"),
+        license_name=_licence_name(data["license"], data.get("pack")),
         license_url=data.get("license_url"),
         rights_holder=data.get("licensor"),
         attribution_text=data.get("attribution"),

@@ -35,7 +35,8 @@ def _tree(tmp_path):
 def test_a_file_takes_the_nearest_sidecar(tmp_path):
     pack = _tree(tmp_path)
     lic = sidecar_license(pack / "doors" / "a.wav", root=tmp_path)
-    assert (lic.license_id, lic.rights_holder, lic.license_name) == ("owned-pack", "Sonniss", "GDC 2024")
+    assert (lic.license_id, lic.rights_holder) == ("owned-pack", "Sonniss")
+    assert lic.license_name.startswith("Purchased sound-effects library") and "(GDC 2024)" in lic.license_name
     assert lic.source == "licensed_library" and lic.source_id is None
     assert lic.rights_verified and lic.verified_at and lic.attribution_text
     assert (lic.commercial_ok, lic.redistribute_standalone_ok, lic.ai_training_ok) == (True, False, False)
@@ -102,6 +103,11 @@ def test_ambiguous_or_unreadable_sidecars_are_refused(tmp_path):
     (tmp_path / "foley-license.json").write_text('{"license": "owned-pack"}')
     with pytest.raises(SidecarError, match="expected one sidecar"):
         find_sidecar(tmp_path / "a.wav")
+    dangling = tmp_path / "dangling"
+    dangling.mkdir()
+    (dangling / "foley-license.toml").symlink_to(tmp_path / "gone.toml")  # broken link
+    with pytest.raises(SidecarError, match="expected one sidecar"):
+        find_sidecar(dangling / "a.wav", root=dangling)
     sub = tmp_path / "sub"
     (sub / "foley-license.toml").mkdir(parents=True)  # a folder by that name
     with pytest.raises(SidecarError, match="expected one sidecar"):
