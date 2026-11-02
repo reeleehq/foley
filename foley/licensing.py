@@ -604,8 +604,9 @@ def carry_lineage(new: LicenseRecord, old: LicenseRecord) -> LicenseRecord:
 
     The lineage is what a re-stamped record must keep from the one it replaces: its
     ``transformations`` (the edits and fixes, so the credit still reads "(modified)"),
-    its ``derived_from_license_ids`` (the licences bounding it, #214) and its
-    ``terms_notes`` (added to ``new``'s: the source's API obligations, #77). Fresh lists,
+    its ``derived_from_license_ids`` (the licences bounding it, #214), its
+    ``terms_notes`` (added to ``new``'s: the source's API obligations, #77) and the
+    facts about its bytes (a vendor that reuses them, the vendor's watermark). Fresh lists,
     so the two records never share one; a ``None`` reads as empty. ``new``'s flags are
     then bounded by every licence it now derives from (never widened), so the copy is
     safe on its own; a later :func:`apply_license_flags` re-derives under the same bound.
@@ -624,8 +625,12 @@ def carry_lineage(new: LicenseRecord, old: LicenseRecord) -> LicenseRecord:
     """
     new.transformations = list(old.transformations or ())
     new.derived_from_license_ids = list(old.derived_from_license_ids or ())
-    # The obligations of the terms the bytes were obtained under outlive a restamp.
+    # The obligations of the terms the bytes were obtained under outlive a restamp, and
+    # so do the facts about the bytes: a vendor that reuses them, a vendor watermark.
     new.terms_notes = _merged_notes(new.terms_notes, old.terms_notes)
+    if old.vendor_trains_on_output:
+        new.vendor_trains_on_output = True
+    new.vendor_watermark = new.vendor_watermark or old.vendor_watermark
     return _set_flags(new, _bounded_by_lineage(_flags_of(new), new))
 
 
@@ -806,7 +811,8 @@ def _checked_stated(name: str, value):
         raise ValueError("terms_notes must be a list of sentences (str)")
     if name == "vendor_watermark" and value is not None:
         if (
-            value.get("present") not in (True, False, None)
+            not isinstance(value, Mapping)
+            or value.get("present") not in (True, False, None)
             or value.get("reported_by") not in VENDOR_WATERMARK_REPORTERS
         ):
             raise ValueError(
@@ -1281,7 +1287,7 @@ def wider_rights(record: LicenseRecord, bound: LicenseRecord) -> "list[str]":
     """What ``record`` allows that ``bound`` does not (``[]``: no wider than ``bound``).
 
     A permission of :data:`_DERIVATIVE_SHARED_FLAGS` it holds and ``bound`` lacks, an
-    attribution, a notice or a terms note ``bound`` carries and it does not, a higher (or no)
+    attribution or a notice ``bound`` requires and it does not, a higher (or no)
     revenue cap, a looser AI-use scope, a voice or trademark flag ``bound`` raises
     and it does not, another stated AI-use preference. How an edit tells that a byte-identical sound
     already in the library is not the edit it made (see :func:`narrow_to_source`).
@@ -1304,8 +1310,6 @@ def wider_rights(record: LicenseRecord, bound: LicenseRecord) -> "list[str]":
         and bound.notice_text_required != record.notice_text_required
     ):
         wider.append("notice_text_required")
-    if set(bound.terms_notes or ()) - set(record.terms_notes or ()):
-        wider.append("terms_notes")
     if bound.revenue_cap_usd is not None and (
         record.revenue_cap_usd is None or record.revenue_cap_usd > bound.revenue_cap_usd
     ):
@@ -1343,7 +1347,9 @@ def restamped_license(
     Returns ``(new_record, note)``: ``new_record`` is ``None`` when the stored licence
     stays as it is, and ``note`` is ``None`` when there is nothing to say. Pure:
     neither argument is changed. The stored lineage (edits, the licences bounding it)
-    is always kept (:func:`carry_lineage`).
+    is always kept (:func:`carry_lineage`). ``terms_notes`` are not rights: ``fresh``'s
+    are added to the stored record whatever happens to its licence (then
+    ``new_record`` is the stored licence with them, even when its rights stay).
 
     * ``widen=True``: ``fresh`` replaces the stored licence. For a source that is the
       authority on its own clips (a corpus's metadata, :func:`foley.bootstrap.bootstrap`).
@@ -1369,7 +1375,7 @@ def restamped_license(
     if not (wider or narrower) and all(
         getattr(stored, f) == getattr(fresh, f) for f in RESTAMP_FIELDS
     ):
-        return None, None
+        return _with_fresh_notes(stored, fresh), None
     was = ", ".join(filter(None, (stored.source, stored.license_url)))
     change = f"licence {stored.license_id} -> {fresh.license_id} (was from {was})" + (
         f"; no longer allows {', '.join(narrower)}" if narrower else ""
@@ -1377,7 +1383,7 @@ def restamped_license(
     if widen or not stored.rights_verified or not wider:
         return candidate, change
     if not narrower:
-        return None, (
+        return _with_fresh_notes(stored, fresh), (
             f"not widened: {fresh.license_id} would also allow {', '.join(wider)} over "
             f"the stored {stored.license_id}; to widen it, "
             f"foley.restamp_rights(ids=[...], license={fresh.license_id!r}, apply=True)"
@@ -1387,6 +1393,17 @@ def restamped_license(
         f"licences conflict ({stored.license_id} vs {fresh.license_id}): kept "
         f"{stored.license_id}, bounded by {fresh.license_id}"
     )
+
+
+def _with_fresh_notes(
+    stored: LicenseRecord, fresh: LicenseRecord
+) -> Optional[LicenseRecord]:
+    """A copy of ``stored`` with ``fresh``'s terms notes added, or ``None`` when it has them."""
+    if set(fresh.terms_notes or ()) <= set(stored.terms_notes or ()):
+        return None
+    kept = carry_lineage(replace(stored), stored)
+    kept.terms_notes = _merged_notes(stored.terms_notes, fresh.terms_notes)
+    return kept
 
 
 def keep(record: LicenseRecord, intended_use: IntendedUse) -> bool:

@@ -490,19 +490,20 @@ def reported_watermark(
     """The vendor's watermark as this response reports it (#77), or ``None``.
 
     Only for an endpoint whose config names the response field
-    (``native_defaults['watermark_field']``: Sonilo's ``watermark``, "present when
-    the audio carries the inaudible provenance watermark"): its presence is the
-    statement. The config's own statement (``stated``) is kept beside it.
+    (``native_defaults['watermark_field']``: Sonilo's ``watermark``), and only when the
+    response carries it: an absent field is no report (fal's schema does not list it),
+    so the config's statement stands. The config's own statement (``stated``) is kept
+    beside the report.
 
     >>> reported_watermark({"watermark": "sonilo-v1"}, None, {"watermark_field": "watermark"})
     {'present': True, 'statement': None, 'reported_by': 'response', 'detail': 'sonilo-v1'}
-    >>> reported_watermark({}, None, {"watermark_field": "watermark"})["present"]
-    False
+    >>> reported_watermark({}, None, {"watermark_field": "watermark"}) is None
+    True
     >>> reported_watermark({"watermark": "x"}, None, {}) is None
     True
     """
     name = native_defaults.get("watermark_field")
-    if not name or not isinstance(response, dict):
+    if not name or not isinstance(response, dict) or name not in response:
         return None
     value = response.get(name)
     return {

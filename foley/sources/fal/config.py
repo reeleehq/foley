@@ -77,6 +77,11 @@ _MODEL_LICENCE = {
     "license_basis": "model-licence",
     "license_basis_confidence": "confirmed",
 }
+#: A model licence whose reach is in doubt (report 13 §2B, §2D): MMAudio's CC BY-NC
+#: weights (whether fal holds a commercial licence from its authors is undocumented)
+#: and ThinkSound (HF tag Apache-2.0, README research only). foley keeps the stricter
+#: reading either way.
+_DOUBTED_MODEL_LICENCE = {**_MODEL_LICENCE, "license_basis_confidence": "unverified"}
 _PARTNER_TERMS = {
     "default_license_id": "fal-partner-unverified",
     "cache_bytes_ok": True,
@@ -110,8 +115,9 @@ _FAL_ELEVENLABS_TERMS = {
     ],
 }
 _SONILO_WATERMARK = (
-    "Sonilo marks its audio with an inaudible provenance watermark and reports it "
-    "per clip (the response's 'watermark' field)."
+    "Sonilo documents an inaudible provenance watermark, reported per clip in a "
+    "'watermark' response field when present (not in fal's schema as read "
+    "2026-11-02, so usually unreported)."
 )
 
 #: What every fal source shares: the key, the extra, the transport, the egress class.
@@ -436,7 +442,7 @@ SOURCE_CONFIGS = (
         license={
             "default_license_id": "CC-BY-NC-4.0",
             "cache_bytes_ok": True,
-            **_MODEL_LICENCE,
+            **_DOUBTED_MODEL_LICENCE,
             "attribution_text": (
                 "Generated with MMAudio (Cheng et al., CC BY-NC 4.0 weights) via fal.ai"
             ),
@@ -528,6 +534,7 @@ SOURCE_CONFIGS = (
             "model_id": "sonilo-v1.1",
             "generator_version": "sonilo/v1.1/video-to-sound-effects",
             "audio_format": "wav",
+            "watermark_field": "watermark",  # read when the response carries it (#77)
         },
         license=copy.deepcopy(_PARTNER_TERMS),
         capabilities={"watermark_statement": _SONILO_WATERMARK},
@@ -584,7 +591,7 @@ SOURCE_CONFIGS = (
         license={
             "default_license_id": "CC-BY-NC-4.0",
             "cache_bytes_ok": True,
-            **_MODEL_LICENCE,
+            **_DOUBTED_MODEL_LICENCE,
             "attribution_text": (
                 "Generated with MMAudio (Cheng et al., CC BY-NC 4.0 weights) via fal.ai"
             ),
@@ -631,7 +638,7 @@ SOURCE_CONFIGS = (
         license={
             "default_license_id": "research-only",
             "cache_bytes_ok": True,
-            **_MODEL_LICENCE,
+            **_DOUBTED_MODEL_LICENCE,
         },
         commercial_ok=False,
         # Billed per *compute* second: not knowable before the call, so the estimate is

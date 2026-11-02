@@ -14,6 +14,7 @@ np = pytest.importorskip("numpy")
 pytest.importorskip("soundfile")
 
 from foley.base import IntendedUse, LicenseRecord, SoundRecord  # noqa: E402
+from foley.index.ingest import _restamped  # noqa: E402
 from foley.licensing import (  # noqa: E402
     SOURCE_STATED_FIELDS,
     apply_license_flags,
@@ -21,6 +22,7 @@ from foley.licensing import (  # noqa: E402
     excluded_territories,
     narrow_to_source,
     refusal_reason,
+    restamped_license,
     stamp_source_terms,
 )
 from foley.provenance import credits_for  # noqa: E402
@@ -110,6 +112,8 @@ def test_a_bad_stated_value_is_refused():
         stamp_source_terms(LicenseRecord(source="s"), {"commercial_ok": True})
     with pytest.raises(ValueError, match="terms_notes"):
         stamp_source_terms(LicenseRecord(source="s"), {"terms_notes": "one string"})
+    with pytest.raises(ValueError, match="vendor_watermark"):
+        stamp_source_terms(LicenseRecord(source="s"), {"vendor_watermark": True})
 
 
 def test_every_source_config_states_valid_terms():
@@ -175,11 +179,14 @@ def test_sonilo_reports_its_own_watermark_per_clip():
     assert wm.vendor_watermark["present"] is True
     assert wm.vendor_watermark["reported_by"] == "response"
     assert wm.watermark is None  # foley's own AudioSeal entry stays separate
+    # fal's schema lists no such field: an absent field is no report, so the
+    # config's statement stands (never a false "not watermarked").
+    for name in ("fal_sonilo", "fal_sonilo_v2a"):
+        assert SOURCE_REGISTRY[name]["config"]["native_defaults"]["watermark_field"]
     unmarked = ReplayRunner(default=(_wav(), {"audio": {"url": "u"}}))
     adapter, _ = _adapter("fal_sonilo", runner=unmarked)
-    assert adapter.generate("a sigh", duration_s=1).candidate.sound.license.vendor_watermark[
-        "present"
-    ] is False
+    wm = adapter.generate("a sigh", duration_s=1).candidate.sound.license.vendor_watermark
+    assert wm["present"] is None and wm["reported_by"] == "config"
 
 
 def test_a_local_generator_has_no_vendor_and_reuses_the_watermarked_capability():
@@ -192,10 +199,9 @@ def test_a_local_generator_has_no_vendor_and_reuses_the_watermarked_capability()
 # -- carried downstream ----------------------------------------------------------
 
 
-def _freesound_record() -> SoundRecord:
+def _freesound_record(license_url="https://creativecommons.org/licenses/by/4.0/"):
     adapter = FreesoundAdapter(api_key="t", http=lambda *a, **k: pytest.fail("no HTTP"))
-    item = {"id": 9, "name": "rain", "username": "bo",
-            "license": "https://creativecommons.org/licenses/by/4.0/"}  # fmt: skip
+    item = {"id": 9, "name": "rain", "username": "bo", "license": license_url}
     return adapter._candidate_from_item(item).sound
 
 
@@ -220,3 +226,53 @@ def test_terms_notes_outlive_an_edit_and_a_restamp():
     assert out.terms_notes == ["src terms"]
     fresh = carry_lineage(_verified("user-owned"), source)
     assert fresh.terms_notes == ["src terms"]
+
+
+# -- restamps: terms notes are not rights (review of PR #248) --------------------
+
+
+def _legacy_freesound(license_id):
+    """A Freesound record stored before #77: no terms notes."""
+    rec = _freesound_record(license_id)
+    rec.license.terms_notes = []
+    return rec.license
+
+
+def test_a_legacy_freesound_record_is_not_widened_and_gains_the_note():
+    stored = _legacy_freesound("https://creativecommons.org/licenses/by/4.0/")
+    fresh = _freesound_record("https://creativecommons.org/publicdomain/zero/1.0/").license
+    new, note = restamped_license(stored, fresh, widen=False)
+    assert note.startswith("not widened")  # not "licences conflict"
+    assert new.license_id == "CC-BY-4.0" and new.derived_from_license_ids == []
+    assert any(FREESOUND_UPF in n for n in new.terms_notes)
+    assert stored.terms_notes == []  # pure
+
+
+def test_a_matching_licence_only_gains_the_note_silently():
+    url = "https://creativecommons.org/licenses/by/4.0/"
+    stored, fresh = _legacy_freesound(url), _freesound_record(url).license
+    new, note = restamped_license(stored, fresh, widen=False)
+    assert note is None and new.license_id == "CC-BY-4.0"
+    assert any(FREESOUND_UPF in n for n in new.terms_notes)
+    assert restamped_license(new, fresh, widen=False) == (None, None)  # idempotent
+
+
+def test_a_narrower_fresh_licence_replaces_with_no_terms_notes_complaint():
+    stored = _legacy_freesound("https://creativecommons.org/publicdomain/zero/1.0/")
+    fresh = _freesound_record("https://creativecommons.org/licenses/by/4.0/").license
+    new, note = restamped_license(stored, fresh, widen=False)
+    assert new.license_id == "CC-BY-4.0" and "terms_notes" not in note
+    assert any(FREESOUND_UPF in n for n in new.terms_notes)
+
+
+def test_a_restamp_keeps_the_facts_about_the_bytes_and_an_assertion_drops_the_basis():
+    old = stamp_source_terms(_verified("fal-partner-unverified"), {
+        "license_basis": "vendor-tos", "license_basis_confidence": "unverified",
+        "vendor_trains_on_output": True,
+        "vendor_watermark": {"present": True, "reported_by": "response"}})  # fmt: skip
+    kept = carry_lineage(_verified("CC0-1.0"), old)
+    assert kept.vendor_trains_on_output is True and kept.vendor_watermark["present"]
+    asserted = _restamped(old, "user-owned")
+    assert asserted.rights_verified and asserted.license_basis is None
+    assert asserted.license_basis_confidence is None
+    assert asserted.vendor_trains_on_output is True  # still a fact about the bytes
