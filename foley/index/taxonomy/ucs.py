@@ -2,10 +2,12 @@
 
 A UCS filename is underscore-delimited with the **CatID first**::
 
-    CatID_FXName_CreatorID_SourceID[_UserCategory_UserData].ext
+    CatID[-UserCategory]_[VendorCategory-]FXName_CreatorID_SourceID[_UserData].ext
 
-Only token 0 (the CatID) carries the controlled taxonomy; it is looked up in the
-table (never string-split, since the category prefix is variable-length). The
+Only the CatID carries the controlled taxonomy; it is looked up in the table (never
+string-split, since the category prefix is variable-length).
+:func:`parse_ucs_name` returns every block (:class:`~.model.UcsName`);
+:func:`parse_ucs_filename` just the category pair. The
 loader merges the in-code seed with an optional full-table JSON drop under
 ``taxonomy/data/ucs_full.json`` (JSON wins on CatID collision) — open/closed.
 """
@@ -17,7 +19,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
-from .model import UcsRow, UcsTable
+from .model import UcsName, UcsRow, UcsTable
 from .seed import SEED_UCS_TABLE
 
 _DATA_DIR = Path(__file__).parent / "data"
@@ -66,17 +68,73 @@ def default_ucs_table() -> UcsTable:
     return load_ucs_table()
 
 
-def parse_catid_token(filename) -> Optional[str]:
-    """Return token 0 (the CatID candidate) of a UCS-style filename, else ``None``.
+def _ucs_blocks(filename) -> "list[str]":
+    """The underscore-delimited blocks of a filename's stem (``[]`` without a ``_``)."""
+    stem = Path(str(filename)).stem.strip()
+    return [b.strip() for b in stem.split("_")] if "_" in stem else []
 
-    Strips directory and extension; requires at least one ``_`` (the field
-    delimiter). Does not validate the token against the table.
+
+def _split_hyphen(block: str, *, head: bool) -> "tuple[str, Optional[str]]":
+    """``block`` split on its first hyphen: ``(main, extra)``, ``extra`` the head or tail."""
+    left, sep, right = block.partition("-")
+    if not sep or not left or not right:
+        return block, None
+    return (right, left) if head else (left, right)
+
+
+def parse_catid_token(filename) -> Optional[str]:
+    """Return the CatID candidate of a UCS-style filename, else ``None``.
+
+    Strips directory, extension and an attached ``-UserCategory``; requires at least
+    one ``_`` (the field delimiter). Does not validate the token against the table.
+
+    >>> parse_catid_token("DOORWood-Gate_Creak_JD_NYC.wav")
+    'DOORWood'
     """
-    stem = Path(str(filename)).stem
-    stem = stem.strip()
-    if "_" not in stem:
+    blocks = _ucs_blocks(filename)
+    return (_split_hyphen(blocks[0], head=False)[0] or None) if blocks else None
+
+
+def parse_ucs_name(filename, *, table: Optional[UcsTable] = None) -> Optional[UcsName]:
+    """Every block of a UCS filename as a :class:`~.model.UcsName`, else ``None``.
+
+    Fail-quiet like :func:`parse_ucs_filename`: ``None`` when the name has no ``_`` or
+    its CatID is not in the table. Blocks past SourceID are the UserData (rejoined
+    with ``_``); a block the name lacks is ``None``. A hyphen in the FXName block is
+    read as the VendorCategory separator, as UCS defines it.
+
+    >>> n = parse_ucs_name("DOORWood-Gate_SCIFI-Creak Open_JD_NYC_take 2.wav")
+    >>> (n.catid, n.category, n.subcategory, n.user_category)
+    ('DOORWood', 'DOORS', 'Wood', 'Gate')
+    >>> (n.vendor_category, n.fx_name, n.creator_id, n.source_id, n.user_data)
+    ('SCIFI', 'Creak Open', 'JD', 'NYC', 'take 2')
+    >>> parse_ucs_name("DOORWood_Slam.wav").creator_id is None
+    True
+    >>> parse_ucs_name("NOTACAT_x_y_z.wav") is None
+    True
+    """
+    blocks = _ucs_blocks(filename)
+    if not blocks:
         return None
-    return stem.split("_", 1)[0].strip() or None
+    catid, user_category = _split_hyphen(blocks[0], head=False)
+    row = (table or default_ucs_table()).get(catid)
+    if row is None:
+        return None
+    fx_name = vendor = None
+    if len(blocks) > 1 and blocks[1]:
+        fx_name, vendor = _split_hyphen(blocks[1], head=True)
+    at = lambda i: (blocks[i] or None) if len(blocks) > i else None  # noqa: E731
+    return UcsName(
+        catid=row.catid,
+        category=row.category,
+        subcategory=row.subcategory,
+        fx_name=fx_name,
+        creator_id=at(2),
+        source_id=at(3),
+        user_category=user_category,
+        vendor_category=vendor,
+        user_data="_".join(blocks[4:]) or None,
+    )
 
 
 def parse_ucs_filename(
@@ -92,11 +150,5 @@ def parse_ucs_filename(
         table: The UCS table to resolve against (defaults to
             :func:`default_ucs_table`).
     """
-    table = table or default_ucs_table()
-    token = parse_catid_token(filename)
-    if not token:
-        return (None, None)
-    row = table.get(token)
-    if row is None:
-        return (None, None)
-    return (row.category, row.subcategory)
+    name = parse_ucs_name(filename, table=table)
+    return (name.category, name.subcategory) if name else (None, None)

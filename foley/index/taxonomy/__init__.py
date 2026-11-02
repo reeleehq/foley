@@ -18,18 +18,20 @@ EnvSound-UCS mapping drop in later as JSON under ``data/`` with no logic change.
 """
 
 from .audioset import default_audioset_ucs_map, load_audioset_ucs_map
-from .model import AudioSetUcsMap, CatIdResolution, UcsRow, UcsTable
+from .model import AudioSetUcsMap, CatIdResolution, UcsName, UcsRow, UcsTable
 from .resolver import KeywordResolver, TaxonomyResolver, resolve_catid
 from .ucs import (
     default_ucs_table,
     load_ucs_table,
     parse_catid_token,
     parse_ucs_filename,
+    parse_ucs_name,
 )
 
 __all__ = [
     # models
     "UcsRow",
+    "UcsName",
     "UcsTable",
     "AudioSetUcsMap",
     "CatIdResolution",
@@ -37,6 +39,7 @@ __all__ = [
     "load_ucs_table",
     "default_ucs_table",
     "parse_ucs_filename",
+    "parse_ucs_name",
     "parse_catid_token",
     # audioset
     "load_audioset_ucs_map",

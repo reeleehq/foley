@@ -52,6 +52,23 @@ def test_parse_catid_token():
     assert parse_catid_token("no-underscore.wav") is None
 
 
+def test_parse_ucs_name_reads_every_block():
+    from foley.index.taxonomy import UcsName, parse_ucs_name
+
+    full = parse_ucs_name("/packs/doorwood-Gate_BOOM-Creak Open_JD_NYC_48k_take 2.wav")
+    assert full == UcsName(
+        catid="DOORWood", category="DOORS", subcategory="Wood",
+        fx_name="Creak Open", creator_id="JD", source_id="NYC",
+        user_category="Gate", vendor_category="BOOM", user_data="48k_take 2",
+    )  # fmt: skip
+    plain = parse_ucs_name("WEATHRain_Heavy_AB_Field.flac")
+    assert (plain.fx_name, plain.vendor_category, plain.user_category) == ("Heavy", None, None)
+    assert parse_ucs_name("DOORWood_.wav").fx_name is None  # empty block: absent
+    assert parse_ucs_name("just-a-name.wav") is None
+    # the category pair still comes out of a CatID with a UserCategory attached
+    assert parse_ucs_filename("DOORWood-Gate_Creak_JD_NYC.wav") == ("DOORS", "Wood")
+
+
 # ---------------------------------------------------------------------------
 # resolver — staged precedence
 # ---------------------------------------------------------------------------
