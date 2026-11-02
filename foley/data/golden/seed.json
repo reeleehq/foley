@@ -4045,11 +4045,11 @@
       {
         "query": "jet plane roars high overhead",
         "ucs_catid": "PlaneVeh",
-        "layer": "ambience",
+        "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": null
+        "onset_hint": "on 'roared'"
       }
     ],
     "answer_clip_ids": {
