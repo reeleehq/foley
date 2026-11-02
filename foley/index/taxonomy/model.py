@@ -32,6 +32,28 @@ class UcsRow:
     confident: bool = False
 
 
+@dataclass(frozen=True)
+class UcsName:
+    """Every field of a UCS filename (``foley.index.taxonomy.ucs.parse_ucs_name``).
+
+    ``CatID[-UserCategory]_[VendorCategory-]FXName_CreatorID_SourceID[_UserData].ext``:
+    underscores separate the blocks; a hyphen attaches the optional UserCategory to
+    the CatID and the optional VendorCategory to the FXName. ``category`` and
+    ``subcategory`` come from the table row of ``catid``; a block the name does not
+    have is ``None``.
+    """
+
+    catid: str
+    category: str
+    subcategory: str
+    fx_name: Optional[str] = None
+    creator_id: Optional[str] = None
+    source_id: Optional[str] = None
+    user_category: Optional[str] = None
+    vendor_category: Optional[str] = None
+    user_data: Optional[str] = None
+
+
 @dataclass
 class UcsTable:
     """A loaded UCS lookup: by CatID (exact + case-insensitive) and by synonym.
