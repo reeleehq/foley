@@ -56,7 +56,9 @@ def _kadtk(spec: dict):
             logger=logging.getLogger("kadtk"),
         )
         if kad.bandwidth is None:
-            kad.bandwidth = median_pairwise_distance(kad.emb_loader.load_embeddings(gen))
+            kad.bandwidth = median_pairwise_distance(
+                kad.emb_loader.load_embeddings(gen)
+            )
         value = float(kad.score(ref, gen))
         return value, {"bandwidth": float(kad.bandwidth), "scale": SCALE_FACTOR}
 

@@ -55,8 +55,8 @@ from foley.eval import KadtkFidelity
 
 kad = KadtkFidelity(python="~/venvs/kadtk/bin/python")  # or set FOLEY_KADTK_PYTHON
 result = kad(reference_wavs, generated_wavs, sr=48000)
-result.value   # kadtk's KAD
-result.stamp   # FidelityStamp(embedding='encodec-emb', toolkit='kadtk', version='1.1.0', n_ref=120, n_gen=120)
+result.value  # kadtk's KAD
+result.stamp  # FidelityStamp(embedding='encodec-emb', toolkit='kadtk', version='1.1.0', n_ref=120, n_gen=120)
 result.params  # {'bandwidth': 2.4, 'scale': 100}
 ```
 

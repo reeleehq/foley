@@ -139,7 +139,9 @@ class KadtkFidelity(ExternalFidelity):
         super().__init__(**kwargs)
         self.bandwidth, self.device, self.warn_frames = bandwidth, device, warn_frames
         self.clip_rule = (
-            KADTK_CLIP_RULES.get(self.model, ClipRule()) if clip_rule is None else clip_rule
+            KADTK_CLIP_RULES.get(self.model, ClipRule())
+            if clip_rule is None
+            else clip_rule
         )
 
     def frames_needed(self, dim: int) -> "tuple[int, str]":
