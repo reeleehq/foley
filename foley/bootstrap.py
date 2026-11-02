@@ -41,9 +41,9 @@ from .index.ingest import (
 )
 from .licensing import (
     DEFAULT_INTENDED_USE,
-    carry_lineage,
     derive_license_flags,
     keep,
+    restamped_license,
 )
 from .sources.base import CorpusAdapter, bulk_license, select_corpora
 
@@ -166,16 +166,11 @@ def _repair_stored(library, sound_id: str, lic, spec, res: IngestResult) -> None
     rec = library.meta.get(sound_id) if hasattr(library.meta, "get") else None
     if rec is None:
         return
-    old = rec.license
-    changes = []
-    if (old.license_id, old.rights_verified, old.license_url) != (
-        lic.license_id,
-        lic.rights_verified,
-        lic.license_url,
-    ):
-        carry_lineage(lic, old)  # keeps the edits and the licences bounding them
-        rec.license = lic
-        changes.append(f"licence {old.license_id} -> {lic.license_id}")
+    # the corpus is the authority (widen=True); the stored lineage (edits) is kept
+    new, change = restamped_license(rec.license, lic)
+    changes = [change] if change else []
+    if new is not None:
+        rec.license = new
     withheld = spec.meta.get("withheld_caption")
     if withheld and rec.caption == withheld:
         rec.caption = None

@@ -318,11 +318,6 @@ def backend_license_refusal(
     return license_id, why, hint
 
 
-#: The consent note stamped on a stored generation whose license forbids AI
-#: training (mirrors :func:`foley.bootstrap.bootstrap`'s Ring-2 acknowledgement).
-_CONSENT_NOTE = CONSENT_NOTE  # the SSOT is foley.index.ingest
-
-
 class GenerationError(RuntimeError):
     """Raised by :func:`foley.generate` (and :func:`foley.edit`) when a backend yields no stored sound.
 
@@ -817,7 +812,7 @@ def _generate(
     # license forbids AI training (mirrors bootstrap's Ring-2 note). ai_training_ok
     # stays False on the record — keep() still rejects it for will_train uses.
     if res.status in ("pass", "warn") and not lic.ai_training_ok:
-        res.notes.append(_CONSENT_NOTE)
+        res.notes.append(CONSENT_NOTE)
     report.record(res)
     return report
 

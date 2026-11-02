@@ -57,9 +57,12 @@ class SidecarError(ValueError):
     """A missing, unreadable or invalid licence sidecar: the file is not ingested."""
 
 
-def _absolute(path) -> Path:
-    """``path`` made absolute and normalised, symlinks NOT followed (the tree as walked)."""
-    return Path(os.path.abspath(path))
+def as_walked(path) -> Path:
+    """``path`` as a library tree is walked: ``~`` expanded, made absolute and normalised
+    with ``os.path.abspath``, symlinks NOT followed. Use it for a root and the files
+    under it alike, so they compare (``resolve()`` would turn macOS ``/var`` into
+    ``/private/var`` on one side only)."""
+    return Path(os.path.abspath(Path(path).expanduser()))
 
 
 def find_sidecar(path, *, root=None) -> Optional[Path]:
@@ -73,9 +76,9 @@ def find_sidecar(path, *, root=None) -> Optional[Path]:
         SidecarError: If ``path`` is not under ``root``, or a folder holds two
             sidecars, or a sidecar name is not a file.
     """
-    here = _absolute(path)
+    here = as_walked(path)
     folder = here if here.is_dir() else here.parent
-    stop = _absolute(root) if root is not None else None
+    stop = as_walked(root) if root is not None else None
     if stop is not None and stop != folder and stop not in folder.parents:
         raise SidecarError(f"{path} is not under the library root {root}")
     for candidate in (folder, *folder.parents):

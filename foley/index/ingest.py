@@ -39,6 +39,7 @@ from ..licensing import (  # noqa: F401 - the assertable sets are re-exported he
     ai_use_permitted,
     apply_license_flags,
     carry_lineage,
+    restamped_license,
 )
 from ..qc import (
     DEFAULT_MIN_STATUS,
@@ -366,6 +367,7 @@ def _ingest_one(
     allow_ai_training_forbidden: bool = False,
     seed_tags: Optional[list] = None,
     ucs_catid: Optional[str] = None,
+    restamp_duplicate: bool = False,
     commercial: Optional[bool] = None,
 ) -> IngestResult:
     """Ingest one clip into ``library`` and return an :class:`IngestResult`.
@@ -420,6 +422,10 @@ def _ingest_one(
             ``CATID``, :mod:`foley.embedded_metadata`). It sets
             ``ucs_category`` (which holds the CatID) when the filename does not
             parse and the UCS table knows it; otherwise tags/caption decide.
+        restamp_duplicate: When the clip is already stored (``skipped_dup``),
+            re-stamp the stored record from ``license`` without ever widening it
+            (:func:`foley.licensing.restamped_license` with ``widen=False``; its
+            note lands on the result). Default ``False``: a duplicate is left as it is.
         allow_ai_training_forbidden: The universal fail-closed rights gate. A
             sound whose license has ``ai_training_ok=False`` (e.g. Sonniss,
             BBC RemArc) is refused with status ``'rights_blocked'`` *before* it is
@@ -456,7 +462,10 @@ def _ingest_one(
     # so dedup keys on the stable id, not on re-fetched (byte-varying) preview bytes.
     sid = content_id if sound_id is None else sound_id
     if store and sid in lib:
-        return IngestResult(id=sid, status="skipped_dup")
+        dup = IngestResult(id=sid, status="skipped_dup")
+        if restamp_duplicate and license is not None:
+            _restamp_stored(lib, sid, resolve_ingest_license(license), dup)
+        return dup
 
     # Stage 1 — QC gate (report 08 §3)
     qc_report = (
@@ -611,6 +620,17 @@ def ingest_one(*args, **kwargs) -> "IngestResult":
         return res
 
 
+def _restamp_stored(lib, sid: str, fresh: LicenseRecord, result: IngestResult) -> None:
+    """Narrow stored ``sid``'s licence to ``fresh`` (never widening); note it on ``result``."""
+    rec = lib.meta[sid]
+    new, note = restamped_license(rec.license, fresh, widen=False)
+    if new is not None:
+        rec.license = new
+        lib.update_record(rec)
+    if note:
+        result.notes.append(f"stored record: {note}")
+
+
 def _run_supervised(tagger, probe: _Probe, notes: list) -> list:
     from .taggers import default_tagger
 
@@ -682,6 +702,10 @@ def iter_audio_files(
 _iter_audio_files = iter_audio_files
 
 
+class PlanConflict(TypeError):
+    """A per-file plan and the caller set the same :func:`ingest_one` keyword."""
+
+
 class IngestSkip(Exception):
     """Raised by an :func:`ingest_folder` ``file_kwargs`` plan to decline one file.
 
@@ -718,9 +742,11 @@ def ingest_folder(
             :class:`~foley.runtime.EgressBlocked` (offline, the embedder's weights not
             cached) raises at once: every file would fail the same way.
         file_kwargs: Optional per-file plan, ``path -> dict`` of :func:`ingest_one`
-            keywords for that file (its licence, caption, tags…), laid over
-            ``ingest_one_kw``. It may raise :class:`IngestSkip` to decline the file
-            (recorded, never raised); any other exception is a per-file error.
+            keywords for that file (its licence, caption, tags…), beside
+            ``ingest_one_kw``; a keyword in both raises :class:`PlanConflict` (the
+            run stops: every file would conflict). It may raise :class:`IngestSkip`
+            to decline the file (recorded, never raised); any other exception is a
+            per-file error.
             :func:`foley.index.licensed_library.ingest_licensed_folder` uses it.
         **ingest_one_kw: Forwarded to :func:`ingest_one` (license, taggers, QC
             flags, …).
@@ -742,12 +768,15 @@ def ingest_folder(
     ) as run:
         for fp in iter_audio_files(path, recursive=recursive, exts=exts):
             try:
-                kw = {**ingest_one_kw, **(file_kwargs(fp) if file_kwargs else {})}
-                report.record(ingest_one(str(fp), library=lib, **kw))
+                plan = file_kwargs(fp) if file_kwargs else {}
+                clash = sorted(set(plan) & set(ingest_one_kw))
+                if clash:
+                    raise PlanConflict(f"{clash} are set per file by the plan")
+                report.record(ingest_one(str(fp), library=lib, **ingest_one_kw, **plan))
             except IngestSkip as skip:
                 report.skip(fp, skip)
-            except EgressBlocked:
-                raise  # offline without the embedder's weights: every file would fail
+            except (EgressBlocked, PlanConflict):
+                raise  # offline without the weights, or a caller clash: every file fails
             except Exception as exc:
                 if on_error == "raise":
                     raise

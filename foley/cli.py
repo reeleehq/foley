@@ -104,15 +104,20 @@ def _cmd_ingest_library(args) -> int:
     from . import ingest_library
     from .qc import QCStatus
 
-    report = ingest_library(
-        args.path,
-        root=args.root,
-        accept_ai_restricted=args.accept_ai_restricted,
-        qc=not args.no_qc,
-        min_status=QCStatus(args.min_status),
-    )
+    try:
+        report = ingest_library(
+            args.path,
+            root=args.root,
+            accept_ai_restricted=args.accept_ai_restricted,
+            qc=not args.no_qc,
+            min_status=QCStatus(args.min_status),
+        )
+    except (FileNotFoundError, ValueError) as exc:  # a missing path, or outside --root
+        print(f"foley ingest-library: {exc}", file=sys.stderr)
+        return 2
     print(json.dumps({**report.summary(), "notes": report.notes}, indent=2))
-    return 0
+    # nothing in the index from this folder, new or already there: say it with the exit code
+    return 0 if report.ingested or report.skipped else 1
 
 
 def _assertable_license_ids() -> "list[str]":

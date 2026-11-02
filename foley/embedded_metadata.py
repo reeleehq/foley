@@ -76,18 +76,27 @@ class Location:
     key: str
 
 
+def unique_words(words) -> "list[str]":
+    """``words`` stripped, without blanks or repeats (ignoring case), first spelling kept.
+
+    >>> unique_words([" door", "DOOR", None, "", "creak"])
+    ['door', 'creak']
+    """
+    seen, out = set(), []
+    for word in (w.strip() for w in words if w):
+        if word and word.casefold() not in seen:
+            seen.add(word.casefold())
+            out.append(word)
+    return out
+
+
 def split_keywords(text: str) -> "list[str]":
     """Keywords from a ``KEYWORDS`` string: split on , and ;, de-duplicated ignoring case.
 
     >>> split_keywords("door, creak; Wood ,DOOR")
     ['door', 'creak', 'Wood']
     """
-    seen, out = set(), []
-    for word in (w.strip() for w in KEYWORD_SEPARATORS.split(text)):
-        if word and word.casefold() not in seen:
-            seen.add(word.casefold())
-            out.append(word)
-    return out
+    return unique_words(KEYWORD_SEPARATORS.split(text))
 
 
 def join_keywords(tags) -> str:

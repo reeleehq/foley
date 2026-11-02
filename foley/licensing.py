@@ -1033,6 +1033,65 @@ def wider_rights(record: LicenseRecord, bound: LicenseRecord) -> "list[str]":
     return wider
 
 
+#: The fields that say a stored licence and a fresh one differ (``verified_at`` does not).
+RESTAMP_FIELDS = (
+    "license_id",
+    "rights_verified",
+    "license_url",
+    "license_name",
+    "rights_holder",
+    "attribution_text",
+)
+
+
+def restamped_license(
+    stored: LicenseRecord, fresh: LicenseRecord, *, widen: bool = True
+) -> "tuple[Optional[LicenseRecord], Optional[str]]":
+    """What a stored sound's licence becomes when its source now states ``fresh``.
+
+    Returns ``(new_record, note)``: ``new_record`` is ``None`` when the stored licence
+    stays as it is, and ``note`` is ``None`` when there is nothing to say. Pure:
+    neither argument is changed. The stored lineage (edits, the licences bounding it)
+    is always kept (:func:`carry_lineage`).
+
+    * ``widen=True``: ``fresh`` replaces the stored licence. For a source that is the
+      authority on its own clips (a corpus's metadata, :func:`foley.bootstrap.bootstrap`).
+    * ``widen=False``: rights are never widened. ``fresh`` replaces an *unverified*
+      stored licence (nobody asserted it) or one it is no wider than
+      (:func:`wider_rights`). When ``fresh`` grants more than the stored licence and
+      no less, the stored one is kept with a note naming the widening to apply by
+      hand (:func:`foley.index.ingest.restamp_rights`). When each grants something
+      the other does not, the stored licence is bounded by ``fresh``
+      (:func:`narrow_to_source`): the sound may be used only where both allow.
+
+    >>> from foley.base import LicenseRecord
+    >>> cc0 = apply_license_flags(LicenseRecord(source="s", license_id="CC0-1.0", rights_verified=True))
+    >>> nc = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-NC-4.0", rights_verified=True))
+    >>> restamped_license(cc0, nc, widen=False)[0].license_id
+    'CC-BY-NC-4.0'
+    >>> new, note = restamped_license(nc, cc0, widen=False)
+    >>> new is None, note.startswith("not widened")
+    (True, True)
+    """
+    if all(getattr(stored, f) == getattr(fresh, f) for f in RESTAMP_FIELDS):
+        return None, None
+    change = f"licence {stored.license_id} -> {fresh.license_id}"
+    wider = wider_rights(fresh, stored)
+    if widen or not stored.rights_verified or not wider:
+        return carry_lineage(replace(fresh), stored), change
+    if not wider_rights(stored, fresh):
+        return None, (
+            f"not widened: {fresh.license_id} would also allow {', '.join(wider)} over "
+            f"the stored {stored.license_id}; to widen it, "
+            f"foley.restamp_rights(ids=[...], license={fresh.license_id!r}, apply=True)"
+        )
+    bounded = narrow_to_source(carry_lineage(replace(stored), stored), fresh)
+    return bounded, (
+        f"licences conflict ({stored.license_id} vs {fresh.license_id}): kept "
+        f"{stored.license_id}, bounded by {fresh.license_id}"
+    )
+
+
 def keep(record: LicenseRecord, intended_use: IntendedUse) -> bool:
     """Fail-closed candidate license gate (report 07 §8.2).
 

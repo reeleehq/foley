@@ -15,12 +15,13 @@ np = pytest.importorskip("numpy")
 sf = pytest.importorskip("soundfile")
 
 from foley import cli  # noqa: E402
-from foley.base import StorageMode  # noqa: E402
+from foley.base import IntendedUse, StorageMode  # noqa: E402
 from foley.embedded_metadata import chunks_from_fields  # noqa: E402
 from foley.index import MemoryIndex, SoundLibrary  # noqa: E402
 from foley.index.ingest import (  # noqa: E402
     CONSENT_NOTE,
     IngestSkip,
+    PlanConflict,
     content_id,
     ingest_folder,
 )
@@ -31,6 +32,7 @@ from foley.index.licensed_library import (  # noqa: E402
     licensed_file_kwargs,
 )
 from foley.index.taxonomy import resolve_catid  # noqa: E402
+from foley.licensing import keep  # noqa: E402
 
 SR = 48_000
 QUIET = dict(do_supervised=False, do_zeroshot=False)  # no PANNs / CLAP tagger
@@ -222,7 +224,127 @@ def test_cli_ingest_library_dispatches(monkeypatch, capsys):
         return IngestReport(root=path, notes=["a note"])
 
     monkeypatch.setattr(foley, "ingest_library", fake)
-    assert cli.main(["ingest-library", "/sfx", "--accept-ai-restricted", "--no-qc"]) == 0
+    # an empty report: nothing from the folder is in the index, so the exit code says so
+    assert cli.main(["ingest-library", "/sfx", "--accept-ai-restricted", "--no-qc"]) == 1
     assert captured["path"] == "/sfx" and captured["accept_ai_restricted"] is True
     assert captured["qc"] is False and captured["root"] is None
     assert json.loads(capsys.readouterr().out)["notes"] == ["a note"]
+
+
+# ---------------------------------------------------------------------------
+# reruns re-stamp from the sidecar as it is now, never widening (review of #242)
+# ---------------------------------------------------------------------------
+
+ALL = dict(accept_ai_restricted=True, **QUIET)
+
+
+def _sidecar(folder, license_id, **extra):
+    (folder / "foley-license.json").write_text(json.dumps({"license": license_id, **extra}))
+
+
+def _stored(library, path):
+    return library.meta[content_id(str(path))].license
+
+
+def test_a_narrowed_sidecar_narrows_the_stored_licence(packs, library):
+    rain = packs / "packB" / "rain_loop.wav"
+    ingest_licensed_folder(packs, library=library, **ALL)
+    assert _stored(library, rain).license_id == "CC0-1.0"
+    _sidecar(packs / "packB", "owned-pack")
+    report = ingest_licensed_folder(packs, library=library, **ALL)
+    lic = _stored(library, rain)
+    assert (lic.license_id, lic.ai_training_ok, lic.redistribute_standalone_ok) == (
+        "owned-pack", False, False,
+    )
+    assert any("CC0-1.0 -> owned-pack" in n for r in report.skipped for n in r.notes)
+
+
+def test_a_deleted_sidecar_fails_the_stored_sound_closed_until_it_is_back(packs, library):
+    rain = packs / "packB" / "rain_loop.wav"
+    ingest_licensed_folder(packs, library=library, **ALL)
+    sidecar = packs / "packB" / "foley-license.json"
+    text = sidecar.read_text()
+    sidecar.unlink()
+    report = ingest_licensed_folder(packs, library=library, **ALL)
+    lic = _stored(library, rain)
+    assert (lic.license_id, lic.rights_verified) == ("unknown", False)
+    assert not keep(lic, IntendedUse())
+    notes = [n for r in report.results if r.status == "skipped_license" for n in r.notes]
+    assert any("re-stamped unknown" in n for n in notes)
+    sidecar.write_text(text)  # an unverified licence takes the sidecar's again
+    ingest_licensed_folder(packs, library=library, **ALL)
+    assert _stored(library, rain).license_id == "CC0-1.0"
+
+
+def test_a_user_owned_ingest_is_narrowed_to_the_pack_licence(packs, library):
+    ingest_folder(packs / "packA", library=library, license="user-owned", **QUIET)
+    door = packs / "packA" / "DOORWood_Creak Open_JD_NYC.wav"
+    assert _stored(library, door).redistribute_standalone_ok is True
+    ingest_licensed_folder(packs, library=library, **ALL)
+    lic = _stored(library, door)
+    assert lic.license_id == "owned-pack"
+    assert not lic.redistribute_standalone_ok and not lic.ai_training_ok
+
+
+def test_a_broader_sidecar_does_not_widen_the_stored_licence(packs, library):
+    door = packs / "packA" / "DOORWood_Creak Open_JD_NYC.wav"
+    ingest_licensed_folder(packs, library=library, **ALL)
+    _sidecar(packs / "packA", "CC0-1.0")
+    (packs / "packA" / "foley-license.toml").unlink()
+    report = ingest_licensed_folder(packs, library=library, **ALL)
+    assert _stored(library, door).license_id == "owned-pack"
+    assert any("not widened" in n and "restamp_rights" in n for r in report.skipped for n in r.notes)
+
+
+@pytest.mark.parametrize("first, second", [("CC0-1.0", "owned-pack"), ("owned-pack", "CC0-1.0")])
+def test_the_same_audio_in_two_packs_keeps_the_narrower_licence(tmp_path, library, first, second):
+    for name, license_id in (("a", first), ("b", second)):
+        _write_wav(tmp_path / name / "same.wav", 440)
+        _sidecar(tmp_path / name, license_id)
+    report = ingest_licensed_folder(tmp_path, library=library, **ALL)
+    lic = _stored(library, tmp_path / "a" / "same.wav")
+    assert (lic.license_id, lic.ai_training_ok, lic.redistribute_standalone_ok) == (
+        "owned-pack", False, False,
+    )
+    assert len(report.ingested) == 1 and report.skipped[0].notes  # the conflict is said
+
+
+@pytest.mark.parametrize("first, second", [("CC-BY-4.0", "owned-pack"), ("owned-pack", "CC-BY-4.0")])
+def test_incomparable_licences_bound_each_other(tmp_path, library, first, second):
+    for name, license_id in (("a", first), ("b", second)):
+        _write_wav(tmp_path / name / "same.wav", 440)
+        _sidecar(tmp_path / name, license_id)
+    report = ingest_licensed_folder(tmp_path, library=library, **ALL)
+    lic = _stored(library, tmp_path / "a" / "same.wav")
+    assert lic.requires_attribution and not lic.ai_training_ok  # each one's restriction
+    assert not lic.redistribute_standalone_ok and lic.commercial_ok
+    assert any("conflict" in n for n in report.skipped[0].notes)
+
+
+def test_a_cc0_pack_that_withholds_training_is_blocked_from_it(tmp_path, library):
+    _write_wav(tmp_path / "free" / "hum.wav", 330)
+    _sidecar(tmp_path / "free", "CC0-1.0", ai_training=False)
+    assert ingest_licensed_folder(tmp_path, library=library, **QUIET).rights_blocked
+    ingest_licensed_folder(tmp_path, library=library, **ALL)
+    lic = _stored(library, tmp_path / "free" / "hum.wav")
+    assert keep(lic, IntendedUse()) and not keep(lic, IntendedUse(will_train=True))
+
+
+def test_a_caller_cannot_override_the_plan(packs, library):
+    for key, value in (("sound_id", "fixed"), ("store", False), ("source_uri", "x")):
+        with pytest.raises(TypeError, match=key):
+            ingest_licensed_folder(packs, library=library, **{key: value})
+
+    def plan(path):
+        return {"license": "CC0-1.0"}
+
+    with pytest.raises(PlanConflict, match="license"):
+        ingest_folder(packs, library=library, file_kwargs=plan, license="user-owned")
+
+
+def test_cli_ingest_library_errors_cleanly(packs, monkeypatch, capsys, tmp_path):
+    monkeypatch.setenv("FOLEY_DATA_DIR", str(tmp_path / "data"))
+    assert cli.main(["ingest-library", str(packs / "nope")]) == 2
+    assert "no such library folder" in capsys.readouterr().err
+    assert cli.main(["ingest-library", str(packs / "packA"), "--root", str(packs / "packB")]) == 2
+    assert "not under" in capsys.readouterr().err
