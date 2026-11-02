@@ -28,6 +28,12 @@ from ..base import Anchor, MasterProfile, SoundDesignTimeline, resolve_master
 
 # Public WEAVE surface (all import-time dol-only) ----------------------------
 from .align import FakeAligner, WhisperXAligner, _default_aligner
+from .broadcast import (
+    TREATMENTS,
+    BroadcastBed,
+    TreatmentPreset,
+    broadcast_bed,
+)
 from .cli_aligners import AeneasAligner, MFAAligner
 from .anchor import parse_symbolic_anchor, resolve_anchor
 from .master import MasterReport
@@ -594,6 +600,10 @@ __all__ = [
     "check_requirements",
     "verify_and_setup",
     "NARRATION_REF",
+    "broadcast_bed",
+    "BroadcastBed",
+    "TreatmentPreset",
+    "TREATMENTS",
 ]
 
 

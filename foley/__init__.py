@@ -25,6 +25,7 @@ The façade (v1 — Epic #13 complete; the surface below is live — see
     foley.ingest("~/my_sounds/")
     foley.ingest_library("~/SFX/", accept_ai_restricted=True)  # owned packs + sidecars
     data, rights, provenance = foley.export_sound(sound_id)  # lacing.Rights-keyed rights
+    foley.broadcast_bed(lines, bed_prompt="stadium crowd", treatment="am_radio")  # a radio in the scene
 
 The design is grounded in the research reports under ``misc/docs/research/``.
 
@@ -262,7 +263,7 @@ from .agent import (
 # ``foley.weave(narration, timeline)`` runs the façade while ``foley.weave.<submodule>``
 # (``foley.weave.render`` etc.) stays fully importable.
 from . import weave
-from .weave import WeaveResult
+from .weave import BroadcastBed, WeaveResult, broadcast_bed
 
 # --- score: the one-call AI-first entry — narration text → tasteful woven sound design ---
 # (composes find → plan → weave; numpy/torch stay lazy inside them, so this stays dol-only.)
@@ -464,6 +465,8 @@ __all__ = [
     # --- weave: the WEAVE stage — weave() (#8) --------------------------------
     "weave",
     "WeaveResult",
+    "broadcast_bed",
+    "BroadcastBed",
     # --- score: the one-call AI-first entry (narration → woven sound design) --
     "score",
     "ScoreResult",
