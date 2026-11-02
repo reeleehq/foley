@@ -87,9 +87,41 @@ NETWORK_TRIP_MARKER = "network_trip_expected"
 
 
 def pytest_configure(config):
+    """Register the marker and point ``$FOLEY_DATA_DIR`` at a throwaway directory.
+
+    foley reads the data dir once, at import (``foley.stores.FOLEY_DATA_DIR``), and
+    builds its default library, run store and provenance store under it. Setting it
+    here, before any test module imports foley, keeps every default store of the
+    suite out of the developer's real ``~/.local/share/foley``. (``pytest
+    --doctest-modules foley`` alone does not load this file; a root ``conftest.py``
+    would, but it would shadow the tests' ``from conftest import FakeEmbedder``.)
+    """
+    import os
+    import tempfile
+
     config.addinivalue_line(
         "markers", f"{NETWORK_TRIP_MARKER}: the test deliberately trips the socket guard"
     )
+    config._foley_data_dir = (
+        tempfile.TemporaryDirectory(prefix="foley-tests-"),
+        os.environ.get("FOLEY_DATA_DIR"),
+    )
+    os.environ["FOLEY_DATA_DIR"] = config._foley_data_dir[0].name
+
+
+def pytest_unconfigure(config):
+    """Remove the throwaway data dir and give ``$FOLEY_DATA_DIR`` its previous value back."""
+    import os
+
+    held = getattr(config, "_foley_data_dir", None)
+    if held is None:
+        return
+    tmp, previous = held
+    if previous is None:
+        os.environ.pop("FOLEY_DATA_DIR", None)
+    else:
+        os.environ["FOLEY_DATA_DIR"] = previous
+    tmp.cleanup()
 
 
 def live_api_tests_enabled() -> bool:
