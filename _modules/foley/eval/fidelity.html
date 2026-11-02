@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=0d7dcda5"></script>
+    <script src="../../../_static/documentation_options.js?v=a90549bc"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.130" />
+  <meta name="docsearch:version" content="0.0.131" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -729,14 +729,15 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">Pure numpy / stdlib — ``numpy`` is imported function-locally (``import foley`` stays</span>
 <span class="sd">dol-only), and the PSD matrix-square-root trace is computed via ``numpy.linalg.eigvals``</span>
 <span class="sd">(there is **no** ``scipy.linalg.sqrtm`` in the numpy-only CI env). For numbers</span>
-<span class="sd">comparable with published ones, :class:`foley.eval.fadtk.FadtkFidelity` runs the</span>
-<span class="sd">reference toolkit (``fadtk``) in its own interpreter and returns the same</span>
-<span class="sd">:class:`FidelityResult`, stamped ``toolkit='fadtk'``; the functions here cover the math.</span>
+<span class="sd">comparable with published ones, :class:`foley.eval.fadtk.FadtkFidelity` and</span>
+<span class="sd">:class:`foley.eval.kadtk.KadtkFidelity` run the reference toolkits (``fadtk``,</span>
+<span class="sd">``kadtk``) in their own interpreters and return the same :class:`FidelityResult`,</span>
+<span class="sd">stamped with the toolkit; the functions here cover the math.</span>
 <span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
 
@@ -812,8 +813,9 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    Distribution-free and small-sample-convergent; preferred over FAD for the small</span>
 <span class="sd">    reference/generated sets of early-stage eval. The diagonal (same-sample) kernel terms</span>
-<span class="sd">    are dropped (the unbiased estimator), so ``KAD(X, X) ≈ 0`` and can be slightly</span>
-<span class="sd">    negative.</span>
+<span class="sd">    are dropped (the unbiased estimator), so it is centred on 0 for two sets from one</span>
+<span class="sd">    distribution and is then negative about half the time; small sets make that</span>
+<span class="sd">    spread wide, so a value near 0 means "indistinguishable", not "identical".</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        x_ref: Reference embeddings ``(n_ref, d)``.</span>
@@ -870,11 +872,17 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../_autosummary/foley.eval.fidelity.html#foley.eval.FidelityResult">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">FidelityResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""A stamped set-level fidelity score (attached to ``FitReport.fidelity``)."""</span>
+<span class="w">    </span><span class="sd">"""A stamped set-level fidelity score (attached to ``FitReport.fidelity``).</span>
+
+<span class="sd">    ``params`` holds the settings the value depends on beyond the stamp, e.g. kadtk's</span>
+<span class="sd">    ``bandwidth`` and ``scale``: score a second generator against the same reference</span>
+<span class="sd">    with the same ``bandwidth`` for the two values to be comparable.</span>
+<span class="sd">    """</span>
 
     <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># 'fad' | 'kad'</span>
     <span class="n">value</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">stamp</span><span class="p">:</span> <span class="n">FidelityStamp</span></div>
+    <span class="n">stamp</span><span class="p">:</span> <span class="n">FidelityStamp</span>
+    <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span></div>
 
 
 

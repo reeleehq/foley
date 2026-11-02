@@ -1,4 +1,4 @@
-> built 2026-11-02 07:44 UTC from 20a6fb0 (main) · foley 0.0.130. Details: build_info.json
+> built 2026-11-02 07:49 UTC from 2050ec9 (main) · foley 0.0.131. Details: build_info.json
 
 # index.html.md
 
@@ -207,17 +207,17 @@ foley agent-install                       # drop the agent kit into ./.claude (s
 foley is **zero-dep at its core** and grows by capability via optional extras — each imported
 lazily, so a bare install stays light. What each adds:
 
-| Extra                                               | Adds                                                                                                     |
-|-----------------------------------------------------|----------------------------------------------------------------------------------------------------------|
-| `audio`                                             | numpy/soundfile DSP + LUFS mastering                                                                     |
-| `clap`                                              | the CLAP text↔audio retrieval engine                                                                     |
-| `index` / `index-sqlite`                            | the hybrid vector+keyword index (LanceDB / sqlite-vec)                                                   |
-| `freesound` · `stable-audio` · `elevenlabs` · `fal` | live retrieve / generate sources (`fal`: the fal-hosted generators through `falaw`)                      |
-| `pyfxr`                                             | procedural sfxr-style cues (UI blips, lasers, coins): free, offline, seeded, no licence attached, not AI |
-| `agent` · `local-llm`                               | the SELECT LLM rungs (Claude / a local OpenAI-compatible endpoint)                                       |
-| `align` · `weave` · `provenance` · `c2pa`           | word timing (WhisperX), OTIO/rubberband, watermarking, signed C2PA                                       |
-| `mcp` · `obs`                                       | the MCP server · OpenTelemetry export                                                                    |
-| `fit`                                               | the Qwen2-Audio listen judge for Tier-2 fit eval; reference FAD runs [fadtk in its own venv]()           |
+| Extra                                               | Adds                                                                                                               |
+|-----------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| `audio`                                             | numpy/soundfile DSP + LUFS mastering                                                                               |
+| `clap`                                              | the CLAP text↔audio retrieval engine                                                                               |
+| `index` / `index-sqlite`                            | the hybrid vector+keyword index (LanceDB / sqlite-vec)                                                             |
+| `freesound` · `stable-audio` · `elevenlabs` · `fal` | live retrieve / generate sources (`fal`: the fal-hosted generators through `falaw`)                                |
+| `pyfxr`                                             | procedural sfxr-style cues (UI blips, lasers, coins): free, offline, seeded, no licence attached, not AI           |
+| `agent` · `local-llm`                               | the SELECT LLM rungs (Claude / a local OpenAI-compatible endpoint)                                                 |
+| `align` · `weave` · `provenance` · `c2pa`           | word timing (WhisperX), OTIO/rubberband, watermarking, signed C2PA                                                 |
+| `mcp` · `obs`                                       | the MCP server · OpenTelemetry export                                                                              |
+| `fit`                                               | the Qwen2-Audio listen judge for Tier-2 fit eval; reference FAD and KAD run [fadtk and kadtk in their own venvs]() |
 
 **Nothing paid runs unless you ask for it.** Having `ANTHROPIC_API_KEY` set does not switch the SELECT rungs to Claude: pass `llm="anthropic"` to `find()` / `score()` or set `FOLEY_LLM=anthropic` (`llm="local"` uses `FOLEY_LLM_BASE_URL`). By default they run the free deterministic fakes, or your local endpoint if one is configured. `with foley.offline():` (or `FOLEY_OFFLINE=1`) blocks every external source and LLM call foley makes, on every surface, raising `foley.runtime.EgressBlocked` (model weights are never downloaded offline: a model not already cached raises `foley.runtime.ModelNotCached`, naming the command to fetch it while online).
 
@@ -4657,6 +4657,127 @@ offline retrieval regression; real retrieval uses CLAP.
 Embed `text` (or a list of texts) -> a `(n, dim)` float32 array.
 
 
+# _autosummary/foley.eval.external_fidelity.html.md
+
+# foley.eval.external_fidelity
+
+Set-level fidelity from a reference toolkit run in its own interpreter (#48, #262).
+
+[`foley.eval.fidelity`](_autosummary/foley.eval.fidelity.html.md#module-foley.eval.fidelity) has the FAD and KAD math in pure numpy. For numbers
+comparable with published ones, the reference toolkits (`fadtk` for FAD, `kadtk`
+for KAD) must do the embedding, the audio loading and the statistics, and both pin
+`numpy<2` and an old torch, so neither can share foley’s environment.
+[`ExternalFidelity`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity) is the part they share, the way [`foley.external`](_autosummary/foley.external.html.md#module-foley.external) is for
+MFA and aeneas: the two wav sets are written as mono 16-bit WAVs to a temporary
+directory, the toolkit’s interpreter runs [`foley.eval.toolkit_driver`](_autosummary/foley.eval.toolkit_driver.html.md#module-foley.eval.toolkit_driver) on them, and
+its JSON answer becomes a [`FidelityResult`](_autosummary/foley.eval.fidelity.html.md#foley.eval.fidelity.FidelityResult) stamped with
+the toolkit and its version. Nothing from either toolkit is imported here.
+
+A toolkit is a subclass that sets the class attributes (its name, metric, model table,
+interpreter variable, install line) and says how many embedding frames each set needs
+([`ExternalFidelity.frames_needed()`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity.frames_needed)); see [`foley.eval.fadtk`](_autosummary/foley.eval.fadtk.html.md#module-foley.eval.fadtk) and
+[`foley.eval.kadtk`](_autosummary/foley.eval.kadtk.html.md#module-foley.eval.kadtk).
+
+### Module Attributes
+
+| [`DRIVER`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.DRIVER)       | The script run inside a toolkit's interpreter.   |
+|---------------------------------------------------------------|--------------------------------------------------|
+| [`MAX_CHANNELS`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.MAX_CHANNELS) | The most channels a clip may have.               |
+
+### Functions
+
+| [`as_frames_channels`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.as_frames_channels)(wav)                          | `wav` as foley's `(frames,)` / `(frames, channels)`; refuse other layouts.        |
+|---------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
+| [`write_set`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.write_set)(wavs, sr, folder, \*, prefix[, check]) | Write each waveform in `wavs` as a mono 16-bit WAV in `folder`; return the count. |
+
+### Classes
+
+| [`ExternalFidelity`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity)(\*[, python, model, models, ...])   | A set-level fidelity score computed by a toolkit in a separate interpreter.   |
+|-------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
+
+### foley.eval.external_fidelity.DRIVER *= PosixPath('/home/runner/work/foley/foley/foley/eval/toolkit_driver.py')*
+
+The script run inside a toolkit’s interpreter.
+
+### *class* foley.eval.external_fidelity.ExternalFidelity(\*, python=None, model=None, models=None, workers=1, env=None, timeout=None, runner=<function run>)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+A set-level fidelity score computed by a toolkit in a separate interpreter.
+
+Subclasses set `toolkit`, `metric`, `default_models`,
+`default_model`, `python_env`, `install` (and optionally
+[`failure_hints`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity.failure_hints)), and implement [`frames_needed()`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity.frames_needed); [`options()`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity.options) adds
+toolkit-specific entries to the driver’s spec, and [`check_clip()`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity.check_clip) refuses a clip
+the toolkit cannot embed before anything runs.
+
+* **Parameters:**
+  * **python** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – An interpreter with the toolkit installed, usually in its own venv
+    (default: `$<python_env>`; neither set raises with the install line).
+  * **model** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A key of `models` (default `default_model`).
+  * **models** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)]]]) – Model name → (loader class in `<toolkit>.model_loader`, its args)
+    (default `default_models`).
+  * **workers** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – The toolkit’s embedding worker processes (each loads the model).
+  * **env** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Variables added to this process’s environment for the program, e.g.
+    `{"TORCH_HOME": ...}` to choose where the weights are cached.
+  * **timeout** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds before the run is abandoned (default: none).
+  * **runner** ([`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`CompletedProcess`](https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess)]) – Runs the command (default `subprocess.run`).
+
+#### check_clip(clip, , sr, name)
+
+Raise [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueError) if the toolkit cannot embed `clip` (default: accept).
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+#### failure_hints *: [Mapping](https://docs.python.org/3/library/typing.html#typing.Mapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= {}*
+
+A substring of a failed run’s output → what to do about it.
+
+#### frames_needed(dim)
+
+The fewest embedding frames a set may have for a `dim`-dim embedding, and why.
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`int`](https://docs.python.org/3/builtins/functions.html#int), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+#### options()
+
+Toolkit-specific entries for the driver’s spec (default: none).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+#### warn_frames *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[int](https://docs.python.org/3/builtins/functions.html#int)]* *= None*
+
+Below this many embedding frames in a set, warn that the score is mostly noise
+(`None`: never). The hard floor is [`frames_needed()`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity.frames_needed).
+
+### foley.eval.external_fidelity.MAX_CHANNELS *= 8*
+
+The most channels a clip may have. A 2-D array with at most this many rows and more
+columns than that is channel-first, and is refused ([`as_frames_channels()`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.as_frames_channels)).
+
+### foley.eval.external_fidelity.as_frames_channels(wav)
+
+`wav` as foley’s `(frames,)` / `(frames, channels)`; refuse other layouts.
+
+A channel-first `(2, N)` array would otherwise be read as two-sample clips.
+
+* **Return type:**
+  `ndarray`
+
+### foley.eval.external_fidelity.write_set(wavs, sr, folder, , prefix, check=None)
+
+Write each waveform in `wavs` as a mono 16-bit WAV in `folder`; return the count.
+
+`check(clip, sr=, name=)`, if given, sees each `(frames[, channels])` clip first
+and raises to refuse it.
+
+* **Return type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
+
+
 # _autosummary/foley.eval.fadtk.html.md
 
 # foley.eval.fadtk
@@ -4668,11 +4789,10 @@ embedder. To report a number comparable with published ones, use the reference
 toolkit, [fadtk](https://github.com/microsoft/fadtk): its embedding models, its
 audio loading and resampling, its statistics. fadtk 1.1 pins `numpy<2` and pulls
 torch, torchvision and two CLAP packages, so it cannot share foley’s environment.
-[`FadtkFidelity`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FadtkFidelity) runs it the way [`foley.weave.cli_aligners`](_autosummary/foley.weave.cli_aligners.html.md#module-foley.weave.cli_aligners) runs MFA and
-aeneas: the two wav sets are written to a temporary directory, the interpreter of a
-virtualenv holding fadtk runs [`foley.eval.fadtk_driver`](_autosummary/foley.eval.fadtk_driver.html.md#module-foley.eval.fadtk_driver) on them, and its JSON
-answer becomes a [`FidelityResult`](_autosummary/foley.eval.fidelity.html.md#foley.eval.fidelity.FidelityResult) stamped
-`toolkit='fadtk'`. Nothing from fadtk is imported here.
+[`FadtkFidelity`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FadtkFidelity) runs it through [`ExternalFidelity`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity)
+(temporary wav sets, [`foley.eval.toolkit_driver`](_autosummary/foley.eval.toolkit_driver.html.md#module-foley.eval.toolkit_driver) in fadtk’s interpreter, a
+[`FidelityResult`](_autosummary/foley.eval.fidelity.html.md#foley.eval.fidelity.FidelityResult) stamped `toolkit='fadtk'`). Nothing
+from fadtk is imported here.
 
 ```default
 fad = FadtkFidelity(python="~/venvs/fadtk/bin/python")
@@ -4686,30 +4806,13 @@ differ unless fed the same frames. Install and model choice: `misc/docs/fidelity
 
 ### Module Attributes
 
-| [`FADTK_MODELS`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FADTK_MODELS)        | fadtk embedding models by fadtk's name → (loader class in `fadtk.model_loader`, its constructor args).          |
-|----------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
-| [`DEFAULT_FADTK_MODEL`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.DEFAULT_FADTK_MODEL) | The default fadtk model (lightest download; see [`FADTK_MODELS`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FADTK_MODELS)). |
-| [`DRIVER`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.DRIVER)              | The script run inside fadtk's interpreter.                                                                      |
-| [`FADTK_PYTHON_ENV`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FADTK_PYTHON_ENV)    | The environment variable naming fadtk's interpreter when `python=` is not given.                                |
-| [`FADTK_INSTALL`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FADTK_INSTALL)       | Install hint, printed when the interpreter is missing or lacks fadtk.                                           |
-| [`MAX_CHANNELS`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.MAX_CHANNELS)        | The most channels a clip may have.                                                                              |
+| [`FADTK_MODELS`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FADTK_MODELS)   | fadtk embedding models by fadtk's name → (loader class in `fadtk.model_loader`, its constructor args).   |
+|-----------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
 
 ### Classes
 
 | [`FadtkFidelity`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FadtkFidelity)(\*[, python, model, models, ...])   | Set-level FAD computed by `fadtk` in a separate interpreter.   |
 |----------------------------------------------------------------------------------------------------|----------------------------------------------------------------|
-
-### foley.eval.fadtk.DEFAULT_FADTK_MODEL *= 'encodec-emb'*
-
-The default fadtk model (lightest download; see [`FADTK_MODELS`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FADTK_MODELS)).
-
-### foley.eval.fadtk.DRIVER *= PosixPath('/home/runner/work/foley/foley/foley/eval/fadtk_driver.py')*
-
-The script run inside fadtk’s interpreter.
-
-### foley.eval.fadtk.FADTK_INSTALL *= "uv venv ~/venvs/fadtk --python 3.11 && uv pip install --python ~/venvs/fadtk/bin/python fadtk torchcodec; then FadtkFidelity(python='~/venvs/fadtk/bin/python') or set FOLEY_FADTK_PYTHON"*
-
-Install hint, printed when the interpreter is missing or lacks fadtk.
 
 ### foley.eval.fadtk.FADTK_MODELS *: [Mapping](https://docs.python.org/3/library/typing.html#typing.Mapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)]]* *= {'clap-2023': ('CLAPModel', ('2023',)), 'clap-laion-audio': ('CLAPLaionModel', ('audio',)), 'clap-laion-music': ('CLAPLaionModel', ('music',)), 'encodec-emb': ('EncodecEmbModel', ('24k',)), 'encodec-emb-48k': ('EncodecEmbModel', ('48k',)), 'vggish': ('VGGishModel', ())}*
 
@@ -4717,64 +4820,22 @@ fadtk embedding models by fadtk’s name → (loader class in `fadtk.model_loade
 its constructor args). Extend with `FadtkFidelity(models={...})`. The default,
 `encodec-emb`, downloads the smallest weights (EnCodec 24 kHz, about 90 MB).
 
-### foley.eval.fadtk.FADTK_PYTHON_ENV *= 'FOLEY_FADTK_PYTHON'*
+### *class* foley.eval.fadtk.FadtkFidelity(\*, python=None, model=None, models=None, workers=1, env=None, timeout=None, runner=<function run>)
 
-The environment variable naming fadtk’s interpreter when `python=` is not given.
-
-### *class* foley.eval.fadtk.FadtkFidelity(\*, python=None, model='encodec-emb', models=None, workers=1, env=None, timeout=None, runner=<function run>)
-
-Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+Bases: [`ExternalFidelity`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity)
 
 Set-level FAD computed by `fadtk` in a separate interpreter.
 
-* **Parameters:**
-  * **python** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – An interpreter with `fadtk` installed, usually in its own venv
-    (default: `$FOLEY_FADTK_PYTHON`; neither set raises with the install).
-  * **model** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – A key of `models` (default [`DEFAULT_FADTK_MODEL`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.DEFAULT_FADTK_MODEL)).
-  * **models** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)]]]) – fadtk name → (loader class, args) (default [`FADTK_MODELS`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FADTK_MODELS)).
-  * **workers** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – fadtk’s embedding worker processes (each loads the model).
-  * **env** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – The program’s environment (default: this process’s), e.g. to set
-    `TORCH_HOME` where the weights are cached.
-  * **timeout** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds before the run is abandoned (default: none).
-  * **runner** ([`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`CompletedProcess`](https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess)]) – Runs the command (default `subprocess.run`).
+:param those of [`ExternalFidelity`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity); `model`:
+:param is a key of [`FADTK_MODELS`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FADTK_MODELS):
+:type is a key of [`FADTK_MODELS`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FADTK_MODELS): default `DEFAULT_FADTK_MODEL`
 
-### foley.eval.fadtk.MAX_CHANNELS *= 8*
+#### frames_needed(dim)
 
-The most channels a clip may have. A 2-D array with at most this many rows and more
-columns than that is channel-first, and is refused (`_as_frames_channels()`).
-
-
-# _autosummary/foley.eval.fadtk_driver.html.md
-
-# foley.eval.fadtk_driver
-
-The script [`foley.eval.fadtk.FadtkFidelity`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FadtkFidelity) runs inside fadtk’s own interpreter.
-
-It is not imported by foley: foley runs it as `python -I fadtk_driver.py SPEC_JSON`
-with the interpreter of a virtualenv that has `fadtk` installed (fadtk pins
-`numpy<2` and pulls torch, so it cannot share foley’s environment). It imports only
-the standard library and fadtk, and only inside [`main()`](_autosummary/foley.eval.fadtk_driver.html.md#foley.eval.fadtk_driver.main), so foley’s test
-collection and linters can load this file without fadtk.
-
-It builds ONE fadtk embedding model from `spec["loader"]` (a class name in
-`fadtk.model_loader`) and `spec["args"]`. fadtk’s own command line
-(`python -m fadtk`) instantiates every model it knows first, and two of those
-download CLAP checkpoints (about 2.5 GB) in their constructors; building one model
-avoids that. Then it runs fadtk’s own pipeline (`cache_embedding_files` on each
-directory, `FrechetAudioDistance.score`) and writes the score, fadtk’s version, the
-model name, the embedding-frame counts and the embedding dimension as JSON to `spec["out"]`.
-
-### Functions
-
-| [`main`](_autosummary/foley.eval.fadtk_driver.html.md#foley.eval.fadtk_driver.main)(spec_json)   | Score `spec['ref']` against `spec['gen']` with fadtk; write JSON to `spec['out']`.   |
-|--------------------------------------------------------------------|--------------------------------------------------------------------------------------|
-
-### foley.eval.fadtk_driver.main(spec_json)
-
-Score `spec['ref']` against `spec['gen']` with fadtk; write JSON to `spec['out']`.
+More frames than dimensions, or the covariance is singular and FAD meaningless.
 
 * **Return type:**
-  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`int`](https://docs.python.org/3/builtins/functions.html#int), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 
 # _autosummary/foley.eval.fidelity.html.md
@@ -4795,9 +4856,10 @@ embeddings, toolkits, or versions\*\*.
 Pure numpy / stdlib — `numpy` is imported function-locally (`import foley` stays
 dol-only), and the PSD matrix-square-root trace is computed via `numpy.linalg.eigvals`
 (there is **no** `scipy.linalg.sqrtm` in the numpy-only CI env). For numbers
-comparable with published ones, [`foley.eval.fadtk.FadtkFidelity`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FadtkFidelity) runs the
-reference toolkit (`fadtk`) in its own interpreter and returns the same
-[`FidelityResult`](_autosummary/foley.eval.fidelity.html.md#foley.eval.fidelity.FidelityResult), stamped `toolkit='fadtk'`; the functions here cover the math.
+comparable with published ones, [`foley.eval.fadtk.FadtkFidelity`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FadtkFidelity) and
+[`foley.eval.kadtk.KadtkFidelity`](_autosummary/foley.eval.kadtk.html.md#foley.eval.kadtk.KadtkFidelity) run the reference toolkits (`fadtk`,
+`kadtk`) in their own interpreters and return the same [`FidelityResult`](_autosummary/foley.eval.fidelity.html.md#foley.eval.fidelity.FidelityResult),
+stamped with the toolkit; the functions here cover the math.
 
 ### Functions
 
@@ -4808,15 +4870,19 @@ reference toolkit (`fadtk`) in its own interpreter and returns the same
 
 ### Classes
 
-| [`FidelityResult`](_autosummary/foley.eval.fidelity.html.md#foley.eval.fidelity.FidelityResult)(metric, value, stamp)            | A stamped set-level fidelity score (attached to `FitReport.fidelity`).   |
-|--------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
-| [`FidelityStamp`](_autosummary/foley.eval.fidelity.html.md#foley.eval.fidelity.FidelityStamp)(embedding, toolkit, version, ...) | Mandatory provenance for a FAD/KAD score — it is meaningless without it. |
+| [`FidelityResult`](_autosummary/foley.eval.fidelity.html.md#foley.eval.fidelity.FidelityResult)(metric, value, stamp[, params])   | A stamped set-level fidelity score (attached to `FitReport.fidelity`).   |
+|---------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| [`FidelityStamp`](_autosummary/foley.eval.fidelity.html.md#foley.eval.fidelity.FidelityStamp)(embedding, toolkit, version, ...)  | Mandatory provenance for a FAD/KAD score — it is meaningless without it. |
 
-### *class* foley.eval.fidelity.FidelityResult(metric, value, stamp)
+### *class* foley.eval.fidelity.FidelityResult(metric, value, stamp, params=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 A stamped set-level fidelity score (attached to `FitReport.fidelity`).
+
+`params` holds the settings the value depends on beyond the stamp, e.g. kadtk’s
+`bandwidth` and `scale`: score a second generator against the same reference
+with the same `bandwidth` for the two values to be comparable.
 
 ### *class* foley.eval.fidelity.FidelityStamp(embedding, toolkit, version, n_ref, n_gen)
 
@@ -4871,8 +4937,9 @@ Kernel Audio Distance — the unbiased RBF-MMD² between two embedding sets.
 
 Distribution-free and small-sample-convergent; preferred over FAD for the small
 reference/generated sets of early-stage eval. The diagonal (same-sample) kernel terms
-are dropped (the unbiased estimator), so `KAD(X, X) ≈ 0` and can be slightly
-negative.
+are dropped (the unbiased estimator), so it is centred on 0 for two sets from one
+distribution and is then negative about half the time; small sets make that
+spread wide, so a value near 0 means “indistinguishable”, not “identical”.
 
 * **Parameters:**
   * **x_ref** – Reference embeddings `(n_ref, d)`.
@@ -5268,7 +5335,8 @@ default). All numpy imports are function-local so `import foley` stays dol-only.
 | [`AlphaResult`](_autosummary/foley.eval.html.md#foley.eval.AlphaResult)(alpha, level, n_units, n_raters, ...) | A judge-vs-human calibration record (surfaced as `FitReport.calibration`).                     |
 | [`FidelityStamp`](_autosummary/foley.eval.html.md#foley.eval.FidelityStamp)(embedding, toolkit, version, ...)   | Mandatory provenance for a FAD/KAD score — it is meaningless without it.                       |
 | [`FadtkFidelity`](_autosummary/foley.eval.html.md#foley.eval.FadtkFidelity)(\*[, python, model, models, ...])   | Set-level FAD computed by `fadtk` in a separate interpreter.                                   |
-| [`FidelityResult`](_autosummary/foley.eval.html.md#foley.eval.FidelityResult)(metric, value, stamp)              | A stamped set-level fidelity score (attached to `FitReport.fidelity`).                         |
+| [`KadtkFidelity`](_autosummary/foley.eval.html.md#foley.eval.KadtkFidelity)(\*[, bandwidth, device, ...])       | Set-level KAD computed by `kadtk` in a separate interpreter.                                   |
+| [`FidelityResult`](_autosummary/foley.eval.html.md#foley.eval.FidelityResult)(metric, value, stamp[, params])    | A stamped set-level fidelity score (attached to `FitReport.fidelity`).                         |
 | [`Passage`](_autosummary/foley.eval.html.md#foley.eval.Passage)(id, segments[, audio])                    | One narration passage: its segments (what `foley.score` takes) and optional audio.             |
 | [`PassageTaste`](_autosummary/foley.eval.html.md#foley.eval.PassageTaste)(passage_id[, restraint, ...])        | The four measurements for one passage (JSON-safe via `to_dict()`).                             |
 | [`TasteReport`](_autosummary/foley.eval.html.md#foley.eval.TasteReport)(designer, passages[, thresholds])     | The tasteful-weave eval over a passage set: per passage + aggregated, plus thresholds.         |
@@ -5284,28 +5352,32 @@ Codifies the promotion rule in one legible object: a model judge is `promoted` t
 unattended use only once its agreement with the human raters reaches the
 `ALPHA_RELIABLE` band.
 
-### *class* foley.eval.FadtkFidelity(\*, python=None, model='encodec-emb', models=None, workers=1, env=None, timeout=None, runner=<function run>)
+### *class* foley.eval.FadtkFidelity(\*, python=None, model=None, models=None, workers=1, env=None, timeout=None, runner=<function run>)
 
-Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+Bases: [`ExternalFidelity`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity)
 
 Set-level FAD computed by `fadtk` in a separate interpreter.
 
-* **Parameters:**
-  * **python** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – An interpreter with `fadtk` installed, usually in its own venv
-    (default: `$FOLEY_FADTK_PYTHON`; neither set raises with the install).
-  * **model** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – A key of `models` (default `DEFAULT_FADTK_MODEL`).
-  * **models** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)]]]) – fadtk name → (loader class, args) (default `FADTK_MODELS`).
-  * **workers** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – fadtk’s embedding worker processes (each loads the model).
-  * **env** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – The program’s environment (default: this process’s), e.g. to set
-    `TORCH_HOME` where the weights are cached.
-  * **timeout** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds before the run is abandoned (default: none).
-  * **runner** ([`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`CompletedProcess`](https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess)]) – Runs the command (default `subprocess.run`).
+:param those of [`ExternalFidelity`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity); `model`:
+:param is a key of `FADTK_MODELS`:
+:type is a key of `FADTK_MODELS`: default `DEFAULT_FADTK_MODEL`
 
-### *class* foley.eval.FidelityResult(metric, value, stamp)
+#### frames_needed(dim)
+
+More frames than dimensions, or the covariance is singular and FAD meaningless.
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`int`](https://docs.python.org/3/builtins/functions.html#int), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### *class* foley.eval.FidelityResult(metric, value, stamp, params=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 A stamped set-level fidelity score (attached to `FitReport.fidelity`).
+
+`params` holds the settings the value depends on beyond the stamp, e.g. kadtk’s
+`bandwidth` and `scale`: score a second generator against the same reference
+with the same `bandwidth` for the two values to be comparable.
 
 ### *class* foley.eval.FidelityStamp(embedding, toolkit, version, n_ref, n_gen)
 
@@ -5425,6 +5497,52 @@ offline retrieval regression; real retrieval uses CLAP.
 #### embed_text(text)
 
 Embed `text` (or a list of texts) -> a `(n, dim)` float32 array.
+
+### *class* foley.eval.KadtkFidelity(, bandwidth=None, device='cpu', warn_frames=100, clip_rule=None, \*\*kwargs)
+
+Bases: [`ExternalFidelity`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity)
+
+Set-level KAD computed by `kadtk` in a separate interpreter.
+
+:param those of [`ExternalFidelity`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity):
+:param plus:
+:type bandwidth: [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
+:param bandwidth: The RBF bandwidth (default: kadtk’s, the median pairwise distance
+
+> of the generated set’s embedding frames; the one used is in `params`).
+* **Parameters:**
+  * **device** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – Where kadtk computes the kernel sums (`'cpu'`, `'cuda'`, `'mps'`).
+  * **warn_frames** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Warn below this many frames a set (default
+    `KADTK_WARN_FRAMES`; `None` never warns).
+  * **clip_rule** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`ClipRule`](_autosummary/foley.eval.kadtk.html.md#foley.eval.kadtk.ClipRule)]) – What each clip must be (default: the model’s in
+    `KADTK_CLIP_RULES`, else any clip).
+
+`model` is a key of `KADTK_MODELS` (default `DEFAULT_KADTK_MODEL`).
+
+#### check_clip(clip, , sr, name)
+
+Refuse a clip `clip_rule` says kadtk would crash on, before it runs.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+#### failure_hints *: [Mapping](https://docs.python.org/3/library/typing.html#typing.Mapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= {"No module named '_tkinter'": "kadtk imports turtle, which needs Tk; build the venv on a Python that has it. Install: uv venv ~/venvs/kadtk --python 3.11 --managed-python && uv pip install --python ~/venvs/kadtk/bin/python kadtk torchaudio==2.5.1; then KadtkFidelity(python='~/venvs/kadtk/bin/python') or set FOLEY_KADTK_PYTHON", '_aoti_torch_abi_version': "torchaudio does not match torch; pin torchaudio to torch's version. Install: uv venv ~/venvs/kadtk --python 3.11 --managed-python && uv pip install --python ~/venvs/kadtk/bin/python kadtk torchaudio==2.5.1; then KadtkFidelity(python='~/venvs/kadtk/bin/python') or set FOLEY_KADTK_PYTHON", 'maximum size for tensor at dimension': "kadtk pools this model's embedding per 1 s and crashes on a clip (or, for encodec-emb-48k, a last segment) shorter than that; use longer clips, or give the model a clip_rule"}*
+
+A substring of a failed run’s output → what to do about it.
+
+#### frames_needed(dim)
+
+Two frames: the unbiased MMD² averages over pairs of distinct frames.
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`int`](https://docs.python.org/3/builtins/functions.html#int), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+#### options()
+
+kadtk’s bandwidth and device.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 ### *class* foley.eval.Passage(id, segments, audio=None)
 
@@ -5684,8 +5802,9 @@ Kernel Audio Distance — the unbiased RBF-MMD² between two embedding sets.
 
 Distribution-free and small-sample-convergent; preferred over FAD for the small
 reference/generated sets of early-stage eval. The diagonal (same-sample) kernel terms
-are dropped (the unbiased estimator), so `KAD(X, X) ≈ 0` and can be slightly
-negative.
+are dropped (the unbiased estimator), so it is centred on 0 for two sets from one
+distribution and is then negative about half the time; small sets make that
+spread wide, so a value near 0 means “indistinguishable”, not “identical”.
 
 * **Parameters:**
   * **x_ref** – Reference embeddings `(n_ref, d)`.
@@ -5946,21 +6065,142 @@ once its numbers are stable, which records that judge in `run`.
 
 ### Modules
 
-| [`bradley_terry`](_autosummary/foley.eval.bradley_terry.html.md#module-foley.eval.bradley_terry)   | Bradley-Terry ranking from pairwise preferences (2AFC human panels; #49).                                                                                      |
-|--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`panel`](_autosummary/foley.eval.panel.html.md#module-foley.eval.panel)                   | Human-panel infrastructure: blind tasks, a listening page, responses, and the calibration feed (#49).                                                          |
-| [`baseline`](_autosummary/foley.eval.baseline.html.md#module-foley.eval.baseline)             | The committed nDCG baseline — the PR gate's SSOT + staleness stamps.                                                                                           |
-| [`embedder`](_autosummary/foley.eval.embedder.html.md#module-foley.eval.embedder)             | A deterministic, numpy-only text embedder for the retrieval eval gate.                                                                                         |
-| [`fadtk`](_autosummary/foley.eval.fadtk.html.md#module-foley.eval.fadtk)                   | Reference FAD from Microsoft's `fadtk`, run in its own interpreter (#48).                                                                                      |
-| [`fadtk_driver`](_autosummary/foley.eval.fadtk_driver.html.md#module-foley.eval.fadtk_driver)     | The script [`foley.eval.fadtk.FadtkFidelity`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FadtkFidelity) runs inside fadtk's own interpreter. |
-| [`fidelity`](_autosummary/foley.eval.fidelity.html.md#module-foley.eval.fidelity)             | Set-level generation-fidelity — Fréchet Audio Distance (FAD) + Kernel Audio Distance (KAD).                                                                    |
-| [`fit`](_autosummary/foley.eval.fit.html.md#module-foley.eval.fit)                       | Tier-2 fit evaluation — "does the accepted clip actually match the intent?" (report 08 §2/§5).                                                                 |
-| [`golden`](_autosummary/foley.eval.golden.html.md#module-foley.eval.golden)                 | The frozen golden set + the deterministic Ring-0 retrieval harness.                                                                                            |
-| [`panel_page`](_autosummary/foley.eval.panel_page.html.md#module-foley.eval.panel_page)         | A self-contained listening page for a human panel (#49): open it in a browser, rate, download.                                                                 |
-| [`prompt_match`](_autosummary/foley.eval.prompt_match.html.md#module-foley.eval.prompt_match)     | Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).                                                                        |
-| [`reliability`](_autosummary/foley.eval.reliability.html.md#module-foley.eval.reliability)       | Inter-rater reliability — Krippendorff's α + the judge-vs-human calibration guardrail.                                                                         |
-| [`retrieval`](_autosummary/foley.eval.retrieval.html.md#module-foley.eval.retrieval)           | Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.                                                                                    |
-| [`taste`](_autosummary/foley.eval.taste.html.md#module-foley.eval.taste)                   | The "tasteful weave" eval: does a sound designer produce a *restrained, clean, well-placed* result?                                                            |
+| [`bradley_terry`](_autosummary/foley.eval.bradley_terry.html.md#module-foley.eval.bradley_terry)         | Bradley-Terry ranking from pairwise preferences (2AFC human panels; #49).                                                                                                                    |
+|--------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`panel`](_autosummary/foley.eval.panel.html.md#module-foley.eval.panel)                         | Human-panel infrastructure: blind tasks, a listening page, responses, and the calibration feed (#49).                                                                                        |
+| [`baseline`](_autosummary/foley.eval.baseline.html.md#module-foley.eval.baseline)                   | The committed nDCG baseline — the PR gate's SSOT + staleness stamps.                                                                                                                         |
+| [`embedder`](_autosummary/foley.eval.embedder.html.md#module-foley.eval.embedder)                   | A deterministic, numpy-only text embedder for the retrieval eval gate.                                                                                                                       |
+| [`external_fidelity`](_autosummary/foley.eval.external_fidelity.html.md#module-foley.eval.external_fidelity) | Set-level fidelity from a reference toolkit run in its own interpreter (#48, #262).                                                                                                          |
+| [`fadtk`](_autosummary/foley.eval.fadtk.html.md#module-foley.eval.fadtk)                         | Reference FAD from Microsoft's `fadtk`, run in its own interpreter (#48).                                                                                                                    |
+| [`fidelity`](_autosummary/foley.eval.fidelity.html.md#module-foley.eval.fidelity)                   | Set-level generation-fidelity — Fréchet Audio Distance (FAD) + Kernel Audio Distance (KAD).                                                                                                  |
+| [`fit`](_autosummary/foley.eval.fit.html.md#module-foley.eval.fit)                             | Tier-2 fit evaluation — "does the accepted clip actually match the intent?" (report 08 §2/§5).                                                                                               |
+| [`golden`](_autosummary/foley.eval.golden.html.md#module-foley.eval.golden)                       | The frozen golden set + the deterministic Ring-0 retrieval harness.                                                                                                                          |
+| [`kadtk`](_autosummary/foley.eval.kadtk.html.md#module-foley.eval.kadtk)                         | Reference KAD from `kadtk`, run in its own interpreter (#262).                                                                                                                               |
+| [`panel_page`](_autosummary/foley.eval.panel_page.html.md#module-foley.eval.panel_page)               | A self-contained listening page for a human panel (#49): open it in a browser, rate, download.                                                                                               |
+| [`prompt_match`](_autosummary/foley.eval.prompt_match.html.md#module-foley.eval.prompt_match)           | Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).                                                                                                      |
+| [`reliability`](_autosummary/foley.eval.reliability.html.md#module-foley.eval.reliability)             | Inter-rater reliability — Krippendorff's α + the judge-vs-human calibration guardrail.                                                                                                       |
+| [`retrieval`](_autosummary/foley.eval.retrieval.html.md#module-foley.eval.retrieval)                 | Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.                                                                                                                  |
+| [`taste`](_autosummary/foley.eval.taste.html.md#module-foley.eval.taste)                         | The "tasteful weave" eval: does a sound designer produce a *restrained, clean, well-placed* result?                                                                                          |
+| [`toolkit_driver`](_autosummary/foley.eval.toolkit_driver.html.md#module-foley.eval.toolkit_driver)       | The script [`foley.eval.external_fidelity.ExternalFidelity`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity) runs inside a toolkit's interpreter. |
+
+
+# _autosummary/foley.eval.kadtk.html.md
+
+# foley.eval.kadtk
+
+Reference KAD from `kadtk`, run in its own interpreter (#262).
+
+[`foley.eval.fidelity.kernel_audio_distance()`](_autosummary/foley.eval.fidelity.html.md#foley.eval.fidelity.kernel_audio_distance) is the KAD math (unbiased RBF MMD²)
+in pure numpy. [kadtk](https://github.com/YoonjinXD/kadtk) is the reference toolkit
+of the KAD paper, a fork of fadtk with the same embedding models; version 1.1 needs
+Python < 3.12, `numpy<2`, `torch<2.6` and `transformers<4.47`, so it cannot share
+foley’s environment. [`KadtkFidelity`](_autosummary/foley.eval.kadtk.html.md#foley.eval.kadtk.KadtkFidelity) runs it through
+[`ExternalFidelity`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity) exactly as
+[`FadtkFidelity`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FadtkFidelity) runs fadtk, and stamps `toolkit='kadtk'`.
+
+```default
+kad = KadtkFidelity(python="~/venvs/kadtk/bin/python")
+result = kad(reference_wavs, generated_wavs, sr=48000)
+result.value   # kadtk's KAD: the unbiased MMD² times 100, so it can be negative
+result.params  # {'bandwidth': ..., 'scale': 100}
+```
+
+Two conventions differ from [`kernel_audio_distance()`](_autosummary/foley.eval.fidelity.html.md#foley.eval.fidelity.kernel_audio_distance), so
+the numbers agree only after accounting for them: kadtk reports the MMD² \*\*times
+100\*\*, and its default bandwidth is torch’s (lower) median of the pairwise distances
+between the **generated** set’s frames (foley’s numpy default pools both sets). The
+bandwidth used is returned in `result.params`; pass it as `bandwidth=` to score a
+second generator against the same reference on the same kernel. kadtk’s EnCodec
+embeddings are pooled to one frame per second of audio, and kadtk crashes on a clip
+shorter than that, so such clips are refused here ([`KADTK_CLIP_RULES`](_autosummary/foley.eval.kadtk.html.md#foley.eval.kadtk.KADTK_CLIP_RULES)).
+Install: `misc/docs/fidelity.md`.
+
+### Module Attributes
+
+| [`KADTK_MODELS`](_autosummary/foley.eval.kadtk.html.md#foley.eval.kadtk.KADTK_MODELS)     | kadtk embedding models by kadtk's name → (loader class in `kadtk.model_loader`, its constructor args): fadtk's, plus the PANNs models.   |
+|-------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| [`KADTK_CLIP_RULES`](_autosummary/foley.eval.kadtk.html.md#foley.eval.kadtk.KADTK_CLIP_RULES) | kadtk model → [`ClipRule`](_autosummary/foley.eval.kadtk.html.md#foley.eval.kadtk.ClipRule); a model not listed accepts any clip.                            |
+
+### Classes
+
+| [`ClipRule`](_autosummary/foley.eval.kadtk.html.md#foley.eval.kadtk.ClipRule)([min_seconds, whole_seconds])      | What a clip must be for kadtk to embed it with a given model.   |
+|----------------------------------------------------------------------------------------------|-----------------------------------------------------------------|
+| [`KadtkFidelity`](_autosummary/foley.eval.kadtk.html.md#foley.eval.kadtk.KadtkFidelity)(\*[, bandwidth, device, ...]) | Set-level KAD computed by `kadtk` in a separate interpreter.    |
+
+### *class* foley.eval.kadtk.ClipRule(min_seconds=0.0, whole_seconds=False)
+
+Bases: [`NamedTuple`](https://docs.python.org/3/library/typing.html#typing.NamedTuple)
+
+What a clip must be for kadtk to embed it with a given model.
+
+`min_seconds`: the shortest clip. `whole_seconds`: the length must be a whole
+number of pooling windows (kadtk embeds EnCodec 48 kHz per 1 s segment and pools
+each, so a partial last segment crashes it like a short clip).
+
+#### min_seconds *: [float](https://docs.python.org/3/builtins/functions.html#float)*
+
+Alias for field number 0
+
+#### whole_seconds *: [bool](https://docs.python.org/3/builtins/functions.html#bool)*
+
+Alias for field number 1
+
+### foley.eval.kadtk.KADTK_CLIP_RULES *: [Mapping](https://docs.python.org/3/library/typing.html#typing.Mapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [ClipRule](_autosummary/foley.eval.kadtk.html.md#foley.eval.kadtk.ClipRule)]* *= {'encodec-emb': (1.0, False), 'encodec-emb-48k': (1.0, True)}*
+
+kadtk model → [`ClipRule`](_autosummary/foley.eval.kadtk.html.md#foley.eval.kadtk.ClipRule); a model not listed accepts any clip.
+
+### foley.eval.kadtk.KADTK_MODELS *: [Mapping](https://docs.python.org/3/library/typing.html#typing.Mapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)]]* *= {'clap-2023': ('CLAPModel', ('2023',)), 'clap-laion-audio': ('CLAPLaionModel', ('audio',)), 'clap-laion-music': ('CLAPLaionModel', ('music',)), 'encodec-emb': ('EncodecEmbModel', ('24k',)), 'encodec-emb-48k': ('EncodecEmbModel', ('48k',)), 'panns-cnn14-16k': ('PANNsModel', ('cnn14-16k',)), 'panns-cnn14-32k': ('PANNsModel', ('cnn14-32k',)), 'panns-wavegram-logmel': ('PANNsModel', ('wavegram-logmel',)), 'vggish': ('VGGishModel', ())}*
+
+kadtk embedding models by kadtk’s name → (loader class in `kadtk.model_loader`,
+its constructor args): fadtk’s, plus the PANNs models. Extend with
+`KadtkFidelity(models={...})`. The default, `encodec-emb`, downloads the
+smallest weights (EnCodec 24 kHz, about 90 MB).
+
+### *class* foley.eval.kadtk.KadtkFidelity(, bandwidth=None, device='cpu', warn_frames=100, clip_rule=None, \*\*kwargs)
+
+Bases: [`ExternalFidelity`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity)
+
+Set-level KAD computed by `kadtk` in a separate interpreter.
+
+:param those of [`ExternalFidelity`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity):
+:param plus:
+:type bandwidth: [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
+:param bandwidth: The RBF bandwidth (default: kadtk’s, the median pairwise distance
+
+> of the generated set’s embedding frames; the one used is in `params`).
+* **Parameters:**
+  * **device** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – Where kadtk computes the kernel sums (`'cpu'`, `'cuda'`, `'mps'`).
+  * **warn_frames** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Warn below this many frames a set (default
+    `KADTK_WARN_FRAMES`; `None` never warns).
+  * **clip_rule** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`ClipRule`](_autosummary/foley.eval.kadtk.html.md#foley.eval.kadtk.ClipRule)]) – What each clip must be (default: the model’s in
+    [`KADTK_CLIP_RULES`](_autosummary/foley.eval.kadtk.html.md#foley.eval.kadtk.KADTK_CLIP_RULES), else any clip).
+
+`model` is a key of [`KADTK_MODELS`](_autosummary/foley.eval.kadtk.html.md#foley.eval.kadtk.KADTK_MODELS) (default `DEFAULT_KADTK_MODEL`).
+
+#### check_clip(clip, , sr, name)
+
+Refuse a clip `clip_rule` says kadtk would crash on, before it runs.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+#### failure_hints *: [Mapping](https://docs.python.org/3/library/typing.html#typing.Mapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= {"No module named '_tkinter'": "kadtk imports turtle, which needs Tk; build the venv on a Python that has it. Install: uv venv ~/venvs/kadtk --python 3.11 --managed-python && uv pip install --python ~/venvs/kadtk/bin/python kadtk torchaudio==2.5.1; then KadtkFidelity(python='~/venvs/kadtk/bin/python') or set FOLEY_KADTK_PYTHON", '_aoti_torch_abi_version': "torchaudio does not match torch; pin torchaudio to torch's version. Install: uv venv ~/venvs/kadtk --python 3.11 --managed-python && uv pip install --python ~/venvs/kadtk/bin/python kadtk torchaudio==2.5.1; then KadtkFidelity(python='~/venvs/kadtk/bin/python') or set FOLEY_KADTK_PYTHON", 'maximum size for tensor at dimension': "kadtk pools this model's embedding per 1 s and crashes on a clip (or, for encodec-emb-48k, a last segment) shorter than that; use longer clips, or give the model a clip_rule"}*
+
+A substring of a failed run’s output → what to do about it.
+
+#### frames_needed(dim)
+
+Two frames: the unbiased MMD² averages over pairs of distinct frames.
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`int`](https://docs.python.org/3/builtins/functions.html#int), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+#### options()
+
+kadtk’s bandwidth and device.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 
 # _autosummary/foley.eval.panel.html.md
@@ -6901,6 +7141,50 @@ production behaviour.
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Passage`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.Passage)], [`ScoreResult`](_autosummary/foley.html.md#foley.ScoreResult)]
 
 
+# _autosummary/foley.eval.toolkit_driver.html.md
+
+# foley.eval.toolkit_driver
+
+The script [`foley.eval.external_fidelity.ExternalFidelity`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity) runs inside a toolkit’s interpreter.
+
+It is not imported by foley: foley runs it as `python -I toolkit_driver.py SPEC_JSON`
+with the interpreter of a virtualenv that has the toolkit (`fadtk` or `kadtk`)
+installed (both pin `numpy<2` and an old torch, so neither can share foley’s
+environment). It imports only the standard library and the toolkit, and only inside
+the functions, so foley’s test collection and linters can load this file without them.
+
+It builds ONE embedding model from `spec["loader"]` (a class name in
+`<toolkit>.model_loader`) and `spec["args"]`. The toolkits’ own command lines
+(`python -m fadtk`, `python -m kadtk`) instantiate every model they know first,
+and the CLAP constructors download their checkpoints (about 2.5 GB); building one
+model avoids that. Then it runs the toolkit’s own pipeline (`cache_embedding_files`
+on each directory, then the toolkit’s scorer, see [`TOOLKITS`](_autosummary/foley.eval.toolkit_driver.html.md#foley.eval.toolkit_driver.TOOLKITS)) and writes the
+score, the toolkit’s version, the model name, the embedding-frame counts, the
+embedding dimension and the scorer’s parameters (kadtk: the bandwidth it used and its
+scale) as JSON to `spec["out"]`.
+
+### Module Attributes
+
+| [`TOOLKITS`](_autosummary/foley.eval.toolkit_driver.html.md#foley.eval.toolkit_driver.TOOLKITS)   | Toolkit name → a function of the spec returning (embedding cacher, scorer).   |
+|-------------------------------------------------------------|-------------------------------------------------------------------------------|
+
+### Functions
+
+| [`main`](_autosummary/foley.eval.toolkit_driver.html.md#foley.eval.toolkit_driver.main)(spec_json)   | Score `spec['ref']` against `spec['gen']` with `spec['toolkit']`; write JSON to `spec['out']`.   |
+|--------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
+
+### foley.eval.toolkit_driver.TOOLKITS *= {'fadtk': <function \_fadtk>, 'kadtk': <function \_kadtk>}*
+
+Toolkit name → a function of the spec returning (embedding cacher, scorer).
+
+### foley.eval.toolkit_driver.main(spec_json)
+
+Score `spec['ref']` against `spec['gen']` with `spec['toolkit']`; write JSON to `spec['out']`.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+
 # _autosummary/foley.external.html.md
 
 # foley.external
@@ -6908,7 +7192,7 @@ production behaviour.
 Running a tool as an external program: find it, run it, report its failure.
 
 Some backends cannot share foley’s process or environment: MFA installs with conda,
-aeneas is AGPL, fadtk pins `numpy<2`. foley runs each as a subprocess (often an
+aeneas is AGPL, fadtk and kadtk pin `numpy<2`. foley runs each as a subprocess (often an
 interpreter in its own virtualenv) that writes its result to a file. This module is
 the shared part: resolving the executable with an install hint, and running the
 command with an injectable `runner` so that a non-zero exit or a missing output file
@@ -18035,7 +18319,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'netflix intro', 'tudum', 'ta-dum', 'netflix sound', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel chime', 'intel jingle', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'ta dum', 'netflix sound', 'tudum', 'netflix chime', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel inside', 'intel chime', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -30089,7 +30373,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 07:44 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/20a6fb03a7f29d641b68577ef2230eb04f963774"><code>20a6fb0</code></a> on branch <code>main</code>, for **foley 0.0.130** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 07:49 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/2050ec96ab7ddc2499991920902b20349859fd3d"><code>2050ec9</code></a> on branch <code>main</code>, for **foley 0.0.131** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -30098,7 +30382,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/20a6fb03a7f29d641b68577ef2230eb04f963774"><code>20a6fb03a7f29d641b68577ef2230eb04f963774</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/2050ec96ab7ddc2499991920902b20349859fd3d"><code>2050ec96ab7ddc2499991920902b20349859fd3d</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -30109,9 +30393,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41407962997">41407962997</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41408432352">41408432352</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>20a6fb03a7f29d641b68577ef2230eb04f963774</code> (in the history of the built commit) |
+| Event commit | <code>2050ec96ab7ddc2499991920902b20349859fd3d</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -30136,13 +30420,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.130/">0.0.130</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.131/">0.0.131</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 20a6fb03a7f29d641b68577ef2230eb04f963774
+git checkout 2050ec96ab7ddc2499991920902b20349859fd3d
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

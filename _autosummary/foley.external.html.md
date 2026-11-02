@@ -3,7 +3,7 @@
 Running a tool as an external program: find it, run it, report its failure.
 
 Some backends cannot share foley’s process or environment: MFA installs with conda,
-aeneas is AGPL, fadtk pins `numpy<2`. foley runs each as a subprocess (often an
+aeneas is AGPL, fadtk and kadtk pin `numpy<2`. foley runs each as a subprocess (often an
 interpreter in its own virtualenv) that writes its result to a file. This module is
 the shared part: resolving the executable with an install hint, and running the
 command with an injectable `runner` so that a non-zero exit or a missing output file

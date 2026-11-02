@@ -1,0 +1,20 @@
+foley.eval.kadtk
+================
+
+.. automodule:: foley.eval.kadtk
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      KADTK_MODELS
+      KADTK_CLIP_RULES
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ClipRule
+      KadtkFidelity
+   

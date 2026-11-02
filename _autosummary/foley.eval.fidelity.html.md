@@ -14,9 +14,10 @@ embeddings, toolkits, or versions\*\*.
 Pure numpy / stdlib — `numpy` is imported function-locally (`import foley` stays
 dol-only), and the PSD matrix-square-root trace is computed via `numpy.linalg.eigvals`
 (there is **no** `scipy.linalg.sqrtm` in the numpy-only CI env). For numbers
-comparable with published ones, [`foley.eval.fadtk.FadtkFidelity`](foley.eval.fadtk.html.md#foley.eval.fadtk.FadtkFidelity) runs the
-reference toolkit (`fadtk`) in its own interpreter and returns the same
-[`FidelityResult`](#foley.eval.fidelity.FidelityResult), stamped `toolkit='fadtk'`; the functions here cover the math.
+comparable with published ones, [`foley.eval.fadtk.FadtkFidelity`](foley.eval.fadtk.html.md#foley.eval.fadtk.FadtkFidelity) and
+[`foley.eval.kadtk.KadtkFidelity`](foley.eval.kadtk.html.md#foley.eval.kadtk.KadtkFidelity) run the reference toolkits (`fadtk`,
+`kadtk`) in their own interpreters and return the same [`FidelityResult`](#foley.eval.fidelity.FidelityResult),
+stamped with the toolkit; the functions here cover the math.
 
 ### Functions
 
@@ -27,15 +28,19 @@ reference toolkit (`fadtk`) in its own interpreter and returns the same
 
 ### Classes
 
-| [`FidelityResult`](#foley.eval.fidelity.FidelityResult)(metric, value, stamp)            | A stamped set-level fidelity score (attached to `FitReport.fidelity`).   |
-|--------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
-| [`FidelityStamp`](#foley.eval.fidelity.FidelityStamp)(embedding, toolkit, version, ...) | Mandatory provenance for a FAD/KAD score — it is meaningless without it. |
+| [`FidelityResult`](#foley.eval.fidelity.FidelityResult)(metric, value, stamp[, params])   | A stamped set-level fidelity score (attached to `FitReport.fidelity`).   |
+|---------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| [`FidelityStamp`](#foley.eval.fidelity.FidelityStamp)(embedding, toolkit, version, ...)  | Mandatory provenance for a FAD/KAD score — it is meaningless without it. |
 
-### *class* foley.eval.fidelity.FidelityResult(metric, value, stamp)
+### *class* foley.eval.fidelity.FidelityResult(metric, value, stamp, params=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 A stamped set-level fidelity score (attached to `FitReport.fidelity`).
+
+`params` holds the settings the value depends on beyond the stamp, e.g. kadtk’s
+`bandwidth` and `scale`: score a second generator against the same reference
+with the same `bandwidth` for the two values to be comparable.
 
 ### *class* foley.eval.fidelity.FidelityStamp(embedding, toolkit, version, n_ref, n_gen)
 
@@ -90,8 +95,9 @@ Kernel Audio Distance — the unbiased RBF-MMD² between two embedding sets.
 
 Distribution-free and small-sample-convergent; preferred over FAD for the small
 reference/generated sets of early-stage eval. The diagonal (same-sample) kernel terms
-are dropped (the unbiased estimator), so `KAD(X, X) ≈ 0` and can be slightly
-negative.
+are dropped (the unbiased estimator), so it is centred on 0 for two sets from one
+distribution and is then negative about half the time; small sets make that
+spread wide, so a value near 0 means “indistinguishable”, not “identical”.
 
 * **Parameters:**
   * **x_ref** – Reference embeddings `(n_ref, d)`.

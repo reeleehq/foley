@@ -6,9 +6,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="alternate" type="text/markdown" href="fadtk_driver.html.md">
+<link rel="alternate" type="text/markdown" href="toolkit_driver.html.md">
 <link rel="describedby" href="../../../llms.txt" type="text/markdown">
-    <title>foley.eval.fadtk_driver &#8212; foley</title>
+    <title>foley.eval.toolkit_driver &#8212; foley</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=0d7dcda5"></script>
+    <script src="../../../_static/documentation_options.js?v=a90549bc"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -404,14 +404,14 @@ mermaid.initialize(
 
 window.addEventListener("load", load);
 window.runMermaid = runMermaid;</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/foley/eval/fadtk_driver';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/foley/eval/toolkit_driver';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.130" />
+  <meta name="docsearch:version" content="0.0.131" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -697,7 +697,7 @@ window.runMermaid = runMermaid;</script>
     
     <li class="breadcrumb-item"><a href="../../foley.html" class="nav-link">foley</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">foley.eval.fadtk_driver</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">foley.eval.toolkit_driver</span></li>
   </ul>
 </nav>
 </div>
@@ -714,66 +714,115 @@ window.runMermaid = runMermaid;</script>
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <h1>Source code for foley.eval.fadtk_driver</h1><div class="highlight"><pre>
-<span></span><span class="sd">"""The script :class:`foley.eval.fadtk.FadtkFidelity` runs inside fadtk's own interpreter.</span>
+  <h1>Source code for foley.eval.toolkit_driver</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""The script :class:`foley.eval.external_fidelity.ExternalFidelity` runs inside a toolkit's interpreter.</span>
 
-<span class="sd">It is not imported by foley: foley runs it as ``python -I fadtk_driver.py SPEC_JSON``</span>
-<span class="sd">with the interpreter of a virtualenv that has ``fadtk`` installed (fadtk pins</span>
-<span class="sd">``numpy&lt;2`` and pulls torch, so it cannot share foley's environment). It imports only</span>
-<span class="sd">the standard library and fadtk, and only inside :func:`main`, so foley's test</span>
-<span class="sd">collection and linters can load this file without fadtk.</span>
+<span class="sd">It is not imported by foley: foley runs it as ``python -I toolkit_driver.py SPEC_JSON``</span>
+<span class="sd">with the interpreter of a virtualenv that has the toolkit (``fadtk`` or ``kadtk``)</span>
+<span class="sd">installed (both pin ``numpy&lt;2`` and an old torch, so neither can share foley's</span>
+<span class="sd">environment). It imports only the standard library and the toolkit, and only inside</span>
+<span class="sd">the functions, so foley's test collection and linters can load this file without them.</span>
 
-<span class="sd">It builds ONE fadtk embedding model from ``spec["loader"]`` (a class name in</span>
-<span class="sd">``fadtk.model_loader``) and ``spec["args"]``. fadtk's own command line</span>
-<span class="sd">(``python -m fadtk``) instantiates every model it knows first, and two of those</span>
-<span class="sd">download CLAP checkpoints (about 2.5 GB) in their constructors; building one model</span>
-<span class="sd">avoids that. Then it runs fadtk's own pipeline (``cache_embedding_files`` on each</span>
-<span class="sd">directory, ``FrechetAudioDistance.score``) and writes the score, fadtk's version, the</span>
-<span class="sd">model name, the embedding-frame counts and the embedding dimension as JSON to ``spec["out"]``.</span>
+<span class="sd">It builds ONE embedding model from ``spec["loader"]`` (a class name in</span>
+<span class="sd">``&lt;toolkit&gt;.model_loader``) and ``spec["args"]``. The toolkits' own command lines</span>
+<span class="sd">(``python -m fadtk``, ``python -m kadtk``) instantiate every model they know first,</span>
+<span class="sd">and the CLAP constructors download their checkpoints (about 2.5 GB); building one</span>
+<span class="sd">model avoids that. Then it runs the toolkit's own pipeline (``cache_embedding_files``</span>
+<span class="sd">on each directory, then the toolkit's scorer, see :data:`TOOLKITS`) and writes the</span>
+<span class="sd">score, the toolkit's version, the model name, the embedding-frame counts, the</span>
+<span class="sd">embedding dimension and the scorer's parameters (kadtk: the bandwidth it used and its</span>
+<span class="sd">scale) as JSON to ``spec["out"]``.</span>
 <span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_fadtk</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""fadtk's embedding cacher, and its FAD scorer."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">fadtk.fad</span><span class="w"> </span><span class="kn">import</span> <span class="n">FrechetAudioDistance</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">fadtk.fad_batch</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache_embedding_files</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">score</span><span class="p">(</span><span class="n">ml</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">gen</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[float, dict]"</span><span class="p">:</span>
+        <span class="n">fad</span> <span class="o">=</span> <span class="n">FrechetAudioDistance</span><span class="p">(</span>
+            <span class="n">ml</span><span class="p">,</span> <span class="n">audio_load_worker</span><span class="o">=</span><span class="n">spec</span><span class="p">[</span><span class="s2">"workers"</span><span class="p">],</span> <span class="n">load_model</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">fad</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">gen</span><span class="p">)),</span> <span class="p">{}</span>
+
+    <span class="k">return</span> <span class="n">cache_embedding_files</span><span class="p">,</span> <span class="n">score</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_kadtk</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""kadtk's embedding cacher, and its KAD scorer (bandwidth and device from ``spec``).</span>
+
+<span class="sd">    With no bandwidth given, it is computed here the way kadtk would (its</span>
+<span class="sd">    ``median_pairwise_distance`` of the generated set's frames) and passed explicitly,</span>
+<span class="sd">    so the result can report it.</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">kadtk.emb_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache_embedding_files</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">kadtk.kad</span><span class="w"> </span><span class="kn">import</span> <span class="n">SCALE_FACTOR</span><span class="p">,</span> <span class="n">KernelAudioDistance</span><span class="p">,</span> <span class="n">median_pairwise_distance</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">score</span><span class="p">(</span><span class="n">ml</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">gen</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[float, dict]"</span><span class="p">:</span>
+        <span class="n">kad</span> <span class="o">=</span> <span class="n">KernelAudioDistance</span><span class="p">(</span>
+            <span class="n">ml</span><span class="p">,</span>
+            <span class="n">spec</span><span class="p">[</span><span class="s2">"device"</span><span class="p">],</span>
+            <span class="n">bandwidth</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"bandwidth"</span><span class="p">),</span>
+            <span class="n">audio_load_worker</span><span class="o">=</span><span class="n">spec</span><span class="p">[</span><span class="s2">"workers"</span><span class="p">],</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"kadtk"</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">kad</span><span class="o">.</span><span class="n">bandwidth</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kad</span><span class="o">.</span><span class="n">bandwidth</span> <span class="o">=</span> <span class="n">median_pairwise_distance</span><span class="p">(</span><span class="n">kad</span><span class="o">.</span><span class="n">emb_loader</span><span class="o">.</span><span class="n">load_embeddings</span><span class="p">(</span><span class="n">gen</span><span class="p">))</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">kad</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">gen</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">value</span><span class="p">,</span> <span class="p">{</span><span class="s2">"bandwidth"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">kad</span><span class="o">.</span><span class="n">bandwidth</span><span class="p">),</span> <span class="s2">"scale"</span><span class="p">:</span> <span class="n">SCALE_FACTOR</span><span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">cache_embedding_files</span><span class="p">,</span> <span class="n">score</span>
+
+
+<span class="c1">#: Toolkit name → a function of the spec returning (embedding cacher, scorer).</span>
+<span class="n">TOOLKITS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"fadtk"</span><span class="p">:</span> <span class="n">_fadtk</span><span class="p">,</span> <span class="s2">"kadtk"</span><span class="p">:</span> <span class="n">_kadtk</span><span class="p">}</span>
+
+
 <div class="viewcode-block" id="main">
-<a class="viewcode-back" href="../../../_autosummary/foley.eval.fadtk_driver.html#foley.eval.fadtk_driver.main">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.eval.toolkit_driver.html#foley.eval.toolkit_driver.main">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">spec_json</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Score ``spec['ref']`` against ``spec['gen']`` with fadtk; write JSON to ``spec['out']``."""</span>
+<span class="w">    </span><span class="sd">"""Score ``spec['ref']`` against ``spec['gen']`` with ``spec['toolkit']``; write JSON to ``spec['out']``."""</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.metadata</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
     <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">fadtk</span><span class="w"> </span><span class="kn">import</span> <span class="n">model_loader</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">fadtk.fad</span><span class="w"> </span><span class="kn">import</span> <span class="n">FrechetAudioDistance</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">fadtk.fad_batch</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache_embedding_files</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">fadtk.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_cache_embedding_path</span>
 
     <span class="n">spec</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">spec_json</span><span class="p">)</span>
+    <span class="n">toolkit</span> <span class="o">=</span> <span class="n">spec</span><span class="p">[</span><span class="s2">"toolkit"</span><span class="p">]</span>
+    <span class="n">spec</span><span class="p">[</span><span class="s2">"workers"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"workers"</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">cache_embedding_files</span><span class="p">,</span> <span class="n">score</span> <span class="o">=</span> <span class="n">TOOLKITS</span><span class="p">[</span><span class="n">toolkit</span><span class="p">](</span><span class="n">spec</span><span class="p">)</span>
+    <span class="n">model_loader</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">toolkit</span><span class="si">}</span><span class="s2">.model_loader"</span><span class="p">)</span>
+    <span class="n">utils</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">toolkit</span><span class="si">}</span><span class="s2">.utils"</span><span class="p">)</span>
     <span class="n">ml</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">model_loader</span><span class="p">,</span> <span class="n">spec</span><span class="p">[</span><span class="s2">"loader"</span><span class="p">])(</span><span class="o">*</span><span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"args"</span><span class="p">,</span> <span class="p">[]))</span>
     <span class="n">ref</span><span class="p">,</span> <span class="n">gen</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">spec</span><span class="p">[</span><span class="s2">"ref"</span><span class="p">]),</span> <span class="n">Path</span><span class="p">(</span><span class="n">spec</span><span class="p">[</span><span class="s2">"gen"</span><span class="p">])</span>
-    <span class="n">workers</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"workers"</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
     <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">gen</span><span class="p">):</span>
-        <span class="n">cache_embedding_files</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">ml</span><span class="p">,</span> <span class="n">workers</span><span class="o">=</span><span class="n">workers</span><span class="p">)</span>
-    <span class="n">fad</span> <span class="o">=</span> <span class="n">FrechetAudioDistance</span><span class="p">(</span><span class="n">ml</span><span class="p">,</span> <span class="n">audio_load_worker</span><span class="o">=</span><span class="n">workers</span><span class="p">,</span> <span class="n">load_model</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="n">score</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fad</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">gen</span><span class="p">))</span>
+        <span class="n">cache_embedding_files</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">ml</span><span class="p">,</span> <span class="n">workers</span><span class="o">=</span><span class="n">spec</span><span class="p">[</span><span class="s2">"workers"</span><span class="p">])</span>
+    <span class="n">value</span><span class="p">,</span> <span class="n">params</span> <span class="o">=</span> <span class="n">score</span><span class="p">(</span><span class="n">ml</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">gen</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">shapes</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[tuple]"</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[</span>
-            <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">get_cache_embedding_path</span><span class="p">(</span><span class="n">ml</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">f</span><span class="p">))</span><span class="o">.</span><span class="n">shape</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">"*.*"</span><span class="p">)</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">get_cache_embedding_path</span><span class="p">(</span><span class="n">ml</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">f</span><span class="p">))</span><span class="o">.</span><span class="n">shape</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">"*.wav"</span><span class="p">)</span>
         <span class="p">]</span>
 
     <span class="n">ref_shapes</span><span class="p">,</span> <span class="n">gen_shapes</span> <span class="o">=</span> <span class="n">shapes</span><span class="p">(</span><span class="n">ref</span><span class="p">),</span> <span class="n">shapes</span><span class="p">(</span><span class="n">gen</span><span class="p">)</span>
-
     <span class="n">Path</span><span class="p">(</span><span class="n">spec</span><span class="p">[</span><span class="s2">"out"</span><span class="p">])</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span>
         <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
             <span class="p">{</span>
-                <span class="s2">"score"</span><span class="p">:</span> <span class="n">score</span><span class="p">,</span>
+                <span class="s2">"score"</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span>
                 <span class="s2">"model"</span><span class="p">:</span> <span class="n">ml</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-                <span class="s2">"fadtk_version"</span><span class="p">:</span> <span class="n">importlib</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">version</span><span class="p">(</span><span class="s2">"fadtk"</span><span class="p">),</span>
+                <span class="s2">"version"</span><span class="p">:</span> <span class="n">importlib</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">version</span><span class="p">(</span><span class="n">toolkit</span><span class="p">),</span>
                 <span class="s2">"n_ref_frames"</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">sh</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">sh</span> <span class="ow">in</span> <span class="n">ref_shapes</span><span class="p">),</span>
                 <span class="s2">"n_gen_frames"</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">sh</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">sh</span> <span class="ow">in</span> <span class="n">gen_shapes</span><span class="p">),</span>
-                <span class="s2">"dim"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">ref_shapes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span>
+                <span class="s2">"dim"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">ml</span><span class="o">.</span><span class="n">num_features</span><span class="p">),</span>
+                <span class="s2">"params"</span><span class="p">:</span> <span class="n">params</span><span class="p">,</span>
             <span class="p">}</span>
         <span class="p">),</span>
         <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">,</span>

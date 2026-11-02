@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=0d7dcda5"></script>
+    <script src="../../../_static/documentation_options.js?v=a90549bc"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.130" />
+  <meta name="docsearch:version" content="0.0.131" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -722,11 +722,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">toolkit, `fadtk &lt;https://github.com/microsoft/fadtk&gt;`_: its embedding models, its</span>
 <span class="sd">audio loading and resampling, its statistics. fadtk 1.1 pins ``numpy&lt;2`` and pulls</span>
 <span class="sd">torch, torchvision and two CLAP packages, so it cannot share foley's environment.</span>
-<span class="sd">:class:`FadtkFidelity` runs it the way :mod:`foley.weave.cli_aligners` runs MFA and</span>
-<span class="sd">aeneas: the two wav sets are written to a temporary directory, the interpreter of a</span>
-<span class="sd">virtualenv holding fadtk runs :mod:`foley.eval.fadtk_driver` on them, and its JSON</span>
-<span class="sd">answer becomes a :class:`~foley.eval.fidelity.FidelityResult` stamped</span>
-<span class="sd">``toolkit='fadtk'``. Nothing from fadtk is imported here.</span>
+<span class="sd">:class:`FadtkFidelity` runs it through :class:`~foley.eval.external_fidelity.ExternalFidelity`</span>
+<span class="sd">(temporary wav sets, :mod:`foley.eval.toolkit_driver` in fadtk's interpreter, a</span>
+<span class="sd">:class:`~foley.eval.fidelity.FidelityResult` stamped ``toolkit='fadtk'``). Nothing</span>
+<span class="sd">from fadtk is imported here.</span>
 
 <span class="sd">::</span>
 
@@ -741,19 +740,11 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">..audio</span><span class="w"> </span><span class="kn">import</span> <span class="n">save</span><span class="p">,</span> <span class="n">to_mono</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..external</span><span class="w"> </span><span class="kn">import</span> <span class="n">Runner</span><span class="p">,</span> <span class="n">resolve_program</span><span class="p">,</span> <span class="n">run_program</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.fidelity</span><span class="w"> </span><span class="kn">import</span> <span class="n">FidelityResult</span><span class="p">,</span> <span class="n">FidelityStamp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.external_fidelity</span><span class="w"> </span><span class="kn">import</span> <span class="n">DRIVER</span><span class="p">,</span> <span class="n">ExternalFidelity</span>
 
-<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>  <span class="c1"># pragma: no cover - typing only</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">ndarray</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"DRIVER"</span><span class="p">,</span> <span class="s2">"FADTK_MODELS"</span><span class="p">,</span> <span class="s2">"FadtkFidelity"</span><span class="p">]</span>
 
 <span class="c1">#: fadtk embedding models by fadtk's name → (loader class in ``fadtk.model_loader``,</span>
 <span class="c1">#: its constructor args). Extend with ``FadtkFidelity(models={...})``. The default,</span>
@@ -770,9 +761,6 @@ window.runMermaid = runMermaid;</script>
 <span class="c1">#: The default fadtk model (lightest download; see :data:`FADTK_MODELS`).</span>
 <span class="n">DEFAULT_FADTK_MODEL</span> <span class="o">=</span> <span class="s2">"encodec-emb"</span>
 
-<span class="c1">#: The script run inside fadtk's interpreter.</span>
-<span class="n">DRIVER</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">with_name</span><span class="p">(</span><span class="s2">"fadtk_driver.py"</span><span class="p">)</span>
-
 <span class="c1">#: The environment variable naming fadtk's interpreter when ``python=`` is not given.</span>
 <span class="n">FADTK_PYTHON_ENV</span> <span class="o">=</span> <span class="s2">"FOLEY_FADTK_PYTHON"</span>
 
@@ -783,160 +771,32 @@ window.runMermaid = runMermaid;</script>
     <span class="sa">f</span><span class="s2">"then FadtkFidelity(python='~/venvs/fadtk/bin/python') or set </span><span class="si">{</span><span class="n">FADTK_PYTHON_ENV</span><span class="si">}</span><span class="s2">"</span>
 <span class="p">)</span>
 
-<span class="c1">#: The most channels a clip may have. A 2-D array with at most this many rows and more</span>
-<span class="c1">#: columns than that is channel-first, and is refused (:func:`_as_frames_channels`).</span>
-<span class="n">MAX_CHANNELS</span> <span class="o">=</span> <span class="mi">8</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_as_frames_channels</span><span class="p">(</span><span class="n">wav</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ndarray"</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""``wav`` as foley's ``(frames,)`` / ``(frames, channels)``; refuse other layouts.</span>
-
-<span class="sd">    A channel-first ``(2, N)`` array would otherwise be read as two-sample clips.</span>
-<span class="sd">    """</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-
-    <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">wav</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="ow">or</span> <span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">a</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">MAX_CHANNELS</span> <span class="o">&lt;</span> <span class="n">a</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"a clip of shape </span><span class="si">{</span><span class="n">a</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> is not (frames,) or (frames, channels); "</span>
-            <span class="s2">"transpose a channel-first array (wav.T)"</span>
-        <span class="p">)</span>
-    <span class="k">return</span> <span class="n">a</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_resolve_fadtk_python</span><span class="p">(</span><span class="n">python</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""``python``, else ``$FOLEY_FADTK_PYTHON``, as an executable path."""</span>
-    <span class="n">python</span> <span class="o">=</span> <span class="n">python</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">FADTK_PYTHON_ENV</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">python</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span>
-            <span class="s2">"FadtkFidelity needs fadtk's interpreter (fadtk pins numpy&lt;2, so it cannot "</span>
-            <span class="sa">f</span><span class="s2">"live in foley's environment). Install: </span><span class="si">{</span><span class="n">FADTK_INSTALL</span><span class="si">}</span><span class="s2">"</span>
-        <span class="p">)</span>
-    <span class="k">return</span> <span class="n">resolve_program</span><span class="p">(</span><span class="n">python</span><span class="p">,</span> <span class="n">what</span><span class="o">=</span><span class="s2">"FadtkFidelity"</span><span class="p">,</span> <span class="n">install</span><span class="o">=</span><span class="n">FADTK_INSTALL</span><span class="p">)</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_write_set</span><span class="p">(</span><span class="n">wavs</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">folder</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Write each waveform in ``wavs`` as a mono 16-bit WAV in ``folder``; return the count."""</span>
-    <span class="n">folder</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">n</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">wav</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">wavs</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-        <span class="n">save</span><span class="p">(</span>
-            <span class="n">to_mono</span><span class="p">(</span><span class="n">_as_frames_channels</span><span class="p">(</span><span class="n">wav</span><span class="p">)),</span>
-            <span class="n">sr</span><span class="p">,</span>
-            <span class="n">folder</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">prefix</span><span class="si">}{</span><span class="n">n</span><span class="si">:</span><span class="s2">05d</span><span class="si">}</span><span class="s2">.wav"</span><span class="p">,</span>
-            <span class="n">fmt</span><span class="o">=</span><span class="s2">"WAV"</span><span class="p">,</span>
-            <span class="n">subtype</span><span class="o">=</span><span class="s2">"PCM_16"</span><span class="p">,</span>
-        <span class="p">)</span>
-    <span class="k">return</span> <span class="n">n</span>
-
 
 <div class="viewcode-block" id="FadtkFidelity">
 <a class="viewcode-back" href="../../../_autosummary/foley.eval.fadtk.html#foley.eval.FadtkFidelity">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">FadtkFidelity</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">FadtkFidelity</span><span class="p">(</span><span class="n">ExternalFidelity</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Set-level FAD computed by ``fadtk`` in a separate interpreter.</span>
 
-<span class="sd">    Args:</span>
-<span class="sd">        python: An interpreter with ``fadtk`` installed, usually in its own venv</span>
-<span class="sd">            (default: ``$FOLEY_FADTK_PYTHON``; neither set raises with the install).</span>
-<span class="sd">        model: A key of ``models`` (default :data:`DEFAULT_FADTK_MODEL`).</span>
-<span class="sd">        models: fadtk name → (loader class, args) (default :data:`FADTK_MODELS`).</span>
-<span class="sd">        workers: fadtk's embedding worker processes (each loads the model).</span>
-<span class="sd">        env: The program's environment (default: this process's), e.g. to set</span>
-<span class="sd">            ``TORCH_HOME`` where the weights are cached.</span>
-<span class="sd">        timeout: Seconds before the run is abandoned (default: none).</span>
-<span class="sd">        runner: Runs the command (default ``subprocess.run``).</span>
+<span class="sd">    Args: those of :class:`~foley.eval.external_fidelity.ExternalFidelity`; ``model``</span>
+<span class="sd">    is a key of :data:`FADTK_MODELS` (default :data:`DEFAULT_FADTK_MODEL`).</span>
 <span class="sd">    """</span>
 
     <span class="n">toolkit</span> <span class="o">=</span> <span class="s2">"fadtk"</span>
+    <span class="n">metric</span> <span class="o">=</span> <span class="s2">"fad"</span>
+    <span class="n">default_models</span> <span class="o">=</span> <span class="n">FADTK_MODELS</span>
+    <span class="n">default_model</span> <span class="o">=</span> <span class="n">DEFAULT_FADTK_MODEL</span>
+    <span class="n">python_env</span> <span class="o">=</span> <span class="n">FADTK_PYTHON_ENV</span>
+    <span class="n">install</span> <span class="o">=</span> <span class="n">FADTK_INSTALL</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="o">*</span><span class="p">,</span>
-        <span class="n">python</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_FADTK_MODEL</span><span class="p">,</span>
-        <span class="n">models</span><span class="p">:</span> <span class="s2">"Optional[Mapping[str, tuple[str, tuple]]]"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">workers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="n">env</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">runner</span><span class="p">:</span> <span class="n">Runner</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">,</span>
-    <span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">FADTK_MODELS</span> <span class="k">if</span> <span class="n">models</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">models</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">model</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"unknown fadtk model </span><span class="si">{</span><span class="n">model</span><span class="si">!r}</span><span class="s2">; known: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">)</span><span class="si">}</span><span class="s2"> "</span>
-                <span class="sa">f</span><span class="s2">"(add one with models=</span><span class="se">{{</span><span class="s2">name: (loader_class, args)</span><span class="se">}}</span><span class="s2">)"</span>
-            <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">python</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">workers</span> <span class="o">=</span> <span class="n">python</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">workers</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">runner</span> <span class="o">=</span> <span class="n">env</span><span class="p">,</span> <span class="n">timeout</span><span class="p">,</span> <span class="n">runner</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">ref_wavs</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="s2">"ndarray"</span><span class="p">],</span> <span class="n">gen_wavs</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="s2">"ndarray"</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FidelityResult</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""FAD between the reference and generated wav sets, stamped ``toolkit='fadtk'``.</span>
-
-<span class="sd">        Clips are ``(frames,)`` or ``(frames, channels)`` arrays (mixed to mono).</span>
-
-<span class="sd">        Raises:</span>
-<span class="sd">            FileNotFoundError: If no interpreter is given or found.</span>
-<span class="sd">            RuntimeError: If fadtk fails (its output tail is in the message).</span>
-<span class="sd">            ValueError: If a clip has another layout, a set is empty, or a set has</span>
-<span class="sd">                no more embedding frames than the embedding has dimensions (its</span>
-<span class="sd">                covariance would be singular and the FAD meaningless).</span>
-<span class="sd">        """</span>
-        <span class="n">python</span> <span class="o">=</span> <span class="n">_resolve_fadtk_python</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">python</span><span class="p">)</span>
-        <span class="n">loader</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">]</span>
-        <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryDirectory</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">"foley-fadtk-"</span><span class="p">)</span> <span class="k">as</span> <span class="n">tmp</span><span class="p">:</span>
-            <span class="n">ref</span><span class="p">,</span> <span class="n">gen</span><span class="p">,</span> <span class="n">out</span> <span class="o">=</span> <span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span> <span class="o">/</span> <span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"ref"</span><span class="p">,</span> <span class="s2">"gen"</span><span class="p">,</span> <span class="s2">"out.json"</span><span class="p">))</span>
-            <span class="n">n_ref</span> <span class="o">=</span> <span class="n">_write_set</span><span class="p">(</span><span class="n">ref_wavs</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">"ref"</span><span class="p">)</span>
-            <span class="n">n_gen</span> <span class="o">=</span> <span class="n">_write_set</span><span class="p">(</span><span class="n">gen_wavs</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">gen</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">"gen"</span><span class="p">)</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">n_ref</span> <span class="ow">and</span> <span class="n">n_gen</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"FAD needs at least one clip in each set"</span><span class="p">)</span>
-            <span class="n">spec</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s2">"loader"</span><span class="p">:</span> <span class="n">loader</span><span class="p">,</span>
-                <span class="s2">"args"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">),</span>
-                <span class="s2">"ref"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">ref</span><span class="p">),</span>
-                <span class="s2">"gen"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">gen</span><span class="p">),</span>
-                <span class="s2">"out"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">out</span><span class="p">),</span>
-                <span class="s2">"workers"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">workers</span><span class="p">,</span>
-            <span class="p">}</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">output</span> <span class="o">=</span> <span class="n">run_program</span><span class="p">(</span>
-                    <span class="p">[</span><span class="n">python</span><span class="p">,</span> <span class="s2">"-I"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">DRIVER</span><span class="p">),</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">spec</span><span class="p">)],</span>
-                    <span class="n">out</span><span class="o">=</span><span class="n">out</span><span class="p">,</span>
-                    <span class="n">runner</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">runner</span><span class="p">,</span>
-                    <span class="n">env</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="p">,</span>
-                    <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timeout</span><span class="p">,</span>
-                    <span class="n">cwd</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="n">tmp</span><span class="p">),</span>
-                    <span class="n">what</span><span class="o">=</span><span class="sa">f</span><span class="s2">"FadtkFidelity (fadtk </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="si">}</span><span class="s2">)"</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="k">except</span> <span class="ne">RuntimeError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
-                <span class="k">if</span> <span class="s2">"No module named 'fadtk'"</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">err</span><span class="p">):</span>
-                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">python</span><span class="si">}</span><span class="s2"> has no fadtk. Install: </span><span class="si">{</span><span class="n">FADTK_INSTALL</span><span class="si">}</span><span class="s2">"</span>
-                    <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">err</span>
-                <span class="k">raise</span>
-        <span class="n">answer</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
-        <span class="n">n_ref</span><span class="p">,</span> <span class="n">n_gen</span><span class="p">,</span> <span class="n">dim</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="nb">int</span><span class="p">(</span><span class="n">answer</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"n_ref_frames"</span><span class="p">,</span> <span class="s2">"n_gen_frames"</span><span class="p">,</span> <span class="s2">"dim"</span><span class="p">)</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="nb">min</span><span class="p">(</span><span class="n">n_ref</span><span class="p">,</span> <span class="n">n_gen</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">dim</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"too little audio for FAD on </span><span class="si">{</span><span class="n">answer</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'model'</span><span class="p">,</span><span class="w"> </span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span><span class="si">}</span><span class="s2">: "</span>
-                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">n_ref</span><span class="si">}</span><span class="s2"> reference and </span><span class="si">{</span><span class="n">n_gen</span><span class="si">}</span><span class="s2"> generated embedding frames for a "</span>
-                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">dim</span><span class="si">}</span><span class="s2">-dim embedding (each set needs more frames than dimensions, "</span>
-                <span class="s2">"or the covariance is singular); use more or longer clips"</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="n">FidelityResult</span><span class="p">(</span>
-            <span class="n">metric</span><span class="o">=</span><span class="s2">"fad"</span><span class="p">,</span>
-            <span class="n">value</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">answer</span><span class="p">[</span><span class="s2">"score"</span><span class="p">]),</span>
-            <span class="n">stamp</span><span class="o">=</span><span class="n">FidelityStamp</span><span class="p">(</span>
-                <span class="n">embedding</span><span class="o">=</span><span class="n">answer</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"model"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">),</span>
-                <span class="n">toolkit</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">toolkit</span><span class="p">,</span>
-                <span class="n">version</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">answer</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"fadtk_version"</span><span class="p">,</span> <span class="s2">"unknown"</span><span class="p">)),</span>
-                <span class="n">n_ref</span><span class="o">=</span><span class="n">n_ref</span><span class="p">,</span>
-                <span class="n">n_gen</span><span class="o">=</span><span class="n">n_gen</span><span class="p">,</span>
-            <span class="p">),</span>
+<div class="viewcode-block" id="FadtkFidelity.frames_needed">
+<a class="viewcode-back" href="../../../_autosummary/foley.eval.fadtk.html#foley.eval.FadtkFidelity.frames_needed">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">frames_needed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[int, str]"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""More frames than dimensions, or the covariance is singular and FAD meaningless."""</span>
+        <span class="k">return</span> <span class="n">dim</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"more frames than the </span><span class="si">{</span><span class="n">dim</span><span class="si">}</span><span class="s2">-dim embedding has dimensions, "</span>
+            <span class="s2">"or the covariance is singular"</span>
         <span class="p">)</span></div>
+</div>
 
 </pre></div>
 

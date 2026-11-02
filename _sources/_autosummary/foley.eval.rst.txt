@@ -53,6 +53,7 @@ foley.eval
       AlphaResult
       FidelityStamp
       FadtkFidelity
+      KadtkFidelity
       FidelityResult
       Passage
       PassageTaste
@@ -69,13 +70,15 @@ foley.eval
    panel
    baseline
    embedder
+   external_fidelity
    fadtk
-   fadtk_driver
    fidelity
    fit
    golden
+   kadtk
    panel_page
    prompt_match
    reliability
    retrieval
    taste
+   toolkit_driver
