@@ -863,6 +863,42 @@ def upload_refusal(source: LicenseRecord) -> Optional[str]:
     return None if source.cache_bytes_ok else _NO_UPLOAD
 
 
+#: Why the bytes of a sound whose ``cache_bytes_ok`` is off may not be exported (#66).
+_NO_EXPORT = (
+    "its bytes may not be kept or sent on (its source's terms, e.g. the Freesound "
+    "API's): it is stored by reference, so the consumer must fetch it from its source"
+)
+
+
+def export_refusal(source: LicenseRecord) -> Optional[str]:
+    """Why the bytes of a sound with rights ``source`` may not be exported, or ``None``.
+
+    The gate of :func:`foley.export_sound`, fail-closed: an export hands the bytes to
+    another store, which is keeping them, so it follows ``cache_bytes_ok`` exactly as
+    storage does (:func:`foley.stores.store_sound`).
+
+    >>> from foley.base import LicenseRecord
+    >>> export_refusal(LicenseRecord(source="x", cache_bytes_ok=True)) is None
+    True
+    >>> export_refusal(LicenseRecord(source="freesound"))[:30]
+    'its bytes may not be kept or s'
+    """
+    return None if source.cache_bytes_ok else _NO_EXPORT
+
+
+#: Whose terms a provider-terms ``license_id`` is, under the provider names a consumer
+#: classifies them by (``an``'s ``PROVIDER_TERMS``: a code counts only on a source
+#: whose provider is that provider). Used as ``Rights.provider`` on export (#66), so a
+#: Stable Audio clip reads as Stability's Community License, with its revenue cap,
+#: whichever foley source (local, fal) made it. Ids not listed are their source's own.
+LICENSE_TERMS_PROVIDER: "dict[str, str]" = {
+    "Stability-Community": "stability-ai",
+    "elevenlabs-paid-plan": "elevenlabs",
+    "elevenlabs-free-plan": "elevenlabs",
+    "ElevenLabs-SFX": "elevenlabs",
+}
+
+
 def derivative_refusal(source: LicenseRecord) -> Optional[str]:
     """Why a sound with rights ``source`` may not be edited into a new sound, or ``None``.
 

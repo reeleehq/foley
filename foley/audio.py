@@ -65,6 +65,9 @@ TRUE_PEAK_MAX_DBTP: float = -1.0  # ceiling after loudness normalization
 LUFS_GATE_FLOOR: float = -70.0  # BS.1770 absolute gate; flag, don't amplify
 LUFS_MIN_BLOCK_S: float = 0.4  # BS.1770 gating block; shorter clips can't be measured
 SILENT_PEAK_DBFS: float = -80.0  # a clip whose sample peak is under this is silent
+#: The decode dtype of :func:`transcode`: wide enough that PCM up to 24 bits survives a
+#: decode/encode round trip sample-exact (FLAC archive -> WAV export keeps the samples).
+TRANSCODE_DTYPE: str = "float64"
 
 #: A source ``load`` can decode: a filesystem path, raw encoded bytes, or an
 #: already-open binary file-like object (e.g. ``io.BytesIO``).
@@ -167,6 +170,49 @@ def encode(
     buf = io.BytesIO()
     sf.write(buf, samples, sample_rate, format=fmt.upper(), subtype=subtype)
     return buf.getvalue()
+
+
+def container_of(data: bytes) -> "tuple[str, str]":
+    """The ``(format, subtype)`` of encoded ``data``, as lowercase / libsndfile names.
+
+    Lazy dependency: ``soundfile``.
+    """
+    import soundfile as sf
+
+    info = sf.info(io.BytesIO(data))
+    return info.format.lower(), info.subtype
+
+
+def transcode(
+    data: bytes,
+    *,
+    fmt: str,
+    subtype: Optional[str] = None,
+    dtype: str = TRANSCODE_DTYPE,
+) -> bytes:
+    """Re-encode ``data`` as ``fmt``, keeping its sample format where ``fmt`` allows.
+
+    ``data`` already in ``fmt`` (with ``subtype``, when one is given) comes back
+    unchanged, byte for byte. Otherwise it is decoded at ``dtype`` and encoded with
+    ``subtype``, else the source's own subtype when ``fmt`` supports it (a FLAC
+    ``PCM_24`` archive gives a ``PCM_24`` WAV, sample-exact), else ``fmt``'s default.
+
+    Lazy dependency: ``soundfile``.
+    """
+    import soundfile as sf
+
+    src_fmt, src_subtype = container_of(data)
+    if src_fmt == fmt.lower() and subtype in (None, src_subtype):
+        return data
+    if subtype is None:
+        target = fmt.upper()
+        subtype = (
+            src_subtype
+            if sf.check_format(target, src_subtype)
+            else sf.default_subtype(target)
+        )
+    samples, sample_rate = load(data, dtype=dtype)
+    return encode(samples, sample_rate, fmt=fmt, subtype=subtype)
 
 
 # ---------------------------------------------------------------------------

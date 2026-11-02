@@ -24,6 +24,7 @@ The façade (v1 — Epic #13 complete; the surface below is live — see
     foley.edit(sound_id, "extend", extend_after_s=2)  # audio-to-audio | inpaint | extend
     foley.ingest("~/my_sounds/")
     foley.ingest_library("~/SFX/", accept_ai_restricted=True)  # owned packs + sidecars
+    data, rights, provenance = foley.export_sound(sound_id)  # lacing.Rights-keyed rights
 
 The design is grounded in the research reports under ``misc/docs/research/``.
 
@@ -226,6 +227,7 @@ from .provenance import (
     attribution_line,
     credit_entry,
     credits_for,
+    export_sound,
 )
 
 # --- obs: observability + reproducible run-artifact (#11) ----------------------
@@ -497,6 +499,8 @@ __all__ = [
     "credits_for",
     "attribution_line",
     "credit_entry",
+    # --- provenance: a sound + its rights for another store (#66) -------------
+    "export_sound",
 ]
 
 
