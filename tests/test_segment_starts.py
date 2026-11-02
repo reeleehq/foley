@@ -127,6 +127,22 @@ def test_starts_must_fit_the_audio():
         tie.word_timeline(_audio(), SR, transcript=" ".join(SEGMENTS))
 
 
+def test_a_segment_shorter_than_one_sample_is_refused(monkeypatch, _obs_to_memory):
+    rec = _SliceRecorder()
+    seg = SegmentedAligner([0.0, 1.0, 1.0004], ["a", "b", "c"], base=rec)
+    with pytest.raises(ValueError, match="segment 1 has 1 word.*no audio"):
+        seg.word_timeline(_audio(), SR, transcript="a b c")
+    assert rec.calls == []  # checked before any slice is aligned
+    calls = _find_spy(monkeypatch)
+    with pytest.raises(ValueError, match="segment 1 has 1 word.*no audio"):
+        foley.score(  # 1 µs is under a sample at weave's 48 kHz
+            ["a", "b", "c"],
+            audio=np.zeros(2 * 48_000, dtype="float32"),
+            segment_starts=[0.0, 1.0, 1.0 + 1e-6],
+        )
+    assert calls == []
+
+
 def test_an_empty_last_segment_may_start_past_the_end():
     rec = _SliceRecorder()
     wt = SegmentedAligner([0.0, 3.0, 9.0], ["a", "b", ""], base=rec).word_timeline(

@@ -192,13 +192,10 @@ def score(
                 stacklevel=2,
             )
         else:
-            duration = _narration_duration(
-                audio, library=library, sr=_weave_option(weave_kwargs, "sr")
-            )
-            if duration is not None:
-                seg_aligner.spans(
-                    duration
-                )  # a start past the audio's end, before SELECT
+            sr = _weave_option(weave_kwargs, "sr")
+            duration = _narration_duration(audio, library=library, sr=sr)
+            if duration is not None:  # a start past the audio's end, before SELECT
+                seg_aligner.spans(duration, sample_rate=sr)
         weave_kwargs = {**weave_kwargs, "aligner": seg_aligner}
 
     find_kw = {

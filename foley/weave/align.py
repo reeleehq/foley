@@ -229,14 +229,19 @@ def _validate_segment_starts(
 
 
 def _segment_spans(
-    starts: "Sequence[float]", word_counts: "Sequence[int]", *, duration: float
+    starts: "Sequence[float]",
+    word_counts: "Sequence[int]",
+    *,
+    duration: float,
+    sample_rate: int,
 ) -> "list[tuple[float, float]]":
     """Each segment's ``(start, end)``, clipped to the audio; checked for worded segments.
 
     A segment ends where the next starts, the last at ``duration``. A segment with words
-    must start before the audio's end and have a span; an empty one may lie anywhere.
+    must start before the audio's end and span at least one sample at ``sample_rate``
+    (what its slice will hold); an empty one may lie anywhere.
 
-    >>> _segment_spans([0, 4, 12], [3, 2, 0], duration=10)
+    >>> _segment_spans([0, 4, 12], [3, 2, 0], duration=10, sample_rate=1000)
     [(0, 4), (4, 10), (12, 10)]
     """
     spans = [(s, min(e, duration)) for s, e in zip(starts, [*starts[1:], duration])]
@@ -246,7 +251,7 @@ def _segment_spans(
                 f"segment {i} starts at {s}s, at or past the end of the narration "
                 f"audio ({duration:.3f}s)"
             )
-        if n and e <= s:
+        if n and round(e * sample_rate) <= round(s * sample_rate):
             raise ValueError(
                 f"segment {i} has {n} word(s) but no audio: it starts at {s}s and "
                 f"the next segment at {e}s"
@@ -321,10 +326,14 @@ class SegmentedAligner:
         ends = [sum(self.word_counts[: i + 1]) for i in range(len(self.word_counts))]
         return [words[a:b] for a, b in zip([0, *ends[:-1]], ends)]
 
-    def spans(self, duration: float) -> "list[tuple[float, float]]":
+    def spans(
+        self, duration: float, *, sample_rate: int
+    ) -> "list[tuple[float, float]]":
         """Each segment's ``(start, end)`` in audio of ``duration`` seconds (``ValueError``
-        if a segment with words starts at or past the end, or has no span)."""
-        return _segment_spans(self.starts, self.word_counts, duration=duration)
+        if a segment with words starts at or past the end, or spans no sample)."""
+        return _segment_spans(
+            self.starts, self.word_counts, duration=duration, sample_rate=sample_rate
+        )
 
     def word_timeline(
         self,
@@ -341,7 +350,7 @@ class SegmentedAligner:
         duration = int(audio.shape[0]) / sample_rate
         lang = {} if language is None else {"language": language}
         out: "list[dict]" = []
-        for piece, (s, e) in zip(pieces, self.spans(duration)):
+        for piece, (s, e) in zip(pieces, self.spans(duration, sample_rate=sample_rate)):
             if not piece:
                 continue
             lo, hi = round(s * sample_rate), round(e * sample_rate)
