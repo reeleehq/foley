@@ -7,6 +7,7 @@ formatted blocks.
 """
 
 import random
+import re
 
 import pytest
 
@@ -37,6 +38,22 @@ def _random_blocks(rng: random.Random) -> dict:
     return blocks
 
 
+_PLAIN = re.compile(r"[A-Za-z0-9 ]*[A-Za-z0-9]")
+
+
+def _plain_blocks(blocks: dict) -> dict:
+    """The blocks that need no sanitising (letters, digits, inner spaces), whitespace
+    collapsed: those must parse back exactly as given."""
+    plain = {}
+    for key in ("user_category", "fx_name", "creator_id", "source_id", "user_data"):
+        text = " ".join(str(blocks[key] or "").split())
+        if _PLAIN.fullmatch(text) and not (
+            key == "fx_name" and blocks["vendor_category"]
+        ):
+            plain[key] = text
+    return plain
+
+
 @pytest.mark.parametrize("ext", [None, "wav"])
 def test_format_parse_format_is_stable(ext):
     rng = random.Random(231)
@@ -54,6 +71,8 @@ def test_format_parse_format_is_stable(ext):
         again = format_ucs_name(name, ext=ext)
         assert again == first, (blocks, first, again)
         assert parse_ucs_name(again) == name
+        for key, value in _plain_blocks(blocks).items():  # contents survive
+            assert getattr(name, key) == value, (key, blocks, first)
         checked += 1
     assert checked > 2000
 
@@ -112,3 +131,19 @@ def test_the_catid_must_be_in_the_table():
 def test_what_format_refuses(kwargs, error):
     with pytest.raises(error):
         format_ucs_name({"catid": "DOORWood", "fx_name": "x"}, **kwargs)
+
+
+def test_a_long_name_is_cut_on_character_boundaries_and_stays_stable():
+    rng = random.Random(4)
+    for _ in range(300):
+        blocks = _random_blocks(rng) | {"vendor_category": None}
+        blocks["creator_id"] = "é" * rng.randint(0, 200)
+        blocks["fx_name"] = "Sci-Fi " * rng.randint(0, 60)
+        blocks["user_data"] = "keep_me"
+        first = format_ucs_name(blocks, ext="wav", max_bytes=120)
+        assert len(first.encode()) <= 120
+        name = parse_ucs_name(first)
+        assert name.user_data == "keep_me"
+        assert format_ucs_name(name, ext="wav", max_bytes=120) == first
+    with pytest.raises(ValueError, match="cannot be cut"):
+        format_ucs_name(catid="DOORWood", user_data="x" * 300)

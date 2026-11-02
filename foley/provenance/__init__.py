@@ -37,6 +37,8 @@ from .rights import (
     export_metadata,
     export_sound,
     export_ucs_filename,
+    id_from_user_data,
+    id_to_user_data,
     sound_provenance,
     sound_rights,
 )
@@ -54,6 +56,8 @@ __all__ = [
     "export_metadata",
     "export_sound",
     "export_ucs_filename",
+    "id_from_user_data",
+    "id_to_user_data",
     "make_c2pa_signer",
     "make_self_signed_c2pa_certs",
     "render_credits_md",

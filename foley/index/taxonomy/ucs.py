@@ -251,27 +251,33 @@ def _clean(text: Optional[str], *, unmake_ext: bool = False) -> str:
     return text
 
 
-def _fx_block(
-    fx_name: str, vendor: Optional[str], is_vendor_tag: Callable[[str], bool]
-) -> str:
-    """The ``[VendorCategory-]FXName`` block, so that the parse splits it back the same way.
+def _vendor_tag(vendor: str, is_vendor_tag: Callable[[str], bool]) -> str:
+    """A VendorCategory cleaned to upper-case alphanumerics (what
+    :func:`looks_like_vendor_tag` accepts); one that still is not a tag raises."""
+    tag = re.sub(r"[^0-9A-Za-z]", "", vendor).upper()
+    if not (tag and is_vendor_tag(tag)):
+        raise ValueError(f"{vendor!r} cannot be read back as a VendorCategory")
+    return tag
 
-    A VendorCategory is cleaned to upper-case alphanumerics (what
-    :func:`looks_like_vendor_tag` accepts). Without one, an FXName whose head would
-    read as a vendor tag (``BOOM-Creak``) has that hyphen made a space, until none does.
-    """
-    if vendor is not None:
-        vendor = re.sub(r"[^0-9A-Za-z]", "", vendor).upper()
-        if not (vendor and is_vendor_tag(vendor)):
-            raise ValueError(f"{vendor!r} cannot be read back as a VendorCategory")
-        if not fx_name:
-            raise ValueError("a VendorCategory attaches to an FXName; there is none")
-        return f"{vendor}{ATTACH_SEP}{fx_name}"
+
+def _unvendored(fx_name: str, is_vendor_tag: Callable[[str], bool]) -> str:
+    """``fx_name`` with the hyphen made a space wherever its head would read as a
+    vendor tag (``BOOM-Creak``), until none does (``Sci-Fi Door`` is kept)."""
     while True:  # each pass removes a hyphen, so this ends
         head, tail = _split_attached(fx_name)
         if tail is None or not is_vendor_tag(head):
             return fx_name
         fx_name = _clean(fx_name.replace(ATTACH_SEP, " ", 1))
+
+
+#: The longest filename, in UTF-8 bytes, that :func:`format_ucs_name` makes
+#: (``NAME_MAX`` on ext4, APFS and NTFS-as-seen-by-most-tools).
+UCS_NAME_MAX_BYTES = 255
+
+#: The blocks :func:`format_ucs_name` shortens, longest first, to fit
+#: :data:`UCS_NAME_MAX_BYTES`. The CatID, VendorCategory and UserData are kept whole
+#: (UserData may hold an id that must stay unique).
+UCS_SHORTENABLE_BLOCKS = ("fx_name", "creator_id", "source_id", "user_category")
 
 
 def format_ucs_name(
@@ -281,6 +287,7 @@ def format_ucs_name(
     ext: Optional[str] = None,
     table: Optional[UcsTable] = None,
     is_vendor_tag: Callable[[str], bool] = looks_like_vendor_tag,
+    max_bytes: int = UCS_NAME_MAX_BYTES,
     **blocks,
 ) -> str:
     """The UCS filename of ``name`` (a :class:`~.model.UcsName` or a mapping of its
@@ -290,7 +297,9 @@ def format_ucs_name(
     Each block is sanitised so the name parses back to the same blocks: unsafe
     characters and underscores inside a block become spaces, whitespace is collapsed,
     a VendorCategory is upper-cased, and a hyphen that would make an FXName's head
-    read as a VendorCategory becomes a space (``Sci-Fi Door`` stays as it is). So
+    read as a VendorCategory becomes a space (``Sci-Fi Door`` stays as it is). A name
+    over ``max_bytes`` has its longest shortenable block
+    (:data:`UCS_SHORTENABLE_BLOCKS`) cut on a character boundary until it fits. So
     ``format_ucs_name(parse_ucs_name(f))`` is ``f`` for any ``f`` this function made.
     The CatID is looked up in ``table`` (default: :func:`default_ucs_table`) and
     written in its canonical spelling; an unknown one raises, since the name would
@@ -301,12 +310,14 @@ def format_ucs_name(
         ext: The extension to append (``'wav'`` or ``'.wav'``), or ``None`` for a stem.
         table: The UCS table the CatID must be in.
         is_vendor_tag: What reads as a VendorCategory (as in :func:`parse_ucs_name`).
+        max_bytes: The longest name to make, in UTF-8 bytes, extension included.
         **blocks: Block values overriding ``name``'s.
 
     Raises:
         TypeError: a keyword is not a UCS block.
         ValueError: no CatID, or one not in ``table``; a bad ``ext``; a
-            VendorCategory that cannot be read back or has no FXName.
+            VendorCategory that cannot be read back or has no FXName; a name that
+            cannot be cut to ``max_bytes``.
 
     >>> format_ucs_name(catid="doorwood", fx_name="Sci-Fi Door_slam", creator_id="JD",
     ...                 source_id="NYC", ext="wav")
@@ -316,6 +327,8 @@ def format_ucs_name(
     'DOORWood-Gate_SCIFI-Creak Open_JD_NYC_take_2.wav'
     >>> format_ucs_name(catid="DOORWood", fx_name="BOOM-Creak")  # not a vendor tag
     'DOORWood_BOOM Creak'
+    >>> len(format_ucs_name(catid="DOORWood", fx_name="x" * 300, user_data="id1"))
+    255
     """
     unknown = set(blocks) - set(UCS_NAME_BLOCKS)
     if unknown:
@@ -329,21 +342,51 @@ def format_ucs_name(
     if ext is not None and not _EXTENSION.fullmatch(suffix):
         raise ValueError(f"{ext!r} is not a filename extension")
 
-    def clean(text) -> str:  # a stem's last block must not end like an extension
-        return _clean(text, unmake_ext=ext is None)
+    def settle(
+        key: str, text
+    ) -> str:  # a stem's last block must not end like an extension
+        text = _clean(text, unmake_ext=ext is None)
+        return (
+            _unvendored(text, is_vendor_tag)
+            if key == "fx_name" and not vendor
+            else text
+        )
 
-    user_category = clean(values["user_category"])
-    head = f"{row.catid}{ATTACH_SEP}{user_category}" if user_category else row.catid
-    fx = _fx_block(
-        clean(values["fx_name"]),
-        clean(values["vendor_category"]) if values["vendor_category"] else None,
-        is_vendor_tag,
+    vendor = values["vendor_category"]
+    vendor = (
+        _vendor_tag(settle("vendor_category", vendor), is_vendor_tag)
+        if vendor
+        else None
     )
-    parts = [head, fx, clean(values["creator_id"]), clean(values["source_id"])]
-    user_data = [clean(p) for p in str(values["user_data"] or "").split(BLOCK_SEP)]
-    if any(user_data):
-        parts += user_data
-    else:
-        while len(parts) > 2 and not parts[-1]:
-            parts.pop()
-    return BLOCK_SEP.join(parts) + suffix
+    texts = {k: settle(k, values[k]) for k in UCS_SHORTENABLE_BLOCKS}
+    user_data = [
+        settle("user_data", p) for p in str(values["user_data"] or "").split(BLOCK_SEP)
+    ]
+
+    def compose() -> str:
+        uc, fx = texts["user_category"], texts["fx_name"]
+        if vendor and not fx:
+            raise ValueError("a VendorCategory attaches to an FXName; there is none")
+        parts = [
+            f"{row.catid}{ATTACH_SEP}{uc}" if uc else row.catid,
+            f"{vendor}{ATTACH_SEP}{fx}" if vendor else fx,
+            texts["creator_id"],
+            texts["source_id"],
+        ]
+        if any(user_data):
+            parts += user_data
+        else:
+            while len(parts) > 2 and not parts[-1]:
+                parts.pop()
+        return BLOCK_SEP.join(parts) + suffix
+
+    while (excess := len(compose().encode("utf-8")) - max_bytes) > 0:
+        key = max(UCS_SHORTENABLE_BLOCKS, key=lambda k: len(texts[k].encode("utf-8")))
+        size = len(texts[key].encode("utf-8"))
+        if not size:
+            raise ValueError(
+                f"the name cannot be cut to {max_bytes} bytes: {compose()!r}"
+            )
+        cut = texts[key].encode("utf-8")[: max(size - excess, 0)]
+        texts[key] = settle(key, cut.decode("utf-8", "ignore"))
+    return compose()

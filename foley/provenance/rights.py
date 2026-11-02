@@ -50,7 +50,9 @@ The export also interoperates with library tools (Soundminer, Soundly, BaseHead;
 
 from __future__ import annotations
 
+import string
 from typing import TYPE_CHECKING, Optional
+from urllib.parse import unquote
 
 from ..base import LicenseRecord, SoundRecord
 from ..licensing import (
@@ -96,6 +98,13 @@ PROVENANCE_FIELDS: tuple[str, ...] = (*RIGHTS_FIELDS, *ASSET_SOURCE_EXTRAS)
 
 #: The containers that take ``bext`` / ``iXML`` chunks (RIFF WAVE, as libsndfile names them).
 METADATA_FORMATS = ("wav", "wavex")
+
+#: The fields an export owns in the file: a source file's value is removed when the
+#: export has none, so the file never pairs foley's licence with a vendor's URL.
+EXPORT_OWNED_FIELDS = ("license", "license_url", "attribution")
+
+#: The characters a foley id keeps in a filename; the rest are percent-encoded.
+_ID_KEPT_CHARS = frozenset(string.ascii_lowercase + string.digits + "-~")
 
 #: The UCS guidance for an FXName: a brief title of at most this many characters.
 UCS_FXNAME_MAX_CHARS = 25
@@ -240,6 +249,28 @@ def _brief(text: Optional[str], max_chars: int) -> Optional[str]:
     return cut if len(cut) <= max_chars else text[:max_chars]
 
 
+def id_to_user_data(sound_id: str) -> str:
+    """``sound_id`` as a filename block, injectively: :func:`id_from_user_data` inverts it.
+
+    Every character but lower-case ASCII letters, digits, ``-`` and ``~`` is
+    percent-encoded (its UTF-8 bytes, upper-case hex), so the block holds no ``_``,
+    ``.``, path or reserved character, and two ids never give names that differ only
+    in case (which a case-insensitive filesystem, macOS or Windows, would merge).
+
+    >>> id_to_user_data("fs:1_A.b"), id_from_user_data("fs%3A1%5F%41%2Eb")
+    ('fs%3A1%5F%41%2Eb', 'fs:1_A.b')
+    """
+    return "".join(
+        c if c in _ID_KEPT_CHARS else "".join(f"%{b:02X}" for b in c.encode("utf-8"))
+        for c in sound_id
+    )
+
+
+def id_from_user_data(block: str) -> str:
+    """The foley id :func:`id_to_user_data` encoded as ``block``."""
+    return unquote(block)
+
+
 def export_ucs_filename(
     record: SoundRecord,
     rights: dict,
@@ -254,9 +285,14 @@ def export_ucs_filename(
     ``record.ucs_category`` (which holds the CatID), looked up in ``table`` (default:
     :func:`foley.index.taxonomy.default_ucs_table`); the FXName is the caption (else
     the tags) cut to ``fx_name_max_chars``; the creator is ``rights``' author, else
-    its provider; the source is foley's source name; the UserData is the foley id,
-    so two exports never share a name. :func:`~foley.index.taxonomy.parse_ucs_name`
-    reads it back.
+    its provider; the source is foley's source name; the UserData is the foley id
+    (:func:`id_to_user_data`: injective, case-safe, reversible), so two exports of one
+    library never share a name. The other blocks are cut to fit the filename limit
+    (:data:`~foley.index.taxonomy.UCS_NAME_MAX_BYTES`); the id is never cut.
+    :func:`~foley.index.taxonomy.parse_ucs_name` reads it back.
+
+    Raises:
+        ValueError: the id alone does not fit in a filename.
     """
     from ..index.taxonomy import default_ucs_table, format_ucs_name
 
@@ -268,7 +304,7 @@ def export_ucs_filename(
         fx_name=_brief(record.caption or " ".join(record.tags), fx_name_max_chars),
         creator_id=rights.get("author") or rights.get("provider"),
         source_id=record.license.source,
-        user_data=record.id,
+        user_data=id_to_user_data(record.id),
         ext=ext,
         table=table,
     )
@@ -351,18 +387,23 @@ def export_sound(
         subtype: The sample format (default: :func:`foley.audio.export_subtype`).
         embed_metadata: Write ``bext`` / ``iXML`` into a WAV export (default on: it
             adds chunks only, never touches the samples, and makes the file carry
-            its own credit; other formats are left as encoded, with a note).
+            its own credit; other formats, and a WAV the writer refuses, such as a
+            streamed one sized ``0xFFFFFFFF``, are left as encoded, with a note).
+            The licence fields (:data:`EXPORT_OWNED_FIELDS`) are foley's: a source
+            file's value is removed when ``rights`` has none.
         ucs_filename: Put the UCS filename in ``provenance["filename"]`` (default on:
-            it is only a suggestion, so it costs a consumer nothing to ignore).
+            it is only a suggestion, so it costs a consumer nothing to ignore). The
+            embedded UCS fields do not depend on it: they follow ``embed_metadata``.
         ucs_table: The UCS table the CatID is resolved in (default:
             :func:`foley.index.taxonomy.default_ucs_table`).
 
     Returns:
         ``(bytes, rights, provenance)``: ``rights`` from :func:`sound_rights`,
         ``provenance`` from :func:`sound_provenance`, plus ``filename`` (the UCS
-        filename, or ``None``), ``embedded`` (the chunks written: ``['bext',
-        'ixml']``, or ``[]``) and ``export_notes`` (why a filename or chunks are
-        missing). ``provenance["sha256"]`` is the hash of the bytes returned.
+        filename, or ``None``), ``embedded`` (the chunks written: ``['ixml',
+        'bext']``, or ``[]``) and ``export_notes`` (why a filename or chunks are
+        missing, and what of a source file's own metadata was not kept).
+        ``provenance["sha256"]`` is the hash of the bytes returned.
 
     Raises:
         KeyError: ``sound_id`` is not in ``library``.
@@ -372,7 +413,7 @@ def export_sound(
         ValueError: the record names no content hash, or the bytes no longer match it.
     """
     from ..audio import container_of, is_lossless_conversion, transcode
-    from ..embedded_metadata import chunks_from_fields, write_embedded_metadata
+    from ..embedded_metadata import chunks_from_fields, write_metadata_chunks
     from ..index.taxonomy import parse_ucs_name
 
     if library is None:
@@ -389,21 +430,29 @@ def export_sound(
     out_fmt, out_subtype = container_of(data)
     rights = sound_rights(record)
     notes = []
-    filename = export_ucs_filename(record, rights, ext=fmt.lower(), table=ucs_table)
-    if filename is None:
-        notes.append(
-            f"no UCS filename or UCS fields: ucs_category={record.ucs_category!r} "
-            f"is not a CatID of the UCS table"
-        )
-    embedded = []
-    if embed_metadata and out_fmt not in METADATA_FORMATS:
+    wav = embed_metadata and out_fmt in METADATA_FORMATS
+    if embed_metadata and not wav:
         notes.append(f"bext / iXML are written into WAV only, not {out_fmt}")
-    elif embed_metadata:
+    try:
+        filename = export_ucs_filename(record, rights, ext=fmt.lower(), table=ucs_table)
+        if filename is None and (ucs_filename or wav):
+            notes.append(
+                f"no UCS name: ucs_category={record.ucs_category!r} is not a CatID of "
+                f"the UCS table, so no UCS filename and no embedded UCS fields"
+            )
+    except ValueError as exc:
+        filename = None
+        notes.append(f"no UCS name: {exc}")
+    embedded = []
+    if wav:
         ucs_name = filename and parse_ucs_name(filename, table=ucs_table)
         meta = export_metadata(record, rights, ucs_name)
-        # before the hash is taken, so it names these bytes
-        data = write_embedded_metadata(data, meta)
-        embedded = list(chunks_from_fields(meta))
+        chunks = chunks_from_fields(meta, clear=EXPORT_OWNED_FIELDS)
+        try:  # before the hash is taken, so the hash names these bytes
+            data = write_metadata_chunks(data, chunks, report=notes.append)
+            embedded = [name for name, kv in chunks.items() if any(kv.values())]
+        except ValueError as exc:  # e.g. a streamed WAV, its sizes 0xFFFFFFFF
+            notes.append(f"bext / iXML not written: {exc}")
     provenance = sound_provenance(
         record,
         archived_sha256=archived_sha256,

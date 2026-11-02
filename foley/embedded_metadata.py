@@ -44,7 +44,7 @@ import re
 import struct
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
-from typing import Any, BinaryIO, Callable, Iterator, Mapping
+from typing import Any, BinaryIO, Callable, Iterator, Mapping, Optional
 
 #: The RIFF form types read: classic RIFF, EBU RF64 (Tech 3306), ITU-R BS.2088 BW64.
 RIFF_FORMS = (b"RIFF", b"RF64", b"BW64")
@@ -198,17 +198,25 @@ def fields_from_chunks(raw: Mapping, *, fields=FIELDS) -> dict:
     return out
 
 
-def chunks_from_fields(meta: Mapping, *, fields=FIELDS) -> "dict[str, dict[str, str]]":
+def chunks_from_fields(
+    meta: Mapping, *, fields=FIELDS, clear=()
+) -> "dict[str, dict[str, Optional[str]]]":
     """Where a writer puts each of foley's fields: ``{chunk: {key: text}}`` (``write_to``).
+
+    A field named in ``clear`` that ``meta`` has no value for maps to ``None``: the
+    writer removes it, so a file never keeps a stale value of a field the caller owns.
 
     >>> chunks_from_fields({"caption": "Rain", "tags": ["a", "b"], "other": 1})
     {'ixml': {'DESCRIPTION': 'Rain', 'KEYWORDS': 'a, b'}, 'bext': {'description': 'Rain'}}
+    >>> chunks_from_fields({"license": None}, clear=["license"])
+    {'ixml': {'LICENSE': None}}
     """
-    out: "dict[str, dict[str, str]]" = {}
+    out: "dict[str, dict[str, Optional[str]]]" = {}
     for fld in fields:
         text = fld.encode(meta[fld.name]) if meta.get(fld.name) else ""
-        for loc in fld.write_to if text else ():
-            out.setdefault(loc.chunk, {})[loc.key] = text
+        value = text or (None if fld.name in clear else "")
+        for loc in fld.write_to if value != "" else ():
+            out.setdefault(loc.chunk, {})[loc.key] = value
     return out
 
 
@@ -251,7 +259,8 @@ def iter_riff_chunks(
     """``(chunk_id, offset, size)`` for each top-level chunk of a RIFF / RF64 / BW64 WAVE.
 
     Walks the chunk headers with seeks, never reading the audio, so a large file costs
-    a few small reads. Stops quietly at a truncated chunk. For RF64 / BW64, a ``data``
+    a few small reads. Stops quietly at a truncated chunk, and at the RIFF's declared
+    end when that is inside the file (bytes after it are not the WAVE's). For RF64 / BW64, a ``data``
     chunk sized ``0xFFFFFFFF`` takes its real size from ``ds64``'s ``dataSize``.
 
     >>> import io
@@ -265,6 +274,9 @@ def iter_riff_chunks(
     head = f.read(12)
     if len(head) < 12 or head[:4] not in forms or head[8:12] != b"WAVE":
         return
+    declared_end = 8 + struct.unpack("<I", head[4:8])[0]
+    if 12 < declared_end < total:  # a placeholder or a too-big size: the file's end
+        total = declared_end
     pos, data_size = 12, None
     while pos + 8 <= total:
         f.seek(pos)
@@ -343,7 +355,7 @@ def parse_ixml_user(payload: bytes) -> "dict[str, str]":
         root = ET.fromstring(_xml_document(payload))
     except (ET.ParseError, LookupError, ValueError):
         return {}
-    user = next((el for el in root if el.tag.upper() == "USER"), None)  # or <user>
+    user = next((el for el in root if el.tag.upper() == IXML_USER), None)  # or <user>
     if user is None:
         return {}
     pairs = ((child.tag.upper(), "".join(child.itertext()).strip()) for child in user)
@@ -418,13 +430,23 @@ def _fixed_width(text: str, width: int) -> bytes:
     return cut.encode("utf-8").ljust(width, b"\0")
 
 
-def build_bext(fields: "Mapping[str, str]", *, base: bytes = b"") -> bytes:
+def _ignore(note: str) -> None:
+    """The default ``report``: drop the note."""
+
+
+def build_bext(
+    fields: "Mapping[str, Optional[str]]",
+    *,
+    base: bytes = b"",
+    report: Callable[[str], Any] = _ignore,
+) -> bytes:
     """A ``bext`` payload with ``fields`` (:data:`BEXT_FIELDS` names) written over ``base``.
 
     ``base`` is the file's existing ``bext`` payload, so what foley does not write (the
     time reference, UMID, loudness, CodingHistory) is kept; with none, the rest is
     zero (version 0: no UMID). Text is UTF-8 (ASCII is a subset), cut on a character
-    boundary at the field's width.
+    boundary at the field's width; a ``None`` value empties its field. ``report`` is
+    accepted for the builder protocol (nothing in a ``bext`` is ever lost).
 
     >>> parse_bext(build_bext({"description": "Rain"}))
     {'description': 'Rain'}
@@ -438,35 +460,56 @@ def build_bext(fields: "Mapping[str, str]", *, base: bytes = b"") -> bytes:
     payload = bytearray(base.ljust(BEXT_FIXED_BYTES, b"\0"))
     for name, text in fields.items():
         at, width = offsets[name]
-        payload[at : at + width] = _fixed_width(text, width)
+        payload[at : at + width] = _fixed_width(text or "", width)
     return bytes(payload)
 
 
-def _ixml_root(base: bytes) -> ET.Element:
-    """The iXML document of ``base`` to write into, or a new one if it has none (or is broken)."""
-    try:
-        return ET.fromstring(_xml_document(base))
-    except (ET.ParseError, LookupError, ValueError):
-        root = ET.Element(IXML_ROOT)
-        ET.SubElement(root, "IXML_VERSION").text = IXML_VERSION
-        return root
+def _ixml_root(base: bytes, report: Callable[[str], Any]) -> ET.Element:
+    """The iXML document of ``base`` (comments and processing instructions kept) to
+    write into, or a new one if it has none, or one that does not parse (reported)."""
+    if _xml_document(base):
+        builder = ET.TreeBuilder(insert_comments=True, insert_pis=True)
+        try:
+            return ET.fromstring(_xml_document(base), ET.XMLParser(target=builder))
+        except (ET.ParseError, LookupError, ValueError) as exc:
+            report(f"the existing iXML did not parse ({exc}) and was replaced")
+    root = ET.Element(IXML_ROOT)
+    ET.SubElement(root, "IXML_VERSION").text = IXML_VERSION
+    return root
 
 
-def build_ixml(fields: "Mapping[str, str]", *, base: bytes = b"") -> bytes:
+def _child(parent: ET.Element, tag: str) -> "Optional[ET.Element]":
+    """``parent``'s first child element tagged ``tag`` (ignoring case), or ``None``."""
+    wanted = tag.upper()
+    match = (c for c in parent if isinstance(c.tag, str) and c.tag.upper() == wanted)
+    return next(match, None)
+
+
+def build_ixml(
+    fields: "Mapping[str, Optional[str]]",
+    *,
+    base: bytes = b"",
+    report: Callable[[str], Any] = _ignore,
+) -> bytes:
     """An iXML payload (UTF-8) with ``fields`` as ``<USER>`` children, written into ``base``.
 
-    ``base`` is the file's existing iXML payload: its other elements, and the
-    ``<USER>`` fields not in ``fields``, are kept.
+    ``base`` is the file's existing iXML payload: its other elements, its comments,
+    and the ``<USER>`` fields not in ``fields``, are kept; a ``None`` value removes
+    its field. A ``base`` that does not parse is replaced, and ``report`` told.
 
     >>> parse_ixml_user(build_ixml({"CATID": "DOORWood", "FXNAME": "Creak & slam"}))
     {'CATID': 'DOORWood', 'FXNAME': 'Creak & slam'}
     """
-    root = _ixml_root(base)
-    user = next((el for el in root if el.tag.upper() == IXML_USER), None)
+    root = _ixml_root(base, report)
+    user = _child(root, IXML_USER)
     if user is None:
         user = ET.SubElement(root, IXML_USER)
     for key, text in fields.items():
-        el = next((c for c in user if c.tag.upper() == key.upper()), None)
+        while text is None and (old := _child(user, key)) is not None:
+            user.remove(old)
+        if text is None:
+            continue
+        el = _child(user, key)
         if el is None:
             el = ET.SubElement(user, key)
         el.clear()
@@ -490,18 +533,24 @@ def _chunk_bytes(chunk_id: bytes, payload: bytes) -> bytes:
 
 def write_metadata_chunks(
     wav: bytes,
-    chunks: "Mapping[str, Mapping[str, str]]",
+    chunks: "Mapping[str, Mapping[str, Optional[str]]]",
     *,
     builders=CHUNK_BUILDERS,
     max_chunk_bytes: int = MAX_METADATA_CHUNK_BYTES,
+    report: Callable[[str], Any] = _ignore,
 ) -> bytes:
     """``wav`` (RIFF WAVE bytes) with ``chunks`` (``{"bext": {...}, "ixml": {...}}``) written.
 
     A chunk the file has is rewritten in place (the first of its kind; any others are
-    dropped, since a reader would see two), keeping what ``chunks`` does not set; one
-    it lacks is inserted before ``data``. Every other chunk, ``data`` included, is
-    copied byte for byte; the RIFF size is recomputed and odd chunks are padded.
-    Anything after the last whole chunk is dropped.
+    dropped, since a reader would see two), keeping what ``chunks`` does not set (a
+    ``None`` value removes its field); one it lacks is inserted before ``data``, unless
+    all it would hold is removals. Every other chunk, ``data`` included, is copied
+    byte for byte; the RIFF size is recomputed and odd chunks are padded.
+
+    What is lost is told to ``report`` (one sentence each): duplicate chunks, an
+    existing chunk over ``max_chunk_bytes`` (replaced, not merged), an iXML that does
+    not parse (replaced), and bytes after the last whole chunk or the RIFF's
+    declared end (dropped).
 
     Raises:
         ValueError: ``wav`` is not a RIFF WAVE (RF64 / BW64 are refused: their sizes
@@ -522,13 +571,26 @@ def write_metadata_chunks(
     new = {}
     for name, values in chunks.items():
         chunk_id, build = builders[name]
-        bases = [
-            wav[at : at + size]
-            for cid, at, size in listed
-            if cid == chunk_id and size <= max_chunk_bytes
-        ]
+        if chunk_id not in present and all(v is None for v in values.values()):
+            continue  # nothing to remove from a chunk the file does not have
+        sizes = [(at, size) for cid, at, size in listed if cid == chunk_id]
+        if len(sizes) > 1:
+            report(
+                f"{len(sizes)} {chunk_id.decode()} chunks were collapsed into one "
+                f"(the last one's fields kept)"
+            )
+        if sizes and sizes[-1][1] > max_chunk_bytes:
+            report(
+                f"the existing {chunk_id.decode()} chunk ({sizes[-1][1]} bytes) is over "
+                f"{max_chunk_bytes} bytes and was replaced, not merged"
+            )
         # the last of its kind is the base: a reader sees that one
-        new[chunk_id] = build(values, base=bases[-1] if bases else b"")
+        at, size = sizes[-1] if sizes and sizes[-1][1] <= max_chunk_bytes else (0, 0)
+        new[chunk_id] = build(values, base=wav[at : at + size], report=report)
+    _, last_at, last_size = listed[-1]
+    if len(wav) > last_at + last_size + (last_size & 1):
+        dropped = len(wav) - last_at - last_size - (last_size & 1)
+        report(f"{dropped} bytes after the WAVE's last whole chunk were dropped")
     out, written = [], set()
     for chunk_id, at, size in listed:
         if chunk_id == INSERT_BEFORE:
@@ -544,12 +606,21 @@ def write_metadata_chunks(
     return b"RIFF" + struct.pack("<I", len(body)) + body
 
 
-def write_embedded_metadata(wav: bytes, meta: Mapping, *, fields=FIELDS) -> bytes:
+def write_embedded_metadata(
+    wav: bytes,
+    meta: Mapping,
+    *,
+    fields=FIELDS,
+    clear=(),
+    report: Callable[[str], Any] = _ignore,
+) -> bytes:
     """``wav`` with foley's fields ``meta`` written where :data:`FIELDS` says (``bext``
     and ``iXML``): the inverse of :func:`read_embedded_metadata`.
 
-    ``wav`` comes back unchanged when ``meta`` has nothing to write. See
-    :func:`write_metadata_chunks` for what is kept and what is refused.
+    Fields named in ``clear`` that ``meta`` has no value for are removed from the file
+    (see :func:`chunks_from_fields`). ``wav`` comes back unchanged when there is
+    nothing to write. See :func:`write_metadata_chunks` for what is kept, what is
+    refused and what is told to ``report``.
     """
-    chunks = chunks_from_fields(meta, fields=fields)
-    return write_metadata_chunks(wav, chunks) if chunks else wav
+    chunks = chunks_from_fields(meta, fields=fields, clear=clear)
+    return write_metadata_chunks(wav, chunks, report=report) if chunks else wav

@@ -344,3 +344,50 @@ def test_nothing_to_write_returns_the_bytes_untouched():
 def test_what_the_writer_refuses(wav, match):
     with pytest.raises(ValueError, match=match):
         write_embedded_metadata(wav, {"caption": "x"})
+
+
+def _write(src: bytes, meta: dict, **kwargs) -> "tuple[bytes, list[str]]":
+    notes = []
+    return write_embedded_metadata(src, meta, report=notes.append, **kwargs), notes
+
+
+def test_cleared_fields_are_removed_from_an_existing_ixml():
+    src = _wav(
+        DATA, _chunk(b"iXML", _ixml(LICENSE_URL="https://vendor/eula", LIBRARY="L"))
+    )
+    wav, notes = _write(
+        src, {"license": "cc-by-nc-4.0"}, clear=["license", "license_url"]
+    )
+    assert read_embedded_metadata(wav)["raw"]["ixml"] == {
+        "LIBRARY": "L",
+        "LICENSE": "cc-by-nc-4.0",
+    }
+    assert notes == []
+    # a removal alone does not create a chunk the file lacks
+    assert _write(_wav(DATA), {}, clear=["license"])[0] == _wav(DATA)
+
+
+def test_bytes_after_the_declared_riff_end_are_not_folded_in():
+    src = _wav(DATA) + _chunk(b"iXML", _ixml(FXNAME="outside"))  # RIFF size not updated
+    assert read_embedded_metadata(src) == {}
+    wav, notes = _write(src, {"caption": "c"})
+    _assert_well_formed(wav)
+    assert read_embedded_metadata(wav)["raw"]["ixml"] == {"DESCRIPTION": "c"}
+    assert notes and "dropped" in notes[0]
+
+
+def test_what_the_writer_cannot_keep_is_reported():
+    broken = _wav(DATA, _chunk(b"iXML", b"<BWFXML><USER>"))
+    wav, notes = _write(broken, {"caption": "c"})
+    assert read_embedded_metadata(wav)["caption"] == "c" and "did not parse" in notes[0]
+    dupes = _wav(
+        _chunk(b"iXML", _ixml(FXNAME="a")), DATA, _chunk(b"iXML", _ixml(FXNAME="b"))
+    )
+    assert "collapsed" in _write(dupes, {"caption": "c"})[1][0]
+    big = _wav(DATA, _chunk(b"iXML", _ixml(FXNAME="a" * 64)))
+    notes = []
+    from foley.embedded_metadata import chunks_from_fields, write_metadata_chunks
+
+    write_metadata_chunks(big, chunks_from_fields({"caption": "c"}), max_chunk_bytes=16,
+                          report=notes.append)  # fmt: skip
+    assert "replaced, not merged" in notes[0]
