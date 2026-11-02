@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=3893778a"></script>
+    <script src="../_static/documentation_options.js?v=9cebf393"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.114" />
+  <meta name="docsearch:version" content="0.0.115" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -511,7 +511,8 @@
 <p>Only the CatID carries the controlled taxonomy; it is looked up in the table (never
 string-split, since the category prefix is variable-length).
 <a class="reference internal" href="#foley.index.taxonomy.ucs.parse_ucs_name" title="foley.index.taxonomy.ucs.parse_ucs_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">parse_ucs_name()</span></code></a> returns every block (<a class="reference internal" href="foley.index.taxonomy.model.html#foley.index.taxonomy.model.UcsName" title="foley.index.taxonomy.model.UcsName"><code class="xref py py-class docutils literal notranslate"><span class="pre">UcsName</span></code></a>);
-<a class="reference internal" href="#foley.index.taxonomy.ucs.parse_ucs_filename" title="foley.index.taxonomy.ucs.parse_ucs_filename"><code class="xref py py-func docutils literal notranslate"><span class="pre">parse_ucs_filename()</span></code></a> just the category pair. The
+<a class="reference internal" href="#foley.index.taxonomy.ucs.parse_ucs_filename" title="foley.index.taxonomy.ucs.parse_ucs_filename"><code class="xref py py-func docutils literal notranslate"><span class="pre">parse_ucs_filename()</span></code></a> just the category pair; <a class="reference internal" href="#foley.index.taxonomy.ucs.format_ucs_name" title="foley.index.taxonomy.ucs.format_ucs_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">format_ucs_name()</span></code></a> is the
+inverse of <a class="reference internal" href="#foley.index.taxonomy.ucs.parse_ucs_name" title="foley.index.taxonomy.ucs.parse_ucs_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">parse_ucs_name()</span></code></a> (it sanitises each block so the name parses back). The
 loader merges the in-code seed with an optional full-table JSON drop under
 <code class="docutils literal notranslate"><span class="pre">taxonomy/data/ucs_full.json</span></code> (JSON wins on CatID collision) — open/closed.</p>
 <p class="rubric">Module Attributes</p>
@@ -523,6 +524,15 @@ loader merges the in-code seed with an optional full-table JSON drop under
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.index.taxonomy.ucs.BLOCK_SEP" title="foley.index.taxonomy.ucs.BLOCK_SEP"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BLOCK_SEP</span></code></a></p></td>
 <td><p>The block separator of a UCS filename, and the one that attaches the optional UserCategory to the CatID and VendorCategory to the FXName.</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.index.taxonomy.ucs.UCS_NAME_BLOCKS" title="foley.index.taxonomy.ucs.UCS_NAME_BLOCKS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UCS_NAME_BLOCKS</span></code></a></p></td>
+<td><p>The blocks of a UCS filename, as <a class="reference internal" href="foley.index.taxonomy.model.html#foley.index.taxonomy.model.UcsName" title="foley.index.taxonomy.model.UcsName"><code class="xref py py-class docutils literal notranslate"><span class="pre">UcsName</span></code></a> fields (<code class="docutils literal notranslate"><span class="pre">category</span></code> and <code class="docutils literal notranslate"><span class="pre">subcategory</span></code> are not blocks: they come from the CatID's table row).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.index.taxonomy.ucs.UCS_NAME_MAX_BYTES" title="foley.index.taxonomy.ucs.UCS_NAME_MAX_BYTES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UCS_NAME_MAX_BYTES</span></code></a></p></td>
+<td><p>The longest filename, in UTF-8 bytes, that <a class="reference internal" href="#foley.index.taxonomy.ucs.format_ucs_name" title="foley.index.taxonomy.ucs.format_ucs_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">format_ucs_name()</span></code></a> makes (<code class="docutils literal notranslate"><span class="pre">NAME_MAX</span></code> on ext4, APFS and NTFS-as-seen-by-most-tools).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.index.taxonomy.ucs.UCS_SHORTENABLE_BLOCKS" title="foley.index.taxonomy.ucs.UCS_SHORTENABLE_BLOCKS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UCS_SHORTENABLE_BLOCKS</span></code></a></p></td>
+<td><p>The blocks <a class="reference internal" href="#foley.index.taxonomy.ucs.format_ucs_name" title="foley.index.taxonomy.ucs.format_ucs_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">format_ucs_name()</span></code></a> shortens, longest first, to fit <a class="reference internal" href="#foley.index.taxonomy.ucs.UCS_NAME_MAX_BYTES" title="foley.index.taxonomy.ucs.UCS_NAME_MAX_BYTES"><code class="xref py py-data docutils literal notranslate"><span class="pre">UCS_NAME_MAX_BYTES</span></code></a>.</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -532,22 +542,25 @@ loader merges the in-code seed with an optional full-table JSON drop under
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.index.taxonomy.ucs.default_ucs_table" title="foley.index.taxonomy.ucs.default_ucs_table"><code class="xref py py-obj docutils literal notranslate"><span class="pre">default_ucs_table</span></code></a>()</p></td>
 <td><p>The process-wide default UCS table (seed + any JSON drop), built once.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.index.taxonomy.ucs.load_ucs_master" title="foley.index.taxonomy.ucs.load_ucs_master"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_ucs_master</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.index.taxonomy.ucs.format_ucs_name" title="foley.index.taxonomy.ucs.format_ucs_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">format_ucs_name</span></code></a>([name, ext, table, ...])</p></td>
+<td><p>The UCS filename of <code class="docutils literal notranslate"><span class="pre">name</span></code> (a <a class="reference internal" href="foley.index.taxonomy.model.html#foley.index.taxonomy.model.UcsName" title="foley.index.taxonomy.model.UcsName"><code class="xref py py-class docutils literal notranslate"><span class="pre">UcsName</span></code></a> or a mapping of its blocks), with <code class="docutils literal notranslate"><span class="pre">blocks</span></code> (<a class="reference internal" href="#foley.index.taxonomy.ucs.UCS_NAME_BLOCKS" title="foley.index.taxonomy.ucs.UCS_NAME_BLOCKS"><code class="xref py py-data docutils literal notranslate"><span class="pre">UCS_NAME_BLOCKS</span></code></a>) overriding it: the inverse of <a class="reference internal" href="#foley.index.taxonomy.ucs.parse_ucs_name" title="foley.index.taxonomy.ucs.parse_ucs_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">parse_ucs_name()</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.index.taxonomy.ucs.load_ucs_master" title="foley.index.taxonomy.ucs.load_ucs_master"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_ucs_master</span></code></a>()</p></td>
 <td><p>The authoritative UCS v8.2.1 master (753 rows, 82 categories), without the seed.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.index.taxonomy.ucs.load_ucs_table" title="foley.index.taxonomy.ucs.load_ucs_table"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_ucs_table</span></code></a>(*[, data_dir, include_seed])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.index.taxonomy.ucs.load_ucs_table" title="foley.index.taxonomy.ucs.load_ucs_table"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_ucs_table</span></code></a>(*[, data_dir, include_seed])</p></td>
 <td><p>Build the UCS lookup: the seed rows, overridden/extended by a JSON drop.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.index.taxonomy.ucs.looks_like_vendor_tag" title="foley.index.taxonomy.ucs.looks_like_vendor_tag"><code class="xref py py-obj docutils literal notranslate"><span class="pre">looks_like_vendor_tag</span></code></a>(prefix)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.index.taxonomy.ucs.looks_like_vendor_tag" title="foley.index.taxonomy.ucs.looks_like_vendor_tag"><code class="xref py py-obj docutils literal notranslate"><span class="pre">looks_like_vendor_tag</span></code></a>(prefix)</p></td>
 <td><p>Whether the text before an FXName's first hyphen reads as a VendorCategory.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.index.taxonomy.ucs.parse_catid_token" title="foley.index.taxonomy.ucs.parse_catid_token"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_catid_token</span></code></a>(filename)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.index.taxonomy.ucs.parse_catid_token" title="foley.index.taxonomy.ucs.parse_catid_token"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_catid_token</span></code></a>(filename)</p></td>
 <td><p>Return the CatID candidate of a UCS-style filename, else <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.index.taxonomy.ucs.parse_ucs_filename" title="foley.index.taxonomy.ucs.parse_ucs_filename"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_ucs_filename</span></code></a>(filename, *[, table])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.index.taxonomy.ucs.parse_ucs_filename" title="foley.index.taxonomy.ucs.parse_ucs_filename"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_ucs_filename</span></code></a>(filename, *[, table])</p></td>
 <td><p>Parse a UCS-conformant filename to <code class="docutils literal notranslate"><span class="pre">(ucs_category,</span> <span class="pre">ucs_subcategory)</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.index.taxonomy.ucs.parse_ucs_name" title="foley.index.taxonomy.ucs.parse_ucs_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_ucs_name</span></code></a>(filename, *[, table, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.index.taxonomy.ucs.parse_ucs_name" title="foley.index.taxonomy.ucs.parse_ucs_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_ucs_name</span></code></a>(filename, *[, table, ...])</p></td>
 <td><p>Every block of a UCS filename as a <a class="reference internal" href="foley.index.taxonomy.model.html#foley.index.taxonomy.model.UcsName" title="foley.index.taxonomy.model.UcsName"><code class="xref py py-class docutils literal notranslate"><span class="pre">UcsName</span></code></a>, else <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></td>
 </tr>
 </tbody>
@@ -566,6 +579,28 @@ UserCategory to the CatID and VendorCategory to the FXName.</p>
 <dd><p>The UCS v8.2.1 master as shipped (<code class="docutils literal notranslate"><span class="pre">tools/build_ucs_table.py</span></code>; #227).</p>
 </dd></dl>
 
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.index.taxonomy.ucs.UCS_NAME_BLOCKS">
+<span class="sig-prename descclassname"><span class="pre">foley.index.taxonomy.ucs.</span></span><span class="sig-name descname"><span class="pre">UCS_NAME_BLOCKS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('catid',</span> <span class="pre">'fx_name',</span> <span class="pre">'creator_id',</span> <span class="pre">'source_id',</span> <span class="pre">'user_category',</span> <span class="pre">'vendor_category',</span> <span class="pre">'user_data')</span></span><a class="headerlink" href="#foley.index.taxonomy.ucs.UCS_NAME_BLOCKS" title="Link to this definition">#</a></dt>
+<dd><p>The blocks of a UCS filename, as <a class="reference internal" href="foley.index.taxonomy.model.html#foley.index.taxonomy.model.UcsName" title="foley.index.taxonomy.model.UcsName"><code class="xref py py-class docutils literal notranslate"><span class="pre">UcsName</span></code></a> fields (<code class="docutils literal notranslate"><span class="pre">category</span></code> and
+<code class="docutils literal notranslate"><span class="pre">subcategory</span></code> are not blocks: they come from the CatID’s table row).</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.index.taxonomy.ucs.UCS_NAME_MAX_BYTES">
+<span class="sig-prename descclassname"><span class="pre">foley.index.taxonomy.ucs.</span></span><span class="sig-name descname"><span class="pre">UCS_NAME_MAX_BYTES</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">255</span></span><a class="headerlink" href="#foley.index.taxonomy.ucs.UCS_NAME_MAX_BYTES" title="Link to this definition">#</a></dt>
+<dd><p>The longest filename, in UTF-8 bytes, that <a class="reference internal" href="#foley.index.taxonomy.ucs.format_ucs_name" title="foley.index.taxonomy.ucs.format_ucs_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">format_ucs_name()</span></code></a> makes
+(<code class="docutils literal notranslate"><span class="pre">NAME_MAX</span></code> on ext4, APFS and NTFS-as-seen-by-most-tools).</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.index.taxonomy.ucs.UCS_SHORTENABLE_BLOCKS">
+<span class="sig-prename descclassname"><span class="pre">foley.index.taxonomy.ucs.</span></span><span class="sig-name descname"><span class="pre">UCS_SHORTENABLE_BLOCKS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('fx_name',</span> <span class="pre">'creator_id',</span> <span class="pre">'source_id',</span> <span class="pre">'user_category')</span></span><a class="headerlink" href="#foley.index.taxonomy.ucs.UCS_SHORTENABLE_BLOCKS" title="Link to this definition">#</a></dt>
+<dd><p>The blocks <a class="reference internal" href="#foley.index.taxonomy.ucs.format_ucs_name" title="foley.index.taxonomy.ucs.format_ucs_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">format_ucs_name()</span></code></a> shortens, longest first, to fit
+<a class="reference internal" href="#foley.index.taxonomy.ucs.UCS_NAME_MAX_BYTES" title="foley.index.taxonomy.ucs.UCS_NAME_MAX_BYTES"><code class="xref py py-data docutils literal notranslate"><span class="pre">UCS_NAME_MAX_BYTES</span></code></a>. The CatID, VendorCategory and UserData are kept whole
+(UserData may hold an id that must stay unique).</p>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="foley.index.taxonomy.ucs.default_ucs_table">
 <span class="sig-prename descclassname"><span class="pre">foley.index.taxonomy.ucs.</span></span><span class="sig-name descname"><span class="pre">default_ucs_table</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/index/taxonomy/ucs.html#default_ucs_table"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.index.taxonomy.ucs.default_ucs_table" title="Link to this definition">#</a></dt>
@@ -575,6 +610,59 @@ UserCategory to the CatID and VendorCategory to the FXName.</p>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.index.taxonomy.model.html#foley.index.taxonomy.model.UcsTable" title="foley.index.taxonomy.model.UcsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">UcsTable</span></code></a></span></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.index.taxonomy.ucs.format_ucs_name">
+<span class="sig-prename descclassname"><span class="pre">foley.index.taxonomy.ucs.</span></span><span class="sig-name descname"><span class="pre">format_ucs_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">/</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ext</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_vendor_tag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">looks_like_vendor_tag&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_bytes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">255</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**blocks</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/index/taxonomy/ucs.html#format_ucs_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.index.taxonomy.ucs.format_ucs_name" title="Link to this definition">#</a></dt>
+<dd><p>The UCS filename of <code class="docutils literal notranslate"><span class="pre">name</span></code> (a <a class="reference internal" href="foley.index.taxonomy.model.html#foley.index.taxonomy.model.UcsName" title="foley.index.taxonomy.model.UcsName"><code class="xref py py-class docutils literal notranslate"><span class="pre">UcsName</span></code></a> or a mapping of its
+blocks), with <code class="docutils literal notranslate"><span class="pre">blocks</span></code> (<a class="reference internal" href="#foley.index.taxonomy.ucs.UCS_NAME_BLOCKS" title="foley.index.taxonomy.ucs.UCS_NAME_BLOCKS"><code class="xref py py-data docutils literal notranslate"><span class="pre">UCS_NAME_BLOCKS</span></code></a>) overriding it: the inverse of
+<a class="reference internal" href="#foley.index.taxonomy.ucs.parse_ucs_name" title="foley.index.taxonomy.ucs.parse_ucs_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">parse_ucs_name()</span></code></a>.</p>
+<p>Each block is sanitised so the name parses back to the same blocks: unsafe
+characters and underscores inside a block become spaces, whitespace is collapsed,
+a VendorCategory is upper-cased, and a hyphen that would make an FXName’s head
+read as a VendorCategory becomes a space (<code class="docutils literal notranslate"><span class="pre">Sci-Fi</span> <span class="pre">Door</span></code> stays as it is). A name
+over <code class="docutils literal notranslate"><span class="pre">max_bytes</span></code> has its longest shortenable block
+(<a class="reference internal" href="#foley.index.taxonomy.ucs.UCS_SHORTENABLE_BLOCKS" title="foley.index.taxonomy.ucs.UCS_SHORTENABLE_BLOCKS"><code class="xref py py-data docutils literal notranslate"><span class="pre">UCS_SHORTENABLE_BLOCKS</span></code></a>) cut on a character boundary until it fits. So
+<code class="docutils literal notranslate"><span class="pre">format_ucs_name(parse_ucs_name(f))</span></code> is <code class="docutils literal notranslate"><span class="pre">f</span></code> for any <code class="docutils literal notranslate"><span class="pre">f</span></code> this function made.
+The CatID is looked up in <code class="docutils literal notranslate"><span class="pre">table</span></code> (default: <a class="reference internal" href="#foley.index.taxonomy.ucs.default_ucs_table" title="foley.index.taxonomy.ucs.default_ucs_table"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_ucs_table()</span></code></a>) and
+written in its canonical spelling; an unknown one raises, since the name would
+not parse.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference internal" href="foley.index.taxonomy.model.html#foley.index.taxonomy.model.UcsName" title="foley.index.taxonomy.model.UcsName"><code class="xref py py-class docutils literal notranslate"><span class="pre">UcsName</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>, <span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span>]</span>) – The blocks to format (<code class="docutils literal notranslate"><span class="pre">category</span></code> / <code class="docutils literal notranslate"><span class="pre">subcategory</span></code> are ignored).</p></li>
+<li><p><strong>ext</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – The extension to append (<code class="docutils literal notranslate"><span class="pre">'wav'</span></code> or <code class="docutils literal notranslate"><span class="pre">'.wav'</span></code>), or <code class="docutils literal notranslate"><span class="pre">None</span></code> for a stem.</p></li>
+<li><p><strong>table</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="foley.index.taxonomy.model.html#foley.index.taxonomy.model.UcsTable" title="foley.index.taxonomy.model.UcsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">UcsTable</span></code></a>]</span>) – The UCS table the CatID must be in.</p></li>
+<li><p><strong>is_vendor_tag</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>], <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]</span>) – What reads as a VendorCategory (as in <a class="reference internal" href="#foley.index.taxonomy.ucs.parse_ucs_name" title="foley.index.taxonomy.ucs.parse_ucs_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">parse_ucs_name()</span></code></a>).</p></li>
+<li><p><strong>max_bytes</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – The longest name to make, in UTF-8 bytes, extension included.</p></li>
+<li><p><strong>**blocks</strong> – Block values overriding <code class="docutils literal notranslate"><span class="pre">name</span></code>’s.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – a keyword is not a UCS block.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – no CatID, or one not in <code class="docutils literal notranslate"><span class="pre">table</span></code>; a bad <code class="docutils literal notranslate"><span class="pre">ext</span></code>; a
+    VendorCategory that cannot be read back or has no FXName; a name that
+    cannot be cut to <code class="docutils literal notranslate"><span class="pre">max_bytes</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">format_ucs_name</span><span class="p">(</span><span class="n">catid</span><span class="o">=</span><span class="s2">"doorwood"</span><span class="p">,</span> <span class="n">fx_name</span><span class="o">=</span><span class="s2">"Sci-Fi Door_slam"</span><span class="p">,</span> <span class="n">creator_id</span><span class="o">=</span><span class="s2">"JD"</span><span class="p">,</span>
+<span class="gp">... </span>                <span class="n">source_id</span><span class="o">=</span><span class="s2">"NYC"</span><span class="p">,</span> <span class="n">ext</span><span class="o">=</span><span class="s2">"wav"</span><span class="p">)</span>
+<span class="go">'DOORWood_Sci-Fi Door slam_JD_NYC.wav'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">n</span> <span class="o">=</span> <span class="n">parse_ucs_name</span><span class="p">(</span><span class="s2">"DOORWood-Gate_SCIFI-Creak Open_JD_NYC_take_2.wav"</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">format_ucs_name</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">ext</span><span class="o">=</span><span class="s2">"wav"</span><span class="p">)</span>
+<span class="go">'DOORWood-Gate_SCIFI-Creak Open_JD_NYC_take_2.wav'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">format_ucs_name</span><span class="p">(</span><span class="n">catid</span><span class="o">=</span><span class="s2">"DOORWood"</span><span class="p">,</span> <span class="n">fx_name</span><span class="o">=</span><span class="s2">"BOOM-Creak"</span><span class="p">)</span>  <span class="c1"># not a vendor tag</span>
+<span class="go">'DOORWood_BOOM Creak'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">format_ucs_name</span><span class="p">(</span><span class="n">catid</span><span class="o">=</span><span class="s2">"DOORWood"</span><span class="p">,</span> <span class="n">fx_name</span><span class="o">=</span><span class="s2">"x"</span> <span class="o">*</span> <span class="mi">300</span><span class="p">,</span> <span class="n">user_data</span><span class="o">=</span><span class="s2">"id1"</span><span class="p">))</span>
+<span class="go">255</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py function">
@@ -756,7 +844,11 @@ hyphen is the VendorCategory only when <code class="docutils literal notranslate
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.taxonomy.ucs.BLOCK_SEP"><code class="docutils literal notranslate"><span class="pre">BLOCK_SEP</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.taxonomy.ucs.UCS_MASTER_FILE"><code class="docutils literal notranslate"><span class="pre">UCS_MASTER_FILE</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.taxonomy.ucs.UCS_NAME_BLOCKS"><code class="docutils literal notranslate"><span class="pre">UCS_NAME_BLOCKS</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.taxonomy.ucs.UCS_NAME_MAX_BYTES"><code class="docutils literal notranslate"><span class="pre">UCS_NAME_MAX_BYTES</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.taxonomy.ucs.UCS_SHORTENABLE_BLOCKS"><code class="docutils literal notranslate"><span class="pre">UCS_SHORTENABLE_BLOCKS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.taxonomy.ucs.default_ucs_table"><code class="docutils literal notranslate"><span class="pre">default_ucs_table()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.taxonomy.ucs.format_ucs_name"><code class="docutils literal notranslate"><span class="pre">format_ucs_name()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.taxonomy.ucs.load_ucs_master"><code class="docutils literal notranslate"><span class="pre">load_ucs_master()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.taxonomy.ucs.load_ucs_table"><code class="docutils literal notranslate"><span class="pre">load_ucs_table()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.taxonomy.ucs.looks_like_vendor_tag"><code class="docutils literal notranslate"><span class="pre">looks_like_vendor_tag()</span></code></a></li>

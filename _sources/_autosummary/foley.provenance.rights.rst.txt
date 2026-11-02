@@ -12,13 +12,20 @@ foley.provenance.rights
       RIGHTS_FIELDS
       ASSET_SOURCE_EXTRAS
       PROVENANCE_FIELDS
+      METADATA_FORMATS
+      EXPORT_OWNED_FIELDS
+      UCS_FXNAME_MAX_CHARS
    
    .. rubric:: Functions
 
    .. autosummary::
    
       excluded_territories
+      export_metadata
       export_sound
+      export_ucs_filename
+      id_from_user_data
+      id_to_user_data
       rights_provider
       sound_provenance
       sound_rights

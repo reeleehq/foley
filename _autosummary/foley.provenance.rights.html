@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=3893778a"></script>
+    <script src="../_static/documentation_options.js?v=9cebf393"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.114" />
+  <meta name="docsearch:version" content="0.0.115" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -534,6 +534,22 @@ match the content hash their record names.</p></li>
 </ul>
 <p>Everything is read off the <a class="reference internal" href="foley.base.html#foley.base.LicenseRecord" title="foley.base.LicenseRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a> SSOT through the
 credits layer (title, author, licence URL, attribution line); no flag is re-derived.</p>
+<p>The export also interoperates with library tools (Soundminer, Soundly, BaseHead; #231):</p>
+<ul>
+<li><p>a <strong>UCS filename</strong> (<code class="docutils literal notranslate"><span class="pre">CatID_FXName_CreatorID_SourceID_&lt;foley</span> <span class="pre">id&gt;.wav</span></code>,
+<a class="reference internal" href="#foley.provenance.rights.export_ucs_filename" title="foley.provenance.rights.export_ucs_filename"><code class="xref py py-func docutils literal notranslate"><span class="pre">export_ucs_filename()</span></code></a>) goes in <code class="docutils literal notranslate"><span class="pre">provenance[&quot;filename&quot;]</span></code>, a suggestion the</p>
+<blockquote>
+<div><p>consumer may use. It is not a fourth return value: <code class="docutils literal notranslate"><span class="pre">(bytes,</span> <span class="pre">rights,</span> <span class="pre">provenance)</span></code>
+is the contract callers unpack, and the provenance already describes the exported
+bytes (format, subtype, hash).</p>
+</div></blockquote>
+</li>
+<li><p>a WAV export carries its description in <strong>bext / iXML</strong>
+(<a class="reference internal" href="#foley.provenance.rights.export_metadata" title="foley.provenance.rights.export_metadata"><code class="xref py py-func docutils literal notranslate"><span class="pre">export_metadata()</span></code></a>, written by <a class="reference internal" href="foley.embedded_metadata.html#foley.embedded_metadata.write_embedded_metadata" title="foley.embedded_metadata.write_embedded_metadata"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.embedded_metadata.write_embedded_metadata()</span></code></a>):
+caption, tags, the UCS fields, and the licence, licence URL and attribution line
+of <code class="docutils literal notranslate"><span class="pre">rights</span></code>, so the credit travels with the file. The samples are untouched and
+<code class="docutils literal notranslate"><span class="pre">provenance[&quot;sha256&quot;]</span></code> is taken after embedding, so it names the bytes returned.</p></li>
+</ul>
 <p class="rubric">Module Attributes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
@@ -549,6 +565,15 @@ credits layer (title, author, licence URL, attribution line); no flag is re-deri
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.rights.PROVENANCE_FIELDS" title="foley.provenance.rights.PROVENANCE_FIELDS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PROVENANCE_FIELDS</span></code></a></p></td>
 <td><p>a foley row's own metadata must not use one, or it would read as that record's claim.</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.rights.METADATA_FORMATS" title="foley.provenance.rights.METADATA_FORMATS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">METADATA_FORMATS</span></code></a></p></td>
+<td><p>The containers that take <code class="docutils literal notranslate"><span class="pre">bext</span></code> / <code class="docutils literal notranslate"><span class="pre">iXML</span></code> chunks (RIFF WAVE, as libsndfile names them).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.rights.EXPORT_OWNED_FIELDS" title="foley.provenance.rights.EXPORT_OWNED_FIELDS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EXPORT_OWNED_FIELDS</span></code></a></p></td>
+<td><p>a source file's value is removed when the export has none, so the file never pairs foley's licence with a vendor's URL.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.rights.UCS_FXNAME_MAX_CHARS" title="foley.provenance.rights.UCS_FXNAME_MAX_CHARS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UCS_FXNAME_MAX_CHARS</span></code></a></p></td>
+<td><p>a brief title of at most this many characters.</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -558,8 +583,20 @@ credits layer (title, author, licence URL, attribution line); no flag is re-deri
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.rights.excluded_territories" title="foley.provenance.rights.excluded_territories"><code class="xref py py-obj docutils literal notranslate"><span class="pre">excluded_territories</span></code></a>(lic)</p></td>
 <td><p>Where <code class="docutils literal notranslate"><span class="pre">lic</span></code> or any licence it derives from grants nothing (sorted codes).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.rights.export_sound" title="foley.provenance.rights.export_sound"><code class="xref py py-obj docutils literal notranslate"><span class="pre">export_sound</span></code></a>(sound_id[, fmt, library, subtype])</p></td>
-<td><p>Export a sound's bytes as <code class="docutils literal notranslate"><span class="pre">fmt</span></code> with its rights and provenance (#66).</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.rights.export_metadata" title="foley.provenance.rights.export_metadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">export_metadata</span></code></a>(record, rights[, ucs_name])</p></td>
+<td><p>The fields an export embeds (<a class="reference internal" href="foley.embedded_metadata.html#foley.embedded_metadata.FIELDS" title="foley.embedded_metadata.FIELDS"><code class="xref py py-data docutils literal notranslate"><span class="pre">foley.embedded_metadata.FIELDS</span></code></a> names).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.rights.export_sound" title="foley.provenance.rights.export_sound"><code class="xref py py-obj docutils literal notranslate"><span class="pre">export_sound</span></code></a>(sound_id[, fmt, library, ...])</p></td>
+<td><p>Export a sound's bytes as <code class="docutils literal notranslate"><span class="pre">fmt</span></code> with its rights and provenance (#66, #231).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.rights.export_ucs_filename" title="foley.provenance.rights.export_ucs_filename"><code class="xref py py-obj docutils literal notranslate"><span class="pre">export_ucs_filename</span></code></a>(record, rights, *[, ...])</p></td>
+<td><p>The UCS filename of <code class="docutils literal notranslate"><span class="pre">record</span></code>'s export, or <code class="docutils literal notranslate"><span class="pre">None</span></code> when it has no CatID in <code class="docutils literal notranslate"><span class="pre">table</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.rights.id_from_user_data" title="foley.provenance.rights.id_from_user_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">id_from_user_data</span></code></a>(block)</p></td>
+<td><p>The foley id <a class="reference internal" href="#foley.provenance.rights.id_to_user_data" title="foley.provenance.rights.id_to_user_data"><code class="xref py py-func docutils literal notranslate"><span class="pre">id_to_user_data()</span></code></a> encoded as <code class="docutils literal notranslate"><span class="pre">block</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.rights.id_to_user_data" title="foley.provenance.rights.id_to_user_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">id_to_user_data</span></code></a>(sound_id)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">sound_id</span></code> as a filename block, injectively: <a class="reference internal" href="#foley.provenance.rights.id_from_user_data" title="foley.provenance.rights.id_from_user_data"><code class="xref py py-func docutils literal notranslate"><span class="pre">id_from_user_data()</span></code></a> inverts it.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.rights.rights_provider" title="foley.provenance.rights.rights_provider"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rights_provider</span></code></a>(lic)</p></td>
 <td><p>Who the rights come from: a provider-terms licence's owner, else the source.</p></td>
@@ -587,6 +624,24 @@ them to an’s model when an is installed).</p>
 </dd></dl>
 
 <dl class="py data">
+<dt class="sig sig-object py" id="foley.provenance.rights.EXPORT_OWNED_FIELDS">
+<span class="sig-prename descclassname"><span class="pre">foley.provenance.rights.</span></span><span class="sig-name descname"><span class="pre">EXPORT_OWNED_FIELDS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('license',</span> <span class="pre">'license_url',</span> <span class="pre">'attribution')</span></span><a class="headerlink" href="#foley.provenance.rights.EXPORT_OWNED_FIELDS" title="Link to this definition">#</a></dt>
+<dd><p>a source file’s value is removed when the
+export has none, so the file never pairs foley’s licence with a vendor’s URL.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The fields an export owns in the file</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.provenance.rights.METADATA_FORMATS">
+<span class="sig-prename descclassname"><span class="pre">foley.provenance.rights.</span></span><span class="sig-name descname"><span class="pre">METADATA_FORMATS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('wav',</span> <span class="pre">'wavex')</span></span><a class="headerlink" href="#foley.provenance.rights.METADATA_FORMATS" title="Link to this definition">#</a></dt>
+<dd><p>The containers that take <code class="docutils literal notranslate"><span class="pre">bext</span></code> / <code class="docutils literal notranslate"><span class="pre">iXML</span></code> chunks (RIFF WAVE, as libsndfile names them).</p>
+</dd></dl>
+
+<dl class="py data">
 <dt class="sig sig-object py" id="foley.provenance.rights.PROVENANCE_FIELDS">
 <span class="sig-prename descclassname"><span class="pre">foley.provenance.rights.</span></span><span class="sig-name descname"><span class="pre">PROVENANCE_FIELDS</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('provider',</span> <span class="pre">'id',</span> <span class="pre">'title',</span> <span class="pre">'license',</span> <span class="pre">'license_url',</span> <span class="pre">'attribution',</span> <span class="pre">'source_page_url',</span> <span class="pre">'author',</span> <span class="pre">'author_url',</span> <span class="pre">'cacheable',</span> <span class="pre">'url',</span> <span class="pre">'sha256',</span> <span class="pre">'cost_usd',</span> <span class="pre">'extra')</span></span><a class="headerlink" href="#foley.provenance.rights.PROVENANCE_FIELDS" title="Link to this definition">#</a></dt>
 <dd><p>a foley row’s own
@@ -605,6 +660,17 @@ metadata must not use one, or it would read as that record’s claim.</p>
 pins them to lacing’s model when lacing is installed).</p>
 </dd></dl>
 
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.provenance.rights.UCS_FXNAME_MAX_CHARS">
+<span class="sig-prename descclassname"><span class="pre">foley.provenance.rights.</span></span><span class="sig-name descname"><span class="pre">UCS_FXNAME_MAX_CHARS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">25</span></span><a class="headerlink" href="#foley.provenance.rights.UCS_FXNAME_MAX_CHARS" title="Link to this definition">#</a></dt>
+<dd><p>a brief title of at most this many characters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The UCS guidance for an FXName</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="foley.provenance.rights.excluded_territories">
 <span class="sig-prename descclassname"><span class="pre">foley.provenance.rights.</span></span><span class="sig-name descname"><span class="pre">excluded_territories</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lic</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/provenance/rights.html#excluded_territories"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.provenance.rights.excluded_territories" title="Link to this definition">#</a></dt>
@@ -621,13 +687,29 @@ pins them to lacing’s model when lacing is installed).</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.provenance.rights.export_metadata">
+<span class="sig-prename descclassname"><span class="pre">foley.provenance.rights.</span></span><span class="sig-name descname"><span class="pre">export_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rights</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ucs_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/provenance/rights.html#export_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.provenance.rights.export_metadata" title="Link to this definition">#</a></dt>
+<dd><p>The fields an export embeds (<a class="reference internal" href="foley.embedded_metadata.html#foley.embedded_metadata.FIELDS" title="foley.embedded_metadata.FIELDS"><code class="xref py py-data docutils literal notranslate"><span class="pre">foley.embedded_metadata.FIELDS</span></code></a> names).</p>
+<p>The caption and tags, the UCS fields of <code class="docutils literal notranslate"><span class="pre">ucs_name</span></code> (the parse of the export’s
+filename, so the file and its name agree), the designer (<code class="docutils literal notranslate"><span class="pre">rights</span></code>’ author) and
+<code class="docutils literal notranslate"><span class="pre">rights</span></code>’ licence, licence URL and attribution line, verbatim. Empty values are
+left out by the writer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.provenance.rights.export_sound">
-<span class="sig-prename descclassname"><span class="pre">foley.provenance.rights.</span></span><span class="sig-name descname"><span class="pre">export_sound</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sound_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fmt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'wav'</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">library</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/provenance/rights.html#export_sound"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.provenance.rights.export_sound" title="Link to this definition">#</a></dt>
-<dd><p>Export a sound’s bytes as <code class="docutils literal notranslate"><span class="pre">fmt</span></code> with its rights and provenance (#66).</p>
+<span class="sig-prename descclassname"><span class="pre">foley.provenance.rights.</span></span><span class="sig-name descname"><span class="pre">export_sound</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sound_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fmt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'wav'</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">library</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embed_metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ucs_filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ucs_table</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/provenance/rights.html#export_sound"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.provenance.rights.export_sound" title="Link to this definition">#</a></dt>
+<dd><p>Export a sound’s bytes as <code class="docutils literal notranslate"><span class="pre">fmt</span></code> with its rights and provenance (#66, #231).</p>
 <p>The sound’s bytes are fetched from <code class="docutils literal notranslate"><span class="pre">library</span></code>, checked against the record’s
 content hash, and re-encoded (<a class="reference internal" href="foley.audio.html#foley.audio.transcode" title="foley.audio.transcode"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.audio.transcode()</span></code></a>: PCM, the archive’s
 own depth where <code class="docutils literal notranslate"><span class="pre">fmt</span></code> allows, so a <code class="docutils literal notranslate"><span class="pre">PCM_24</span></code> FLAC gives a sample-exact
-<code class="docutils literal notranslate"><span class="pre">PCM_24</span></code> WAV; bytes already in <code class="docutils literal notranslate"><span class="pre">fmt</span></code> come back untouched).</p>
+<code class="docutils literal notranslate"><span class="pre">PCM_24</span></code> WAV; bytes already in <code class="docutils literal notranslate"><span class="pre">fmt</span></code> and subtype are not re-encoded). A WAV
+then gets its <code class="docutils literal notranslate"><span class="pre">bext</span></code> / <code class="docutils literal notranslate"><span class="pre">iXML</span></code> metadata (<a class="reference internal" href="#foley.provenance.rights.export_metadata" title="foley.provenance.rights.export_metadata"><code class="xref py py-func docutils literal notranslate"><span class="pre">export_metadata()</span></code></a>).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -636,11 +718,26 @@ own depth where <code class="docutils literal notranslate"><span class="pre">fmt
 <li><p><strong>library</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="foley.index.library.html#foley.index.library.SoundLibrary" title="foley.index.library.SoundLibrary"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundLibrary</span></code></a>]</span>) – The <a class="reference internal" href="foley.index.library.html#foley.index.library.SoundLibrary" title="foley.index.library.SoundLibrary"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundLibrary</span></code></a> to read (default:
 <a class="reference internal" href="foley.html#foley.default_library" title="foley.default_library"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.default_library()</span></code></a>).</p></li>
 <li><p><strong>subtype</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – The sample format (default: <a class="reference internal" href="foley.audio.html#foley.audio.export_subtype" title="foley.audio.export_subtype"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.audio.export_subtype()</span></code></a>).</p></li>
+<li><p><strong>embed_metadata</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Write <code class="docutils literal notranslate"><span class="pre">bext</span></code> / <code class="docutils literal notranslate"><span class="pre">iXML</span></code> into a WAV export (default on: it
+adds chunks only, never touches the samples, and makes the file carry
+its own credit; other formats, and a WAV the writer refuses, such as a
+streamed one sized <code class="docutils literal notranslate"><span class="pre">0xFFFFFFFF</span></code>, are left as encoded, with a note).
+The licence fields (<a class="reference internal" href="#foley.provenance.rights.EXPORT_OWNED_FIELDS" title="foley.provenance.rights.EXPORT_OWNED_FIELDS"><code class="xref py py-data docutils literal notranslate"><span class="pre">EXPORT_OWNED_FIELDS</span></code></a>) are foley’s: a source
+file’s value is removed when <code class="docutils literal notranslate"><span class="pre">rights</span></code> has none.</p></li>
+<li><p><strong>ucs_filename</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Put the UCS filename in <code class="docutils literal notranslate"><span class="pre">provenance[&quot;filename&quot;]</span></code> (default on:
+it is only a suggestion, so it costs a consumer nothing to ignore). The
+embedded UCS fields do not depend on it: they follow <code class="docutils literal notranslate"><span class="pre">embed_metadata</span></code>.</p></li>
+<li><p><strong>ucs_table</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="foley.index.taxonomy.model.html#foley.index.taxonomy.model.UcsTable" title="foley.index.taxonomy.model.UcsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">UcsTable</span></code></a>]</span>) – The UCS table the CatID is resolved in (default:
+<a class="reference internal" href="foley.index.taxonomy.html#foley.index.taxonomy.default_ucs_table" title="foley.index.taxonomy.default_ucs_table"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.index.taxonomy.default_ucs_table()</span></code></a>).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">rights</span></code> from <a class="reference internal" href="#foley.provenance.rights.sound_rights" title="foley.provenance.rights.sound_rights"><code class="xref py py-func docutils literal notranslate"><span class="pre">sound_rights()</span></code></a>,
-<code class="docutils literal notranslate"><span class="pre">provenance</span></code> from <a class="reference internal" href="#foley.provenance.rights.sound_provenance" title="foley.provenance.rights.sound_provenance"><code class="xref py py-func docutils literal notranslate"><span class="pre">sound_provenance()</span></code></a>.</p>
+<code class="docutils literal notranslate"><span class="pre">provenance</span></code> from <a class="reference internal" href="#foley.provenance.rights.sound_provenance" title="foley.provenance.rights.sound_provenance"><code class="xref py py-func docutils literal notranslate"><span class="pre">sound_provenance()</span></code></a>, plus <code class="docutils literal notranslate"><span class="pre">filename</span></code> (the UCS
+filename, or <code class="docutils literal notranslate"><span class="pre">None</span></code>), <code class="docutils literal notranslate"><span class="pre">embedded</span></code> (the chunks written: <code class="docutils literal notranslate"><span class="pre">['ixml',</span>
+<span class="pre">'bext']</span></code>, or <code class="docutils literal notranslate"><span class="pre">[]</span></code>) and <code class="docutils literal notranslate"><span class="pre">export_notes</span></code> (why a filename or chunks are
+missing, and what of a source file’s own metadata was not kept).
+<code class="docutils literal notranslate"><span class="pre">provenance[&quot;sha256&quot;]</span></code> is the hash of the bytes returned.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
@@ -653,6 +750,59 @@ own depth where <code class="docutils literal notranslate"><span class="pre">fmt
 <li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#LookupError" title="(in Python v3.15)"><strong>LookupError</strong></a> – the bytes are not available locally.</p></li>
 <li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – the record names no content hash, or the bytes no longer match it.</p></li>
 </ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.provenance.rights.export_ucs_filename">
+<span class="sig-prename descclassname"><span class="pre">foley.provenance.rights.</span></span><span class="sig-name descname"><span class="pre">export_ucs_filename</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rights</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">ext</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'wav'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx_name_max_chars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/provenance/rights.html#export_ucs_filename"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.provenance.rights.export_ucs_filename" title="Link to this definition">#</a></dt>
+<dd><p>The UCS filename of <code class="docutils literal notranslate"><span class="pre">record</span></code>’s export, or <code class="docutils literal notranslate"><span class="pre">None</span></code> when it has no CatID in <code class="docutils literal notranslate"><span class="pre">table</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">CatID_FXName_CreatorID_SourceID_UserData.ext</span></code>: the CatID is
+<code class="docutils literal notranslate"><span class="pre">record.ucs_category</span></code> (which holds the CatID), looked up in <code class="docutils literal notranslate"><span class="pre">table</span></code> (default:
+<a class="reference internal" href="foley.index.taxonomy.html#foley.index.taxonomy.default_ucs_table" title="foley.index.taxonomy.default_ucs_table"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.index.taxonomy.default_ucs_table()</span></code></a>); the FXName is the caption (else
+the tags) cut to <code class="docutils literal notranslate"><span class="pre">fx_name_max_chars</span></code>; the creator is <code class="docutils literal notranslate"><span class="pre">rights</span></code>’ author, else
+its provider; the source is foley’s source name; the UserData is the foley id
+(<a class="reference internal" href="#foley.provenance.rights.id_to_user_data" title="foley.provenance.rights.id_to_user_data"><code class="xref py py-func docutils literal notranslate"><span class="pre">id_to_user_data()</span></code></a>: injective, case-safe, reversible), so two exports of one
+library never share a name. The other blocks are cut to fit the filename limit
+(<code class="xref py py-data docutils literal notranslate"><span class="pre">UCS_NAME_MAX_BYTES</span></code>); the id is never cut.
+<a class="reference internal" href="foley.index.taxonomy.html#foley.index.taxonomy.parse_ucs_name" title="foley.index.taxonomy.parse_ucs_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">parse_ucs_name()</span></code></a> reads it back.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – the id alone does not fit in a filename.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.provenance.rights.id_from_user_data">
+<span class="sig-prename descclassname"><span class="pre">foley.provenance.rights.</span></span><span class="sig-name descname"><span class="pre">id_from_user_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/provenance/rights.html#id_from_user_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.provenance.rights.id_from_user_data" title="Link to this definition">#</a></dt>
+<dd><p>The foley id <a class="reference internal" href="#foley.provenance.rights.id_to_user_data" title="foley.provenance.rights.id_to_user_data"><code class="xref py py-func docutils literal notranslate"><span class="pre">id_to_user_data()</span></code></a> encoded as <code class="docutils literal notranslate"><span class="pre">block</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.provenance.rights.id_to_user_data">
+<span class="sig-prename descclassname"><span class="pre">foley.provenance.rights.</span></span><span class="sig-name descname"><span class="pre">id_to_user_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sound_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/provenance/rights.html#id_to_user_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.provenance.rights.id_to_user_data" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">sound_id</span></code> as a filename block, injectively: <a class="reference internal" href="#foley.provenance.rights.id_from_user_data" title="foley.provenance.rights.id_from_user_data"><code class="xref py py-func docutils literal notranslate"><span class="pre">id_from_user_data()</span></code></a> inverts it.</p>
+<p>Every character but lower-case ASCII letters, digits, <code class="docutils literal notranslate"><span class="pre">-</span></code> and <code class="docutils literal notranslate"><span class="pre">~</span></code> is
+percent-encoded (its UTF-8 bytes, upper-case hex), so the block holds no <code class="docutils literal notranslate"><span class="pre">_</span></code>,
+<code class="docutils literal notranslate"><span class="pre">.</span></code>, path or reserved character, and two ids never give names that differ only
+in case (which a case-insensitive filesystem, macOS or Windows, would merge).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">id_to_user_data</span><span class="p">(</span><span class="s2">"fs:1_A.b"</span><span class="p">),</span> <span class="n">id_from_user_data</span><span class="p">(</span><span class="s2">"fs%3A1</span><span class="si">%5F%41%</span><span class="s2">2Eb"</span><span class="p">)</span>
+<span class="go">('fs%3A1%5F%41%2Eb', 'fs:1_A.b')</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -764,10 +914,17 @@ recorded (the credit line falls back to the source name; a rights record does no
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.ASSET_SOURCE_EXTRAS"><code class="docutils literal notranslate"><span class="pre">ASSET_SOURCE_EXTRAS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.DEFAULT_EXPORT_FORMAT"><code class="docutils literal notranslate"><span class="pre">DEFAULT_EXPORT_FORMAT</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.EXPORT_OWNED_FIELDS"><code class="docutils literal notranslate"><span class="pre">EXPORT_OWNED_FIELDS</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.METADATA_FORMATS"><code class="docutils literal notranslate"><span class="pre">METADATA_FORMATS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.PROVENANCE_FIELDS"><code class="docutils literal notranslate"><span class="pre">PROVENANCE_FIELDS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.RIGHTS_FIELDS"><code class="docutils literal notranslate"><span class="pre">RIGHTS_FIELDS</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.UCS_FXNAME_MAX_CHARS"><code class="docutils literal notranslate"><span class="pre">UCS_FXNAME_MAX_CHARS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.excluded_territories"><code class="docutils literal notranslate"><span class="pre">excluded_territories()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.export_metadata"><code class="docutils literal notranslate"><span class="pre">export_metadata()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.export_sound"><code class="docutils literal notranslate"><span class="pre">export_sound()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.export_ucs_filename"><code class="docutils literal notranslate"><span class="pre">export_ucs_filename()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.id_from_user_data"><code class="docutils literal notranslate"><span class="pre">id_from_user_data()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.id_to_user_data"><code class="docutils literal notranslate"><span class="pre">id_to_user_data()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.rights_provider"><code class="docutils literal notranslate"><span class="pre">rights_provider()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.sound_provenance"><code class="docutils literal notranslate"><span class="pre">sound_provenance()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.sound_rights"><code class="docutils literal notranslate"><span class="pre">sound_rights()</span></code></a></li>

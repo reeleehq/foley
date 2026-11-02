@@ -13,6 +13,7 @@ foley.index.taxonomy
       default_ucs_table
       parse_ucs_filename
       parse_ucs_name
+      format_ucs_name
       parse_catid_token
       load_audioset_ucs_map
       default_audioset_ucs_map

@@ -14,13 +14,21 @@ foley.embedded\_metadata
       KEYWORD_SEPARATORS
       BEXT
       IXML
+      BEXT_FIXED_BYTES
+      IXML_ROOT
+      IXML_USER
+      IXML_VERSION
       FIELDS
       CHUNK_PARSERS
+      CHUNK_BUILDERS
+      INSERT_BEFORE
    
    .. rubric:: Functions
 
    .. autosummary::
    
+      build_bext
+      build_ixml
       chunks_from_fields
       fields_from_chunks
       iter_riff_chunks
@@ -31,6 +39,8 @@ foley.embedded\_metadata
       read_metadata_chunks
       split_keywords
       unique_words
+      write_embedded_metadata
+      write_metadata_chunks
    
    .. rubric:: Classes
 

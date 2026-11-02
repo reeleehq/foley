@@ -10,12 +10,16 @@ foley.index.taxonomy.ucs
    
       UCS_MASTER_FILE
       BLOCK_SEP
+      UCS_NAME_BLOCKS
+      UCS_NAME_MAX_BYTES
+      UCS_SHORTENABLE_BLOCKS
    
    .. rubric:: Functions
 
    .. autosummary::
    
       default_ucs_table
+      format_ucs_name
       load_ucs_master
       load_ucs_table
       looks_like_vendor_tag

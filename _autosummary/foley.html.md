@@ -159,7 +159,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`credits_for`](#foley.credits_for)(sounds, \*[, title, ...])               | Build the deduplicated [`Credits`](#foley.Credits) for the sounds used in a run.                                                                  |
 | [`attribution_line`](#foley.attribution_line)(source, \*[, fmt])                 | Render one sound's TASL attribution line.                                                                                                                                      |
 | [`credit_entry`](#foley.credit_entry)(record, \*[, title])                   | Build a [`CreditEntry`](#foley.CreditEntry) from a record (title override optional).                                                                  |
-| [`export_sound`](#foley.export_sound)(sound_id[, fmt, library, subtype])     | Export a sound's bytes as `fmt` with its rights and provenance (#66).                                                                                                          |
+| [`export_sound`](#foley.export_sound)(sound_id[, fmt, library, ...])         | Export a sound's bytes as `fmt` with its rights and provenance (#66, #231).                                                                                                    |
 
 ### Classes
 
@@ -2618,14 +2618,15 @@ Ring-0 fixture with the deterministic fake judge — no network, key, or heavy d
 * **Returns:**
   A [`foley.eval.FitReport`](foley.eval.html.md#foley.eval.FitReport).
 
-### foley.export_sound(sound_id, fmt='wav', , library=None, subtype=None)
+### foley.export_sound(sound_id, fmt='wav', , library=None, subtype=None, embed_metadata=True, ucs_filename=True, ucs_table=None)
 
-Export a sound’s bytes as `fmt` with its rights and provenance (#66).
+Export a sound’s bytes as `fmt` with its rights and provenance (#66, #231).
 
 The sound’s bytes are fetched from `library`, checked against the record’s
 content hash, and re-encoded ([`foley.audio.transcode()`](foley.audio.html.md#foley.audio.transcode): PCM, the archive’s
 own depth where `fmt` allows, so a `PCM_24` FLAC gives a sample-exact
-`PCM_24` WAV; bytes already in `fmt` come back untouched).
+`PCM_24` WAV; bytes already in `fmt` and subtype are not re-encoded). A WAV
+then gets its `bext` / `iXML` metadata (`export_metadata()`).
 
 * **Parameters:**
   * **sound_id** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The record id in `library`.
@@ -2633,9 +2634,24 @@ own depth where `fmt` allows, so a `PCM_24` FLAC gives a sample-exact
   * **library** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`SoundLibrary`](foley.index.library.html.md#foley.index.library.SoundLibrary)]) – The [`SoundLibrary`](foley.index.library.html.md#foley.index.library.SoundLibrary) to read (default:
     [`foley.default_library()`](#foley.default_library)).
   * **subtype** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The sample format (default: [`foley.audio.export_subtype()`](foley.audio.html.md#foley.audio.export_subtype)).
+  * **embed_metadata** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Write `bext` / `iXML` into a WAV export (default on: it
+    adds chunks only, never touches the samples, and makes the file carry
+    its own credit; other formats, and a WAV the writer refuses, such as a
+    streamed one sized `0xFFFFFFFF`, are left as encoded, with a note).
+    The licence fields (`EXPORT_OWNED_FIELDS`) are foley’s: a source
+    file’s value is removed when `rights` has none.
+  * **ucs_filename** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Put the UCS filename in `provenance["filename"]` (default on:
+    it is only a suggestion, so it costs a consumer nothing to ignore). The
+    embedded UCS fields do not depend on it: they follow `embed_metadata`.
+  * **ucs_table** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsTable`](foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)]) – The UCS table the CatID is resolved in (default:
+    [`foley.index.taxonomy.default_ucs_table()`](foley.index.taxonomy.html.md#foley.index.taxonomy.default_ucs_table)).
 * **Returns:**
   `rights` from `sound_rights()`,
-  `provenance` from `sound_provenance()`.
+  `provenance` from `sound_provenance()`, plus `filename` (the UCS
+  filename, or `None`), `embedded` (the chunks written: `['ixml',
+  'bext']`, or `[]`) and `export_notes` (why a filename or chunks are
+  missing, and what of a source file’s own metadata was not kept).
+  `provenance["sha256"]` is the hash of the bytes returned.
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 * **Raises:**
@@ -4058,7 +4074,7 @@ escalates to the injected/​default judge for that rung and returns *its* verdi
 | [`base`](foley.base.html.md#module-foley.base)                           | Canonical data models for foley — the single source of truth (SSOT) types.                                                                           |
 | [`cli`](foley.cli.html.md#module-foley.cli)                             | The `foley` command-line interface (`argparse`, the verbs generated by `cw`).                                                                        |
 | [`cost`](foley.cost.html.md#module-foley.cost)                           | Cost: what a call will cost before it is made, and a cumulative cap on a run (#57).                                                                  |
-| [`embedded_metadata`](foley.embedded_metadata.html.md#module-foley.embedded_metadata) | What a pro sound file says about itself: Broadcast-WAV `bext` and iXML (#228).                                                                       |
+| [`embedded_metadata`](foley.embedded_metadata.html.md#module-foley.embedded_metadata) | What a pro sound file says about itself: Broadcast-WAV `bext` and iXML (#228, #231).                                                                 |
 | [`level`](foley.level.html.md#module-foley.level)                         | Level a clip to a stated loudness target for its class, so relative levels are sane.                                                                 |
 | [`licensing`](foley.licensing.html.md#module-foley.licensing)                 | License policy for foley: the license_id -> flag-set SSOT, flag derivation (with per-source overrides), and the fail-closed candidate `keep()` gate. |
 | [`prompt_match`](foley.prompt_match.html.md#module-foley.prompt_match)           | Does a generated clip sound like what was asked for? A text-audio check, or an honest "unchecked".                                                   |

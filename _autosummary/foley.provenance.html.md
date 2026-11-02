@@ -21,17 +21,21 @@ reach the pure helpers via `foley.art50_checklist` / `foley.scan_prompt`.
 
 ### Functions
 
-| [`attribution_line`](#foley.provenance.attribution_line)(source, \*[, fmt])                | Render one sound's TASL attribution line.                                                                     |
-|-----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
-| [`credit_entry`](#foley.provenance.credit_entry)(record, \*[, title])                  | Build a [`CreditEntry`](#foley.provenance.CreditEntry) from a record (title override optional). |
-| [`credits_for`](#foley.provenance.credits_for)(sounds, \*[, title, ...])              | Build the deduplicated [`Credits`](#foley.provenance.Credits) for the sounds used in a run. |
-| [`credits_manifest`](#foley.provenance.credits_manifest)(credits)                          | The machine-readable manifest for `credits` — a JSON-native dict.                                             |
-| [`export_sound`](#foley.provenance.export_sound)(sound_id[, fmt, library, subtype])    | Export a sound's bytes as `fmt` with its rights and provenance (#66).                                         |
-| [`make_c2pa_signer`](#foley.provenance.make_c2pa_signer)(cert_chain_pem, ...[, alg, ...])  | A `c2pa.Signer` for `foley.weave(..., sign_cert=...)` from a cert chain and key.                              |
-| [`make_self_signed_c2pa_certs`](#foley.provenance.make_self_signed_c2pa_certs)(\*[, ...])             | A throwaway C2PA-conformant `(cert_chain_pem, private_key_pem)` for dev and tests.                            |
-| [`render_credits_md`](#foley.provenance.render_credits_md)(credits, \*[, title, ...])       | Render `credits` as a deterministic `CREDITS.md` document.                                                    |
-| [`sound_provenance`](#foley.provenance.sound_provenance)(record, \*, archived_sha256, ...) | What an export must carry that `Rights` has no field for (JSON-native).                                       |
-| [`sound_rights`](#foley.provenance.sound_rights)(record)                               | `record`'s rights as a dict keyed by `lacing.Rights` field names.                                             |
+| [`attribution_line`](#foley.provenance.attribution_line)(source, \*[, fmt])                | Render one sound's TASL attribution line.                                                                                                           |
+|-----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`credit_entry`](#foley.provenance.credit_entry)(record, \*[, title])                  | Build a [`CreditEntry`](#foley.provenance.CreditEntry) from a record (title override optional).                                       |
+| [`credits_for`](#foley.provenance.credits_for)(sounds, \*[, title, ...])              | Build the deduplicated [`Credits`](#foley.provenance.Credits) for the sounds used in a run.                                       |
+| [`credits_manifest`](#foley.provenance.credits_manifest)(credits)                          | The machine-readable manifest for `credits` — a JSON-native dict.                                                                                   |
+| [`export_metadata`](#foley.provenance.export_metadata)(record, rights[, ucs_name])        | The fields an export embeds ([`foley.embedded_metadata.FIELDS`](foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) names). |
+| [`export_sound`](#foley.provenance.export_sound)(sound_id[, fmt, library, ...])        | Export a sound's bytes as `fmt` with its rights and provenance (#66, #231).                                                                         |
+| [`export_ucs_filename`](#foley.provenance.export_ucs_filename)(record, rights, \*[, ...])     | The UCS filename of `record`'s export, or `None` when it has no CatID in `table`.                                                                   |
+| [`id_from_user_data`](#foley.provenance.id_from_user_data)(block)                           | The foley id [`id_to_user_data()`](#foley.provenance.id_to_user_data) encoded as `block`.                                                 |
+| [`id_to_user_data`](#foley.provenance.id_to_user_data)(sound_id)                          | `sound_id` as a filename block, injectively: [`id_from_user_data()`](#foley.provenance.id_from_user_data) inverts it.                       |
+| [`make_c2pa_signer`](#foley.provenance.make_c2pa_signer)(cert_chain_pem, ...[, alg, ...])  | A `c2pa.Signer` for `foley.weave(..., sign_cert=...)` from a cert chain and key.                                                                    |
+| [`make_self_signed_c2pa_certs`](#foley.provenance.make_self_signed_c2pa_certs)(\*[, ...])             | A throwaway C2PA-conformant `(cert_chain_pem, private_key_pem)` for dev and tests.                                                                  |
+| [`render_credits_md`](#foley.provenance.render_credits_md)(credits, \*[, title, ...])       | Render `credits` as a deterministic `CREDITS.md` document.                                                                                          |
+| [`sound_provenance`](#foley.provenance.sound_provenance)(record, \*, archived_sha256, ...) | What an export must carry that `Rights` has no field for (JSON-native).                                                                             |
+| [`sound_rights`](#foley.provenance.sound_rights)(record)                               | `record`'s rights as a dict keyed by `lacing.Rights` field names.                                                                                   |
 
 ### Classes
 
@@ -137,14 +141,27 @@ the `watermark` / `c2pa_manifest_ref` pass-throughs (`None` until #9b).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### foley.provenance.export_sound(sound_id, fmt='wav', , library=None, subtype=None)
+### foley.provenance.export_metadata(record, rights, ucs_name=None)
 
-Export a sound’s bytes as `fmt` with its rights and provenance (#66).
+The fields an export embeds ([`foley.embedded_metadata.FIELDS`](foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) names).
+
+The caption and tags, the UCS fields of `ucs_name` (the parse of the export’s
+filename, so the file and its name agree), the designer (`rights`’ author) and
+`rights`’ licence, licence URL and attribution line, verbatim. Empty values are
+left out by the writer.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.provenance.export_sound(sound_id, fmt='wav', , library=None, subtype=None, embed_metadata=True, ucs_filename=True, ucs_table=None)
+
+Export a sound’s bytes as `fmt` with its rights and provenance (#66, #231).
 
 The sound’s bytes are fetched from `library`, checked against the record’s
 content hash, and re-encoded ([`foley.audio.transcode()`](foley.audio.html.md#foley.audio.transcode): PCM, the archive’s
 own depth where `fmt` allows, so a `PCM_24` FLAC gives a sample-exact
-`PCM_24` WAV; bytes already in `fmt` come back untouched).
+`PCM_24` WAV; bytes already in `fmt` and subtype are not re-encoded). A WAV
+then gets its `bext` / `iXML` metadata ([`export_metadata()`](#foley.provenance.export_metadata)).
 
 * **Parameters:**
   * **sound_id** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The record id in `library`.
@@ -152,9 +169,24 @@ own depth where `fmt` allows, so a `PCM_24` FLAC gives a sample-exact
   * **library** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`SoundLibrary`](foley.index.library.html.md#foley.index.library.SoundLibrary)]) – The [`SoundLibrary`](foley.index.library.html.md#foley.index.library.SoundLibrary) to read (default:
     [`foley.default_library()`](foley.html.md#foley.default_library)).
   * **subtype** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The sample format (default: [`foley.audio.export_subtype()`](foley.audio.html.md#foley.audio.export_subtype)).
+  * **embed_metadata** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Write `bext` / `iXML` into a WAV export (default on: it
+    adds chunks only, never touches the samples, and makes the file carry
+    its own credit; other formats, and a WAV the writer refuses, such as a
+    streamed one sized `0xFFFFFFFF`, are left as encoded, with a note).
+    The licence fields (`EXPORT_OWNED_FIELDS`) are foley’s: a source
+    file’s value is removed when `rights` has none.
+  * **ucs_filename** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Put the UCS filename in `provenance["filename"]` (default on:
+    it is only a suggestion, so it costs a consumer nothing to ignore). The
+    embedded UCS fields do not depend on it: they follow `embed_metadata`.
+  * **ucs_table** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsTable`](foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)]) – The UCS table the CatID is resolved in (default:
+    [`foley.index.taxonomy.default_ucs_table()`](foley.index.taxonomy.html.md#foley.index.taxonomy.default_ucs_table)).
 * **Returns:**
   `rights` from [`sound_rights()`](#foley.provenance.sound_rights),
-  `provenance` from [`sound_provenance()`](#foley.provenance.sound_provenance).
+  `provenance` from [`sound_provenance()`](#foley.provenance.sound_provenance), plus `filename` (the UCS
+  filename, or `None`), `embedded` (the chunks written: `['ixml',
+  'bext']`, or `[]`) and `export_notes` (why a filename or chunks are
+  missing, and what of a source file’s own metadata was not kept).
+  `provenance["sha256"]` is the hash of the bytes returned.
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 * **Raises:**
@@ -163,6 +195,49 @@ own depth where `fmt` allows, so a `PCM_24` FLAC gives a sample-exact
         (`cache_bytes_ok=False`).
   * [**LookupError**](https://docs.python.org/3/builtins/exceptions.html#LookupError) – the bytes are not available locally.
   * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – the record names no content hash, or the bytes no longer match it.
+
+### foley.provenance.export_ucs_filename(record, rights, , ext='wav', table=None, fx_name_max_chars=25)
+
+The UCS filename of `record`’s export, or `None` when it has no CatID in `table`.
+
+`CatID_FXName_CreatorID_SourceID_UserData.ext`: the CatID is
+`record.ucs_category` (which holds the CatID), looked up in `table` (default:
+[`foley.index.taxonomy.default_ucs_table()`](foley.index.taxonomy.html.md#foley.index.taxonomy.default_ucs_table)); the FXName is the caption (else
+the tags) cut to `fx_name_max_chars`; the creator is `rights`’ author, else
+its provider; the source is foley’s source name; the UserData is the foley id
+([`id_to_user_data()`](#foley.provenance.id_to_user_data): injective, case-safe, reversible), so two exports of one
+library never share a name. The other blocks are cut to fit the filename limit
+(`UCS_NAME_MAX_BYTES`); the id is never cut.
+[`parse_ucs_name()`](foley.index.taxonomy.html.md#foley.index.taxonomy.parse_ucs_name) reads it back.
+
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – the id alone does not fit in a filename.
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.provenance.id_from_user_data(block)
+
+The foley id [`id_to_user_data()`](#foley.provenance.id_to_user_data) encoded as `block`.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.provenance.id_to_user_data(sound_id)
+
+`sound_id` as a filename block, injectively: [`id_from_user_data()`](#foley.provenance.id_from_user_data) inverts it.
+
+Every character but lower-case ASCII letters, digits, `-` and `~` is
+percent-encoded (its UTF-8 bytes, upper-case hex), so the block holds no `_`,
+`.`, path or reserved character, and two ids never give names that differ only
+in case (which a case-insensitive filesystem, macOS or Windows, would merge).
+
+```pycon
+>>> id_to_user_data("fs:1_A.b"), id_from_user_data("fs%3A1%5F%41%2Eb")
+('fs%3A1%5F%41%2Eb', 'fs:1_A.b')
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### foley.provenance.make_c2pa_signer(cert_chain_pem, private_key_pem, , alg='es256', tsa_url=None, password=None)
 

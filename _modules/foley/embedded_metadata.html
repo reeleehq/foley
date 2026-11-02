@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=3893778a"></script>
+    <script src="../../_static/documentation_options.js?v=9cebf393"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.114" />
+  <meta name="docsearch:version" content="0.0.115" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -715,7 +715,7 @@ window.runMermaid = runMermaid;</script>
                 <article class="bd-article">
                   
   <h1>Source code for foley.embedded_metadata</h1><div class="highlight"><pre>
-<span></span><span class="sd">"""What a pro sound file says about itself: Broadcast-WAV ``bext`` and iXML (#228).</span>
+<span></span><span class="sd">"""What a pro sound file says about itself: Broadcast-WAV ``bext`` and iXML (#228, #231).</span>
 
 <span class="sd">Commercial packs (BOOM, Pro Sound Effects, Sonniss GDC) describe each file inside it:</span>
 <span class="sd">the EBU Broadcast-WAV ``bext`` chunk (``Description``, ``Originator``, the origination</span>
@@ -730,6 +730,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">Only the fields the file has are present. A file that is not a RIFF / RF64 / BW64 WAVE,</span>
 <span class="sd">or has neither chunk, gives ``{}``; a missing file raises :class:`FileNotFoundError`.</span>
 
+<span class="sd">:func:`write_embedded_metadata` is the other direction (#231): it puts foley's fields</span>
+<span class="sd">into a RIFF WAV's ``bext`` and ``iXML`` chunks, replacing the fields it writes and</span>
+<span class="sd">keeping the rest of each chunk, and leaves the audio bytes as they are.</span>
+
 <span class="sd">:data:`FIELDS` is the one table between the chunks and foley's names, both ways: each</span>
 <span class="sd">:class:`Field` has a canonical ``write`` location (where an exporter puts the value,</span>
 <span class="sd">and where a reader looks first) and ordered ``read_also`` fallbacks, plus the</span>
@@ -737,7 +741,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">:func:`fields_from_chunks` and :func:`chunks_from_fields` are its two directions, so</span>
 <span class="sd">the writer of #231 reuses the table rather than inverting it. The names are foley's</span>
 <span class="sd">(``caption``, ``tags``, ``ucs_*`` as on :class:`~foley.base.SoundRecord` /</span>
-<span class="sd">:class:`~foley.base.SoundEvent`, ``fx_name`` as on the UCS filename parse).</span>
+<span class="sd">:class:`~foley.base.SoundEvent`, ``fx_name`` as on the UCS filename parse, and</span>
+<span class="sd">``license`` / ``license_url`` / ``attribution`` as in the rights dict of</span>
+<span class="sd">:func:`foley.export_sound`).</span>
+
+<span class="sd">The caption is also written to bext ``Description`` (cut to its 256 bytes on a</span>
+<span class="sd">character boundary): DAWs and most library tools (Pro Tools, BaseHead, Soundly) show</span>
+<span class="sd">the BWF Description, while the iXML ``DESCRIPTION`` keeps the whole caption and is read</span>
+<span class="sd">first, so a long caption still reads back whole.</span>
 
 <span class="sd">This module sits beside :mod:`foley.audio` rather than in :mod:`foley.index`: it is</span>
 <span class="sd">file-format I/O that both ingest (reading) and export (writing) use, stdlib-only.</span>
@@ -745,11 +756,12 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">struct</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xml.etree.ElementTree</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ET</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">BinaryIO</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Mapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">BinaryIO</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span>
 
 <span class="c1">#: The RIFF form types read: classic RIFF, EBU RF64 (Tech 3306), ITU-R BS.2088 BW64.</span>
 <span class="n">RIFF_FORMS</span> <span class="o">=</span> <span class="p">(</span><span class="sa">b</span><span class="s2">"RIFF"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"RF64"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"BW64"</span><span class="p">)</span>
@@ -772,6 +784,12 @@ window.runMermaid = runMermaid;</script>
 
 <span class="c1">#: The names :data:`FIELDS` locations use for the two chunks (also the ``raw`` keys).</span>
 <span class="n">BEXT</span><span class="p">,</span> <span class="n">IXML</span> <span class="o">=</span> <span class="s2">"bext"</span><span class="p">,</span> <span class="s2">"ixml"</span>
+
+<span class="c1">#: The size of a ``bext`` chunk's fixed part (EBU Tech 3285), before its CodingHistory.</span>
+<span class="n">BEXT_FIXED_BYTES</span> <span class="o">=</span> <span class="mi">602</span>
+
+<span class="c1">#: The root and ``&lt;USER&gt;`` tags of a new iXML document, and the iXML version it states.</span>
+<span class="n">IXML_ROOT</span><span class="p">,</span> <span class="n">IXML_USER</span><span class="p">,</span> <span class="n">IXML_VERSION</span> <span class="o">=</span> <span class="s2">"BWFXML"</span><span class="p">,</span> <span class="s2">"USER"</span><span class="p">,</span> <span class="s2">"1.61"</span>
 
 <span class="c1">#: The 32-bit size RF64 / BW64 write for a chunk whose real size is in ``ds64``.</span>
 <span class="n">_SIZE_PLACEHOLDER</span> <span class="o">=</span> <span class="mh">0xFFFFFFFF</span>
@@ -844,7 +862,8 @@ window.runMermaid = runMermaid;</script>
 <span class="w">    </span><span class="sd">"""One foley field and where it lives in a WAV's metadata chunks.</span>
 
 <span class="sd">    ``write`` is the canonical location: a writer puts the value there and a reader</span>
-<span class="sd">    looks there first. ``read_also`` are read-only fallbacks, tried in order.</span>
+<span class="sd">    looks there first. ``write_also`` are copies a writer also fills (for tools that</span>
+<span class="sd">    read only there), read next. ``read_also`` are read-only fallbacks, tried in order.</span>
 <span class="sd">    ``decode`` turns the stored text into foley's value; ``encode`` turns it back.</span>
 <span class="sd">    """</span>
 
@@ -853,11 +872,17 @@ window.runMermaid = runMermaid;</script>
     <span class="n">read_also</span><span class="p">:</span> <span class="s2">"tuple[Location, ...]"</span> <span class="o">=</span> <span class="p">()</span>
     <span class="n">decode</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span>
     <span class="n">encode</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span>
+    <span class="n">write_also</span><span class="p">:</span> <span class="s2">"tuple[Location, ...]"</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_to</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[Location, ...]"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Every location a writer fills: the canonical one, then its copies."""</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">write_also</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">read_from</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[Location, ...]"</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Every location a reader tries, canonical first."""</span>
-        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">read_also</span><span class="p">)</span></div>
+<span class="w">        </span><span class="sd">"""Every location a reader tries: where it is written, then the fallbacks."""</span>
+        <span class="k">return</span> <span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">write_to</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">read_also</span><span class="p">)</span></div>
 
 
 
@@ -866,7 +891,8 @@ window.runMermaid = runMermaid;</script>
     <span class="n">Field</span><span class="p">(</span>
         <span class="s2">"caption"</span><span class="p">,</span>
         <span class="n">Location</span><span class="p">(</span><span class="n">IXML</span><span class="p">,</span> <span class="s2">"DESCRIPTION"</span><span class="p">),</span>
-        <span class="n">read_also</span><span class="o">=</span><span class="p">(</span><span class="n">Location</span><span class="p">(</span><span class="n">BEXT</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">),</span> <span class="n">Location</span><span class="p">(</span><span class="n">IXML</span><span class="p">,</span> <span class="s2">"FXNAME"</span><span class="p">)),</span>
+        <span class="n">write_also</span><span class="o">=</span><span class="p">(</span><span class="n">Location</span><span class="p">(</span><span class="n">BEXT</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">),),</span>
+        <span class="n">read_also</span><span class="o">=</span><span class="p">(</span><span class="n">Location</span><span class="p">(</span><span class="n">IXML</span><span class="p">,</span> <span class="s2">"FXNAME"</span><span class="p">),),</span>
     <span class="p">),</span>
     <span class="n">Field</span><span class="p">(</span>
         <span class="s2">"tags"</span><span class="p">,</span> <span class="n">Location</span><span class="p">(</span><span class="n">IXML</span><span class="p">,</span> <span class="s2">"KEYWORDS"</span><span class="p">),</span> <span class="n">decode</span><span class="o">=</span><span class="n">split_keywords</span><span class="p">,</span> <span class="n">encode</span><span class="o">=</span><span class="n">join_keywords</span>
@@ -882,6 +908,9 @@ window.runMermaid = runMermaid;</script>
         <span class="n">read_also</span><span class="o">=</span><span class="p">(</span><span class="n">Location</span><span class="p">(</span><span class="n">BEXT</span><span class="p">,</span> <span class="s2">"originator"</span><span class="p">),),</span>
     <span class="p">),</span>
     <span class="n">Field</span><span class="p">(</span><span class="s2">"designer"</span><span class="p">,</span> <span class="n">Location</span><span class="p">(</span><span class="n">IXML</span><span class="p">,</span> <span class="s2">"DESIGNER"</span><span class="p">)),</span>
+    <span class="n">Field</span><span class="p">(</span><span class="s2">"license"</span><span class="p">,</span> <span class="n">Location</span><span class="p">(</span><span class="n">IXML</span><span class="p">,</span> <span class="s2">"LICENSE"</span><span class="p">)),</span>
+    <span class="n">Field</span><span class="p">(</span><span class="s2">"license_url"</span><span class="p">,</span> <span class="n">Location</span><span class="p">(</span><span class="n">IXML</span><span class="p">,</span> <span class="s2">"LICENSE_URL"</span><span class="p">)),</span>
+    <span class="n">Field</span><span class="p">(</span><span class="s2">"attribution"</span><span class="p">,</span> <span class="n">Location</span><span class="p">(</span><span class="n">IXML</span><span class="p">,</span> <span class="s2">"ATTRIBUTION"</span><span class="p">)),</span>
 <span class="p">)</span>
 
 
@@ -906,17 +935,25 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="chunks_from_fields">
 <a class="viewcode-back" href="../../_autosummary/foley.embedded_metadata.html#foley.embedded_metadata.chunks_from_fields">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">chunks_from_fields</span><span class="p">(</span><span class="n">meta</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="n">FIELDS</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"dict[str, dict[str, str]]"</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Where a writer puts each of foley's fields: ``{chunk: {key: text}}``, canonical only.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">chunks_from_fields</span><span class="p">(</span>
+    <span class="n">meta</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="n">FIELDS</span><span class="p">,</span> <span class="n">clear</span><span class="o">=</span><span class="p">()</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"dict[str, dict[str, Optional[str]]]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Where a writer puts each of foley's fields: ``{chunk: {key: text}}`` (``write_to``).</span>
+
+<span class="sd">    A field named in ``clear`` that ``meta`` has no value for maps to ``None``: the</span>
+<span class="sd">    writer removes it, so a file never keeps a stale value of a field the caller owns.</span>
 
 <span class="sd">    &gt;&gt;&gt; chunks_from_fields({"caption": "Rain", "tags": ["a", "b"], "other": 1})</span>
-<span class="sd">    {'ixml': {'DESCRIPTION': 'Rain', 'KEYWORDS': 'a, b'}}</span>
+<span class="sd">    {'ixml': {'DESCRIPTION': 'Rain', 'KEYWORDS': 'a, b'}, 'bext': {'description': 'Rain'}}</span>
+<span class="sd">    &gt;&gt;&gt; chunks_from_fields({"license": None}, clear=["license"])</span>
+<span class="sd">    {'ixml': {'LICENSE': None}}</span>
 <span class="sd">    """</span>
-    <span class="n">out</span><span class="p">:</span> <span class="s2">"dict[str, dict[str, str]]"</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">out</span><span class="p">:</span> <span class="s2">"dict[str, dict[str, Optional[str]]]"</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">fld</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
         <span class="n">text</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">meta</span><span class="p">[</span><span class="n">fld</span><span class="o">.</span><span class="n">name</span><span class="p">])</span> <span class="k">if</span> <span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">fld</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="k">else</span> <span class="s2">""</span>
-        <span class="k">if</span> <span class="n">text</span><span class="p">:</span>
-            <span class="n">out</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">fld</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">chunk</span><span class="p">,</span> <span class="p">{})[</span><span class="n">fld</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">text</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">text</span> <span class="ow">or</span> <span class="p">(</span><span class="kc">None</span> <span class="k">if</span> <span class="n">fld</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">clear</span> <span class="k">else</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">loc</span> <span class="ow">in</span> <span class="n">fld</span><span class="o">.</span><span class="n">write_to</span> <span class="k">if</span> <span class="n">value</span> <span class="o">!=</span> <span class="s2">""</span> <span class="k">else</span> <span class="p">():</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">loc</span><span class="o">.</span><span class="n">chunk</span><span class="p">,</span> <span class="p">{})[</span><span class="n">loc</span><span class="o">.</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
     <span class="k">return</span> <span class="n">out</span></div>
 
 
@@ -957,13 +994,17 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="iter_riff_chunks">
 <a class="viewcode-back" href="../../_autosummary/foley.embedded_metadata.html#foley.embedded_metadata.iter_riff_chunks">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">iter_riff_chunks</span><span class="p">(</span>
-    <span class="n">f</span><span class="p">:</span> <span class="n">BinaryIO</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">forms</span><span class="o">=</span><span class="n">RIFF_FORMS</span>
+    <span class="n">f</span><span class="p">:</span> <span class="n">BinaryIO</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">forms</span><span class="o">=</span><span class="n">RIFF_FORMS</span><span class="p">,</span> <span class="n">stop_at_declared_end</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Iterator[tuple[bytes, int, int]]"</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""``(chunk_id, offset, size)`` for each top-level chunk of a RIFF / RF64 / BW64 WAVE.</span>
 
 <span class="sd">    Walks the chunk headers with seeks, never reading the audio, so a large file costs</span>
-<span class="sd">    a few small reads. Stops quietly at a truncated chunk. For RF64 / BW64, a ``data``</span>
-<span class="sd">    chunk sized ``0xFFFFFFFF`` takes its real size from ``ds64``'s ``dataSize``.</span>
+<span class="sd">    a few small reads. Stops quietly at a truncated chunk. ``stop_at_declared_end``</span>
+<span class="sd">    also stops at the RIFF's declared end when that is inside the file: a writer must</span>
+<span class="sd">    not fold trailing bytes into the WAVE, while a reader keeps going, since many files</span>
+<span class="sd">    understate their RIFF size and still carry ``bext`` / iXML after it. For RF64 /</span>
+<span class="sd">    BW64, a ``data`` chunk sized ``0xFFFFFFFF`` takes its real size from ``ds64``'s</span>
+<span class="sd">    ``dataSize``.</span>
 
 <span class="sd">    &gt;&gt;&gt; import io</span>
 <span class="sd">    &gt;&gt;&gt; body = b"WAVE" + b"abcd" + struct.pack("&lt;I", 1) + b"x\\0"</span>
@@ -976,6 +1017,9 @@ window.runMermaid = runMermaid;</script>
     <span class="n">head</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">head</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">12</span> <span class="ow">or</span> <span class="n">head</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">forms</span> <span class="ow">or</span> <span class="n">head</span><span class="p">[</span><span class="mi">8</span><span class="p">:</span><span class="mi">12</span><span class="p">]</span> <span class="o">!=</span> <span class="sa">b</span><span class="s2">"WAVE"</span><span class="p">:</span>
         <span class="k">return</span>
+    <span class="n">declared_end</span> <span class="o">=</span> <span class="mi">8</span> <span class="o">+</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s2">"&lt;I"</span><span class="p">,</span> <span class="n">head</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="mi">8</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">stop_at_declared_end</span> <span class="ow">and</span> <span class="mi">12</span> <span class="o">&lt;</span> <span class="n">declared_end</span> <span class="o">&lt;</span> <span class="n">total</span><span class="p">:</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="n">declared_end</span>
     <span class="n">pos</span><span class="p">,</span> <span class="n">data_size</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span> <span class="kc">None</span>
     <span class="k">while</span> <span class="n">pos</span> <span class="o">+</span> <span class="mi">8</span> <span class="o">&lt;=</span> <span class="n">total</span><span class="p">:</span>
         <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span>
@@ -1060,7 +1104,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">root</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">fromstring</span><span class="p">(</span><span class="n">_xml_document</span><span class="p">(</span><span class="n">payload</span><span class="p">))</span>
     <span class="k">except</span> <span class="p">(</span><span class="n">ET</span><span class="o">.</span><span class="n">ParseError</span><span class="p">,</span> <span class="ne">LookupError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">{}</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">el</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">root</span> <span class="k">if</span> <span class="n">el</span><span class="o">.</span><span class="n">tag</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"USER"</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>  <span class="c1"># or &lt;user&gt;</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">el</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">root</span> <span class="k">if</span> <span class="n">el</span><span class="o">.</span><span class="n">tag</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="n">IXML_USER</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>  <span class="c1"># or &lt;user&gt;</span>
     <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">{}</span>
     <span class="n">pairs</span> <span class="o">=</span> <span class="p">((</span><span class="n">child</span><span class="o">.</span><span class="n">tag</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">child</span><span class="o">.</span><span class="n">itertext</span><span class="p">())</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">user</span><span class="p">)</span>
@@ -1077,6 +1121,13 @@ window.runMermaid = runMermaid;</script>
 <span class="c1"># --------------------------------------------------------------------------------------</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_open_wav</span><span class="p">(</span><span class="n">src</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BinaryIO</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A binary file object over ``src``: a path, or the WAV's bytes."""</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="p">(</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">,</span> <span class="nb">memoryview</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">open</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="s2">"rb"</span><span class="p">)</span>
+
+
 <div class="viewcode-block" id="read_metadata_chunks">
 <a class="viewcode-back" href="../../_autosummary/foley.embedded_metadata.html#foley.embedded_metadata.read_metadata_chunks">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">read_metadata_chunks</span><span class="p">(</span>
@@ -1084,12 +1135,13 @@ window.runMermaid = runMermaid;</script>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"dict[str, dict[str, str]]"</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The parsed, non-empty metadata chunks of a WAV (``{"bext": ..., "ixml": ...}``).</span>
 
-<span class="sd">    Chunks larger than ``max_chunk_bytes`` are skipped unread. A file that is not a</span>
-<span class="sd">    WAV gives ``{}``; one that cannot be opened (missing, a directory, no permission)</span>
-<span class="sd">    raises the ``OSError``, so a wrong path is not mistaken for a file without metadata.</span>
+<span class="sd">    ``path`` is a file path or the WAV's bytes. Chunks larger than ``max_chunk_bytes``</span>
+<span class="sd">    are skipped unread. A file that is not a WAV gives ``{}``; one that cannot be</span>
+<span class="sd">    opened (missing, a directory, no permission) raises the ``OSError``, so a wrong</span>
+<span class="sd">    path is not mistaken for a file without metadata.</span>
 <span class="sd">    """</span>
     <span class="n">raw</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">_open_wav</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">chunk_id</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">size</span> <span class="ow">in</span> <span class="n">iter_riff_chunks</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">chunk_id</span> <span class="ow">in</span> <span class="n">parsers</span> <span class="ow">and</span> <span class="n">size</span> <span class="o">&lt;=</span> <span class="n">max_chunk_bytes</span><span class="p">:</span>
                 <span class="n">name</span><span class="p">,</span> <span class="n">parse</span> <span class="o">=</span> <span class="n">parsers</span><span class="p">[</span><span class="n">chunk_id</span><span class="p">]</span>
@@ -1106,6 +1158,8 @@ window.runMermaid = runMermaid;</script>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""foley's view of a WAV's ``bext`` and iXML metadata (see the module docs), or ``{}``.</span>
 
+<span class="sd">    ``path`` is a file path or the WAV's bytes.</span>
+
 <span class="sd">    &gt;&gt;&gt; read_embedded_metadata(__file__)  # not a WAV</span>
 <span class="sd">    {}</span>
 <span class="sd">    """</span>
@@ -1113,6 +1167,232 @@ window.runMermaid = runMermaid;</script>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">raw</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">{}</span>
     <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">fields_from_chunks</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="n">fields</span><span class="p">),</span> <span class="s2">"raw"</span><span class="p">:</span> <span class="n">raw</span><span class="p">}</span></div>
+
+
+
+<span class="c1"># --------------------------------------------------------------------------------------</span>
+<span class="c1"># Chunk builders and the writer (#231)</span>
+<span class="c1"># --------------------------------------------------------------------------------------</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_fixed_width</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``text`` as UTF-8 in ``width`` bytes, NUL-padded, cut before a character that</span>
+<span class="sd">    would not fit whole.</span>
+
+<span class="sd">    &gt;&gt;&gt; _fixed_width("café", 4), _fixed_width("ab", 4)</span>
+<span class="sd">    (b'caf\\x00', b'ab\\x00\\x00')</span>
+<span class="sd">    """</span>
+    <span class="n">cut</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)[:</span><span class="n">width</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="s2">"ignore"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">cut</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"</span><span class="se">\0</span><span class="s2">"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_ignore</span><span class="p">(</span><span class="n">note</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The default ``report``: drop the note."""</span>
+
+
+<div class="viewcode-block" id="build_bext">
+<a class="viewcode-back" href="../../_autosummary/foley.embedded_metadata.html#foley.embedded_metadata.build_bext">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_bext</span><span class="p">(</span>
+    <span class="n">fields</span><span class="p">:</span> <span class="s2">"Mapping[str, Optional[str]]"</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">base</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">""</span><span class="p">,</span>
+    <span class="n">report</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_ignore</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A ``bext`` payload with ``fields`` (:data:`BEXT_FIELDS` names) written over ``base``.</span>
+
+<span class="sd">    ``base`` is the file's existing ``bext`` payload, so what foley does not write (the</span>
+<span class="sd">    time reference, UMID, loudness, CodingHistory) is kept; with none, the rest is</span>
+<span class="sd">    zero (version 0: no UMID). Text is UTF-8 (ASCII is a subset), cut on a character</span>
+<span class="sd">    boundary at the field's width; a ``None`` value empties its field. ``report`` is</span>
+<span class="sd">    accepted for the builder protocol (nothing in a ``bext`` is ever lost).</span>
+
+<span class="sd">    &gt;&gt;&gt; parse_bext(build_bext({"description": "Rain"}))</span>
+<span class="sd">    {'description': 'Rain'}</span>
+<span class="sd">    """</span>
+    <span class="n">offsets</span><span class="p">,</span> <span class="n">pos</span> <span class="o">=</span> <span class="p">{},</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">width</span> <span class="ow">in</span> <span class="n">BEXT_FIELDS</span><span class="p">:</span>
+        <span class="n">offsets</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="n">pos</span> <span class="o">=</span> <span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">width</span><span class="p">),</span> <span class="n">pos</span> <span class="o">+</span> <span class="n">width</span>
+    <span class="n">unknown</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">offsets</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"not bext text fields: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">unknown</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="n">BEXT_FIXED_BYTES</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"</span><span class="se">\0</span><span class="s2">"</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">fields</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">at</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="n">offsets</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="n">payload</span><span class="p">[</span><span class="n">at</span> <span class="p">:</span> <span class="n">at</span> <span class="o">+</span> <span class="n">width</span><span class="p">]</span> <span class="o">=</span> <span class="n">_fixed_width</span><span class="p">(</span><span class="n">text</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span> <span class="n">width</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_ixml_root</span><span class="p">(</span><span class="n">base</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">report</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The iXML document of ``base`` (comments and processing instructions kept) to</span>
+<span class="sd">    write into, or a new one if it has none, or one that does not parse (reported)."""</span>
+    <span class="k">if</span> <span class="n">_xml_document</span><span class="p">(</span><span class="n">base</span><span class="p">):</span>
+        <span class="n">builder</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">TreeBuilder</span><span class="p">(</span><span class="n">insert_comments</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">insert_pis</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ET</span><span class="o">.</span><span class="n">fromstring</span><span class="p">(</span><span class="n">_xml_document</span><span class="p">(</span><span class="n">base</span><span class="p">),</span> <span class="n">ET</span><span class="o">.</span><span class="n">XMLParser</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">builder</span><span class="p">))</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">ET</span><span class="o">.</span><span class="n">ParseError</span><span class="p">,</span> <span class="ne">LookupError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">report</span><span class="p">(</span><span class="sa">f</span><span class="s2">"the existing iXML did not parse (</span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">) and was replaced"</span><span class="p">)</span>
+    <span class="n">root</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">IXML_ROOT</span><span class="p">)</span>
+    <span class="n">ET</span><span class="o">.</span><span class="n">SubElement</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="s2">"IXML_VERSION"</span><span class="p">)</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">IXML_VERSION</span>
+    <span class="k">return</span> <span class="n">root</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_child</span><span class="p">(</span><span class="n">parent</span><span class="p">:</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">,</span> <span class="n">tag</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Optional[ET.Element]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``parent``'s first child element tagged ``tag`` (ignoring case), or ``None``."""</span>
+    <span class="n">wanted</span> <span class="o">=</span> <span class="n">tag</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+    <span class="n">match</span> <span class="o">=</span> <span class="p">(</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">parent</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">tag</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">c</span><span class="o">.</span><span class="n">tag</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="n">wanted</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="n">match</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="build_ixml">
+<a class="viewcode-back" href="../../_autosummary/foley.embedded_metadata.html#foley.embedded_metadata.build_ixml">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_ixml</span><span class="p">(</span>
+    <span class="n">fields</span><span class="p">:</span> <span class="s2">"Mapping[str, Optional[str]]"</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">base</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">""</span><span class="p">,</span>
+    <span class="n">report</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_ignore</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""An iXML payload (UTF-8) with ``fields`` as ``&lt;USER&gt;`` children, written into ``base``.</span>
+
+<span class="sd">    ``base`` is the file's existing iXML payload: its other elements, its comments,</span>
+<span class="sd">    and the ``&lt;USER&gt;`` fields not in ``fields``, are kept; a ``None`` value removes</span>
+<span class="sd">    its field. A ``base`` that does not parse is replaced, and ``report`` told.</span>
+
+<span class="sd">    &gt;&gt;&gt; parse_ixml_user(build_ixml({"CATID": "DOORWood", "FXNAME": "Creak &amp; slam"}))</span>
+<span class="sd">    {'CATID': 'DOORWood', 'FXNAME': 'Creak &amp; slam'}</span>
+<span class="sd">    """</span>
+    <span class="n">root</span> <span class="o">=</span> <span class="n">_ixml_root</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">report</span><span class="p">)</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">_child</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">IXML_USER</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">SubElement</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">IXML_USER</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">fields</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">while</span> <span class="n">text</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="n">old</span> <span class="o">:=</span> <span class="n">_child</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">key</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">user</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">old</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">text</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">el</span> <span class="o">=</span> <span class="n">_child</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">el</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">el</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">SubElement</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+        <span class="n">el</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="n">el</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">text</span>
+    <span class="n">doc</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">tostring</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"unicode"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s1">'&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span><span class="se">\n</span><span class="si">{</span><span class="n">doc</span><span class="si">}</span><span class="s1">'</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span></div>
+
+
+
+<span class="c1">#: Chunk name (as in :data:`FIELDS` and ``raw``) -&gt; (its chunk id, its builder).</span>
+<span class="n">CHUNK_BUILDERS</span> <span class="o">=</span> <span class="p">{</span><span class="n">BEXT</span><span class="p">:</span> <span class="p">(</span><span class="sa">b</span><span class="s2">"bext"</span><span class="p">,</span> <span class="n">build_bext</span><span class="p">),</span> <span class="n">IXML</span><span class="p">:</span> <span class="p">(</span><span class="sa">b</span><span class="s2">"iXML"</span><span class="p">,</span> <span class="n">build_ixml</span><span class="p">)}</span>
+
+<span class="c1">#: A metadata chunk the file does not have yet is inserted before this one.</span>
+<span class="n">INSERT_BEFORE</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">"data"</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_chunk_bytes</span><span class="p">(</span><span class="n">chunk_id</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A chunk: header, payload and the pad byte that word-aligns an odd payload."""</span>
+    <span class="n">pad</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">"</span><span class="se">\0</span><span class="s2">"</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2</span> <span class="k">else</span> <span class="sa">b</span><span class="s2">""</span>
+    <span class="k">return</span> <span class="n">chunk_id</span> <span class="o">+</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">"&lt;I"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">payload</span><span class="p">))</span> <span class="o">+</span> <span class="n">payload</span> <span class="o">+</span> <span class="n">pad</span>
+
+
+<div class="viewcode-block" id="write_metadata_chunks">
+<a class="viewcode-back" href="../../_autosummary/foley.embedded_metadata.html#foley.embedded_metadata.write_metadata_chunks">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">write_metadata_chunks</span><span class="p">(</span>
+    <span class="n">wav</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+    <span class="n">chunks</span><span class="p">:</span> <span class="s2">"Mapping[str, Mapping[str, Optional[str]]]"</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">builders</span><span class="o">=</span><span class="n">CHUNK_BUILDERS</span><span class="p">,</span>
+    <span class="n">max_chunk_bytes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">MAX_METADATA_CHUNK_BYTES</span><span class="p">,</span>
+    <span class="n">report</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_ignore</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``wav`` (RIFF WAVE bytes) with ``chunks`` (``{"bext": {...}, "ixml": {...}}``) written.</span>
+
+<span class="sd">    A chunk the file has is rewritten in place (the first of its kind; any others are</span>
+<span class="sd">    dropped, since a reader would see two), keeping what ``chunks`` does not set (a</span>
+<span class="sd">    ``None`` value removes its field); one it lacks is inserted before ``data``, unless</span>
+<span class="sd">    all it would hold is removals. Every other chunk, ``data`` included, is copied</span>
+<span class="sd">    byte for byte; the RIFF size is recomputed and odd chunks are padded.</span>
+
+<span class="sd">    What is lost is told to ``report`` (one sentence each): duplicate chunks, an</span>
+<span class="sd">    existing chunk over ``max_chunk_bytes`` (replaced, not merged), an iXML that does</span>
+<span class="sd">    not parse (replaced), and bytes after the last whole chunk or the RIFF's</span>
+<span class="sd">    declared end (dropped).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: ``wav`` is not a RIFF WAVE (RF64 / BW64 are refused: their sizes</span>
+<span class="sd">            live in ``ds64``), has no whole ``data`` chunk, would outgrow RIFF's</span>
+<span class="sd">            4 GB, or ``chunks`` names a chunk with no builder.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">wav</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span> <span class="o">!=</span> <span class="sa">b</span><span class="s2">"RIFF"</span> <span class="ow">or</span> <span class="n">wav</span><span class="p">[</span><span class="mi">8</span><span class="p">:</span><span class="mi">12</span><span class="p">]</span> <span class="o">!=</span> <span class="sa">b</span><span class="s2">"WAVE"</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"only RIFF WAVE files take metadata here, not a </span><span class="si">{</span><span class="nb">bytes</span><span class="p">(</span><span class="n">wav</span><span class="p">[:</span><span class="mi">4</span><span class="p">])</span><span class="si">!r}</span><span class="s2"> file"</span>
+        <span class="p">)</span>
+    <span class="n">unknown</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">chunks</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">builders</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"no builder for chunks </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">unknown</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">listed</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+        <span class="n">iter_riff_chunks</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">wav</span><span class="p">),</span> <span class="n">forms</span><span class="o">=</span><span class="p">(</span><span class="sa">b</span><span class="s2">"RIFF"</span><span class="p">,),</span> <span class="n">stop_at_declared_end</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">present</span> <span class="o">=</span> <span class="p">{</span><span class="n">chunk_id</span> <span class="k">for</span> <span class="n">chunk_id</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">listed</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">INSERT_BEFORE</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">present</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"no whole </span><span class="si">{</span><span class="n">INSERT_BEFORE</span><span class="si">!r}</span><span class="s2"> chunk: the file is truncated"</span><span class="p">)</span>
+    <span class="n">new</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">values</span> <span class="ow">in</span> <span class="n">chunks</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">chunk_id</span><span class="p">,</span> <span class="n">build</span> <span class="o">=</span> <span class="n">builders</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">chunk_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">present</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">values</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="k">continue</span>  <span class="c1"># nothing to remove from a chunk the file does not have</span>
+        <span class="n">sizes</span> <span class="o">=</span> <span class="p">[(</span><span class="n">at</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span> <span class="k">for</span> <span class="n">cid</span><span class="p">,</span> <span class="n">at</span><span class="p">,</span> <span class="n">size</span> <span class="ow">in</span> <span class="n">listed</span> <span class="k">if</span> <span class="n">cid</span> <span class="o">==</span> <span class="n">chunk_id</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sizes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">report</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sizes</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">chunk_id</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span><span class="si">}</span><span class="s2"> chunks were collapsed into one "</span>
+                <span class="sa">f</span><span class="s2">"(the last one's fields kept)"</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">sizes</span> <span class="ow">and</span> <span class="n">sizes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">max_chunk_bytes</span><span class="p">:</span>
+            <span class="n">report</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"the existing </span><span class="si">{</span><span class="n">chunk_id</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span><span class="si">}</span><span class="s2"> chunk (</span><span class="si">{</span><span class="n">sizes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> bytes) is over "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">max_chunk_bytes</span><span class="si">}</span><span class="s2"> bytes and was replaced, not merged"</span>
+            <span class="p">)</span>
+        <span class="c1"># the last of its kind is the base: a reader sees that one</span>
+        <span class="n">at</span><span class="p">,</span> <span class="n">size</span> <span class="o">=</span> <span class="n">sizes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">sizes</span> <span class="ow">and</span> <span class="n">sizes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">max_chunk_bytes</span> <span class="k">else</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">new</span><span class="p">[</span><span class="n">chunk_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">build</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">wav</span><span class="p">[</span><span class="n">at</span> <span class="p">:</span> <span class="n">at</span> <span class="o">+</span> <span class="n">size</span><span class="p">],</span> <span class="n">report</span><span class="o">=</span><span class="n">report</span><span class="p">)</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">last_at</span><span class="p">,</span> <span class="n">last_size</span> <span class="o">=</span> <span class="n">listed</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">wav</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">last_at</span> <span class="o">+</span> <span class="n">last_size</span> <span class="o">+</span> <span class="p">(</span><span class="n">last_size</span> <span class="o">&amp;</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">dropped</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">wav</span><span class="p">)</span> <span class="o">-</span> <span class="n">last_at</span> <span class="o">-</span> <span class="n">last_size</span> <span class="o">-</span> <span class="p">(</span><span class="n">last_size</span> <span class="o">&amp;</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">report</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">dropped</span><span class="si">}</span><span class="s2"> bytes after the WAVE's last whole chunk were dropped"</span><span class="p">)</span>
+    <span class="n">out</span><span class="p">,</span> <span class="n">written</span> <span class="o">=</span> <span class="p">[],</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">chunk_id</span><span class="p">,</span> <span class="n">at</span><span class="p">,</span> <span class="n">size</span> <span class="ow">in</span> <span class="n">listed</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">chunk_id</span> <span class="o">==</span> <span class="n">INSERT_BEFORE</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">+=</span> <span class="p">[</span><span class="n">_chunk_bytes</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">new</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">present</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">chunk_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">new</span><span class="p">:</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_chunk_bytes</span><span class="p">(</span><span class="n">chunk_id</span><span class="p">,</span> <span class="n">wav</span><span class="p">[</span><span class="n">at</span> <span class="p">:</span> <span class="n">at</span> <span class="o">+</span> <span class="n">size</span><span class="p">]))</span>
+        <span class="k">elif</span> <span class="n">chunk_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">written</span><span class="p">:</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_chunk_bytes</span><span class="p">(</span><span class="n">chunk_id</span><span class="p">,</span> <span class="n">new</span><span class="p">[</span><span class="n">chunk_id</span><span class="p">]))</span>
+            <span class="n">written</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">chunk_id</span><span class="p">)</span>
+    <span class="n">body</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">"WAVE"</span> <span class="o">+</span> <span class="sa">b</span><span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">body</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">_SIZE_PLACEHOLDER</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"the file would outgrow RIFF's 4 GB; it needs RF64"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="sa">b</span><span class="s2">"RIFF"</span> <span class="o">+</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">"&lt;I"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">body</span><span class="p">))</span> <span class="o">+</span> <span class="n">body</span></div>
+
+
+
+<div class="viewcode-block" id="write_embedded_metadata">
+<a class="viewcode-back" href="../../_autosummary/foley.embedded_metadata.html#foley.embedded_metadata.write_embedded_metadata">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">write_embedded_metadata</span><span class="p">(</span>
+    <span class="n">wav</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+    <span class="n">meta</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">fields</span><span class="o">=</span><span class="n">FIELDS</span><span class="p">,</span>
+    <span class="n">clear</span><span class="o">=</span><span class="p">(),</span>
+    <span class="n">report</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_ignore</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``wav`` with foley's fields ``meta`` written where :data:`FIELDS` says (``bext``</span>
+<span class="sd">    and ``iXML``): the inverse of :func:`read_embedded_metadata`.</span>
+
+<span class="sd">    Fields named in ``clear`` that ``meta`` has no value for are removed from the file</span>
+<span class="sd">    (see :func:`chunks_from_fields`). ``wav`` comes back unchanged when there is</span>
+<span class="sd">    nothing to write. See :func:`write_metadata_chunks` for what is kept, what is</span>
+<span class="sd">    refused and what is told to ``report``.</span>
+<span class="sd">    """</span>
+    <span class="n">chunks</span> <span class="o">=</span> <span class="n">chunks_from_fields</span><span class="p">(</span><span class="n">meta</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="n">fields</span><span class="p">,</span> <span class="n">clear</span><span class="o">=</span><span class="n">clear</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">write_metadata_chunks</span><span class="p">(</span><span class="n">wav</span><span class="p">,</span> <span class="n">chunks</span><span class="p">,</span> <span class="n">report</span><span class="o">=</span><span class="n">report</span><span class="p">)</span> <span class="k">if</span> <span class="n">chunks</span> <span class="k">else</span> <span class="n">wav</span></div>
 
 </pre></div>
 

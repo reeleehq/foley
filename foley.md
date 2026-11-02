@@ -1,4 +1,4 @@
-> built 2026-11-02 03:33 UTC from 608bdc4 (main) · foley 0.0.114. Details: build_info.json
+> built 2026-11-02 03:56 UTC from 449fc68 (main) · foley 0.0.115. Details: build_info.json
 
 # index.html.md
 
@@ -3843,7 +3843,7 @@ one, a fresh default [`Budget`](_autosummary/foley.agent.policy.html.md#foley.ag
 
 # foley.embedded_metadata
 
-What a pro sound file says about itself: Broadcast-WAV `bext` and iXML (#228).
+What a pro sound file says about itself: Broadcast-WAV `bext` and iXML (#228, #231).
 
 Commercial packs (BOOM, Pro Sound Effects, Sonniss GDC) describe each file inside it:
 the EBU Broadcast-WAV `bext` chunk (`Description`, `Originator`, the origination
@@ -3860,6 +3860,10 @@ standard library and returns foley’s view of them:
 Only the fields the file has are present. A file that is not a RIFF / RF64 / BW64 WAVE,
 or has neither chunk, gives `{}`; a missing file raises [`FileNotFoundError`](https://docs.python.org/3/builtins/exceptions.html#FileNotFoundError).
 
+[`write_embedded_metadata()`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.write_embedded_metadata) is the other direction (#231): it puts foley’s fields
+into a RIFF WAV’s `bext` and `iXML` chunks, replacing the fields it writes and
+keeping the rest of each chunk, and leaves the audio bytes as they are.
+
 [`FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) is the one table between the chunks and foley’s names, both ways: each
 [`Field`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.Field) has a canonical `write` location (where an exporter puts the value,
 and where a reader looks first) and ordered `read_also` fallbacks, plus the
@@ -3867,7 +3871,14 @@ and where a reader looks first) and ordered `read_also` fallbacks, plus the
 [`fields_from_chunks()`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.fields_from_chunks) and [`chunks_from_fields()`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.chunks_from_fields) are its two directions, so
 the writer of #231 reuses the table rather than inverting it. The names are foley’s
 (`caption`, `tags`, `ucs_*` as on [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord) /
-[`SoundEvent`](_autosummary/foley.base.html.md#foley.base.SoundEvent), `fx_name` as on the UCS filename parse).
+[`SoundEvent`](_autosummary/foley.base.html.md#foley.base.SoundEvent), `fx_name` as on the UCS filename parse, and
+`license` / `license_url` / `attribution` as in the rights dict of
+[`foley.export_sound()`](_autosummary/foley.html.md#foley.export_sound)).
+
+The caption is also written to bext `Description` (cut to its 256 bytes on a
+character boundary): DAWs and most library tools (Pro Tools, BaseHead, Soundly) show
+the BWF Description, while the iXML `DESCRIPTION` keeps the whole caption and is read
+first, so a long caption still reads back whole.
 
 This module sits beside [`foley.audio`](_autosummary/foley.audio.html.md#module-foley.audio) rather than in [`foley.index`](_autosummary/foley.index.html.md#module-foley.index): it is
 file-format I/O that both ingest (reading) and export (writing) use, stdlib-only.
@@ -3881,28 +3892,38 @@ file-format I/O that both ingest (reading) and export (writing) use, stdlib-only
 | [`KEYWORD_SEPARATORS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.KEYWORD_SEPARATORS)       | How keywords are separated in the wild, and how foley writes them.                                                        |
 | [`BEXT`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.BEXT)                     | The names [`FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) locations use for the two chunks (also the `raw` keys). |
 | [`IXML`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.IXML)                     | The names [`FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) locations use for the two chunks (also the `raw` keys). |
+| [`BEXT_FIXED_BYTES`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.BEXT_FIXED_BYTES)         | The size of a `bext` chunk's fixed part (EBU Tech 3285), before its CodingHistory.                                        |
+| [`IXML_ROOT`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.IXML_ROOT)                | The root and `<USER>` tags of a new iXML document, and the iXML version it states.                                        |
+| [`IXML_USER`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.IXML_USER)                | The root and `<USER>` tags of a new iXML document, and the iXML version it states.                                        |
+| [`IXML_VERSION`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.IXML_VERSION)             | The root and `<USER>` tags of a new iXML document, and the iXML version it states.                                        |
 | [`FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS)                   | foley field <-> chunk locations (see [`Field`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.Field)).                             |
 | [`CHUNK_PARSERS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.CHUNK_PARSERS)            | Chunk id -> (its name in `raw` and [`FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS), its parser).                  |
+| [`CHUNK_BUILDERS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.CHUNK_BUILDERS)           | Chunk name (as in [`FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) and `raw`) -> (its chunk id, its builder).      |
+| [`INSERT_BEFORE`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.INSERT_BEFORE)            | A metadata chunk the file does not have yet is inserted before this one.                                                  |
 
 ### Functions
 
-| [`chunks_from_fields`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.chunks_from_fields)(meta, \*[, fields, ...])   | Where a writer puts each of foley's fields: `{chunk: {key: text}}`, canonical only.                                  |
-|------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| [`fields_from_chunks`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.fields_from_chunks)(raw, \*[, fields, ...])    | foley's fields from parsed chunks (`{"bext": {...}, "ixml": {...}}`), non-empty only.                                |
-| [`iter_riff_chunks`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.iter_riff_chunks)(f, \*[, forms])              | `(chunk_id, offset, size)` for each top-level chunk of a RIFF / RF64 / BW64 WAVE.                                    |
-| [`join_keywords`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.join_keywords)(tags)                           | The `KEYWORDS` string for `tags` (the inverse of [`split_keywords()`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.split_keywords)). |
-| [`parse_bext`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.parse_bext)(payload)                           | The text fields of a `bext` chunk (NUL-padded; UTF-8 or Latin-1), non-empty only.                                    |
-| [`parse_ixml_user`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.parse_ixml_user)(payload)                      | The `<USER>` fields of an iXML chunk (upper-cased tag -> text), or `{}`.                                             |
-| [`read_embedded_metadata`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.read_embedded_metadata)(path, \*[, ...])       | foley's view of a WAV's `bext` and iXML metadata (see the module docs), or `{}`.                                     |
-| [`read_metadata_chunks`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.read_metadata_chunks)(path, \*[, ...])         | The parsed, non-empty metadata chunks of a WAV (`{"bext": ..., "ixml": ...}`).                                       |
-| [`split_keywords`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.split_keywords)(text)                          | Keywords from a `KEYWORDS` string: split on , and ;, de-duplicated ignoring case.                                    |
-| [`unique_words`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.unique_words)(words)                           | `words` stripped, without blanks or repeats (ignoring case), first spelling kept.                                    |
+| [`build_bext`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.build_bext)(fields, \*[, base, report])        | A `bext` payload with `fields` ([`BEXT_FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.BEXT_FIELDS) names) written over `base`.                                                                                                   |
+|------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`build_ixml`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.build_ixml)(fields, \*[, base, report])        | An iXML payload (UTF-8) with `fields` as `<USER>` children, written into `base`.                                                                                                                                           |
+| [`chunks_from_fields`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.chunks_from_fields)(meta, \*[, fields, ...])   | Where a writer puts each of foley's fields: `{chunk: {key: text}}` (`write_to`).                                                                                                                                           |
+| [`fields_from_chunks`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.fields_from_chunks)(raw, \*[, fields, ...])    | foley's fields from parsed chunks (`{"bext": {...}, "ixml": {...}}`), non-empty only.                                                                                                                                      |
+| [`iter_riff_chunks`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.iter_riff_chunks)(f, \*[, forms, ...])         | `(chunk_id, offset, size)` for each top-level chunk of a RIFF / RF64 / BW64 WAVE.                                                                                                                                          |
+| [`join_keywords`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.join_keywords)(tags)                           | The `KEYWORDS` string for `tags` (the inverse of [`split_keywords()`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.split_keywords)).                                                                                                       |
+| [`parse_bext`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.parse_bext)(payload)                           | The text fields of a `bext` chunk (NUL-padded; UTF-8 or Latin-1), non-empty only.                                                                                                                                          |
+| [`parse_ixml_user`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.parse_ixml_user)(payload)                      | The `<USER>` fields of an iXML chunk (upper-cased tag -> text), or `{}`.                                                                                                                                                   |
+| [`read_embedded_metadata`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.read_embedded_metadata)(path, \*[, ...])       | foley's view of a WAV's `bext` and iXML metadata (see the module docs), or `{}`.                                                                                                                                           |
+| [`read_metadata_chunks`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.read_metadata_chunks)(path, \*[, ...])         | The parsed, non-empty metadata chunks of a WAV (`{"bext": ..., "ixml": ...}`).                                                                                                                                             |
+| [`split_keywords`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.split_keywords)(text)                          | Keywords from a `KEYWORDS` string: split on , and ;, de-duplicated ignoring case.                                                                                                                                          |
+| [`unique_words`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.unique_words)(words)                           | `words` stripped, without blanks or repeats (ignoring case), first spelling kept.                                                                                                                                          |
+| [`write_embedded_metadata`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.write_embedded_metadata)(wav, meta, \*[, ...]) | `wav` with foley's fields `meta` written where [`FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) says (`bext` and `iXML`): the inverse of [`read_embedded_metadata()`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.read_embedded_metadata). |
+| [`write_metadata_chunks`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.write_metadata_chunks)(wav, chunks, \*[, ...]) | `wav` (RIFF WAVE bytes) with `chunks` (`{"bext": {...}, "ixml": {...}}`) written.                                                                                                                                          |
 
 ### Classes
 
-| [`Field`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.Field)(name, write[, read_also, decode, encode])   | One foley field and where it lives in a WAV's metadata chunks.      |
-|----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
-| [`Location`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.Location)(chunk, key)                              | A place a value lives: a `bext` field name or an iXML `<USER>` tag. |
+| [`Field`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.Field)(name, write[, read_also, decode, ...])   | One foley field and where it lives in a WAV's metadata chunks.      |
+|-------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
+| [`Location`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.Location)(chunk, key)                           | A place a value lives: a `bext` field name or an iXML `<USER>` tag. |
 
 ### foley.embedded_metadata.BEXT *= 'bext'*
 
@@ -3912,22 +3933,31 @@ The names [`FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded
 
 The fixed-width text fields at the start of a `bext` chunk (EBU Tech 3285).
 
+### foley.embedded_metadata.BEXT_FIXED_BYTES *= 602*
+
+The size of a `bext` chunk’s fixed part (EBU Tech 3285), before its CodingHistory.
+
+### foley.embedded_metadata.CHUNK_BUILDERS *= {'bext': (b'bext', <function build_bext>), 'ixml': (b'iXML', <function build_ixml>)}*
+
+Chunk name (as in [`FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) and `raw`) -> (its chunk id, its builder).
+
 ### foley.embedded_metadata.CHUNK_PARSERS *= {b'bext': ('bext', <function parse_bext>), b'iXML': ('ixml', <function parse_ixml_user>)}*
 
 Chunk id -> (its name in `raw` and [`FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS), its parser).
 
-### foley.embedded_metadata.FIELDS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[Field](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.Field), ...]* *= (Field(name='caption', write=Location(chunk='ixml', key='DESCRIPTION'), read_also=(Location(chunk='bext', key='description'), Location(chunk='ixml', key='FXNAME')), decode=<class 'str'>, encode=<class 'str'>), Field(name='tags', write=Location(chunk='ixml', key='KEYWORDS'), read_also=(), decode=<function split_keywords>, encode=<function join_keywords>), Field(name='fx_name', write=Location(chunk='ixml', key='FXNAME'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_catid', write=Location(chunk='ixml', key='CATID'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_category', write=Location(chunk='ixml', key='CATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_subcategory', write=Location(chunk='ixml', key='SUBCATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='library', write=Location(chunk='ixml', key='LIBRARY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='manufacturer', write=Location(chunk='ixml', key='MANUFACTURER'), read_also=(Location(chunk='bext', key='originator'),), decode=<class 'str'>, encode=<class 'str'>), Field(name='designer', write=Location(chunk='ixml', key='DESIGNER'), read_also=(), decode=<class 'str'>, encode=<class 'str'>))*
+### foley.embedded_metadata.FIELDS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[Field](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.Field), ...]* *= (Field(name='caption', write=Location(chunk='ixml', key='DESCRIPTION'), read_also=(Location(chunk='ixml', key='FXNAME'),), decode=<class 'str'>, encode=<class 'str'>, write_also=(Location(chunk='bext', key='description'),)), Field(name='tags', write=Location(chunk='ixml', key='KEYWORDS'), read_also=(), decode=<function split_keywords>, encode=<function join_keywords>, write_also=()), Field(name='fx_name', write=Location(chunk='ixml', key='FXNAME'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='ucs_catid', write=Location(chunk='ixml', key='CATID'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='ucs_category', write=Location(chunk='ixml', key='CATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='ucs_subcategory', write=Location(chunk='ixml', key='SUBCATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='library', write=Location(chunk='ixml', key='LIBRARY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='manufacturer', write=Location(chunk='ixml', key='MANUFACTURER'), read_also=(Location(chunk='bext', key='originator'),), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='designer', write=Location(chunk='ixml', key='DESIGNER'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='license', write=Location(chunk='ixml', key='LICENSE'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='license_url', write=Location(chunk='ixml', key='LICENSE_URL'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='attribution', write=Location(chunk='ixml', key='ATTRIBUTION'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()))*
 
 foley field <-> chunk locations (see [`Field`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.Field)).
 
-### *class* foley.embedded_metadata.Field(name, write, read_also=(), decode=<class 'str'>, encode=<class 'str'>)
+### *class* foley.embedded_metadata.Field(name, write, read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 One foley field and where it lives in a WAV’s metadata chunks.
 
 `write` is the canonical location: a writer puts the value there and a reader
-looks there first. `read_also` are read-only fallbacks, tried in order.
+looks there first. `write_also` are copies a writer also fills (for tools that
+read only there), read next. `read_also` are read-only fallbacks, tried in order.
 `decode` turns the stored text into foley’s value; `encode` turns it back.
 
 #### decode
@@ -3940,11 +3970,37 @@ alias of [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 #### *property* read_from *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[Location](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.Location), ...]*
 
-Every location a reader tries, canonical first.
+where it is written, then the fallbacks.
+
+* **Type:**
+  Every location a reader tries
+
+#### *property* write_to *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[Location](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.Location), ...]*
+
+the canonical one, then its copies.
+
+* **Type:**
+  Every location a writer fills
+
+### foley.embedded_metadata.INSERT_BEFORE *= b'data'*
+
+A metadata chunk the file does not have yet is inserted before this one.
 
 ### foley.embedded_metadata.IXML *= 'ixml'*
 
 The names [`FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) locations use for the two chunks (also the `raw` keys).
+
+### foley.embedded_metadata.IXML_ROOT *= 'BWFXML'*
+
+The root and `<USER>` tags of a new iXML document, and the iXML version it states.
+
+### foley.embedded_metadata.IXML_USER *= 'USER'*
+
+The root and `<USER>` tags of a new iXML document, and the iXML version it states.
+
+### foley.embedded_metadata.IXML_VERSION *= '1.61'*
+
+The root and `<USER>` tags of a new iXML document, and the iXML version it states.
 
 ### foley.embedded_metadata.KEYWORD_SEPARATORS *= re.compile('[,;]')*
 
@@ -3967,19 +4023,58 @@ classic RIFF, EBU RF64 (Tech 3306), ITU-R BS.2088 BW64.
 * **Type:**
   The RIFF form types read
 
-### foley.embedded_metadata.chunks_from_fields(meta, \*, fields=(Field(name='caption', write=Location(chunk='ixml', key='DESCRIPTION'), read_also=(Location(chunk='bext', key='description'), Location(chunk='ixml', key='FXNAME')), decode=<class 'str'>, encode=<class 'str'>), Field(name='tags', write=Location(chunk='ixml', key='KEYWORDS'), read_also=(), decode=<function split_keywords>, encode=<function join_keywords>), Field(name='fx_name', write=Location(chunk='ixml', key='FXNAME'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_catid', write=Location(chunk='ixml', key='CATID'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_category', write=Location(chunk='ixml', key='CATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_subcategory', write=Location(chunk='ixml', key='SUBCATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='library', write=Location(chunk='ixml', key='LIBRARY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='manufacturer', write=Location(chunk='ixml', key='MANUFACTURER'), read_also=(Location(chunk='bext', key='originator'), ), decode=<class 'str'>, encode=<class 'str'>), Field(name='designer', write=Location(chunk='ixml', key='DESIGNER'), read_also=(), decode=<class 'str'>, encode=<class 'str'>)))
+### foley.embedded_metadata.build_bext(fields, \*, base=b'', report=<function \_ignore>)
 
-Where a writer puts each of foley’s fields: `{chunk: {key: text}}`, canonical only.
+A `bext` payload with `fields` ([`BEXT_FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.BEXT_FIELDS) names) written over `base`.
+
+`base` is the file’s existing `bext` payload, so what foley does not write (the
+time reference, UMID, loudness, CodingHistory) is kept; with none, the rest is
+zero (version 0: no UMID). Text is UTF-8 (ASCII is a subset), cut on a character
+boundary at the field’s width; a `None` value empties its field. `report` is
+accepted for the builder protocol (nothing in a `bext` is ever lost).
 
 ```pycon
->>> chunks_from_fields({"caption": "Rain", "tags": ["a", "b"], "other": 1})
-{'ixml': {'DESCRIPTION': 'Rain', 'KEYWORDS': 'a, b'}}
+>>> parse_bext(build_bext({"description": "Rain"}))
+{'description': 'Rain'}
 ```
 
 * **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
+  [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
 
-### foley.embedded_metadata.fields_from_chunks(raw, \*, fields=(Field(name='caption', write=Location(chunk='ixml', key='DESCRIPTION'), read_also=(Location(chunk='bext', key='description'), Location(chunk='ixml', key='FXNAME')), decode=<class 'str'>, encode=<class 'str'>), Field(name='tags', write=Location(chunk='ixml', key='KEYWORDS'), read_also=(), decode=<function split_keywords>, encode=<function join_keywords>), Field(name='fx_name', write=Location(chunk='ixml', key='FXNAME'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_catid', write=Location(chunk='ixml', key='CATID'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_category', write=Location(chunk='ixml', key='CATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_subcategory', write=Location(chunk='ixml', key='SUBCATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='library', write=Location(chunk='ixml', key='LIBRARY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='manufacturer', write=Location(chunk='ixml', key='MANUFACTURER'), read_also=(Location(chunk='bext', key='originator'), ), decode=<class 'str'>, encode=<class 'str'>), Field(name='designer', write=Location(chunk='ixml', key='DESIGNER'), read_also=(), decode=<class 'str'>, encode=<class 'str'>)))
+### foley.embedded_metadata.build_ixml(fields, \*, base=b'', report=<function \_ignore>)
+
+An iXML payload (UTF-8) with `fields` as `<USER>` children, written into `base`.
+
+`base` is the file’s existing iXML payload: its other elements, its comments,
+and the `<USER>` fields not in `fields`, are kept; a `None` value removes
+its field. A `base` that does not parse is replaced, and `report` told.
+
+```pycon
+>>> parse_ixml_user(build_ixml({"CATID": "DOORWood", "FXNAME": "Creak & slam"}))
+{'CATID': 'DOORWood', 'FXNAME': 'Creak & slam'}
+```
+
+* **Return type:**
+  [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
+
+### foley.embedded_metadata.chunks_from_fields(meta, \*, fields=(Field(name='caption', write=Location(chunk='ixml', key='DESCRIPTION'), read_also=(Location(chunk='ixml', key='FXNAME'), ), decode=<class 'str'>, encode=<class 'str'>, write_also=(Location(chunk='bext', key='description'), )), Field(name='tags', write=Location(chunk='ixml', key='KEYWORDS'), read_also=(), decode=<function split_keywords>, encode=<function join_keywords>, write_also=()), Field(name='fx_name', write=Location(chunk='ixml', key='FXNAME'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='ucs_catid', write=Location(chunk='ixml', key='CATID'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='ucs_category', write=Location(chunk='ixml', key='CATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='ucs_subcategory', write=Location(chunk='ixml', key='SUBCATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='library', write=Location(chunk='ixml', key='LIBRARY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='manufacturer', write=Location(chunk='ixml', key='MANUFACTURER'), read_also=(Location(chunk='bext', key='originator'), ), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='designer', write=Location(chunk='ixml', key='DESIGNER'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='license', write=Location(chunk='ixml', key='LICENSE'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='license_url', write=Location(chunk='ixml', key='LICENSE_URL'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='attribution', write=Location(chunk='ixml', key='ATTRIBUTION'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=())), clear=())
+
+Where a writer puts each of foley’s fields: `{chunk: {key: text}}` (`write_to`).
+
+A field named in `clear` that `meta` has no value for maps to `None`: the
+writer removes it, so a file never keeps a stale value of a field the caller owns.
+
+```pycon
+>>> chunks_from_fields({"caption": "Rain", "tags": ["a", "b"], "other": 1})
+{'ixml': {'DESCRIPTION': 'Rain', 'KEYWORDS': 'a, b'}, 'bext': {'description': 'Rain'}}
+>>> chunks_from_fields({"license": None}, clear=["license"])
+{'ixml': {'LICENSE': None}}
+```
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]]
+
+### foley.embedded_metadata.fields_from_chunks(raw, \*, fields=(Field(name='caption', write=Location(chunk='ixml', key='DESCRIPTION'), read_also=(Location(chunk='ixml', key='FXNAME'), ), decode=<class 'str'>, encode=<class 'str'>, write_also=(Location(chunk='bext', key='description'), )), Field(name='tags', write=Location(chunk='ixml', key='KEYWORDS'), read_also=(), decode=<function split_keywords>, encode=<function join_keywords>, write_also=()), Field(name='fx_name', write=Location(chunk='ixml', key='FXNAME'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='ucs_catid', write=Location(chunk='ixml', key='CATID'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='ucs_category', write=Location(chunk='ixml', key='CATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='ucs_subcategory', write=Location(chunk='ixml', key='SUBCATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='library', write=Location(chunk='ixml', key='LIBRARY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='manufacturer', write=Location(chunk='ixml', key='MANUFACTURER'), read_also=(Location(chunk='bext', key='originator'), ), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='designer', write=Location(chunk='ixml', key='DESIGNER'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='license', write=Location(chunk='ixml', key='LICENSE'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='license_url', write=Location(chunk='ixml', key='LICENSE_URL'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='attribution', write=Location(chunk='ixml', key='ATTRIBUTION'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=())))
 
 foley’s fields from parsed chunks (`{"bext": {...}, "ixml": {...}}`), non-empty only.
 
@@ -3991,13 +4086,17 @@ foley’s fields from parsed chunks (`{"bext": {...}, "ixml": {...}}`), non-empt
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### foley.embedded_metadata.iter_riff_chunks(f, , forms=(b'RIFF', b'RF64', b'BW64'))
+### foley.embedded_metadata.iter_riff_chunks(f, , forms=(b'RIFF', b'RF64', b'BW64'), stop_at_declared_end=False)
 
 `(chunk_id, offset, size)` for each top-level chunk of a RIFF / RF64 / BW64 WAVE.
 
 Walks the chunk headers with seeks, never reading the audio, so a large file costs
-a few small reads. Stops quietly at a truncated chunk. For RF64 / BW64, a `data`
-chunk sized `0xFFFFFFFF` takes its real size from `ds64`’s `dataSize`.
+a few small reads. Stops quietly at a truncated chunk. `stop_at_declared_end`
+also stops at the RIFF’s declared end when that is inside the file: a writer must
+not fold trailing bytes into the WAVE, while a reader keeps going, since many files
+understate their RIFF size and still carry `bext` / iXML after it. For RF64 /
+BW64, a `data` chunk sized `0xFFFFFFFF` takes its real size from `ds64`’s
+`dataSize`.
 
 ```pycon
 >>> import io
@@ -4039,9 +4138,11 @@ declaration (UTF-8, Latin-1, UTF-16, …) is honoured.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
-### foley.embedded_metadata.read_embedded_metadata(path, \*, max_chunk_bytes=4194304, fields=(Field(name='caption', write=Location(chunk='ixml', key='DESCRIPTION'), read_also=(Location(chunk='bext', key='description'), Location(chunk='ixml', key='FXNAME')), decode=<class 'str'>, encode=<class 'str'>), Field(name='tags', write=Location(chunk='ixml', key='KEYWORDS'), read_also=(), decode=<function split_keywords>, encode=<function join_keywords>), Field(name='fx_name', write=Location(chunk='ixml', key='FXNAME'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_catid', write=Location(chunk='ixml', key='CATID'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_category', write=Location(chunk='ixml', key='CATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_subcategory', write=Location(chunk='ixml', key='SUBCATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='library', write=Location(chunk='ixml', key='LIBRARY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='manufacturer', write=Location(chunk='ixml', key='MANUFACTURER'), read_also=(Location(chunk='bext', key='originator'), ), decode=<class 'str'>, encode=<class 'str'>), Field(name='designer', write=Location(chunk='ixml', key='DESIGNER'), read_also=(), decode=<class 'str'>, encode=<class 'str'>)))
+### foley.embedded_metadata.read_embedded_metadata(path, \*, max_chunk_bytes=4194304, fields=(Field(name='caption', write=Location(chunk='ixml', key='DESCRIPTION'), read_also=(Location(chunk='ixml', key='FXNAME'), ), decode=<class 'str'>, encode=<class 'str'>, write_also=(Location(chunk='bext', key='description'), )), Field(name='tags', write=Location(chunk='ixml', key='KEYWORDS'), read_also=(), decode=<function split_keywords>, encode=<function join_keywords>, write_also=()), Field(name='fx_name', write=Location(chunk='ixml', key='FXNAME'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='ucs_catid', write=Location(chunk='ixml', key='CATID'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='ucs_category', write=Location(chunk='ixml', key='CATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='ucs_subcategory', write=Location(chunk='ixml', key='SUBCATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='library', write=Location(chunk='ixml', key='LIBRARY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='manufacturer', write=Location(chunk='ixml', key='MANUFACTURER'), read_also=(Location(chunk='bext', key='originator'), ), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='designer', write=Location(chunk='ixml', key='DESIGNER'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='license', write=Location(chunk='ixml', key='LICENSE'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='license_url', write=Location(chunk='ixml', key='LICENSE_URL'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='attribution', write=Location(chunk='ixml', key='ATTRIBUTION'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=())))
 
 foley’s view of a WAV’s `bext` and iXML metadata (see the module docs), or `{}`.
+
+`path` is a file path or the WAV’s bytes.
 
 ```pycon
 >>> read_embedded_metadata(__file__)  # not a WAV
@@ -4055,9 +4156,10 @@ foley’s view of a WAV’s `bext` and iXML metadata (see the module docs), or `
 
 The parsed, non-empty metadata chunks of a WAV (`{"bext": ..., "ixml": ...}`).
 
-Chunks larger than `max_chunk_bytes` are skipped unread. A file that is not a
-WAV gives `{}`; one that cannot be opened (missing, a directory, no permission)
-raises the `OSError`, so a wrong path is not mistaken for a file without metadata.
+`path` is a file path or the WAV’s bytes. Chunks larger than `max_chunk_bytes`
+are skipped unread. A file that is not a WAV gives `{}`; one that cannot be
+opened (missing, a directory, no permission) raises the `OSError`, so a wrong
+path is not mistaken for a file without metadata.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
@@ -4085,6 +4187,41 @@ Keywords from a `KEYWORDS` string: split on , and ;, de-duplicated ignoring case
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.embedded_metadata.write_embedded_metadata(wav, meta, \*, fields=(Field(name='caption', write=Location(chunk='ixml', key='DESCRIPTION'), read_also=(Location(chunk='ixml', key='FXNAME'), ), decode=<class 'str'>, encode=<class 'str'>, write_also=(Location(chunk='bext', key='description'), )), Field(name='tags', write=Location(chunk='ixml', key='KEYWORDS'), read_also=(), decode=<function split_keywords>, encode=<function join_keywords>, write_also=()), Field(name='fx_name', write=Location(chunk='ixml', key='FXNAME'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='ucs_catid', write=Location(chunk='ixml', key='CATID'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='ucs_category', write=Location(chunk='ixml', key='CATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='ucs_subcategory', write=Location(chunk='ixml', key='SUBCATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='library', write=Location(chunk='ixml', key='LIBRARY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='manufacturer', write=Location(chunk='ixml', key='MANUFACTURER'), read_also=(Location(chunk='bext', key='originator'), ), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='designer', write=Location(chunk='ixml', key='DESIGNER'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='license', write=Location(chunk='ixml', key='LICENSE'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='license_url', write=Location(chunk='ixml', key='LICENSE_URL'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='attribution', write=Location(chunk='ixml', key='ATTRIBUTION'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=())), clear=(), report=<function \_ignore>)
+
+`wav` with foley’s fields `meta` written where [`FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) says (`bext`
+and `iXML`): the inverse of [`read_embedded_metadata()`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.read_embedded_metadata).
+
+Fields named in `clear` that `meta` has no value for are removed from the file
+(see [`chunks_from_fields()`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.chunks_from_fields)). `wav` comes back unchanged when there is
+nothing to write. See [`write_metadata_chunks()`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.write_metadata_chunks) for what is kept, what is
+refused and what is told to `report`.
+
+* **Return type:**
+  [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
+
+### foley.embedded_metadata.write_metadata_chunks(wav, chunks, \*, builders={'bext': (b'bext', <function build_bext>), 'ixml': (b'iXML', <function build_ixml>)}, max_chunk_bytes=4194304, report=<function \_ignore>)
+
+`wav` (RIFF WAVE bytes) with `chunks` (`{"bext": {...}, "ixml": {...}}`) written.
+
+A chunk the file has is rewritten in place (the first of its kind; any others are
+dropped, since a reader would see two), keeping what `chunks` does not set (a
+`None` value removes its field); one it lacks is inserted before `data`, unless
+all it would hold is removals. Every other chunk, `data` included, is copied
+byte for byte; the RIFF size is recomputed and odd chunks are padded.
+
+What is lost is told to `report` (one sentence each): duplicate chunks, an
+existing chunk over `max_chunk_bytes` (replaced, not merged), an iXML that does
+not parse (replaced), and bytes after the last whole chunk or the RIFF’s
+declared end (dropped).
+
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – `wav` is not a RIFF WAVE (RF64 / BW64 are refused: their sizes
+      live in `ds64`), has no whole `data` chunk, would outgrow RIFF’s
+      4 GB, or `chunks` names a chunk with no builder.
+* **Return type:**
+  [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
 
 
 # _autosummary/foley.eval.baseline.html.md
@@ -6151,7 +6288,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`credits_for`](_autosummary/foley.html.md#foley.credits_for)(sounds, \*[, title, ...])               | Build the deduplicated [`Credits`](_autosummary/foley.html.md#foley.Credits) for the sounds used in a run.                                                                  |
 | [`attribution_line`](_autosummary/foley.html.md#foley.attribution_line)(source, \*[, fmt])                 | Render one sound's TASL attribution line.                                                                                                                                      |
 | [`credit_entry`](_autosummary/foley.html.md#foley.credit_entry)(record, \*[, title])                   | Build a [`CreditEntry`](_autosummary/foley.html.md#foley.CreditEntry) from a record (title override optional).                                                                  |
-| [`export_sound`](_autosummary/foley.html.md#foley.export_sound)(sound_id[, fmt, library, subtype])     | Export a sound's bytes as `fmt` with its rights and provenance (#66).                                                                                                          |
+| [`export_sound`](_autosummary/foley.html.md#foley.export_sound)(sound_id[, fmt, library, ...])         | Export a sound's bytes as `fmt` with its rights and provenance (#66, #231).                                                                                                    |
 
 ### Classes
 
@@ -8610,14 +8747,15 @@ Ring-0 fixture with the deterministic fake judge — no network, key, or heavy d
 * **Returns:**
   A [`foley.eval.FitReport`](_autosummary/foley.eval.html.md#foley.eval.FitReport).
 
-### foley.export_sound(sound_id, fmt='wav', , library=None, subtype=None)
+### foley.export_sound(sound_id, fmt='wav', , library=None, subtype=None, embed_metadata=True, ucs_filename=True, ucs_table=None)
 
-Export a sound’s bytes as `fmt` with its rights and provenance (#66).
+Export a sound’s bytes as `fmt` with its rights and provenance (#66, #231).
 
 The sound’s bytes are fetched from `library`, checked against the record’s
 content hash, and re-encoded ([`foley.audio.transcode()`](_autosummary/foley.audio.html.md#foley.audio.transcode): PCM, the archive’s
 own depth where `fmt` allows, so a `PCM_24` FLAC gives a sample-exact
-`PCM_24` WAV; bytes already in `fmt` come back untouched).
+`PCM_24` WAV; bytes already in `fmt` and subtype are not re-encoded). A WAV
+then gets its `bext` / `iXML` metadata (`export_metadata()`).
 
 * **Parameters:**
   * **sound_id** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The record id in `library`.
@@ -8625,9 +8763,24 @@ own depth where `fmt` allows, so a `PCM_24` FLAC gives a sample-exact
   * **library** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`SoundLibrary`](_autosummary/foley.index.library.html.md#foley.index.library.SoundLibrary)]) – The [`SoundLibrary`](_autosummary/foley.index.library.html.md#foley.index.library.SoundLibrary) to read (default:
     [`foley.default_library()`](_autosummary/foley.html.md#foley.default_library)).
   * **subtype** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The sample format (default: [`foley.audio.export_subtype()`](_autosummary/foley.audio.html.md#foley.audio.export_subtype)).
+  * **embed_metadata** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Write `bext` / `iXML` into a WAV export (default on: it
+    adds chunks only, never touches the samples, and makes the file carry
+    its own credit; other formats, and a WAV the writer refuses, such as a
+    streamed one sized `0xFFFFFFFF`, are left as encoded, with a note).
+    The licence fields (`EXPORT_OWNED_FIELDS`) are foley’s: a source
+    file’s value is removed when `rights` has none.
+  * **ucs_filename** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Put the UCS filename in `provenance["filename"]` (default on:
+    it is only a suggestion, so it costs a consumer nothing to ignore). The
+    embedded UCS fields do not depend on it: they follow `embed_metadata`.
+  * **ucs_table** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)]) – The UCS table the CatID is resolved in (default:
+    [`foley.index.taxonomy.default_ucs_table()`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_ucs_table)).
 * **Returns:**
   `rights` from `sound_rights()`,
-  `provenance` from `sound_provenance()`.
+  `provenance` from `sound_provenance()`, plus `filename` (the UCS
+  filename, or `None`), `embedded` (the chunks written: `['ixml',
+  'bext']`, or `[]`) and `export_notes` (why a filename or chunks are
+  missing, and what of a source file’s own metadata was not kept).
+  `provenance["sha256"]` is the hash of the bytes returned.
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 * **Raises:**
@@ -10050,7 +10203,7 @@ escalates to the injected/​default judge for that rung and returns *its* verdi
 | [`base`](_autosummary/foley.base.html.md#module-foley.base)                           | Canonical data models for foley — the single source of truth (SSOT) types.                                                                           |
 | [`cli`](_autosummary/foley.cli.html.md#module-foley.cli)                             | The `foley` command-line interface (`argparse`, the verbs generated by `cw`).                                                                        |
 | [`cost`](_autosummary/foley.cost.html.md#module-foley.cost)                           | Cost: what a call will cost before it is made, and a cumulative cap on a run (#57).                                                                  |
-| [`embedded_metadata`](_autosummary/foley.embedded_metadata.html.md#module-foley.embedded_metadata) | What a pro sound file says about itself: Broadcast-WAV `bext` and iXML (#228).                                                                       |
+| [`embedded_metadata`](_autosummary/foley.embedded_metadata.html.md#module-foley.embedded_metadata) | What a pro sound file says about itself: Broadcast-WAV `bext` and iXML (#228, #231).                                                                 |
 | [`level`](_autosummary/foley.level.html.md#module-foley.level)                         | Level a clip to a stated loudness target for its class, so relative levels are sane.                                                                 |
 | [`licensing`](_autosummary/foley.licensing.html.md#module-foley.licensing)                 | License policy for foley: the license_id -> flag-set SSOT, flag derivation (with per-source overrides), and the fail-closed candidate `keep()` gate. |
 | [`prompt_match`](_autosummary/foley.prompt_match.html.md#module-foley.prompt_match)           | Does a generated clip sound like what was asked for? A text-audio check, or an honest "unchecked".                                                   |
@@ -11339,9 +11492,11 @@ its CatID token is unknown (so a wrong subcategory is never emitted).
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
-### foley.index.read_embedded_metadata(path, \*, max_chunk_bytes=4194304, fields=(Field(name='caption', write=Location(chunk='ixml', key='DESCRIPTION'), read_also=(Location(chunk='bext', key='description'), Location(chunk='ixml', key='FXNAME')), decode=<class 'str'>, encode=<class 'str'>), Field(name='tags', write=Location(chunk='ixml', key='KEYWORDS'), read_also=(), decode=<function split_keywords>, encode=<function join_keywords>), Field(name='fx_name', write=Location(chunk='ixml', key='FXNAME'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_catid', write=Location(chunk='ixml', key='CATID'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_category', write=Location(chunk='ixml', key='CATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_subcategory', write=Location(chunk='ixml', key='SUBCATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='library', write=Location(chunk='ixml', key='LIBRARY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='manufacturer', write=Location(chunk='ixml', key='MANUFACTURER'), read_also=(Location(chunk='bext', key='originator'), ), decode=<class 'str'>, encode=<class 'str'>), Field(name='designer', write=Location(chunk='ixml', key='DESIGNER'), read_also=(), decode=<class 'str'>, encode=<class 'str'>)))
+### foley.index.read_embedded_metadata(path, \*, max_chunk_bytes=4194304, fields=(Field(name='caption', write=Location(chunk='ixml', key='DESCRIPTION'), read_also=(Location(chunk='ixml', key='FXNAME'), ), decode=<class 'str'>, encode=<class 'str'>, write_also=(Location(chunk='bext', key='description'), )), Field(name='tags', write=Location(chunk='ixml', key='KEYWORDS'), read_also=(), decode=<function split_keywords>, encode=<function join_keywords>, write_also=()), Field(name='fx_name', write=Location(chunk='ixml', key='FXNAME'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='ucs_catid', write=Location(chunk='ixml', key='CATID'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='ucs_category', write=Location(chunk='ixml', key='CATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='ucs_subcategory', write=Location(chunk='ixml', key='SUBCATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='library', write=Location(chunk='ixml', key='LIBRARY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='manufacturer', write=Location(chunk='ixml', key='MANUFACTURER'), read_also=(Location(chunk='bext', key='originator'), ), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='designer', write=Location(chunk='ixml', key='DESIGNER'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='license', write=Location(chunk='ixml', key='LICENSE'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='license_url', write=Location(chunk='ixml', key='LICENSE_URL'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=()), Field(name='attribution', write=Location(chunk='ixml', key='ATTRIBUTION'), read_also=(), decode=<class 'str'>, encode=<class 'str'>, write_also=())))
 
 foley’s view of a WAV’s `bext` and iXML metadata (see the module docs), or `{}`.
+
+`path` is a file path or the WAV’s bytes.
 
 ```pycon
 >>> read_embedded_metadata(__file__)  # not a WAV
@@ -13395,16 +13550,17 @@ EnvSound-UCS mapping drop in later as JSON under `data/` with no logic change.
 
 ### Functions
 
-| [`load_ucs_table`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.load_ucs_table)(\*[, data_dir, include_seed])      | Build the UCS lookup: the seed rows, overridden/extended by a JSON drop.                                                                     |
-|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| [`load_ucs_master`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.load_ucs_master)()                                 | The authoritative UCS v8.2.1 master (753 rows, 82 categories), without the seed.                                                             |
-| [`default_ucs_table`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_ucs_table)()                               | The process-wide default UCS table (seed + any JSON drop), built once.                                                                       |
-| [`parse_ucs_filename`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_ucs_filename)(filename, \*[, table])         | Parse a UCS-conformant filename to `(ucs_category, ucs_subcategory)`.                                                                        |
-| [`parse_ucs_name`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_ucs_name)(filename, \*[, table, ...])        | Every block of a UCS filename as a [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName), else `None`. |
-| [`parse_catid_token`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_catid_token)(filename)                       | Return the CatID candidate of a UCS-style filename, else `None`.                                                                             |
-| [`load_audioset_ucs_map`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.load_audioset_ucs_map)(\*[, data_dir, table, ...]) | Build the AudioSet(name|MID) -> UCS-CatID map.                                                                                               |
-| [`default_audioset_ucs_map`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_audioset_ucs_map)()                        | The process-wide default AudioSet->UCS map (seed + any JSON drop).                                                                           |
-| [`resolve_catid`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.resolve_catid)(\*[, tags, caption, ...])           | Resolve inputs to a best UCS CatID by the staged precedence.                                                                                 |
+| [`load_ucs_table`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.load_ucs_table)(\*[, data_dir, include_seed])      | Build the UCS lookup: the seed rows, overridden/extended by a JSON drop.                                                                                                                                                                                                                  |
+|----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`load_ucs_master`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.load_ucs_master)()                                 | The authoritative UCS v8.2.1 master (753 rows, 82 categories), without the seed.                                                                                                                                                                                                          |
+| [`default_ucs_table`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_ucs_table)()                               | The process-wide default UCS table (seed + any JSON drop), built once.                                                                                                                                                                                                                    |
+| [`parse_ucs_filename`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_ucs_filename)(filename, \*[, table])         | Parse a UCS-conformant filename to `(ucs_category, ucs_subcategory)`.                                                                                                                                                                                                                     |
+| [`parse_ucs_name`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_ucs_name)(filename, \*[, table, ...])        | Every block of a UCS filename as a [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName), else `None`.                                                                                                                                              |
+| [`format_ucs_name`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.format_ucs_name)([name, ext, table, ...])          | The UCS filename of `name` (a [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName) or a mapping of its blocks), with `blocks` (`UCS_NAME_BLOCKS`) overriding it: the inverse of [`parse_ucs_name()`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_ucs_name). |
+| [`parse_catid_token`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_catid_token)(filename)                       | Return the CatID candidate of a UCS-style filename, else `None`.                                                                                                                                                                                                                          |
+| [`load_audioset_ucs_map`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.load_audioset_ucs_map)(\*[, data_dir, table, ...]) | Build the AudioSet(name|MID) -> UCS-CatID map.                                                                                                                                                                                                                                            |
+| [`default_audioset_ucs_map`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_audioset_ucs_map)()                        | The process-wide default AudioSet->UCS map (seed + any JSON drop).                                                                                                                                                                                                                        |
+| [`resolve_catid`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.resolve_catid)(\*[, tags, caption, ...])           | Resolve inputs to a best UCS CatID by the staged precedence.                                                                                                                                                                                                                              |
 
 ### Classes
 
@@ -13538,6 +13694,51 @@ The process-wide default UCS table (seed + any JSON drop), built once.
 
 * **Return type:**
   [`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)
+
+### foley.index.taxonomy.format_ucs_name(name=None, /, \*, ext=None, table=None, is_vendor_tag=<function looks_like_vendor_tag>, max_bytes=255, \*\*blocks)
+
+The UCS filename of `name` (a [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName) or a mapping of its
+blocks), with `blocks` (`UCS_NAME_BLOCKS`) overriding it: the inverse of
+[`parse_ucs_name()`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_ucs_name).
+
+Each block is sanitised so the name parses back to the same blocks: unsafe
+characters and underscores inside a block become spaces, whitespace is collapsed,
+a VendorCategory is upper-cased, and a hyphen that would make an FXName’s head
+read as a VendorCategory becomes a space (`Sci-Fi Door` stays as it is). A name
+over `max_bytes` has its longest shortenable block
+(`UCS_SHORTENABLE_BLOCKS`) cut on a character boundary until it fits. So
+`format_ucs_name(parse_ucs_name(f))` is `f` for any `f` this function made.
+The CatID is looked up in `table` (default: [`default_ucs_table()`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_ucs_table)) and
+written in its canonical spelling; an unknown one raises, since the name would
+not parse.
+
+* **Parameters:**
+  * **name** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName), [`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – The blocks to format (`category` / `subcategory` are ignored).
+  * **ext** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The extension to append (`'wav'` or `'.wav'`), or `None` for a stem.
+  * **table** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)]) – The UCS table the CatID must be in.
+  * **is_vendor_tag** ([`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]) – What reads as a VendorCategory (as in [`parse_ucs_name()`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_ucs_name)).
+  * **max_bytes** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – The longest name to make, in UTF-8 bytes, extension included.
+  * **\*\*blocks** – Block values overriding `name`’s.
+* **Raises:**
+  * [**TypeError**](https://docs.python.org/3/builtins/exceptions.html#TypeError) – a keyword is not a UCS block.
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – no CatID, or one not in `table`; a bad `ext`; a
+        VendorCategory that cannot be read back or has no FXName; a name that
+        cannot be cut to `max_bytes`.
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+```pycon
+>>> format_ucs_name(catid="doorwood", fx_name="Sci-Fi Door_slam", creator_id="JD",
+...                 source_id="NYC", ext="wav")
+'DOORWood_Sci-Fi Door slam_JD_NYC.wav'
+>>> n = parse_ucs_name("DOORWood-Gate_SCIFI-Creak Open_JD_NYC_take_2.wav")
+>>> format_ucs_name(n, ext="wav")
+'DOORWood-Gate_SCIFI-Creak Open_JD_NYC_take_2.wav'
+>>> format_ucs_name(catid="DOORWood", fx_name="BOOM-Creak")  # not a vendor tag
+'DOORWood_BOOM Creak'
+>>> len(format_ucs_name(catid="DOORWood", fx_name="x" * 300, user_data="id1"))
+255
+```
 
 ### foley.index.taxonomy.load_audioset_ucs_map(, data_dir=None, table=None, include_seed=True)
 
@@ -13915,26 +14116,31 @@ CatID[-UserCategory]_[VendorCategory-]FXName_CreatorID_SourceID[_UserData].ext
 Only the CatID carries the controlled taxonomy; it is looked up in the table (never
 string-split, since the category prefix is variable-length).
 [`parse_ucs_name()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_name) returns every block ([`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName));
-[`parse_ucs_filename()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_filename) just the category pair. The
+[`parse_ucs_filename()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_filename) just the category pair; [`format_ucs_name()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.format_ucs_name) is the
+inverse of [`parse_ucs_name()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_name) (it sanitises each block so the name parses back). The
 loader merges the in-code seed with an optional full-table JSON drop under
 `taxonomy/data/ucs_full.json` (JSON wins on CatID collision) — open/closed.
 
 ### Module Attributes
 
-| [`UCS_MASTER_FILE`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.UCS_MASTER_FILE)   | The UCS v8.2.1 master as shipped (`tools/build_ucs_table.py`; #227).                                                                      |
-|--------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
-| [`BLOCK_SEP`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.BLOCK_SEP)         | The block separator of a UCS filename, and the one that attaches the optional UserCategory to the CatID and VendorCategory to the FXName. |
+| [`UCS_MASTER_FILE`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.UCS_MASTER_FILE)        | The UCS v8.2.1 master as shipped (`tools/build_ucs_table.py`; #227).                                                                                                                                                     |
+|-------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`BLOCK_SEP`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.BLOCK_SEP)              | The block separator of a UCS filename, and the one that attaches the optional UserCategory to the CatID and VendorCategory to the FXName.                                                                                |
+| [`UCS_NAME_BLOCKS`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.UCS_NAME_BLOCKS)        | The blocks of a UCS filename, as [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName) fields (`category` and `subcategory` are not blocks: they come from the CatID's table row). |
+| [`UCS_NAME_MAX_BYTES`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.UCS_NAME_MAX_BYTES)     | The longest filename, in UTF-8 bytes, that [`format_ucs_name()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.format_ucs_name) makes (`NAME_MAX` on ext4, APFS and NTFS-as-seen-by-most-tools).                                           |
+| [`UCS_SHORTENABLE_BLOCKS`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.UCS_SHORTENABLE_BLOCKS) | The blocks [`format_ucs_name()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.format_ucs_name) shortens, longest first, to fit [`UCS_NAME_MAX_BYTES`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.UCS_NAME_MAX_BYTES).                                       |
 
 ### Functions
 
-| [`default_ucs_table`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.default_ucs_table)()                          | The process-wide default UCS table (seed + any JSON drop), built once.                                                                       |
-|-----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| [`load_ucs_master`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.load_ucs_master)()                            | The authoritative UCS v8.2.1 master (753 rows, 82 categories), without the seed.                                                             |
-| [`load_ucs_table`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.load_ucs_table)(\*[, data_dir, include_seed]) | Build the UCS lookup: the seed rows, overridden/extended by a JSON drop.                                                                     |
-| [`looks_like_vendor_tag`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.looks_like_vendor_tag)(prefix)                | Whether the text before an FXName's first hyphen reads as a VendorCategory.                                                                  |
-| [`parse_catid_token`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_catid_token)(filename)                  | Return the CatID candidate of a UCS-style filename, else `None`.                                                                             |
-| [`parse_ucs_filename`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_filename)(filename, \*[, table])    | Parse a UCS-conformant filename to `(ucs_category, ucs_subcategory)`.                                                                        |
-| [`parse_ucs_name`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_name)(filename, \*[, table, ...])   | Every block of a UCS filename as a [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName), else `None`. |
+| [`default_ucs_table`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.default_ucs_table)()                          | The process-wide default UCS table (seed + any JSON drop), built once.                                                                                                                                                                                                                                                                   |
+|-----------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`format_ucs_name`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.format_ucs_name)([name, ext, table, ...])     | The UCS filename of `name` (a [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName) or a mapping of its blocks), with `blocks` ([`UCS_NAME_BLOCKS`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.UCS_NAME_BLOCKS)) overriding it: the inverse of [`parse_ucs_name()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_name). |
+| [`load_ucs_master`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.load_ucs_master)()                            | The authoritative UCS v8.2.1 master (753 rows, 82 categories), without the seed.                                                                                                                                                                                                                                                         |
+| [`load_ucs_table`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.load_ucs_table)(\*[, data_dir, include_seed]) | Build the UCS lookup: the seed rows, overridden/extended by a JSON drop.                                                                                                                                                                                                                                                                 |
+| [`looks_like_vendor_tag`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.looks_like_vendor_tag)(prefix)                | Whether the text before an FXName's first hyphen reads as a VendorCategory.                                                                                                                                                                                                                                                              |
+| [`parse_catid_token`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_catid_token)(filename)                  | Return the CatID candidate of a UCS-style filename, else `None`.                                                                                                                                                                                                                                                                         |
+| [`parse_ucs_filename`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_filename)(filename, \*[, table])    | Parse a UCS-conformant filename to `(ucs_category, ucs_subcategory)`.                                                                                                                                                                                                                                                                    |
+| [`parse_ucs_name`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_name)(filename, \*[, table, ...])   | Every block of a UCS filename as a [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName), else `None`.                                                                                                                                                                                             |
 
 ### foley.index.taxonomy.ucs.BLOCK_SEP *= '_'*
 
@@ -13945,12 +14151,73 @@ UserCategory to the CatID and VendorCategory to the FXName.
 
 The UCS v8.2.1 master as shipped (`tools/build_ucs_table.py`; #227).
 
+### foley.index.taxonomy.ucs.UCS_NAME_BLOCKS *= ('catid', 'fx_name', 'creator_id', 'source_id', 'user_category', 'vendor_category', 'user_data')*
+
+The blocks of a UCS filename, as [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName) fields (`category` and
+`subcategory` are not blocks: they come from the CatID’s table row).
+
+### foley.index.taxonomy.ucs.UCS_NAME_MAX_BYTES *= 255*
+
+The longest filename, in UTF-8 bytes, that [`format_ucs_name()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.format_ucs_name) makes
+(`NAME_MAX` on ext4, APFS and NTFS-as-seen-by-most-tools).
+
+### foley.index.taxonomy.ucs.UCS_SHORTENABLE_BLOCKS *= ('fx_name', 'creator_id', 'source_id', 'user_category')*
+
+The blocks [`format_ucs_name()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.format_ucs_name) shortens, longest first, to fit
+[`UCS_NAME_MAX_BYTES`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.UCS_NAME_MAX_BYTES). The CatID, VendorCategory and UserData are kept whole
+(UserData may hold an id that must stay unique).
+
 ### foley.index.taxonomy.ucs.default_ucs_table()
 
 The process-wide default UCS table (seed + any JSON drop), built once.
 
 * **Return type:**
   [`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)
+
+### foley.index.taxonomy.ucs.format_ucs_name(name=None, /, \*, ext=None, table=None, is_vendor_tag=<function looks_like_vendor_tag>, max_bytes=255, \*\*blocks)
+
+The UCS filename of `name` (a [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName) or a mapping of its
+blocks), with `blocks` ([`UCS_NAME_BLOCKS`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.UCS_NAME_BLOCKS)) overriding it: the inverse of
+[`parse_ucs_name()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_name).
+
+Each block is sanitised so the name parses back to the same blocks: unsafe
+characters and underscores inside a block become spaces, whitespace is collapsed,
+a VendorCategory is upper-cased, and a hyphen that would make an FXName’s head
+read as a VendorCategory becomes a space (`Sci-Fi Door` stays as it is). A name
+over `max_bytes` has its longest shortenable block
+([`UCS_SHORTENABLE_BLOCKS`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.UCS_SHORTENABLE_BLOCKS)) cut on a character boundary until it fits. So
+`format_ucs_name(parse_ucs_name(f))` is `f` for any `f` this function made.
+The CatID is looked up in `table` (default: [`default_ucs_table()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.default_ucs_table)) and
+written in its canonical spelling; an unknown one raises, since the name would
+not parse.
+
+* **Parameters:**
+  * **name** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName), [`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – The blocks to format (`category` / `subcategory` are ignored).
+  * **ext** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The extension to append (`'wav'` or `'.wav'`), or `None` for a stem.
+  * **table** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)]) – The UCS table the CatID must be in.
+  * **is_vendor_tag** ([`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]) – What reads as a VendorCategory (as in [`parse_ucs_name()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_name)).
+  * **max_bytes** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – The longest name to make, in UTF-8 bytes, extension included.
+  * **\*\*blocks** – Block values overriding `name`’s.
+* **Raises:**
+  * [**TypeError**](https://docs.python.org/3/builtins/exceptions.html#TypeError) – a keyword is not a UCS block.
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – no CatID, or one not in `table`; a bad `ext`; a
+        VendorCategory that cannot be read back or has no FXName; a name that
+        cannot be cut to `max_bytes`.
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+```pycon
+>>> format_ucs_name(catid="doorwood", fx_name="Sci-Fi Door_slam", creator_id="JD",
+...                 source_id="NYC", ext="wav")
+'DOORWood_Sci-Fi Door slam_JD_NYC.wav'
+>>> n = parse_ucs_name("DOORWood-Gate_SCIFI-Creak Open_JD_NYC_take_2.wav")
+>>> format_ucs_name(n, ext="wav")
+'DOORWood-Gate_SCIFI-Creak Open_JD_NYC_take_2.wav'
+>>> format_ucs_name(catid="DOORWood", fx_name="BOOM-Creak")  # not a vendor tag
+'DOORWood_BOOM Creak'
+>>> len(format_ucs_name(catid="DOORWood", fx_name="x" * 300, user_data="id1"))
+255
+```
 
 ### foley.index.taxonomy.ucs.load_ucs_master()
 
@@ -16434,7 +16701,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'netflix intro', 'netflix chime', 'ta-dum', 'tudum', 'ta dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm roar', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel jingle', 'intel chime', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta-dum', 'tudum', 'netflix intro', 'netflix chime', 'ta dum', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm roar', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel bong', 'intel chime', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer doh', 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -16655,17 +16922,21 @@ reach the pure helpers via `foley.art50_checklist` / `foley.scan_prompt`.
 
 ### Functions
 
-| [`attribution_line`](_autosummary/foley.provenance.html.md#foley.provenance.attribution_line)(source, \*[, fmt])                | Render one sound's TASL attribution line.                                                                     |
-|-----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
-| [`credit_entry`](_autosummary/foley.provenance.html.md#foley.provenance.credit_entry)(record, \*[, title])                  | Build a [`CreditEntry`](_autosummary/foley.provenance.html.md#foley.provenance.CreditEntry) from a record (title override optional). |
-| [`credits_for`](_autosummary/foley.provenance.html.md#foley.provenance.credits_for)(sounds, \*[, title, ...])              | Build the deduplicated [`Credits`](_autosummary/foley.provenance.html.md#foley.provenance.Credits) for the sounds used in a run. |
-| [`credits_manifest`](_autosummary/foley.provenance.html.md#foley.provenance.credits_manifest)(credits)                          | The machine-readable manifest for `credits` — a JSON-native dict.                                             |
-| [`export_sound`](_autosummary/foley.provenance.html.md#foley.provenance.export_sound)(sound_id[, fmt, library, subtype])    | Export a sound's bytes as `fmt` with its rights and provenance (#66).                                         |
-| [`make_c2pa_signer`](_autosummary/foley.provenance.html.md#foley.provenance.make_c2pa_signer)(cert_chain_pem, ...[, alg, ...])  | A `c2pa.Signer` for `foley.weave(..., sign_cert=...)` from a cert chain and key.                              |
-| [`make_self_signed_c2pa_certs`](_autosummary/foley.provenance.html.md#foley.provenance.make_self_signed_c2pa_certs)(\*[, ...])             | A throwaway C2PA-conformant `(cert_chain_pem, private_key_pem)` for dev and tests.                            |
-| [`render_credits_md`](_autosummary/foley.provenance.html.md#foley.provenance.render_credits_md)(credits, \*[, title, ...])       | Render `credits` as a deterministic `CREDITS.md` document.                                                    |
-| [`sound_provenance`](_autosummary/foley.provenance.html.md#foley.provenance.sound_provenance)(record, \*, archived_sha256, ...) | What an export must carry that `Rights` has no field for (JSON-native).                                       |
-| [`sound_rights`](_autosummary/foley.provenance.html.md#foley.provenance.sound_rights)(record)                               | `record`'s rights as a dict keyed by `lacing.Rights` field names.                                             |
+| [`attribution_line`](_autosummary/foley.provenance.html.md#foley.provenance.attribution_line)(source, \*[, fmt])                | Render one sound's TASL attribution line.                                                                                                           |
+|-----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`credit_entry`](_autosummary/foley.provenance.html.md#foley.provenance.credit_entry)(record, \*[, title])                  | Build a [`CreditEntry`](_autosummary/foley.provenance.html.md#foley.provenance.CreditEntry) from a record (title override optional).                                       |
+| [`credits_for`](_autosummary/foley.provenance.html.md#foley.provenance.credits_for)(sounds, \*[, title, ...])              | Build the deduplicated [`Credits`](_autosummary/foley.provenance.html.md#foley.provenance.Credits) for the sounds used in a run.                                       |
+| [`credits_manifest`](_autosummary/foley.provenance.html.md#foley.provenance.credits_manifest)(credits)                          | The machine-readable manifest for `credits` — a JSON-native dict.                                                                                   |
+| [`export_metadata`](_autosummary/foley.provenance.html.md#foley.provenance.export_metadata)(record, rights[, ucs_name])        | The fields an export embeds ([`foley.embedded_metadata.FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) names). |
+| [`export_sound`](_autosummary/foley.provenance.html.md#foley.provenance.export_sound)(sound_id[, fmt, library, ...])        | Export a sound's bytes as `fmt` with its rights and provenance (#66, #231).                                                                         |
+| [`export_ucs_filename`](_autosummary/foley.provenance.html.md#foley.provenance.export_ucs_filename)(record, rights, \*[, ...])     | The UCS filename of `record`'s export, or `None` when it has no CatID in `table`.                                                                   |
+| [`id_from_user_data`](_autosummary/foley.provenance.html.md#foley.provenance.id_from_user_data)(block)                           | The foley id [`id_to_user_data()`](_autosummary/foley.provenance.html.md#foley.provenance.id_to_user_data) encoded as `block`.                                                 |
+| [`id_to_user_data`](_autosummary/foley.provenance.html.md#foley.provenance.id_to_user_data)(sound_id)                          | `sound_id` as a filename block, injectively: [`id_from_user_data()`](_autosummary/foley.provenance.html.md#foley.provenance.id_from_user_data) inverts it.                       |
+| [`make_c2pa_signer`](_autosummary/foley.provenance.html.md#foley.provenance.make_c2pa_signer)(cert_chain_pem, ...[, alg, ...])  | A `c2pa.Signer` for `foley.weave(..., sign_cert=...)` from a cert chain and key.                                                                    |
+| [`make_self_signed_c2pa_certs`](_autosummary/foley.provenance.html.md#foley.provenance.make_self_signed_c2pa_certs)(\*[, ...])             | A throwaway C2PA-conformant `(cert_chain_pem, private_key_pem)` for dev and tests.                                                                  |
+| [`render_credits_md`](_autosummary/foley.provenance.html.md#foley.provenance.render_credits_md)(credits, \*[, title, ...])       | Render `credits` as a deterministic `CREDITS.md` document.                                                                                          |
+| [`sound_provenance`](_autosummary/foley.provenance.html.md#foley.provenance.sound_provenance)(record, \*, archived_sha256, ...) | What an export must carry that `Rights` has no field for (JSON-native).                                                                             |
+| [`sound_rights`](_autosummary/foley.provenance.html.md#foley.provenance.sound_rights)(record)                               | `record`'s rights as a dict keyed by `lacing.Rights` field names.                                                                                   |
 
 ### Classes
 
@@ -16771,14 +17042,27 @@ the `watermark` / `c2pa_manifest_ref` pass-throughs (`None` until #9b).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### foley.provenance.export_sound(sound_id, fmt='wav', , library=None, subtype=None)
+### foley.provenance.export_metadata(record, rights, ucs_name=None)
 
-Export a sound’s bytes as `fmt` with its rights and provenance (#66).
+The fields an export embeds ([`foley.embedded_metadata.FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) names).
+
+The caption and tags, the UCS fields of `ucs_name` (the parse of the export’s
+filename, so the file and its name agree), the designer (`rights`’ author) and
+`rights`’ licence, licence URL and attribution line, verbatim. Empty values are
+left out by the writer.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.provenance.export_sound(sound_id, fmt='wav', , library=None, subtype=None, embed_metadata=True, ucs_filename=True, ucs_table=None)
+
+Export a sound’s bytes as `fmt` with its rights and provenance (#66, #231).
 
 The sound’s bytes are fetched from `library`, checked against the record’s
 content hash, and re-encoded ([`foley.audio.transcode()`](_autosummary/foley.audio.html.md#foley.audio.transcode): PCM, the archive’s
 own depth where `fmt` allows, so a `PCM_24` FLAC gives a sample-exact
-`PCM_24` WAV; bytes already in `fmt` come back untouched).
+`PCM_24` WAV; bytes already in `fmt` and subtype are not re-encoded). A WAV
+then gets its `bext` / `iXML` metadata ([`export_metadata()`](_autosummary/foley.provenance.html.md#foley.provenance.export_metadata)).
 
 * **Parameters:**
   * **sound_id** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The record id in `library`.
@@ -16786,9 +17070,24 @@ own depth where `fmt` allows, so a `PCM_24` FLAC gives a sample-exact
   * **library** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`SoundLibrary`](_autosummary/foley.index.library.html.md#foley.index.library.SoundLibrary)]) – The [`SoundLibrary`](_autosummary/foley.index.library.html.md#foley.index.library.SoundLibrary) to read (default:
     [`foley.default_library()`](_autosummary/foley.html.md#foley.default_library)).
   * **subtype** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The sample format (default: [`foley.audio.export_subtype()`](_autosummary/foley.audio.html.md#foley.audio.export_subtype)).
+  * **embed_metadata** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Write `bext` / `iXML` into a WAV export (default on: it
+    adds chunks only, never touches the samples, and makes the file carry
+    its own credit; other formats, and a WAV the writer refuses, such as a
+    streamed one sized `0xFFFFFFFF`, are left as encoded, with a note).
+    The licence fields (`EXPORT_OWNED_FIELDS`) are foley’s: a source
+    file’s value is removed when `rights` has none.
+  * **ucs_filename** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Put the UCS filename in `provenance["filename"]` (default on:
+    it is only a suggestion, so it costs a consumer nothing to ignore). The
+    embedded UCS fields do not depend on it: they follow `embed_metadata`.
+  * **ucs_table** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)]) – The UCS table the CatID is resolved in (default:
+    [`foley.index.taxonomy.default_ucs_table()`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_ucs_table)).
 * **Returns:**
   `rights` from [`sound_rights()`](_autosummary/foley.provenance.html.md#foley.provenance.sound_rights),
-  `provenance` from [`sound_provenance()`](_autosummary/foley.provenance.html.md#foley.provenance.sound_provenance).
+  `provenance` from [`sound_provenance()`](_autosummary/foley.provenance.html.md#foley.provenance.sound_provenance), plus `filename` (the UCS
+  filename, or `None`), `embedded` (the chunks written: `['ixml',
+  'bext']`, or `[]`) and `export_notes` (why a filename or chunks are
+  missing, and what of a source file’s own metadata was not kept).
+  `provenance["sha256"]` is the hash of the bytes returned.
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 * **Raises:**
@@ -16797,6 +17096,49 @@ own depth where `fmt` allows, so a `PCM_24` FLAC gives a sample-exact
         (`cache_bytes_ok=False`).
   * [**LookupError**](https://docs.python.org/3/builtins/exceptions.html#LookupError) – the bytes are not available locally.
   * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – the record names no content hash, or the bytes no longer match it.
+
+### foley.provenance.export_ucs_filename(record, rights, , ext='wav', table=None, fx_name_max_chars=25)
+
+The UCS filename of `record`’s export, or `None` when it has no CatID in `table`.
+
+`CatID_FXName_CreatorID_SourceID_UserData.ext`: the CatID is
+`record.ucs_category` (which holds the CatID), looked up in `table` (default:
+[`foley.index.taxonomy.default_ucs_table()`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_ucs_table)); the FXName is the caption (else
+the tags) cut to `fx_name_max_chars`; the creator is `rights`’ author, else
+its provider; the source is foley’s source name; the UserData is the foley id
+([`id_to_user_data()`](_autosummary/foley.provenance.html.md#foley.provenance.id_to_user_data): injective, case-safe, reversible), so two exports of one
+library never share a name. The other blocks are cut to fit the filename limit
+(`UCS_NAME_MAX_BYTES`); the id is never cut.
+[`parse_ucs_name()`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_ucs_name) reads it back.
+
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – the id alone does not fit in a filename.
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.provenance.id_from_user_data(block)
+
+The foley id [`id_to_user_data()`](_autosummary/foley.provenance.html.md#foley.provenance.id_to_user_data) encoded as `block`.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.provenance.id_to_user_data(sound_id)
+
+`sound_id` as a filename block, injectively: [`id_from_user_data()`](_autosummary/foley.provenance.html.md#foley.provenance.id_from_user_data) inverts it.
+
+Every character but lower-case ASCII letters, digits, `-` and `~` is
+percent-encoded (its UTF-8 bytes, upper-case hex), so the block holds no `_`,
+`.`, path or reserved character, and two ids never give names that differ only
+in case (which a case-insensitive filesystem, macOS or Windows, would merge).
+
+```pycon
+>>> id_to_user_data("fs:1_A.b"), id_from_user_data("fs%3A1%5F%41%2Eb")
+('fs%3A1%5F%41%2Eb', 'fs:1_A.b')
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### foley.provenance.make_c2pa_signer(cert_chain_pem, private_key_pem, , alg='es256', tsa_url=None, password=None)
 
@@ -16932,6 +17274,19 @@ Two rules carry the rights:
 Everything is read off the [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) SSOT through the
 credits layer (title, author, licence URL, attribution line); no flag is re-derived.
 
+The export also interoperates with library tools (Soundminer, Soundly, BaseHead; #231):
+
+* a **UCS filename** (`CatID_FXName_CreatorID_SourceID_<foley id>.wav`,
+  [`export_ucs_filename()`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.export_ucs_filename)) goes in `provenance["filename"]`, a suggestion the
+  > consumer may use. It is not a fourth return value: `(bytes, rights, provenance)`
+  > is the contract callers unpack, and the provenance already describes the exported
+  > bytes (format, subtype, hash).
+* a WAV export carries its description in **bext / iXML**
+  ([`export_metadata()`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.export_metadata), written by [`foley.embedded_metadata.write_embedded_metadata()`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.write_embedded_metadata)):
+  caption, tags, the UCS fields, and the licence, licence URL and attribution line
+  of `rights`, so the credit travels with the file. The samples are untouched and
+  `provenance["sha256"]` is taken after embedding, so it names the bytes returned.
+
 ### Module Attributes
 
 | [`DEFAULT_EXPORT_FORMAT`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.DEFAULT_EXPORT_FORMAT)   | The format an export is encoded in when none is named.                                                                                                                              |
@@ -16939,15 +17294,22 @@ credits layer (title, author, licence URL, attribution line); no flag is re-deri
 | [`RIGHTS_FIELDS`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.RIGHTS_FIELDS)           | `lacing.Rights`' field names, the keys of [`sound_rights()`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.sound_rights) (lacing#34; a test pins them to lacing's model when lacing is installed). |
 | [`ASSET_SOURCE_EXTRAS`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.ASSET_SOURCE_EXTRAS)     | `an`'s `AssetSource` fields that `lacing.Rights` has no name for (a test pins them to an's model when an is installed).                                                             |
 | [`PROVENANCE_FIELDS`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.PROVENANCE_FIELDS)       | a foley row's own metadata must not use one, or it would read as that record's claim.                                                                                               |
+| [`METADATA_FORMATS`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.METADATA_FORMATS)        | The containers that take `bext` / `iXML` chunks (RIFF WAVE, as libsndfile names them).                                                                                              |
+| [`EXPORT_OWNED_FIELDS`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.EXPORT_OWNED_FIELDS)     | a source file's value is removed when the export has none, so the file never pairs foley's licence with a vendor's URL.                                                             |
+| [`UCS_FXNAME_MAX_CHARS`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.UCS_FXNAME_MAX_CHARS)    | a brief title of at most this many characters.                                                                                                                                      |
 
 ### Functions
 
-| [`excluded_territories`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.excluded_territories)(lic)                          | Where `lic` or any licence it derives from grants nothing (sorted codes).    |
-|-----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------|
-| [`export_sound`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.export_sound)(sound_id[, fmt, library, subtype])    | Export a sound's bytes as `fmt` with its rights and provenance (#66).        |
-| [`rights_provider`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.rights_provider)(lic)                               | Who the rights come from: a provider-terms licence's owner, else the source. |
-| [`sound_provenance`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.sound_provenance)(record, \*, archived_sha256, ...) | What an export must carry that `Rights` has no field for (JSON-native).      |
-| [`sound_rights`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.sound_rights)(record)                               | `record`'s rights as a dict keyed by `lacing.Rights` field names.            |
+| [`excluded_territories`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.excluded_territories)(lic)                          | Where `lic` or any licence it derives from grants nothing (sorted codes).                                                                           |
+|-----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`export_metadata`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.export_metadata)(record, rights[, ucs_name])        | The fields an export embeds ([`foley.embedded_metadata.FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) names). |
+| [`export_sound`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.export_sound)(sound_id[, fmt, library, ...])        | Export a sound's bytes as `fmt` with its rights and provenance (#66, #231).                                                                         |
+| [`export_ucs_filename`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.export_ucs_filename)(record, rights, \*[, ...])     | The UCS filename of `record`'s export, or `None` when it has no CatID in `table`.                                                                   |
+| [`id_from_user_data`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.id_from_user_data)(block)                           | The foley id [`id_to_user_data()`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.id_to_user_data) encoded as `block`.                                                 |
+| [`id_to_user_data`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.id_to_user_data)(sound_id)                          | `sound_id` as a filename block, injectively: [`id_from_user_data()`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.id_from_user_data) inverts it.                       |
+| [`rights_provider`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.rights_provider)(lic)                               | Who the rights come from: a provider-terms licence's owner, else the source.                                                                        |
+| [`sound_provenance`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.sound_provenance)(record, \*, archived_sha256, ...) | What an export must carry that `Rights` has no field for (JSON-native).                                                                             |
+| [`sound_rights`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.sound_rights)(record)                               | `record`'s rights as a dict keyed by `lacing.Rights` field names.                                                                                   |
 
 ### foley.provenance.rights.ASSET_SOURCE_EXTRAS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('url', 'sha256', 'cost_usd', 'extra')*
 
@@ -16957,6 +17319,18 @@ them to an’s model when an is installed).
 ### foley.provenance.rights.DEFAULT_EXPORT_FORMAT *= 'wav'*
 
 The format an export is encoded in when none is named.
+
+### foley.provenance.rights.EXPORT_OWNED_FIELDS *= ('license', 'license_url', 'attribution')*
+
+a source file’s value is removed when the
+export has none, so the file never pairs foley’s licence with a vendor’s URL.
+
+* **Type:**
+  The fields an export owns in the file
+
+### foley.provenance.rights.METADATA_FORMATS *= ('wav', 'wavex')*
+
+The containers that take `bext` / `iXML` chunks (RIFF WAVE, as libsndfile names them).
 
 ### foley.provenance.rights.PROVENANCE_FIELDS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('provider', 'id', 'title', 'license', 'license_url', 'attribution', 'source_page_url', 'author', 'author_url', 'cacheable', 'url', 'sha256', 'cost_usd', 'extra')*
 
@@ -16971,6 +17345,13 @@ metadata must not use one, or it would read as that record’s claim.
 `lacing.Rights`’ field names, the keys of [`sound_rights()`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.sound_rights) (lacing#34; a test
 pins them to lacing’s model when lacing is installed).
 
+### foley.provenance.rights.UCS_FXNAME_MAX_CHARS *= 25*
+
+a brief title of at most this many characters.
+
+* **Type:**
+  The UCS guidance for an FXName
+
 ### foley.provenance.rights.excluded_territories(lic)
 
 Where `lic` or any licence it derives from grants nothing (sorted codes).
@@ -16983,14 +17364,27 @@ Where `lic` or any licence it derives from grants nothing (sorted codes).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
-### foley.provenance.rights.export_sound(sound_id, fmt='wav', , library=None, subtype=None)
+### foley.provenance.rights.export_metadata(record, rights, ucs_name=None)
 
-Export a sound’s bytes as `fmt` with its rights and provenance (#66).
+The fields an export embeds ([`foley.embedded_metadata.FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) names).
+
+The caption and tags, the UCS fields of `ucs_name` (the parse of the export’s
+filename, so the file and its name agree), the designer (`rights`’ author) and
+`rights`’ licence, licence URL and attribution line, verbatim. Empty values are
+left out by the writer.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.provenance.rights.export_sound(sound_id, fmt='wav', , library=None, subtype=None, embed_metadata=True, ucs_filename=True, ucs_table=None)
+
+Export a sound’s bytes as `fmt` with its rights and provenance (#66, #231).
 
 The sound’s bytes are fetched from `library`, checked against the record’s
 content hash, and re-encoded ([`foley.audio.transcode()`](_autosummary/foley.audio.html.md#foley.audio.transcode): PCM, the archive’s
 own depth where `fmt` allows, so a `PCM_24` FLAC gives a sample-exact
-`PCM_24` WAV; bytes already in `fmt` come back untouched).
+`PCM_24` WAV; bytes already in `fmt` and subtype are not re-encoded). A WAV
+then gets its `bext` / `iXML` metadata ([`export_metadata()`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.export_metadata)).
 
 * **Parameters:**
   * **sound_id** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The record id in `library`.
@@ -16998,9 +17392,24 @@ own depth where `fmt` allows, so a `PCM_24` FLAC gives a sample-exact
   * **library** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`SoundLibrary`](_autosummary/foley.index.library.html.md#foley.index.library.SoundLibrary)]) – The [`SoundLibrary`](_autosummary/foley.index.library.html.md#foley.index.library.SoundLibrary) to read (default:
     [`foley.default_library()`](_autosummary/foley.html.md#foley.default_library)).
   * **subtype** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The sample format (default: [`foley.audio.export_subtype()`](_autosummary/foley.audio.html.md#foley.audio.export_subtype)).
+  * **embed_metadata** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Write `bext` / `iXML` into a WAV export (default on: it
+    adds chunks only, never touches the samples, and makes the file carry
+    its own credit; other formats, and a WAV the writer refuses, such as a
+    streamed one sized `0xFFFFFFFF`, are left as encoded, with a note).
+    The licence fields ([`EXPORT_OWNED_FIELDS`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.EXPORT_OWNED_FIELDS)) are foley’s: a source
+    file’s value is removed when `rights` has none.
+  * **ucs_filename** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Put the UCS filename in `provenance["filename"]` (default on:
+    it is only a suggestion, so it costs a consumer nothing to ignore). The
+    embedded UCS fields do not depend on it: they follow `embed_metadata`.
+  * **ucs_table** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)]) – The UCS table the CatID is resolved in (default:
+    [`foley.index.taxonomy.default_ucs_table()`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_ucs_table)).
 * **Returns:**
   `rights` from [`sound_rights()`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.sound_rights),
-  `provenance` from [`sound_provenance()`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.sound_provenance).
+  `provenance` from [`sound_provenance()`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.sound_provenance), plus `filename` (the UCS
+  filename, or `None`), `embedded` (the chunks written: `['ixml',
+  'bext']`, or `[]`) and `export_notes` (why a filename or chunks are
+  missing, and what of a source file’s own metadata was not kept).
+  `provenance["sha256"]` is the hash of the bytes returned.
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 * **Raises:**
@@ -17009,6 +17418,49 @@ own depth where `fmt` allows, so a `PCM_24` FLAC gives a sample-exact
         (`cache_bytes_ok=False`).
   * [**LookupError**](https://docs.python.org/3/builtins/exceptions.html#LookupError) – the bytes are not available locally.
   * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – the record names no content hash, or the bytes no longer match it.
+
+### foley.provenance.rights.export_ucs_filename(record, rights, , ext='wav', table=None, fx_name_max_chars=25)
+
+The UCS filename of `record`’s export, or `None` when it has no CatID in `table`.
+
+`CatID_FXName_CreatorID_SourceID_UserData.ext`: the CatID is
+`record.ucs_category` (which holds the CatID), looked up in `table` (default:
+[`foley.index.taxonomy.default_ucs_table()`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_ucs_table)); the FXName is the caption (else
+the tags) cut to `fx_name_max_chars`; the creator is `rights`’ author, else
+its provider; the source is foley’s source name; the UserData is the foley id
+([`id_to_user_data()`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.id_to_user_data): injective, case-safe, reversible), so two exports of one
+library never share a name. The other blocks are cut to fit the filename limit
+(`UCS_NAME_MAX_BYTES`); the id is never cut.
+[`parse_ucs_name()`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_ucs_name) reads it back.
+
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – the id alone does not fit in a filename.
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.provenance.rights.id_from_user_data(block)
+
+The foley id [`id_to_user_data()`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.id_to_user_data) encoded as `block`.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.provenance.rights.id_to_user_data(sound_id)
+
+`sound_id` as a filename block, injectively: [`id_from_user_data()`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.id_from_user_data) inverts it.
+
+Every character but lower-case ASCII letters, digits, `-` and `~` is
+percent-encoded (its UTF-8 bytes, upper-case hex), so the block holds no `_`,
+`.`, path or reserved character, and two ids never give names that differ only
+in case (which a case-insensitive filesystem, macOS or Windows, would merge).
+
+```pycon
+>>> id_to_user_data("fs:1_A.b"), id_from_user_data("fs%3A1%5F%41%2Eb")
+('fs%3A1%5F%41%2Eb', 'fs:1_A.b')
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### foley.provenance.rights.rights_provider(lic)
 
@@ -27091,7 +27543,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 03:33 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/608bdc42ceaac0c4d35b61b862752a7584df063d"><code>608bdc4</code></a> on branch <code>main</code>, for **foley 0.0.114** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 03:56 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/449fc68de749e628edbafcf529d8c0afe195da48"><code>449fc68</code></a> on branch <code>main</code>, for **foley 0.0.115** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -27100,7 +27552,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/608bdc42ceaac0c4d35b61b862752a7584df063d"><code>608bdc42ceaac0c4d35b61b862752a7584df063d</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/449fc68de749e628edbafcf529d8c0afe195da48"><code>449fc68de749e628edbafcf529d8c0afe195da48</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -27111,9 +27563,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41383538032">41383538032</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41385448315">41385448315</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>608bdc42ceaac0c4d35b61b862752a7584df063d</code> (in the history of the built commit) |
+| Event commit | <code>449fc68de749e628edbafcf529d8c0afe195da48</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -27138,13 +27590,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.114/">0.0.114</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.115/">0.0.115</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 608bdc42ceaac0c4d35b61b862752a7584df063d
+git checkout 449fc68de749e628edbafcf529d8c0afe195da48
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
