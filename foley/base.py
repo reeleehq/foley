@@ -1043,7 +1043,9 @@ class Placement(SerializableMixin):
     pre_roll: float = 0.0  # lead so the clip's transient lands on the anchor
     duration: Optional[float] = None  # None = full clip length
     loop: bool = False  # seamless-loop to fill ``duration`` (beds)
-    match_kind: Optional[MatchKind] = None  # how ``onset`` was resolved; None = unresolved
+    match_kind: Optional[MatchKind] = (
+        None  # how ``onset`` was resolved; None = unresolved
+    )
 
 
 @dataclass
