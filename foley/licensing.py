@@ -911,11 +911,13 @@ LICENSE_TERMS_PROVIDER: "dict[str, str]" = {
 CONSUMER_LICENSE_CODES: "dict[str, Optional[str]]" = {"unknown": None}
 
 #: Licences whose code means the same to any consumer, whoever the provider: the
-#: public ones (CC, MIT). A provider-terms or private code (``stability-community``,
+#: public CC ones. A provider-terms or private code (``stability-community``,
 #: ``user-owned``, ``owned-pack``) is classifiable only on its own provider's record,
-#: so in an edit's lineage, where that provider is gone, it reads as UNKNOWN.
+#: so in an edit's lineage, where that provider is gone, it reads as UNKNOWN. ``MIT``
+#: is left out until consumers agree it owes a credit (foley's row says it does;
+#: ``an`` reads ``mit`` as free with nothing owed), so an MIT link fails closed.
 PUBLIC_LICENSE_IDS: frozenset = frozenset(
-    {"CC0-1.0", "MIT"}
+    {"CC0-1.0"}
     | {
         f"{prefix}-{v}"
         for prefix, _seg, _label, _f in _CC_VERSIONED
