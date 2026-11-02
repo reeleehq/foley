@@ -218,6 +218,34 @@ def make_run_store(rootdir: Rootdir = DEFAULT_RUN_DIR) -> MutableMapping[str, di
     return wrap_kvs(json_store, id_of_key=_meta_filename, key_of_id=_meta_key)
 
 
+def check_session_id(session_id) -> str:
+    """``session_id`` if it can name a session's folder, else raise ``ValueError``.
+
+    A session id is chosen by the caller (an MCP agent), so it must be one plain path
+    segment: never a separator, ``.`` or ``..``, which would put the session's files
+    outside the sessions directory (or fail only at the first write, after a paid
+    call).
+
+    >>> check_session_id("default")
+    'default'
+    >>> check_session_id("../../x/y")
+    Traceback (most recent call last):
+    ...
+    ValueError: session id must be one plain name (no '/', '\\', '.' or '..'), got '../../x/y'
+    """
+    plain = (
+        isinstance(session_id, str)
+        and session_id not in ("", ".", "..")
+        and not any(c in session_id for c in ("/", "\\", "\0"))
+    )
+    if not plain:
+        raise ValueError(
+            "session id must be one plain name (no '/', '\\', '.' or '..'), got "
+            f"{session_id!r}"
+        )
+    return session_id
+
+
 def make_session_store(
     session_id: str = "default",
     name: str = "picks",
@@ -240,8 +268,15 @@ def make_session_store(
 
     Returns:
         A ``MutableMapping[str, dict]`` keyed by the bare key.
+
+    Raises:
+        ValueError: For a ``session_id`` that is not one plain name
+            (:func:`check_session_id`).
     """
-    root = (Path(rootdir) if rootdir else DEFAULT_SESSION_DIR) / session_id / name
+    root = (Path(rootdir) if rootdir else DEFAULT_SESSION_DIR) / check_session_id(
+        session_id
+    )
+    root = root / name
     json_store = mk_dirs_if_missing(JsonFiles(str(root)))
     return wrap_kvs(json_store, id_of_key=_meta_filename, key_of_id=_meta_key)
 

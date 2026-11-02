@@ -1238,7 +1238,10 @@ def estimate(verb: str, **kwargs):
 
     Args:
         verb: ``'generate'`` (``backend=``, plus the generation affordances — priced
-            exactly as the call would be: same drops, same clamp); ``'find'`` /
+            exactly as the call would be: same drops, same clamp); ``'edit'``
+            (``op=``, ``backend=`` (default: the op's), the op's parameters, and
+            optionally ``source=`` / ``library=``: priced as :func:`edit` would be,
+            see :func:`foley.sources.edit.estimate_edit`); ``'find'`` /
             ``'score'`` (the run's upper bound: every generation and LLM call it could
             make — what ``find`` checks against its budget before the first paid call;
             pass ``context=`` / ``segments=`` so the decomposer's prompt is sized, and
@@ -1248,7 +1251,8 @@ def estimate(verb: str, **kwargs):
         **kwargs: The same keywords the verb takes.
 
     Raises:
-        ValueError: For an unknown verb.
+        ValueError: For an unknown verb, or an unknown edit op (or one its backend
+            does not do, or its parameters do not fit).
         KeyError: For an unknown backend / source.
         UnsupportedParameter: For ``'generate'`` on one backend that cannot honour a
             meaning-carrying parameter (``model=``, ``seed=``, ``video=``): the call
@@ -1272,6 +1276,10 @@ def estimate(verb: str, **kwargs):
         from .sources.generate import estimate_order
 
         return estimate_order(kwargs.pop("backend", None), **kwargs)
+    if verb == "edit":
+        from .sources.edit import estimate_edit
+
+        return estimate_edit(**kwargs)
     if verb in ("find", "score"):
         keys = ("max_events", "backend", "llm", "k", "verify", "max_refine_loops")
         kw = {key: kwargs[key] for key in keys if key in kwargs}
@@ -1285,7 +1293,8 @@ def estimate(verb: str, **kwargs):
         per = [estimate_find_usd(**kw, context_chars=len(seg)) for seg in segments]
         return None if any(p is None for p in per) else sum(per)
     raise ValueError(
-        f"estimate() knows generate, find, score, search, similar, ingest, add_from; got {verb!r}"
+        "estimate() knows generate, edit, find, score, search, similar, ingest, "
+        f"add_from; got {verb!r}"
     )
 
 

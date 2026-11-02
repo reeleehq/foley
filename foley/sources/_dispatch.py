@@ -551,7 +551,7 @@ def plan_generation(
         CostApprovalRequired / BudgetExceeded: When the run cannot afford the call.
         SourceConfigurationError: When the adapter is not configured (key, plan).
     """
-    from ..cost import authorize, estimate_call
+    from ..cost import authorize
     from .registry import SOURCE_REGISTRY, require_source_egress
 
     variation = require_count("variation", variation, minimum=0)
@@ -565,8 +565,7 @@ def plan_generation(
     if config.get("presets"):  # a preset source with nothing to play refuses here (#76)
         kept["preset"], matched = resolve_preset(config, prompt, kept.get("preset"))
         notes += [matched] if matched else []
-    priced = _priced(config, kept)
-    kept = _cover_the_input(config, kept, priced, notes)
+    kept, estimate_usd = _priced_call(config, kept, notes)
     plan = GenerationPlan(
         backend=backend,
         prompt=prompt,
@@ -574,7 +573,7 @@ def plan_generation(
         affordances=kept,
         notes=notes,
         variation=variation,
-        estimate_usd=estimate_call(config, **{**priced, **kept}),
+        estimate_usd=estimate_usd,
         # Checked against the source's policy BEFORE any price or call: a reserved
         # or priced key raises here, so the estimate below is the call's price.
         provider_params=check_provider_params(
@@ -1145,28 +1144,50 @@ def _demux_kept(
 
 
 def estimate_generation(
-    backend: str, *, on_unsupported: Optional[str] = None, **affordances
+    backend: str,
+    *,
+    on_unsupported: Optional[str] = None,
+    config: Optional[dict] = None,
+    **affordances,
 ) -> Optional[float]:
-    """What :func:`plan_generation` would price this call at (same translation and clamp).
+    """What :func:`plan_generation` would price this call at (same translation, clamp
+    and input cover: :func:`_priced_call`).
 
     The same unsupported-parameter policy as the call (#164), ``on_unsupported``
     included: by default a meaning-carrying parameter the backend cannot honour raises
     :class:`UnsupportedParameter`, as ``generate`` would before anything is paid; any
-    other is dropped (silently here, warnings included).
+    other is dropped (silently here, warnings included). ``config``: the source's
+    config, as :func:`plan_generation` takes it (an injected adapter's); default: the
+    registry's.
     """
-    from ..cost import estimate_call
     from .registry import SOURCE_REGISTRY, discover_sources, get_source
 
-    discover_sources()
-    if backend not in SOURCE_REGISTRY:
-        get_source(backend)  # raises the informative KeyError
-    config = SOURCE_REGISTRY[backend]["config"]
+    if config is None:
+        discover_sources()
+        if backend not in SOURCE_REGISTRY:
+            get_source(backend)  # raises the informative KeyError
+        config = SOURCE_REGISTRY[backend]["config"]
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         kept, _ = translate_affordances(
             config, affordances, on_unsupported=on_unsupported
         )
-    return estimate_call(config, **_priced(config, kept))
+    return _priced_call(config, kept, [])[1]
+
+
+def _priced_call(
+    config: dict, kept: dict, notes: list
+) -> "tuple[dict, Optional[float]]":
+    """``kept`` covering its input (:func:`_cover_the_input`), and the call's price.
+
+    The one pricing of a generation: :func:`plan_generation` charges it and
+    :func:`estimate_generation` reports it, so an estimate is the plan's price.
+    """
+    from ..cost import estimate_call
+
+    priced = _priced(config, kept)
+    kept = _cover_the_input(config, kept, priced, notes)
+    return kept, estimate_call(config, **{**priced, **kept})
 
 
 def _priced(config: dict, affordances: dict) -> dict:
