@@ -92,8 +92,9 @@ DEFAULT_PASSAGES_PATH = (
 )
 
 #: An ellipsis (skipped), or a terminator run plus any closing quotes/brackets, followed by
-#: whitespace, the end, or the next sentence's capital / opening quote.
-_TERMINATOR = re.compile(r"(\.{2,}|…)|([.!?]+)[\"'”’)\]]*(?=\s+[A-Z“\"'‘(\[]|\s*$|[A-Z“\"'])")
+#: whitespace, the end, or the next sentence's capital / opening quote. A straight quote
+#: right after the terminator is read as closing (``"Stop!" she``), never as opening.
+_TERMINATOR = re.compile(r"(\.{2,}|…)|([.!?]+)[\"'”’)\]]*(?=\s+[A-Z“\"'‘(\[]|\s*$|[A-Z“‘(\[])")
 _WORD_BEFORE = re.compile(r"(\w+)$")
 
 #: ``passage -> ScoreResult``: the seam this eval measures.
