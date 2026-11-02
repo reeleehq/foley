@@ -1,4 +1,4 @@
-> built 2026-11-02 07:13 UTC from 90ee8b9 (main) · foley 0.0.129. Details: build_info.json
+> built 2026-11-02 07:44 UTC from 20a6fb0 (main) · foley 0.0.130. Details: build_info.json
 
 # index.html.md
 
@@ -9193,7 +9193,7 @@ Seed `library` from the selected bulk corpora, returning per-corpus reports.
 * **Returns:**
   `{corpus_name: IngestReport}` — inspect each `.summary()`.
 
-### foley.broadcast_bed(lines, , bed=None, bed_prompt=None, treatment='am_radio', gap_s=0.6, duration=None, bed_under_speech_db=-12.0, duck_db=-10.0, duck_attack_s=0.02, duck_release_s=0.3, loop_speech=True, crossfade_s=0.05, ceiling_db=-1.0, speech_license=None, bed_license=None, tts=None, library=None, generate=None, generate_options=None, store=False, accept_ai_restricted=False, ingest_options=None, sr=None)
+### foley.broadcast_bed(lines, , bed=None, bed_prompt=None, treatment='am_radio', gap_s=0.6, duration=None, bed_under_speech_db=-12.0, duck_db=-10.0, duck_attack_s=0.02, duck_release_s=0.3, loop_speech=True, crossfade_s=0.05, ceiling_db=-1.0, speech_license=None, bed_license=None, tts=None, library=None, generate=None, generate_options=None, store=False, accept_ai_restricted=False, restamp=False, ingest_options=None, sr=None)
 
 Speech lines heard through a radio/TV/PA/phone over a bed, looped for a scene (#108).
 
@@ -9250,6 +9250,15 @@ then is the text spoken.
     speech’s). Without it such a `store=True` is refused, fail-closed. The
     consent is to embed and store only: the stored licence still forbids
     training.
+  * **restamp** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – With `store=True`: when a byte-identical sound is already stored
+    with other credits, licence or lineage (a rerun with corrected credits),
+    correct that stored record to this broadcast’s instead of refusing it
+    (`sound_id=None`). Through the ingest’s re-stamp
+    ([`foley.licensing.restamped_license()`](_autosummary/foley.licensing.html.md#foley.licensing.restamped_license) with `remade=True`): its
+    credits and lineage are replaced, its rights only ever narrowed (a wider
+    rerun is refused with a note, the record kept), and a licence that does
+    not allow AI use still needs `accept_ai_restricted`. Exports already
+    made keep the credits they were exported with.
   * **ingest_options** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – More keywords for [`foley.index.ingest.ingest_one()`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.ingest_one)
     (`tagger`, `do_supervised`, `thresholds`, …) with `store=True`.
   * **sr** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Working sample rate (default `foley.audio.WORKING_SAMPLE_RATE`).
@@ -10208,7 +10217,7 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
     `CATID`, [`foley.embedded_metadata`](_autosummary/foley.embedded_metadata.html.md#module-foley.embedded_metadata)). It sets
     `ucs_category` (which holds the CatID) when the filename does not
     parse and the UCS table knows it; otherwise tags/caption decide.
-  * **restamp_duplicate** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – When the clip is already stored (`skipped_dup`),
+  * **restamp_duplicate** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`bool`](https://docs.python.org/3/builtins/functions.html#bool), [`Literal`](https://docs.python.org/3/library/typing.html#typing.Literal)[`'remade'`]]) – When the clip is already stored (`skipped_dup`),
     re-stamp the stored record from `license` without ever widening it
     ([`foley.licensing.restamped_license()`](_autosummary/foley.licensing.html.md#foley.licensing.restamped_license) with `widen=False`; its
     note lands on the result). The rights gate below holds here too: a new
@@ -10216,7 +10225,10 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
     only with `allow_ai_training_forbidden`; without it the stored record
     becomes `unknown` (unverified, so [`foley.keep()`](_autosummary/foley.html.md#foley.keep) refuses it) and
     the result `rights_blocked`, as a fresh ingest would be. Default
-    `False`: a duplicate is left as it is.
+    `False`: a duplicate is left as it is. `'remade'`: the clip was made
+    again (`RESTAMP_REMADE`), so `license`’s lineage and credits replace
+    the stored ones too (`restamped_license(remade=True)`), still never
+    widening.
   * **allow_ai_training_forbidden** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – The universal fail-closed rights gate. A
     sound whose license has `ai_training_ok=False` (e.g. Sonniss,
     BBC RemArc) is refused with status `'rights_blocked'` *before* it is
@@ -12525,7 +12537,7 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
     `CATID`, [`foley.embedded_metadata`](_autosummary/foley.embedded_metadata.html.md#module-foley.embedded_metadata)). It sets
     `ucs_category` (which holds the CatID) when the filename does not
     parse and the UCS table knows it; otherwise tags/caption decide.
-  * **restamp_duplicate** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – When the clip is already stored (`skipped_dup`),
+  * **restamp_duplicate** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`bool`](https://docs.python.org/3/builtins/functions.html#bool), [`Literal`](https://docs.python.org/3/library/typing.html#typing.Literal)[`'remade'`]]) – When the clip is already stored (`skipped_dup`),
     re-stamp the stored record from `license` without ever widening it
     ([`foley.licensing.restamped_license()`](_autosummary/foley.licensing.html.md#foley.licensing.restamped_license) with `widen=False`; its
     note lands on the result). The rights gate below holds here too: a new
@@ -12533,7 +12545,10 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
     only with `allow_ai_training_forbidden`; without it the stored record
     becomes `unknown` (unverified, so [`foley.keep()`](_autosummary/foley.html.md#foley.keep) refuses it) and
     the result `rights_blocked`, as a fresh ingest would be. Default
-    `False`: a duplicate is left as it is.
+    `False`: a duplicate is left as it is. `'remade'`: the clip was made
+    again (`RESTAMP_REMADE`), so `license`’s lineage and credits replace
+    the stored ones too (`restamped_license(remade=True)`), still never
+    widening.
   * **allow_ai_training_forbidden** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – The universal fail-closed rights gate. A
     sound whose license has `ai_training_ok=False` (e.g. Sonniss,
     BBC RemArc) is refused with status `'rights_blocked'` *before* it is
@@ -13059,6 +13074,7 @@ module costs only the stdlib.
 
 | [`AUDIO_EXTS`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.AUDIO_EXTS)             | Audio file extensions the folder walker ingests.                                                                                                               |
 |-------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`RESTAMP_REMADE`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.RESTAMP_REMADE)         | the duplicate is the clip made again, so the fresh record's lineage and credits replace the stored ones.                                                       |
 | [`CONSENT_NOTE`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.CONSENT_NOTE)           | The note on a clip stored under a licence that forbids AI training, by the caller's explicit consent (`allow_ai_training_forbidden` / `accept_ai_restricted`). |
 | [`UNCONSENTED_LICENSE_ID`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.UNCONSENTED_LICENSE_ID) | The licence a stored, embedded clip falls back to when its new licence needs AI consent that was not given (fail-closed: unverified, so keep() refuses it).    |
 | [`LEGACY_SELECTORS`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.LEGACY_SELECTORS)       | Named selections for [`restamp_rights()`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.restamp_rights) (`foley restamp-rights --select NAME`).                                 |
@@ -13220,6 +13236,14 @@ Bases: [`TypeError`](https://docs.python.org/3/builtins/exceptions.html#TypeErro
 
 A per-file plan and the caller set the same [`ingest_one()`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.ingest_one) keyword.
 
+### foley.index.ingest.RESTAMP_REMADE *= 'remade'*
+
+the duplicate is the clip made
+again, so the fresh record’s lineage and credits replace the stored ones.
+
+* **Type:**
+  `ingest_one(restamp_duplicate=RESTAMP_REMADE)`
+
 ### foley.index.ingest.UNCONSENTED_LICENSE_ID *= 'unknown'*
 
 The licence a stored, embedded clip falls back to when its new licence needs AI
@@ -13338,7 +13362,7 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
     `CATID`, [`foley.embedded_metadata`](_autosummary/foley.embedded_metadata.html.md#module-foley.embedded_metadata)). It sets
     `ucs_category` (which holds the CatID) when the filename does not
     parse and the UCS table knows it; otherwise tags/caption decide.
-  * **restamp_duplicate** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – When the clip is already stored (`skipped_dup`),
+  * **restamp_duplicate** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`bool`](https://docs.python.org/3/builtins/functions.html#bool), [`Literal`](https://docs.python.org/3/library/typing.html#typing.Literal)[`'remade'`]]) – When the clip is already stored (`skipped_dup`),
     re-stamp the stored record from `license` without ever widening it
     ([`foley.licensing.restamped_license()`](_autosummary/foley.licensing.html.md#foley.licensing.restamped_license) with `widen=False`; its
     note lands on the result). The rights gate below holds here too: a new
@@ -13346,7 +13370,10 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
     only with `allow_ai_training_forbidden`; without it the stored record
     becomes `unknown` (unverified, so [`foley.keep()`](_autosummary/foley.html.md#foley.keep) refuses it) and
     the result `rights_blocked`, as a fresh ingest would be. Default
-    `False`: a duplicate is left as it is.
+    `False`: a duplicate is left as it is. `'remade'`: the clip was made
+    again ([`RESTAMP_REMADE`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.RESTAMP_REMADE)), so `license`’s lineage and credits replace
+    the stored ones too (`restamped_license(remade=True)`), still never
+    widening.
   * **allow_ai_training_forbidden** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – The universal fail-closed rights gate. A
     sound whose license has `ai_training_ok=False` (e.g. Sonniss,
     BBC RemArc) is refused with status `'rights_blocked'` *before* it is
@@ -15607,6 +15634,7 @@ item is redistributable but stored by-reference.
 | [`DEFAULT_CC_VERSION`](_autosummary/foley.licensing.html.md#foley.licensing.DEFAULT_CC_VERSION)           | The version assumed when a source gives a CC family with no version at all (Freesound's search labels: `"Attribution"`).                                                                                                                                                             |
 | [`UNKNOWN_LICENSE_META`](_autosummary/foley.licensing.html.md#foley.licensing.UNKNOWN_LICENSE_META)         | Fail-closed display fallback for unknown / `Proprietary-*` license ids.                                                                                                                                                                                                              |
 | [`LICENSE_META`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_META)                 | `license_id` -> display name + canonical URL (one row per [`LICENSE_FLAGS`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_FLAGS) key).                                                                                                                                                       |
+| [`GENERATION_FIELDS`](_autosummary/foley.licensing.html.md#foley.licensing.GENERATION_FIELDS)            | [`carry_lineage()`](_autosummary/foley.licensing.html.md#foley.licensing.carry_lineage) keeps the stored record's.                                                                                                                                                                                          |
 | [`AI_TRAINING_SCOPES`](_autosummary/foley.licensing.html.md#foley.licensing.AI_TRAINING_SCOPES)           | The `ai_training_scope` values (`None` = no narrowing beyond `ai_training_ok`).                                                                                                                                                                                                      |
 | [`GEN_AI_PREFERENCE_SCOPES`](_autosummary/foley.licensing.html.md#foley.licensing.GEN_AI_PREFERENCE_SCOPES)     | Freesound `gen_ai_preference` -> `(ai_training_ok override, ai_training_scope)`.                                                                                                                                                                                                     |
 | [`LICENSE_BASES`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_BASES)                | the model's own licence (its weights), the vendor's terms of service, or a label an aggregator put on it (fal's `commercial`, an Openverse row), which is a claim about another party's licence and never that licence itself.                                                       |
@@ -15620,47 +15648,49 @@ item is redistributable but stored by-reference.
 | [`PUBLIC_LICENSE_IDS`](_autosummary/foley.licensing.html.md#foley.licensing.PUBLIC_LICENSE_IDS)           | the public CC ones.                                                                                                                                                                                                                                                                  |
 | [`CONSUMER_LICENSE_CLASSES`](_autosummary/foley.licensing.html.md#foley.licensing.CONSUMER_LICENSE_CLASSES)     | A licence's class for a consumer, from the least to the most restrictive (the classes `an`'s `license_class` gives).                                                                                                                                                                 |
 | [`RESTAMP_FIELDS`](_autosummary/foley.licensing.html.md#foley.licensing.RESTAMP_FIELDS)               | The fields that say a stored licence and a fresh one differ besides their rights ([`wider_rights()`](_autosummary/foley.licensing.html.md#foley.licensing.wider_rights), either way); `verified_at` does not.                                                                                              |
+| [`REMADE_CREDIT_FIELDS`](_autosummary/foley.licensing.html.md#foley.licensing.REMADE_CREDIT_FIELDS)         | The credit fields a re-made sound's fresh record corrects besides [`RESTAMP_FIELDS`](_autosummary/foley.licensing.html.md#foley.licensing.RESTAMP_FIELDS) (`restamped_license(remade=True)`): who made it, from where.                                                                                       |
 | [`NO_RECORD_REASON`](_autosummary/foley.licensing.html.md#foley.licensing.NO_RECORD_REASON)             | The reason a placed sound with no record (nothing to read a licence from) is refused.                                                                                                                                                                                                |
 
 ### Functions
 
-| [`ai_scope_from_gen_ai_preference`](_autosummary/foley.licensing.html.md#foley.licensing.ai_scope_from_gen_ai_preference)(preference)       | Map a Freesound `gen_ai_preference` to `(ai_training_ok override, scope)`.                                                                                                                                                                                                     |
-|----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`ai_use_permitted`](_autosummary/foley.licensing.html.md#foley.licensing.ai_use_permitted)(record, \*, ...)                 | Whether AI use of the sound (CLAP-embedding it counts) is allowed here.                                                                                                                                                                                                        |
-| [`apply_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.apply_license_flags)(record, \*[, overrides])      | Populate `record`'s eight derived flags from its `license_id` (+ overrides), in place, and return it.                                                                                                                                                                          |
-| [`carries_own_restriction`](_autosummary/foley.licensing.html.md#foley.licensing.carries_own_restriction)(license_id)               | Whether `license_id` restricts beyond what its class says, so that no other licence's code can stand in for it: a revenue cap, or a provider's own terms ([`LICENSE_TERMS_PROVIDER`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_TERMS_PROVIDER), which a consumer attaches restrictions to). |
-| [`carries_share_alike`](_autosummary/foley.licensing.html.md#foley.licensing.carries_share_alike)(record, license_id)           | Whether a work made from `record` may be released under the share-alike `license_id`.                                                                                                                                                                                          |
-| [`carry_lineage`](_autosummary/foley.licensing.html.md#foley.licensing.carry_lineage)(new, old)                           | Copy `old`'s lineage onto `new`, in place, and return `new`.                                                                                                                                                                                                                   |
-| [`cc_refused_terms`](_autosummary/foley.licensing.html.md#foley.licensing.cc_refused_terms)(url)                             | The NoDerivatives / ShareAlike terms of a CC licence URL or label.                                                                                                                                                                                                             |
-| [`check_placed`](_autosummary/foley.licensing.html.md#foley.licensing.check_placed)(records, intended_use, \*, what)     | The one rights gate for placed sounds (a plan's, a weave's): raise, warn, or pass.                                                                                                                                                                                             |
-| [`checked_refusal_reason`](_autosummary/foley.licensing.html.md#foley.licensing.checked_refusal_reason)(record, intended_use)      | [`refusal_reason()`](_autosummary/foley.licensing.html.md#foley.licensing.refusal_reason), fail-closed: an error while checking is itself a reason.                                                                                                                                                    |
-| [`consumer_license_class`](_autosummary/foley.licensing.html.md#foley.licensing.consumer_license_class)(license_id)                | The [`CONSUMER_LICENSE_CLASSES`](_autosummary/foley.licensing.html.md#foley.licensing.CONSUMER_LICENSE_CLASSES) entry of `license_id`, from its flag row.                                                                                                                                                        |
-| [`consumer_license_code`](_autosummary/foley.licensing.html.md#foley.licensing.consumer_license_code)(license_id)                 | foley's `license_id` as a consumer's licence code: the SSOT consumers import.                                                                                                                                                                                                  |
-| [`derivative_refusal`](_autosummary/foley.licensing.html.md#foley.licensing.derivative_refusal)(source)                        | Why a sound with rights `source` may not be edited into a new sound, or `None`.                                                                                                                                                                                                |
-| [`derive_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.derive_license_flags)(license_id, \*[, overrides]) | Look up the flag set for a `license_id` (fail-closed fallback), then apply per-source overrides.                                                                                                                                                                               |
-| [`derived_license_ids`](_autosummary/foley.licensing.html.md#foley.licensing.derived_license_ids)(record)                       | The licence ids of every sound `record` derives from (`[]`: not derived).                                                                                                                                                                                                      |
-| [`excluded_territories`](_autosummary/foley.licensing.html.md#foley.licensing.excluded_territories)(record)                      | Where `record`'s licence, or any licence it derives from, grants nothing.                                                                                                                                                                                                      |
-| [`export_refusal`](_autosummary/foley.licensing.html.md#foley.licensing.export_refusal)(source)                            | Why the bytes of a sound with rights `source` may not be exported, or `None`.                                                                                                                                                                                                  |
-| [`intended_use_for`](_autosummary/foley.licensing.html.md#foley.licensing.intended_use_for)([intended_use, ...])             | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                                                                                                                                                                           |
-| [`is_cc_license_token`](_autosummary/foley.licensing.html.md#foley.licensing.is_cc_license_token)(token)                        | Whether `token` is a search constraint a CC-reading source understands.                                                                                                                                                                                                        |
-| [`is_share_alike`](_autosummary/foley.licensing.html.md#foley.licensing.is_share_alike)(license_id)                        | Whether `license_id` (or a licence URL / label) is share-alike.                                                                                                                                                                                                                |
-| [`keep`](_autosummary/foley.licensing.html.md#foley.licensing.keep)(record, intended_use)                        | Fail-closed candidate license gate (report 07 §8.2).                                                                                                                                                                                                                           |
-| [`keep_sound`](_autosummary/foley.licensing.html.md#foley.licensing.keep_sound)(sound_record, intended_use)            | Convenience: apply [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) to a `SoundRecord`'s nested license.                                                                                                                                                                |
-| [`license_id_from_cc_url`](_autosummary/foley.licensing.html.md#foley.licensing.license_id_from_cc_url)(url)                       | Map a Creative-Commons license URL **or label** to `(license_id, verified)`.                                                                                                                                                                                                   |
-| [`license_meta`](_autosummary/foley.licensing.html.md#foley.licensing.license_meta)(license_id)                          | Return the display [`LicenseMeta`](_autosummary/foley.licensing.html.md#foley.licensing.LicenseMeta) for `license_id` (fail-closed fallback).                                                                                                                                                       |
-| [`narrow_to_source`](_autosummary/foley.licensing.html.md#foley.licensing.narrow_to_source)(output, source)                  | Narrow `output`'s rights to what `source` allows, in place (never widening).                                                                                                                                                                                                   |
-| [`placed_record`](_autosummary/foley.licensing.html.md#foley.licensing.placed_record)(library, sound_id, \*[, ...])       | `library`'s record for `sound_id` as a rights gate reads it, never raising.                                                                                                                                                                                                    |
-| [`refusal_reason`](_autosummary/foley.licensing.html.md#foley.licensing.refusal_reason)(record, intended_use)              | Why [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) refuses `record` for `intended_use`, or `None` if it keeps it.                                                                                                                                                     |
-| [`refusals`](_autosummary/foley.licensing.html.md#foley.licensing.refusals)(sound_records, intended_use)             | `{sound id: reason}` for each sound record [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) refuses for `intended_use`.                                                                                                                                                 |
-| [`restamped_license`](_autosummary/foley.licensing.html.md#foley.licensing.restamped_license)(stored, fresh, \*[, widen])     | What a stored sound's licence becomes when its source now states `fresh`.                                                                                                                                                                                                      |
-| [`rights_license_id`](_autosummary/foley.licensing.html.md#foley.licensing.rights_license_id)(record)                         | The licence id a consumer should read `record` under, or `None` (UNKNOWN).                                                                                                                                                                                                     |
-| [`shared_share_alike`](_autosummary/foley.licensing.html.md#foley.licensing.shared_share_alike)(\*records)                     | The share-alike licence a work made of `records` may be released under, or `None`.                                                                                                                                                                                             |
-| [`stamp_source_terms`](_autosummary/foley.licensing.html.md#foley.licensing.stamp_source_terms)(record, stated)                | Write what a source `stated` about its terms onto `record`, in place, and return it.                                                                                                                                                                                           |
-| [`territory_excluded`](_autosummary/foley.licensing.html.md#foley.licensing.territory_excluded)(excluded, territory)           | Whether `territory` is in `excluded` (`"EU"` covers its member states).                                                                                                                                                                                                        |
-| [`upload_refusal`](_autosummary/foley.licensing.html.md#foley.licensing.upload_refusal)(source)                            | Why the bytes of a sound with rights `source` may not be sent to an edit backend, or `None`.                                                                                                                                                                                   |
-| [`vendor_training_refusal`](_autosummary/foley.licensing.html.md#foley.licensing.vendor_training_refusal)(source, backend_config)   | Why a sound with rights `source` may not be sent to the backend `backend_config` declares, because its vendor trains on what it is sent, or `None`.                                                                                                                            |
-| [`wanted_license_ids`](_autosummary/foley.licensing.html.md#foley.licensing.wanted_license_ids)(config, license)               | The licence ids a `license=` request keeps, or `None` for every accepted one.                                                                                                                                                                                                  |
-| [`wider_rights`](_autosummary/foley.licensing.html.md#foley.licensing.wider_rights)(record, bound)                       | What `record` allows that `bound` does not (`[]`: no wider than `bound`).                                                                                                                                                                                                      |
+| [`ai_scope_from_gen_ai_preference`](_autosummary/foley.licensing.html.md#foley.licensing.ai_scope_from_gen_ai_preference)(preference)        | Map a Freesound `gen_ai_preference` to `(ai_training_ok override, scope)`.                                                                                                                                                                                                     |
+|-----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`ai_use_permitted`](_autosummary/foley.licensing.html.md#foley.licensing.ai_use_permitted)(record, \*, ...)                  | Whether AI use of the sound (CLAP-embedding it counts) is allowed here.                                                                                                                                                                                                        |
+| [`apply_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.apply_license_flags)(record, \*[, overrides])       | Populate `record`'s eight derived flags from its `license_id` (+ overrides), in place, and return it.                                                                                                                                                                          |
+| [`carries_own_restriction`](_autosummary/foley.licensing.html.md#foley.licensing.carries_own_restriction)(license_id)                | Whether `license_id` restricts beyond what its class says, so that no other licence's code can stand in for it: a revenue cap, or a provider's own terms ([`LICENSE_TERMS_PROVIDER`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_TERMS_PROVIDER), which a consumer attaches restrictions to). |
+| [`carries_share_alike`](_autosummary/foley.licensing.html.md#foley.licensing.carries_share_alike)(record, license_id)            | Whether a work made from `record` may be released under the share-alike `license_id`.                                                                                                                                                                                          |
+| [`carry_lineage`](_autosummary/foley.licensing.html.md#foley.licensing.carry_lineage)(new, old)                            | Copy `old`'s lineage onto `new`, in place, and return `new`.                                                                                                                                                                                                                   |
+| [`cc_refused_terms`](_autosummary/foley.licensing.html.md#foley.licensing.cc_refused_terms)(url)                              | The NoDerivatives / ShareAlike terms of a CC licence URL or label.                                                                                                                                                                                                             |
+| [`check_placed`](_autosummary/foley.licensing.html.md#foley.licensing.check_placed)(records, intended_use, \*, what)      | The one rights gate for placed sounds (a plan's, a weave's): raise, warn, or pass.                                                                                                                                                                                             |
+| [`checked_refusal_reason`](_autosummary/foley.licensing.html.md#foley.licensing.checked_refusal_reason)(record, intended_use)       | [`refusal_reason()`](_autosummary/foley.licensing.html.md#foley.licensing.refusal_reason), fail-closed: an error while checking is itself a reason.                                                                                                                                                    |
+| [`consumer_license_class`](_autosummary/foley.licensing.html.md#foley.licensing.consumer_license_class)(license_id)                 | The [`CONSUMER_LICENSE_CLASSES`](_autosummary/foley.licensing.html.md#foley.licensing.CONSUMER_LICENSE_CLASSES) entry of `license_id`, from its flag row.                                                                                                                                                        |
+| [`consumer_license_code`](_autosummary/foley.licensing.html.md#foley.licensing.consumer_license_code)(license_id)                  | foley's `license_id` as a consumer's licence code: the SSOT consumers import.                                                                                                                                                                                                  |
+| [`derivative_refusal`](_autosummary/foley.licensing.html.md#foley.licensing.derivative_refusal)(source)                         | Why a sound with rights `source` may not be edited into a new sound, or `None`.                                                                                                                                                                                                |
+| [`derive_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.derive_license_flags)(license_id, \*[, overrides])  | Look up the flag set for a `license_id` (fail-closed fallback), then apply per-source overrides.                                                                                                                                                                               |
+| [`derived_license_ids`](_autosummary/foley.licensing.html.md#foley.licensing.derived_license_ids)(record)                        | The licence ids of every sound `record` derives from (`[]`: not derived).                                                                                                                                                                                                      |
+| [`excluded_territories`](_autosummary/foley.licensing.html.md#foley.licensing.excluded_territories)(record)                       | Where `record`'s licence, or any licence it derives from, grants nothing.                                                                                                                                                                                                      |
+| [`export_refusal`](_autosummary/foley.licensing.html.md#foley.licensing.export_refusal)(source)                             | Why the bytes of a sound with rights `source` may not be exported, or `None`.                                                                                                                                                                                                  |
+| [`exported_licence_wider`](_autosummary/foley.licensing.html.md#foley.licensing.exported_licence_wider)(record, bound)              | What the licence `record` is exported under allows that `bound`'s does not.                                                                                                                                                                                                    |
+| [`intended_use_for`](_autosummary/foley.licensing.html.md#foley.licensing.intended_use_for)([intended_use, ...])              | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                                                                                                                                                                           |
+| [`is_cc_license_token`](_autosummary/foley.licensing.html.md#foley.licensing.is_cc_license_token)(token)                         | Whether `token` is a search constraint a CC-reading source understands.                                                                                                                                                                                                        |
+| [`is_share_alike`](_autosummary/foley.licensing.html.md#foley.licensing.is_share_alike)(license_id)                         | Whether `license_id` (or a licence URL / label) is share-alike.                                                                                                                                                                                                                |
+| [`keep`](_autosummary/foley.licensing.html.md#foley.licensing.keep)(record, intended_use)                         | Fail-closed candidate license gate (report 07 §8.2).                                                                                                                                                                                                                           |
+| [`keep_sound`](_autosummary/foley.licensing.html.md#foley.licensing.keep_sound)(sound_record, intended_use)             | Convenience: apply [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) to a `SoundRecord`'s nested license.                                                                                                                                                                |
+| [`license_id_from_cc_url`](_autosummary/foley.licensing.html.md#foley.licensing.license_id_from_cc_url)(url)                        | Map a Creative-Commons license URL **or label** to `(license_id, verified)`.                                                                                                                                                                                                   |
+| [`license_meta`](_autosummary/foley.licensing.html.md#foley.licensing.license_meta)(license_id)                           | Return the display [`LicenseMeta`](_autosummary/foley.licensing.html.md#foley.licensing.LicenseMeta) for `license_id` (fail-closed fallback).                                                                                                                                                       |
+| [`narrow_to_source`](_autosummary/foley.licensing.html.md#foley.licensing.narrow_to_source)(output, source)                   | Narrow `output`'s rights to what `source` allows, in place (never widening).                                                                                                                                                                                                   |
+| [`placed_record`](_autosummary/foley.licensing.html.md#foley.licensing.placed_record)(library, sound_id, \*[, ...])        | `library`'s record for `sound_id` as a rights gate reads it, never raising.                                                                                                                                                                                                    |
+| [`refusal_reason`](_autosummary/foley.licensing.html.md#foley.licensing.refusal_reason)(record, intended_use)               | Why [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) refuses `record` for `intended_use`, or `None` if it keeps it.                                                                                                                                                     |
+| [`refusals`](_autosummary/foley.licensing.html.md#foley.licensing.refusals)(sound_records, intended_use)              | `{sound id: reason}` for each sound record [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) refuses for `intended_use`.                                                                                                                                                 |
+| [`restamped_license`](_autosummary/foley.licensing.html.md#foley.licensing.restamped_license)(stored, fresh, \*[, widen, ...]) | What a stored sound's licence becomes when its source now states `fresh`.                                                                                                                                                                                                      |
+| [`rights_license_id`](_autosummary/foley.licensing.html.md#foley.licensing.rights_license_id)(record)                          | The licence id a consumer should read `record` under, or `None` (UNKNOWN).                                                                                                                                                                                                     |
+| [`shared_share_alike`](_autosummary/foley.licensing.html.md#foley.licensing.shared_share_alike)(\*records)                      | The share-alike licence a work made of `records` may be released under, or `None`.                                                                                                                                                                                             |
+| [`stamp_source_terms`](_autosummary/foley.licensing.html.md#foley.licensing.stamp_source_terms)(record, stated)                 | Write what a source `stated` about its terms onto `record`, in place, and return it.                                                                                                                                                                                           |
+| [`territory_excluded`](_autosummary/foley.licensing.html.md#foley.licensing.territory_excluded)(excluded, territory)            | Whether `territory` is in `excluded` (`"EU"` covers its member states).                                                                                                                                                                                                        |
+| [`upload_refusal`](_autosummary/foley.licensing.html.md#foley.licensing.upload_refusal)(source)                             | Why the bytes of a sound with rights `source` may not be sent to an edit backend, or `None`.                                                                                                                                                                                   |
+| [`vendor_training_refusal`](_autosummary/foley.licensing.html.md#foley.licensing.vendor_training_refusal)(source, backend_config)    | Why a sound with rights `source` may not be sent to the backend `backend_config` declares, because its vendor trains on what it is sent, or `None`.                                                                                                                            |
+| [`wanted_license_ids`](_autosummary/foley.licensing.html.md#foley.licensing.wanted_license_ids)(config, license)                | The licence ids a `license=` request keeps, or `None` for every accepted one.                                                                                                                                                                                                  |
+| [`wider_rights`](_autosummary/foley.licensing.html.md#foley.licensing.wider_rights)(record, bound)                        | What `record` allows that `bound` does not (`[]`: no wider than `bound`).                                                                                                                                                                                                      |
 
 ### Classes
 
@@ -15716,6 +15746,13 @@ The EU’s member states (ISO 3166-1 alpha-2), for a licence that excludes “EU
 with the EU territories that carry their own codes: France’s outermost regions
 (Réunion, French Guiana, Guadeloupe, Martinique, Mayotte, Saint-Martin) and
 Finland’s Åland. (The Canaries, Azores, Madeira, Ceuta and Melilla have none.)
+
+### foley.licensing.GENERATION_FIELDS *= ('generator_model', 'generator_version', 'generation_prompt', 'generation_prompt_used', 'generation_seed', 'generation_params', 'watermark', 'c2pa_manifest_ref')*
+
+[`carry_lineage()`](_autosummary/foley.licensing.html.md#foley.licensing.carry_lineage) keeps the stored record’s.
+
+* **Type:**
+  How a clip’s bytes were made
 
 ### foley.licensing.GEN_AI_PREFERENCE_SCOPES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[bool](https://docs.python.org/3/builtins/functions.html#bool)], [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]]]* *= {'no-additional-preferences': (None, None), 'no-gen-ai': (False, 'none'), 'noncommercial-open-source-models': (None, 'nc_open_source_only'), 'open-source-models': (None, 'open_source_only')}*
 
@@ -15824,6 +15861,11 @@ is left out until consumers agree it owes a credit (foley’s row says it does;
 
 * **Type:**
   Licences whose code means the same to any consumer, whoever the provider
+
+### foley.licensing.REMADE_CREDIT_FIELDS *= ('source', 'source_id', 'source_url', 'creator_name', 'creator_url')*
+
+The credit fields a re-made sound’s fresh record corrects besides
+[`RESTAMP_FIELDS`](_autosummary/foley.licensing.html.md#foley.licensing.RESTAMP_FIELDS) (`restamped_license(remade=True)`): who made it, from where.
 
 ### foley.licensing.RESTAMP_FIELDS *= ('license_id', 'rights_verified', 'license_url', 'license_name', 'rights_holder', 'attribution_text')*
 
@@ -15976,7 +16018,9 @@ The lineage is what a re-stamped record must keep from the one it replaces: its
 `transformations` (the edits and fixes, so the credit still reads “(modified)”),
 its `derived_from_license_ids` (the licences bounding it, #214), its
 `terms_notes` (added to `new`’s: the source’s API obligations, #77) and the
-facts about its bytes (a vendor that reuses them, the vendor’s watermark). Fresh lists,
+facts about its bytes (a vendor that reuses them, the vendor’s watermark, that they
+are AI-generated and to be disclosed, and how they were made:
+[`GENERATION_FIELDS`](_autosummary/foley.licensing.html.md#foley.licensing.GENERATION_FIELDS), `old`’s where it states them). Fresh lists,
 so the two records never share one; a `None` reads as empty. `new`’s flags are
 then bounded by every licence it now derives from (never widened), so the copy is
 safe on its own; a later [`apply_license_flags()`](_autosummary/foley.licensing.html.md#foley.licensing.apply_license_flags) re-derives under the same bound.
@@ -16209,6 +16253,26 @@ True
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
+### foley.licensing.exported_licence_wider(record, bound)
+
+What the licence `record` is exported under allows that `bound`’s does not.
+
+Read off [`rights_license_id()`](_autosummary/foley.licensing.html.md#foley.licensing.rights_license_id) (the code a consumer classifies), for two
+verified records: a known code where `bound` reads as unknown, a commercial one
+where `bound`’s is non-commercial, one without share-alike where `bound`’s has
+it, or a less restrictive consumer class ([`CONSUMER_LICENSE_CLASSES`](_autosummary/foley.licensing.html.md#foley.licensing.CONSUMER_LICENSE_CLASSES)).
+
+```pycon
+>>> from foley.base import LicenseRecord
+>>> ncsa = LicenseRecord(source="s", license_id="CC-BY-NC-SA-4.0", rights_verified=True)
+>>> sa = LicenseRecord(source="s", license_id="CC-BY-SA-4.0", rights_verified=True)
+>>> exported_licence_wider(sa, ncsa), exported_licence_wider(ncsa, sa)
+(['commercial use (CC-BY-NC-SA-4.0 -> CC-BY-SA-4.0)'], [])
+```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
 ### foley.licensing.intended_use_for(intended_use=None, , commercial_ok=None, territory=None)
 
 The rights intent a verb runs under — every verb and surface resolves it here (#63).
@@ -16415,7 +16479,7 @@ sound is kept.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
-### foley.licensing.restamped_license(stored, fresh, , widen=True)
+### foley.licensing.restamped_license(stored, fresh, , widen=True, remade=False)
 
 What a stored sound’s licence becomes when its source now states `fresh`.
 
@@ -16435,6 +16499,14 @@ are added to the stored record whatever happens to its licence (then
   hand ([`foley.index.ingest.restamp_rights()`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.restamp_rights)). When each grants something
   the other does not, the stored licence is bounded by `fresh`
   ([`narrow_to_source()`](_autosummary/foley.licensing.html.md#foley.licensing.narrow_to_source)): the sound may be used only where both allow.
+
+`remade=True`: the sound was made again (a byte-identical derivative re-rendered
+with corrected credits), so `fresh` is its whole record: its lineage and credits
+([`REMADE_CREDIT_FIELDS`](_autosummary/foley.licensing.html.md#foley.licensing.REMADE_CREDIT_FIELDS)) replace the stored ones wherever `fresh` is
+applied. A credit change is a correction, not a widening; dropping a licence the
+stored record derives from ([`derived_license_ids()`](_autosummary/foley.licensing.html.md#foley.licensing.derived_license_ids)) whose row would still
+narrow it is a widening, so `widen=False` keeps it. Default `False`: the
+source restates its terms and the stored lineage (the edits made since) is kept.
 
 ```pycon
 >>> from foley.base import LicenseRecord
@@ -16621,8 +16693,11 @@ What `record` allows that `bound` does not (`[]`: no wider than `bound`).
 A permission of `_DERIVATIVE_SHARED_FLAGS` it holds and `bound` lacks, an
 attribution or a notice `bound` requires and it does not, a higher (or no)
 revenue cap, a looser AI-use scope, a voice or trademark flag `bound` raises
-and it does not, another stated AI-use preference. How an edit tells that a byte-identical sound
-already in the library is not the edit it made (see [`narrow_to_source()`](_autosummary/foley.licensing.html.md#foley.licensing.narrow_to_source)).
+and it does not, another stated AI-use preference. When the flags show nothing, the
+licence a consumer reads it under ([`exported_licence_wider()`](_autosummary/foley.licensing.html.md#foley.licensing.exported_licence_wider)): every
+share-alike licence has the same flag row, so only the id tells CC BY-NC-SA from
+CC BY-SA. How an edit tells that a byte-identical sound already in the library is
+not the edit it made (see [`narrow_to_source()`](_autosummary/foley.licensing.html.md#foley.licensing.narrow_to_source)).
 
 ```pycon
 >>> from foley.base import LicenseRecord
@@ -17960,7 +18035,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta-dum', 'ta dum', 'netflix sound', 'tudum', 'netflix chime', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel inside', 'intel chime', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'netflix intro', 'tudum', 'ta-dum', 'netflix sound', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel chime', 'intel jingle', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -27588,6 +27663,8 @@ lineage and the bed’s id recorded), so [`foley.export_sound()`](_autosummary/f
 on it; the result’s `sound_id` names it. Whether it may be stored is checked before
 anything is spent ([`store_refusal()`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.store_refusal)): its bytes must be keepable, and when a
 source’s licence does not allow AI use, embedding it needs `accept_ai_restricted=True`.
+A byte-identical sound already stored with other credits is not handed back; a rerun
+with corrected credits passes `restamp=True` to correct that record (never widened).
 
 **The treatment is a seam.** It is an audio “look” with no foley-specific knowledge, so
 its eventual home is the fleet’s audio package (`mixing`, beside
@@ -27799,7 +27876,7 @@ Equal-power crossfade at each loop seam of the speech and the bed (s).
 
 The band-pass’s upper edge is held under this fraction of Nyquist (a low `sr`).
 
-### foley.weave.broadcast.STORE_OWNED_INGEST_KWARGS *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= frozenset({'allow_ai_training_forbidden', 'library', 'license', 'sound_id', 'store'})*
+### foley.weave.broadcast.STORE_OWNED_INGEST_KWARGS *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= frozenset({'allow_ai_training_forbidden', 'library', 'license', 'restamp_duplicate', 'sound_id', 'store'})*
 
 The `ingest_one` keywords `store=True` sets itself (not `ingest_options`).
 
@@ -27936,7 +28013,7 @@ capped at `mixing.loudness.MAX_GAIN_DB`.
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
-### foley.weave.broadcast.broadcast_bed(lines, , bed=None, bed_prompt=None, treatment='am_radio', gap_s=0.6, duration=None, bed_under_speech_db=-12.0, duck_db=-10.0, duck_attack_s=0.02, duck_release_s=0.3, loop_speech=True, crossfade_s=0.05, ceiling_db=-1.0, speech_license=None, bed_license=None, tts=None, library=None, generate=None, generate_options=None, store=False, accept_ai_restricted=False, ingest_options=None, sr=None)
+### foley.weave.broadcast.broadcast_bed(lines, , bed=None, bed_prompt=None, treatment='am_radio', gap_s=0.6, duration=None, bed_under_speech_db=-12.0, duck_db=-10.0, duck_attack_s=0.02, duck_release_s=0.3, loop_speech=True, crossfade_s=0.05, ceiling_db=-1.0, speech_license=None, bed_license=None, tts=None, library=None, generate=None, generate_options=None, store=False, accept_ai_restricted=False, restamp=False, ingest_options=None, sr=None)
 
 Speech lines heard through a radio/TV/PA/phone over a bed, looped for a scene (#108).
 
@@ -27993,6 +28070,15 @@ then is the text spoken.
     speech’s). Without it such a `store=True` is refused, fail-closed. The
     consent is to embed and store only: the stored licence still forbids
     training.
+  * **restamp** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – With `store=True`: when a byte-identical sound is already stored
+    with other credits, licence or lineage (a rerun with corrected credits),
+    correct that stored record to this broadcast’s instead of refusing it
+    (`sound_id=None`). Through the ingest’s re-stamp
+    ([`foley.licensing.restamped_license()`](_autosummary/foley.licensing.html.md#foley.licensing.restamped_license) with `remade=True`): its
+    credits and lineage are replaced, its rights only ever narrowed (a wider
+    rerun is refused with a note, the record kept), and a licence that does
+    not allow AI use still needs `accept_ai_restricted`. Exports already
+    made keep the credits they were exported with.
   * **ingest_options** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – More keywords for [`foley.index.ingest.ingest_one()`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.ingest_one)
     (`tagger`, `do_supervised`, `thresholds`, …) with `store=True`.
   * **sr** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Working sample rate (default `foley.audio.WORKING_SAMPLE_RATE`).
@@ -28847,7 +28933,7 @@ Force-align `audio` to its transcript, returning word-level timestamps.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
-### foley.weave.broadcast_bed(lines, , bed=None, bed_prompt=None, treatment='am_radio', gap_s=0.6, duration=None, bed_under_speech_db=-12.0, duck_db=-10.0, duck_attack_s=0.02, duck_release_s=0.3, loop_speech=True, crossfade_s=0.05, ceiling_db=-1.0, speech_license=None, bed_license=None, tts=None, library=None, generate=None, generate_options=None, store=False, accept_ai_restricted=False, ingest_options=None, sr=None)
+### foley.weave.broadcast_bed(lines, , bed=None, bed_prompt=None, treatment='am_radio', gap_s=0.6, duration=None, bed_under_speech_db=-12.0, duck_db=-10.0, duck_attack_s=0.02, duck_release_s=0.3, loop_speech=True, crossfade_s=0.05, ceiling_db=-1.0, speech_license=None, bed_license=None, tts=None, library=None, generate=None, generate_options=None, store=False, accept_ai_restricted=False, restamp=False, ingest_options=None, sr=None)
 
 Speech lines heard through a radio/TV/PA/phone over a bed, looped for a scene (#108).
 
@@ -28904,6 +28990,15 @@ then is the text spoken.
     speech’s). Without it such a `store=True` is refused, fail-closed. The
     consent is to embed and store only: the stored licence still forbids
     training.
+  * **restamp** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – With `store=True`: when a byte-identical sound is already stored
+    with other credits, licence or lineage (a rerun with corrected credits),
+    correct that stored record to this broadcast’s instead of refusing it
+    (`sound_id=None`). Through the ingest’s re-stamp
+    ([`foley.licensing.restamped_license()`](_autosummary/foley.licensing.html.md#foley.licensing.restamped_license) with `remade=True`): its
+    credits and lineage are replaced, its rights only ever narrowed (a wider
+    rerun is refused with a note, the record kept), and a licence that does
+    not allow AI use still needs `accept_ai_restricted`. Exports already
+    made keep the credits they were exported with.
   * **ingest_options** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – More keywords for [`foley.index.ingest.ingest_one()`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.ingest_one)
     (`tagger`, `do_supervised`, `thresholds`, …) with `store=True`.
   * **sr** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Working sample rate (default `foley.audio.WORKING_SAMPLE_RATE`).
@@ -29994,7 +30089,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 07:13 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/90ee8b9154f1889e0b0d4513cb4896510a5399da"><code>90ee8b9</code></a> on branch <code>main</code>, for **foley 0.0.129** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 07:44 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/20a6fb03a7f29d641b68577ef2230eb04f963774"><code>20a6fb0</code></a> on branch <code>main</code>, for **foley 0.0.130** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -30003,7 +30098,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/90ee8b9154f1889e0b0d4513cb4896510a5399da"><code>90ee8b9154f1889e0b0d4513cb4896510a5399da</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/20a6fb03a7f29d641b68577ef2230eb04f963774"><code>20a6fb03a7f29d641b68577ef2230eb04f963774</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -30014,9 +30109,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41404584374">41404584374</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41407962997">41407962997</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>90ee8b9154f1889e0b0d4513cb4896510a5399da</code> (in the history of the built commit) |
+| Event commit | <code>20a6fb03a7f29d641b68577ef2230eb04f963774</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -30041,13 +30136,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.129/">0.0.129</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.130/">0.0.130</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 90ee8b9154f1889e0b0d4513cb4896510a5399da
+git checkout 20a6fb03a7f29d641b68577ef2230eb04f963774
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

@@ -52,6 +52,8 @@ lineage and the bed’s id recorded), so [`foley.export_sound()`](foley.html.md#
 on it; the result’s `sound_id` names it. Whether it may be stored is checked before
 anything is spent ([`store_refusal()`](#foley.weave.broadcast.store_refusal)): its bytes must be keepable, and when a
 source’s licence does not allow AI use, embedding it needs `accept_ai_restricted=True`.
+A byte-identical sound already stored with other credits is not handed back; a rerun
+with corrected credits passes `restamp=True` to correct that record (never widened).
 
 **The treatment is a seam.** It is an audio “look” with no foley-specific knowledge, so
 its eventual home is the fleet’s audio package (`mixing`, beside
@@ -263,7 +265,7 @@ Equal-power crossfade at each loop seam of the speech and the bed (s).
 
 The band-pass’s upper edge is held under this fraction of Nyquist (a low `sr`).
 
-### foley.weave.broadcast.STORE_OWNED_INGEST_KWARGS *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= frozenset({'allow_ai_training_forbidden', 'library', 'license', 'sound_id', 'store'})*
+### foley.weave.broadcast.STORE_OWNED_INGEST_KWARGS *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= frozenset({'allow_ai_training_forbidden', 'library', 'license', 'restamp_duplicate', 'sound_id', 'store'})*
 
 The `ingest_one` keywords `store=True` sets itself (not `ingest_options`).
 
@@ -400,7 +402,7 @@ capped at `mixing.loudness.MAX_GAIN_DB`.
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
-### foley.weave.broadcast.broadcast_bed(lines, , bed=None, bed_prompt=None, treatment='am_radio', gap_s=0.6, duration=None, bed_under_speech_db=-12.0, duck_db=-10.0, duck_attack_s=0.02, duck_release_s=0.3, loop_speech=True, crossfade_s=0.05, ceiling_db=-1.0, speech_license=None, bed_license=None, tts=None, library=None, generate=None, generate_options=None, store=False, accept_ai_restricted=False, ingest_options=None, sr=None)
+### foley.weave.broadcast.broadcast_bed(lines, , bed=None, bed_prompt=None, treatment='am_radio', gap_s=0.6, duration=None, bed_under_speech_db=-12.0, duck_db=-10.0, duck_attack_s=0.02, duck_release_s=0.3, loop_speech=True, crossfade_s=0.05, ceiling_db=-1.0, speech_license=None, bed_license=None, tts=None, library=None, generate=None, generate_options=None, store=False, accept_ai_restricted=False, restamp=False, ingest_options=None, sr=None)
 
 Speech lines heard through a radio/TV/PA/phone over a bed, looped for a scene (#108).
 
@@ -457,6 +459,15 @@ then is the text spoken.
     speech’s). Without it such a `store=True` is refused, fail-closed. The
     consent is to embed and store only: the stored licence still forbids
     training.
+  * **restamp** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – With `store=True`: when a byte-identical sound is already stored
+    with other credits, licence or lineage (a rerun with corrected credits),
+    correct that stored record to this broadcast’s instead of refusing it
+    (`sound_id=None`). Through the ingest’s re-stamp
+    ([`foley.licensing.restamped_license()`](foley.licensing.html.md#foley.licensing.restamped_license) with `remade=True`): its
+    credits and lineage are replaced, its rights only ever narrowed (a wider
+    rerun is refused with a note, the record kept), and a licence that does
+    not allow AI use still needs `accept_ai_restricted`. Exports already
+    made keep the credits they were exported with.
   * **ingest_options** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – More keywords for [`foley.index.ingest.ingest_one()`](foley.index.ingest.html.md#foley.index.ingest.ingest_one)
     (`tagger`, `do_supervised`, `thresholds`, …) with `store=True`.
   * **sr** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Working sample rate (default `foley.audio.WORKING_SAMPLE_RATE`).

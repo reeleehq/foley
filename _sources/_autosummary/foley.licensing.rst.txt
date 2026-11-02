@@ -19,6 +19,7 @@ foley.licensing
       DEFAULT_CC_VERSION
       UNKNOWN_LICENSE_META
       LICENSE_META
+      GENERATION_FIELDS
       AI_TRAINING_SCOPES
       GEN_AI_PREFERENCE_SCOPES
       LICENSE_BASES
@@ -32,6 +33,7 @@ foley.licensing
       PUBLIC_LICENSE_IDS
       CONSUMER_LICENSE_CLASSES
       RESTAMP_FIELDS
+      REMADE_CREDIT_FIELDS
       NO_RECORD_REASON
    
    .. rubric:: Functions
@@ -54,6 +56,7 @@ foley.licensing
       derived_license_ids
       excluded_territories
       export_refusal
+      exported_licence_wider
       intended_use_for
       is_cc_license_token
       is_share_alike

@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=ee59aaf7"></script>
+    <script src="../../_static/documentation_options.js?v=0d7dcda5"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.129" />
+  <meta name="docsearch:version" content="0.0.130" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1425,6 +1425,19 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<span class="c1">#: How a clip's bytes were made: :func:`carry_lineage` keeps the stored record's.</span>
+<span class="n">GENERATION_FIELDS</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"generator_model"</span><span class="p">,</span>
+    <span class="s2">"generator_version"</span><span class="p">,</span>
+    <span class="s2">"generation_prompt"</span><span class="p">,</span>
+    <span class="s2">"generation_prompt_used"</span><span class="p">,</span>
+    <span class="s2">"generation_seed"</span><span class="p">,</span>
+    <span class="s2">"generation_params"</span><span class="p">,</span>
+    <span class="s2">"watermark"</span><span class="p">,</span>
+    <span class="s2">"c2pa_manifest_ref"</span><span class="p">,</span>
+<span class="p">)</span>
+
+
 <div class="viewcode-block" id="carry_lineage">
 <a class="viewcode-back" href="../../_autosummary/foley.licensing.html#foley.carry_lineage">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">carry_lineage</span><span class="p">(</span><span class="n">new</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">,</span> <span class="n">old</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LicenseRecord</span><span class="p">:</span>
@@ -1434,7 +1447,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    ``transformations`` (the edits and fixes, so the credit still reads "(modified)"),</span>
 <span class="sd">    its ``derived_from_license_ids`` (the licences bounding it, #214), its</span>
 <span class="sd">    ``terms_notes`` (added to ``new``'s: the source's API obligations, #77) and the</span>
-<span class="sd">    facts about its bytes (a vendor that reuses them, the vendor's watermark). Fresh lists,</span>
+<span class="sd">    facts about its bytes (a vendor that reuses them, the vendor's watermark, that they</span>
+<span class="sd">    are AI-generated and to be disclosed, and how they were made:</span>
+<span class="sd">    :data:`GENERATION_FIELDS`, ``old``'s where it states them). Fresh lists,</span>
 <span class="sd">    so the two records never share one; a ``None`` reads as empty. ``new``'s flags are</span>
 <span class="sd">    then bounded by every licence it now derives from (never widened), so the copy is</span>
 <span class="sd">    safe on its own; a later :func:`apply_license_flags` re-derives under the same bound.</span>
@@ -1459,6 +1474,15 @@ window.runMermaid = runMermaid;</script>
     <span class="k">if</span> <span class="n">old</span><span class="o">.</span><span class="n">vendor_trains_on_output</span><span class="p">:</span>
         <span class="n">new</span><span class="o">.</span><span class="n">vendor_trains_on_output</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">new</span><span class="o">.</span><span class="n">vendor_watermark</span> <span class="o">=</span> <span class="n">new</span><span class="o">.</span><span class="n">vendor_watermark</span> <span class="ow">or</span> <span class="n">old</span><span class="o">.</span><span class="n">vendor_watermark</span>
+    <span class="c1"># AI provenance is sticky: a restamp never un-discloses what made the bytes.</span>
+    <span class="n">new</span><span class="o">.</span><span class="n">is_ai_generated</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">new</span><span class="o">.</span><span class="n">is_ai_generated</span> <span class="ow">or</span> <span class="n">old</span><span class="o">.</span><span class="n">is_ai_generated</span><span class="p">)</span>
+    <span class="n">new</span><span class="o">.</span><span class="n">disclosure_recommended</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span>
+        <span class="n">new</span><span class="o">.</span><span class="n">disclosure_recommended</span> <span class="ow">or</span> <span class="n">old</span><span class="o">.</span><span class="n">disclosure_recommended</span>
+    <span class="p">)</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">GENERATION_FIELDS</span><span class="p">:</span>
+        <span class="n">made</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">old</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">made</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">made</span> <span class="o">!=</span> <span class="p">{}:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">new</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">made</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">made</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="n">made</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">_set_flags</span><span class="p">(</span><span class="n">new</span><span class="p">,</span> <span class="n">_bounded_by_lineage</span><span class="p">(</span><span class="n">_flags_of</span><span class="p">(</span><span class="n">new</span><span class="p">),</span> <span class="n">new</span><span class="p">))</span></div>
 
 
@@ -2199,8 +2223,11 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    A permission of :data:`_DERIVATIVE_SHARED_FLAGS` it holds and ``bound`` lacks, an</span>
 <span class="sd">    attribution or a notice ``bound`` requires and it does not, a higher (or no)</span>
 <span class="sd">    revenue cap, a looser AI-use scope, a voice or trademark flag ``bound`` raises</span>
-<span class="sd">    and it does not, another stated AI-use preference. How an edit tells that a byte-identical sound</span>
-<span class="sd">    already in the library is not the edit it made (see :func:`narrow_to_source`).</span>
+<span class="sd">    and it does not, another stated AI-use preference. When the flags show nothing, the</span>
+<span class="sd">    licence a consumer reads it under (:func:`exported_licence_wider`): every</span>
+<span class="sd">    share-alike licence has the same flag row, so only the id tells CC BY-NC-SA from</span>
+<span class="sd">    CC BY-SA. How an edit tells that a byte-identical sound already in the library is</span>
+<span class="sd">    not the edit it made (see :func:`narrow_to_source`).</span>
 
 <span class="sd">    &gt;&gt;&gt; from foley.base import LicenseRecord</span>
 <span class="sd">    &gt;&gt;&gt; nc = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-NC-4.0"))</span>
@@ -2234,7 +2261,54 @@ window.runMermaid = runMermaid;</script>
             <span class="n">wider</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">bound</span><span class="o">.</span><span class="n">gen_ai_preference</span> <span class="ow">and</span> <span class="n">bound</span><span class="o">.</span><span class="n">gen_ai_preference</span> <span class="o">!=</span> <span class="n">record</span><span class="o">.</span><span class="n">gen_ai_preference</span><span class="p">:</span>
         <span class="n">wider</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"gen_ai_preference"</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">wider</span></div>
+    <span class="k">return</span> <span class="n">wider</span> <span class="ow">or</span> <span class="n">exported_licence_wider</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">bound</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_noncommercial</span><span class="p">(</span><span class="n">license_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether ``license_id`` forbids commercial use, by its name or its consumer class."""</span>
+    <span class="n">named</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">_cc_tokens</span><span class="p">(</span><span class="n">license_id</span><span class="p">))</span> <span class="o">&amp;</span> <span class="n">_NC_TOKENS</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">named</span> <span class="ow">or</span> <span class="n">consumer_license_class</span><span class="p">(</span><span class="n">license_id</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"noncommercial"</span>
+
+
+<div class="viewcode-block" id="exported_licence_wider">
+<a class="viewcode-back" href="../../_autosummary/foley.licensing.html#foley.exported_licence_wider">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">exported_licence_wider</span><span class="p">(</span><span class="n">record</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">,</span> <span class="n">bound</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[str]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""What the licence ``record`` is exported under allows that ``bound``'s does not.</span>
+
+<span class="sd">    Read off :func:`rights_license_id` (the code a consumer classifies), for two</span>
+<span class="sd">    verified records: a known code where ``bound`` reads as unknown, a commercial one</span>
+<span class="sd">    where ``bound``'s is non-commercial, one without share-alike where ``bound``'s has</span>
+<span class="sd">    it, or a less restrictive consumer class (:data:`CONSUMER_LICENSE_CLASSES`).</span>
+
+<span class="sd">    &gt;&gt;&gt; from foley.base import LicenseRecord</span>
+<span class="sd">    &gt;&gt;&gt; ncsa = LicenseRecord(source="s", license_id="CC-BY-NC-SA-4.0", rights_verified=True)</span>
+<span class="sd">    &gt;&gt;&gt; sa = LicenseRecord(source="s", license_id="CC-BY-SA-4.0", rights_verified=True)</span>
+<span class="sd">    &gt;&gt;&gt; exported_licence_wider(sa, ncsa), exported_licence_wider(ncsa, sa)</span>
+<span class="sd">    (['commercial use (CC-BY-NC-SA-4.0 -&gt; CC-BY-SA-4.0)'], [])</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">rights_verified</span> <span class="ow">and</span> <span class="n">bound</span><span class="o">.</span><span class="n">rights_verified</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[]</span>  <span class="c1"># verification is its own axis (rights_verified), not a licence</span>
+    <span class="n">mine</span><span class="p">,</span> <span class="n">theirs</span> <span class="o">=</span> <span class="n">rights_license_id</span><span class="p">(</span><span class="n">record</span><span class="p">),</span> <span class="n">rights_license_id</span><span class="p">(</span><span class="n">bound</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">mine</span> <span class="o">==</span> <span class="n">theirs</span> <span class="ow">or</span> <span class="n">mine</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">change</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="n">theirs</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">'unknown'</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">mine</span><span class="si">}</span><span class="s2">)"</span>
+    <span class="k">if</span> <span class="n">theirs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"a known licence </span><span class="si">{</span><span class="n">change</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span>
+    <span class="n">wider</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">what</span>
+        <span class="k">for</span> <span class="n">what</span><span class="p">,</span> <span class="n">looser</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="p">(</span><span class="s2">"commercial use"</span><span class="p">,</span> <span class="n">_noncommercial</span><span class="p">(</span><span class="n">theirs</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">_noncommercial</span><span class="p">(</span><span class="n">mine</span><span class="p">)),</span>
+            <span class="p">(</span><span class="s2">"no share-alike"</span><span class="p">,</span> <span class="n">is_share_alike</span><span class="p">(</span><span class="n">theirs</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_share_alike</span><span class="p">(</span><span class="n">mine</span><span class="p">)),</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">looser</span>
+    <span class="p">]</span>
+    <span class="n">rank</span> <span class="o">=</span> <span class="n">CONSUMER_LICENSE_CLASSES</span><span class="o">.</span><span class="n">index</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">wider</span> <span class="ow">and</span> <span class="n">rank</span><span class="p">(</span><span class="n">consumer_license_class</span><span class="p">(</span><span class="n">mine</span><span class="p">))</span> <span class="o">&lt;</span> <span class="n">rank</span><span class="p">(</span>
+        <span class="n">consumer_license_class</span><span class="p">(</span><span class="n">theirs</span><span class="p">)</span>
+    <span class="p">):</span>
+        <span class="n">wider</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"a less restrictive licence class"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">change</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">what</span> <span class="ow">in</span> <span class="n">wider</span><span class="p">]</span></div>
 
 
 
@@ -2249,11 +2323,25 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"attribution_text"</span><span class="p">,</span>
 <span class="p">)</span>
 
+<span class="c1">#: The credit fields a re-made sound's fresh record corrects besides</span>
+<span class="c1">#: :data:`RESTAMP_FIELDS` (``restamped_license(remade=True)``): who made it, from where.</span>
+<span class="n">REMADE_CREDIT_FIELDS</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"source"</span><span class="p">,</span>
+    <span class="s2">"source_id"</span><span class="p">,</span>
+    <span class="s2">"source_url"</span><span class="p">,</span>
+    <span class="s2">"creator_name"</span><span class="p">,</span>
+    <span class="s2">"creator_url"</span><span class="p">,</span>
+<span class="p">)</span>
+
 
 <div class="viewcode-block" id="restamped_license">
 <a class="viewcode-back" href="../../_autosummary/foley.licensing.html#foley.restamped_license">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">restamped_license</span><span class="p">(</span>
-    <span class="n">stored</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">,</span> <span class="n">fresh</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">widen</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">stored</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">,</span>
+    <span class="n">fresh</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">widen</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">remade</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[Optional[LicenseRecord], Optional[str]]"</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""What a stored sound's licence becomes when its source now states ``fresh``.</span>
 
@@ -2274,6 +2362,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">      the other does not, the stored licence is bounded by ``fresh``</span>
 <span class="sd">      (:func:`narrow_to_source`): the sound may be used only where both allow.</span>
 
+<span class="sd">    ``remade=True``: the sound was made again (a byte-identical derivative re-rendered</span>
+<span class="sd">    with corrected credits), so ``fresh`` is its whole record: its lineage and credits</span>
+<span class="sd">    (:data:`REMADE_CREDIT_FIELDS`) replace the stored ones wherever ``fresh`` is</span>
+<span class="sd">    applied. A credit change is a correction, not a widening; dropping a licence the</span>
+<span class="sd">    stored record derives from (:func:`derived_license_ids`) whose row would still</span>
+<span class="sd">    narrow it is a widening, so ``widen=False`` keeps it. Default ``False``: the</span>
+<span class="sd">    source restates its terms and the stored lineage (the edits made since) is kept.</span>
+
 <span class="sd">    &gt;&gt;&gt; from foley.base import LicenseRecord</span>
 <span class="sd">    &gt;&gt;&gt; cc0 = apply_license_flags(LicenseRecord(source="s", license_id="CC0-1.0", rights_verified=True))</span>
 <span class="sd">    &gt;&gt;&gt; nc = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-NC-4.0", rights_verified=True))</span>
@@ -2283,16 +2379,43 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    &gt;&gt;&gt; new is None, note.startswith("not widened")</span>
 <span class="sd">    (True, True)</span>
 <span class="sd">    """</span>
-    <span class="n">candidate</span> <span class="o">=</span> <span class="n">carry_lineage</span><span class="p">(</span><span class="n">replace</span><span class="p">(</span><span class="n">fresh</span><span class="p">),</span> <span class="n">stored</span><span class="p">)</span>  <span class="c1"># what fresh means for this sound</span>
+    <span class="c1"># The lineage the restamped sound keeps: the stored one, or a re-made sound's own.</span>
+    <span class="n">lineage</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">replace</span><span class="p">(</span>
+            <span class="n">stored</span><span class="p">,</span>
+            <span class="n">transformations</span><span class="o">=</span><span class="n">fresh</span><span class="o">.</span><span class="n">transformations</span><span class="p">,</span>
+            <span class="n">derived_from_license_ids</span><span class="o">=</span><span class="n">fresh</span><span class="o">.</span><span class="n">derived_from_license_ids</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">remade</span>
+        <span class="k">else</span> <span class="n">stored</span>
+    <span class="p">)</span>
+    <span class="c1"># What fresh means for this sound.</span>
+    <span class="n">candidate</span> <span class="o">=</span> <span class="n">carry_lineage</span><span class="p">(</span><span class="n">replace</span><span class="p">(</span><span class="n">fresh</span><span class="p">),</span> <span class="n">lineage</span><span class="p">)</span>
     <span class="n">wider</span><span class="p">,</span> <span class="n">narrower</span> <span class="o">=</span> <span class="n">wider_rights</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="n">stored</span><span class="p">),</span> <span class="n">wider_rights</span><span class="p">(</span><span class="n">stored</span><span class="p">,</span> <span class="n">candidate</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">wider</span> <span class="ow">or</span> <span class="n">narrower</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span>
-        <span class="nb">getattr</span><span class="p">(</span><span class="n">stored</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="o">==</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">fresh</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">RESTAMP_FIELDS</span>
+    <span class="c1"># A licence that bounded the sound and is dropped (only ever with remade=True).</span>
+    <span class="n">held</span><span class="p">,</span> <span class="n">kept</span> <span class="o">=</span> <span class="n">_flags_of</span><span class="p">(</span><span class="n">candidate</span><span class="p">),</span> <span class="nb">set</span><span class="p">(</span><span class="n">derived_license_ids</span><span class="p">(</span><span class="n">candidate</span><span class="p">))</span>
+    <span class="n">loosened</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">d</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">derived_license_ids</span><span class="p">(</span><span class="n">stored</span><span class="p">))</span> <span class="o">-</span> <span class="n">kept</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_bounded_by</span><span class="p">(</span><span class="n">held</span><span class="p">,</span> <span class="n">derive_license_flags</span><span class="p">(</span><span class="n">d</span><span class="p">))</span> <span class="o">!=</span> <span class="n">held</span>
+    <span class="p">]</span>
+    <span class="k">if</span> <span class="n">loosened</span><span class="p">:</span>
+        <span class="n">wider</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"derived_from_license_ids (drops </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">loosened</span><span class="p">)</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+    <span class="n">fields</span> <span class="o">=</span> <span class="n">RESTAMP_FIELDS</span> <span class="o">+</span> <span class="p">(</span><span class="n">REMADE_CREDIT_FIELDS</span> <span class="k">if</span> <span class="n">remade</span> <span class="k">else</span> <span class="p">())</span>
+    <span class="n">relineaged</span> <span class="o">=</span> <span class="n">candidate</span><span class="o">.</span><span class="n">transformations</span> <span class="o">!=</span> <span class="nb">list</span><span class="p">(</span><span class="n">stored</span><span class="o">.</span><span class="n">transformations</span> <span class="ow">or</span> <span class="p">())</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">wider</span> <span class="ow">or</span> <span class="n">narrower</span> <span class="ow">or</span> <span class="n">relineaged</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span>
+        <span class="nb">getattr</span><span class="p">(</span><span class="n">stored</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="o">==</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">fresh</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fields</span>
     <span class="p">):</span>
         <span class="k">return</span> <span class="n">_with_fresh_notes</span><span class="p">(</span><span class="n">stored</span><span class="p">,</span> <span class="n">fresh</span><span class="p">),</span> <span class="kc">None</span>
     <span class="n">was</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="p">(</span><span class="n">stored</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">stored</span><span class="o">.</span><span class="n">license_url</span><span class="p">)))</span>
     <span class="n">change</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"licence </span><span class="si">{</span><span class="n">stored</span><span class="o">.</span><span class="n">license_id</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">fresh</span><span class="o">.</span><span class="n">license_id</span><span class="si">}</span><span class="s2"> (was from </span><span class="si">{</span><span class="n">was</span><span class="si">}</span><span class="s2">)"</span> <span class="o">+</span> <span class="p">(</span>
         <span class="sa">f</span><span class="s2">"; no longer allows </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">narrower</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">narrower</span> <span class="k">else</span> <span class="s2">""</span>
     <span class="p">)</span>
+    <span class="k">if</span> <span class="n">remade</span> <span class="ow">and</span> <span class="p">(</span>
+        <span class="n">relineaged</span>
+        <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">stored</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">fresh</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">REMADE_CREDIT_FIELDS</span><span class="p">)</span>
+    <span class="p">):</span>
+        <span class="n">change</span> <span class="o">+=</span> <span class="s2">"; credits and lineage replaced by the re-made sound's"</span>
     <span class="k">if</span> <span class="n">widen</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">stored</span><span class="o">.</span><span class="n">rights_verified</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">wider</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">candidate</span><span class="p">,</span> <span class="n">change</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">narrower</span><span class="p">:</span>

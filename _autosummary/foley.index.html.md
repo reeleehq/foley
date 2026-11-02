@@ -1094,7 +1094,7 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
     `CATID`, [`foley.embedded_metadata`](foley.embedded_metadata.html.md#module-foley.embedded_metadata)). It sets
     `ucs_category` (which holds the CatID) when the filename does not
     parse and the UCS table knows it; otherwise tags/caption decide.
-  * **restamp_duplicate** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – When the clip is already stored (`skipped_dup`),
+  * **restamp_duplicate** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`bool`](https://docs.python.org/3/builtins/functions.html#bool), [`Literal`](https://docs.python.org/3/library/typing.html#typing.Literal)[`'remade'`]]) – When the clip is already stored (`skipped_dup`),
     re-stamp the stored record from `license` without ever widening it
     ([`foley.licensing.restamped_license()`](foley.licensing.html.md#foley.licensing.restamped_license) with `widen=False`; its
     note lands on the result). The rights gate below holds here too: a new
@@ -1102,7 +1102,10 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
     only with `allow_ai_training_forbidden`; without it the stored record
     becomes `unknown` (unverified, so [`foley.keep()`](foley.html.md#foley.keep) refuses it) and
     the result `rights_blocked`, as a fresh ingest would be. Default
-    `False`: a duplicate is left as it is.
+    `False`: a duplicate is left as it is. `'remade'`: the clip was made
+    again (`RESTAMP_REMADE`), so `license`’s lineage and credits replace
+    the stored ones too (`restamped_license(remade=True)`), still never
+    widening.
   * **allow_ai_training_forbidden** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – The universal fail-closed rights gate. A
     sound whose license has `ai_training_ok=False` (e.g. Sonniss,
     BBC RemArc) is refused with status `'rights_blocked'` *before* it is

@@ -9,6 +9,7 @@ foley.index.ingest
    .. autosummary::
    
       AUDIO_EXTS
+      RESTAMP_REMADE
       CONSENT_NOTE
       UNCONSENTED_LICENSE_ID
       LEGACY_SELECTORS

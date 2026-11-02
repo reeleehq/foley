@@ -25,6 +25,7 @@ module costs only the stdlib.
 
 | [`AUDIO_EXTS`](#foley.index.ingest.AUDIO_EXTS)             | Audio file extensions the folder walker ingests.                                                                                                               |
 |-------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`RESTAMP_REMADE`](#foley.index.ingest.RESTAMP_REMADE)         | the duplicate is the clip made again, so the fresh record's lineage and credits replace the stored ones.                                                       |
 | [`CONSENT_NOTE`](#foley.index.ingest.CONSENT_NOTE)           | The note on a clip stored under a licence that forbids AI training, by the caller's explicit consent (`allow_ai_training_forbidden` / `accept_ai_restricted`). |
 | [`UNCONSENTED_LICENSE_ID`](#foley.index.ingest.UNCONSENTED_LICENSE_ID) | The licence a stored, embedded clip falls back to when its new licence needs AI consent that was not given (fail-closed: unverified, so keep() refuses it).    |
 | [`LEGACY_SELECTORS`](#foley.index.ingest.LEGACY_SELECTORS)       | Named selections for [`restamp_rights()`](#foley.index.ingest.restamp_rights) (`foley restamp-rights --select NAME`).                                 |
@@ -186,6 +187,14 @@ Bases: [`TypeError`](https://docs.python.org/3/builtins/exceptions.html#TypeErro
 
 A per-file plan and the caller set the same [`ingest_one()`](#foley.index.ingest.ingest_one) keyword.
 
+### foley.index.ingest.RESTAMP_REMADE *= 'remade'*
+
+the duplicate is the clip made
+again, so the fresh record’s lineage and credits replace the stored ones.
+
+* **Type:**
+  `ingest_one(restamp_duplicate=RESTAMP_REMADE)`
+
 ### foley.index.ingest.UNCONSENTED_LICENSE_ID *= 'unknown'*
 
 The licence a stored, embedded clip falls back to when its new licence needs AI
@@ -304,7 +313,7 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
     `CATID`, [`foley.embedded_metadata`](foley.embedded_metadata.html.md#module-foley.embedded_metadata)). It sets
     `ucs_category` (which holds the CatID) when the filename does not
     parse and the UCS table knows it; otherwise tags/caption decide.
-  * **restamp_duplicate** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – When the clip is already stored (`skipped_dup`),
+  * **restamp_duplicate** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`bool`](https://docs.python.org/3/builtins/functions.html#bool), [`Literal`](https://docs.python.org/3/library/typing.html#typing.Literal)[`'remade'`]]) – When the clip is already stored (`skipped_dup`),
     re-stamp the stored record from `license` without ever widening it
     ([`foley.licensing.restamped_license()`](foley.licensing.html.md#foley.licensing.restamped_license) with `widen=False`; its
     note lands on the result). The rights gate below holds here too: a new
@@ -312,7 +321,10 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
     only with `allow_ai_training_forbidden`; without it the stored record
     becomes `unknown` (unverified, so [`foley.keep()`](foley.html.md#foley.keep) refuses it) and
     the result `rights_blocked`, as a fresh ingest would be. Default
-    `False`: a duplicate is left as it is.
+    `False`: a duplicate is left as it is. `'remade'`: the clip was made
+    again ([`RESTAMP_REMADE`](#foley.index.ingest.RESTAMP_REMADE)), so `license`’s lineage and credits replace
+    the stored ones too (`restamped_license(remade=True)`), still never
+    widening.
   * **allow_ai_training_forbidden** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – The universal fail-closed rights gate. A
     sound whose license has `ai_training_ok=False` (e.g. Sonniss,
     BBC RemArc) is refused with status `'rights_blocked'` *before* it is
