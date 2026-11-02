@@ -235,3 +235,22 @@ def test_ucs_table_merges_json_drop_over_seed(tmp_path):
     res = resolve_catid(caption="a sci-fi drone hum", table=table,
                         audioset_map=load_audioset_ucs_map(table=table))
     assert res.catid == "SPACEHum"
+
+
+def test_the_ucs_master_ships_whole_and_is_opt_in():
+    """#227: the v8.2.1 master (753 rows, 82 categories) ships; the default is unchanged."""
+    import json
+
+    from foley.index.taxonomy import default_ucs_table, load_ucs_master, parse_ucs_name
+    from foley.index.taxonomy.ucs import UCS_MASTER_FILE
+
+    master = load_ucs_master()
+    assert len(master) == 753 and len({r.category for r in master}) == 82
+    assert json.loads(UCS_MASTER_FILE.read_text("utf-8"))["version"] == "8.2.1"
+    row = master.get("AIRBlow")
+    assert (row.category, row.subcategory, row.confident) == ("AIR", "BLOW", True)
+    assert row.explanation and all(s == s.lower() for s in row.synonyms)
+    assert "WOODHndl" in master and "WOODHandl" not in master  # the 8.2.1 fix
+    name = parse_ucs_name("RAINConc_Heavy on pavement_JD_NYC.wav", table=master)
+    assert name is not None and name.category == "RAIN"
+    assert "RAINConc" not in default_ucs_table()  # opt-in: the default is still the seed

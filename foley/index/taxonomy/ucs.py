@@ -25,6 +25,8 @@ from .seed import SEED_UCS_TABLE
 
 _DATA_DIR = Path(__file__).parent / "data"
 _UCS_FULL_FILE = "ucs_full.json"
+#: The UCS v8.2.1 master as shipped (``tools/build_ucs_table.py``; #227).
+UCS_MASTER_FILE = _DATA_DIR / "ucs_master.json"
 
 
 def _row_from_dict(d: dict) -> UcsRow:
@@ -34,6 +36,19 @@ def _row_from_dict(d: dict) -> UcsRow:
         subcategory=d["subcategory"],
         synonyms=tuple(s.lower() for s in d.get("synonyms", ())),
         confident=bool(d.get("confident", False)),
+        explanation=d.get("explanation", ""),
+    )
+
+
+def _json_rows(path: Path) -> "list[dict]":
+    """The rows of a UCS JSON file: a bare list, or ``{"rows": [...], ...provenance}``."""
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    return doc["rows"] if isinstance(doc, dict) else doc
+
+
+def _table(rows: "dict[str, UcsRow]") -> UcsTable:
+    return UcsTable(
+        by_catid=dict(rows), order=list(rows), _ci_index={c.lower(): c for c in rows}
     )
 
 
@@ -56,11 +71,26 @@ def load_ucs_table(*, data_dir=None, include_seed: bool = True) -> UcsTable:
     search_dir = Path(data_dir) if data_dir else _DATA_DIR
     full = search_dir / _UCS_FULL_FILE
     if full.exists():
-        for d in json.loads(full.read_text(encoding="utf-8")):
+        for d in _json_rows(full):
             rows[d["catid"]] = _row_from_dict(d)
-    order = list(rows)
-    ci_index = {c.lower(): c for c in rows}
-    return UcsTable(by_catid=dict(rows), order=order, _ci_index=ci_index)
+    return _table(rows)
+
+
+@lru_cache(maxsize=1)
+def load_ucs_master() -> UcsTable:
+    """The authoritative UCS v8.2.1 master (753 rows, 82 categories), without the seed.
+
+    Opt-in for now: the default table (:func:`default_ucs_table`) is still the
+    in-code seed, whose CatIDs mostly predate the master. Pass it where a table is
+    taken (``parse_ucs_name(name, table=load_ucs_master())``). Row fields are the
+    master's, verbatim (``SubCategory`` in capitals: ``('DOORS', 'WOOD')``), with its
+    explanation and synonyms (lowercased).
+
+    >>> t = load_ucs_master()
+    >>> len(t), t.get("doorwood").subcategory, "WOODHndl" in t
+    (753, 'WOOD', True)
+    """
+    return _table({d["catid"]: _row_from_dict(d) for d in _json_rows(UCS_MASTER_FILE)})
 
 
 @lru_cache(maxsize=1)
