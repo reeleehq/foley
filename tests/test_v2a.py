@@ -346,6 +346,25 @@ def test_the_plan_sets_the_duration_to_cover_the_video_within_the_window(monkeyp
         assert any("to cover the video" in n for n in plan.notes)
 
 
+@pytest.mark.parametrize("name, video_s", [("fal_mmaudio_v2a", 400.0),
+                                           ("fal_mirelo_v2a", 700.0)])
+def test_the_estimate_is_the_plans_charge_for_a_video_past_the_window(name, video_s,
+                                                                        monkeypatch):
+    """A video longer than the backend's duration_max_s: the plan sends (and charges)
+    the window's maximum, and the estimate says the same (#215 review)."""
+    from foley.agent.policy import Budget
+    from foley.cost import spend_scope
+    from foley.sources._dispatch import plan_generation
+
+    monkeypatch.setattr(video_mod, "video_seconds", lambda video: video_s)
+    adapter = FalAdapter(CONFIGS[name], api_key="k", runner=Runner(), uploader=Uploader())
+    with spend_scope(Budget(max_usd=100)):
+        plan = plan_generation(name, "", adapter=adapter, video=b"x", reuse_cached=False)
+    window = CONFIGS[name]["native_defaults"]["duration_max_s"]
+    assert plan.affordances["duration_s"] == window < video_s
+    assert estimate_generation(name, video=b"x") == pytest.approx(plan.estimate_usd)
+
+
 def test_the_default_duration_note_only_when_the_default_was_sent(library, monkeypatch,
                                                                    clip_file):
     monkeypatch.setattr(video_mod, "video_seconds", lambda video: 42.0)

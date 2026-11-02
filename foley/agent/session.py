@@ -37,7 +37,8 @@ class SessionStore:
     inject plain dicts. All values are JSON-safe dicts.
 
     Args:
-        session_id: The session namespace.
+        session_id: The session namespace: one plain name
+            (:func:`foley.stores.check_session_id`, else ``ValueError``).
         candidates / picks / rejects: Optional injected ``MutableMapping`` stores.
     """
 
@@ -47,8 +48,9 @@ class SessionStore:
     rejects: Optional[dict] = None
 
     def __post_init__(self):
-        from ..stores import make_session_store
+        from ..stores import check_session_id, make_session_store
 
+        check_session_id(self.session_id)  # injected stores too: one rule for an id
         if self.candidates is None:
             self.candidates = make_session_store(self.session_id, "candidates")
         if self.picks is None:

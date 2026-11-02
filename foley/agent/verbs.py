@@ -254,6 +254,10 @@ def foley_find(
     use, invalid = _intent(commercial_ok, territory)
     if invalid:
         return [invalid]
+    try:  # before the (possibly paid) run, so a bad session id costs nothing
+        sess = _session(session)
+    except ValueError as exc:
+        return [_invalid(exc)]
     try:
         with spend_scope(_server_budget()):
             cands = list(
@@ -269,7 +273,7 @@ def foley_find(
     except BudgetExceeded as exc:
         # Refused before any paid call: say why, as a JSON row (like foley_generate).
         return [{"ok": False, "status": "refused", "error": str(exc)}]
-    _session(session).cache_candidates(cands)
+    sess.cache_candidates(cands)
     return [_candidate_row(c) for c in cands]
 
 
@@ -431,7 +435,6 @@ def foley_generate(
     """
     from .. import GenerationError, generate
     from ..cost import spend_scope
-    from ..runtime import EXTERNAL
     from ..sources.generate import (
         backend_is_paid,
         first_runnable_backend,
@@ -439,25 +442,18 @@ def foley_generate(
         generation_rights_refusal,
         paid_generation_opted_in,
     )
-    from ..sources.registry import source_egress
 
     use, invalid = _intent(commercial_ok, territory)
     if invalid:
         return invalid
-
-    # The bound server runtime may differ from the call's context (a server built with
-    # runtime= but not run under offline_scope), so check it here too; undeclared
-    # egress counts as external (fail-closed), as in the registry.
-    def allowed(name):
-        return _runtime().allows(source_egress(name) or EXTERNAL)
-
     auto = backend in ("auto", "", None)
     order = generate_backend_order() if auto else (backend,)
     paid_ok = not auto or paid_generation_opted_in()
     order = tuple(
         name
         for name in order
-        if allowed(name) and (paid_ok or name == order[-1] or not backend_is_paid(name))
+        if _egress_allowed(name)
+        and (paid_ok or name == order[-1] or not backend_is_paid(name))
     )
     if not order:
         return {
@@ -533,10 +529,25 @@ def foley_edit(
     """
     from .. import GenerationError, edit
     from ..cost import spend_scope
+    from ..sources.edit import edit_backend
 
     use, invalid = _intent(commercial_ok, territory)
     if invalid:
         return invalid
+    try:  # before anything is paid for: the session the edit is cached in, the backend
+        sess = _session(session)
+        named = edit_backend(op, backend)  # reported; the call resolves it again
+    except _refused_before_billing() as exc:
+        return _failed_generation(exc, backend=backend)
+    except (LookupError, ValueError) as exc:  # an unknown op or backend, a bad session
+        return _invalid(exc)
+    if not _egress_allowed(named):
+        return {
+            "ok": False,
+            "status": "refused",
+            "error": f"backend {named!r} is external and disallowed in offline mode",
+            "backend": named,
+        }
     params = dict(
         strength=strength,
         inpaint_start_s=inpaint_start_s,
@@ -556,16 +567,29 @@ def foley_edit(
                 **{k: v for k, v in params.items() if v is not None},
             )
     except (*_refused_before_billing(), GenerationError) as exc:
-        return _failed_generation(exc, backend=backend)
-    except (LookupError, ValueError) as exc:  # an unknown op or sound, a bad window
+        return _failed_generation(exc, backend=named)
+    except (LookupError, ValueError) as exc:  # an unknown sound, a bad window
         return _invalid(exc)
-    _session(session).cache_candidates([cand])
+    sess.cache_candidates([cand])
     return {
         "ok": True,
         **_candidate_row(cand),
-        "backend": cand.sound.license.source or backend,
+        "backend": cand.sound.license.source or named,
         **_generated_facts(cand, use),
     }
+
+
+def _egress_allowed(name: str) -> bool:
+    """Whether the bound server runtime lets source ``name`` run.
+
+    The bound runtime may differ from the call's context (a server built with
+    ``runtime=`` but not run under ``offline_scope``), so a verb checks it too;
+    undeclared egress counts as external (fail-closed), as in the registry.
+    """
+    from ..runtime import EXTERNAL
+    from ..sources.registry import source_egress
+
+    return _runtime().allows(source_egress(name) or EXTERNAL)
 
 
 def _refused_before_billing() -> tuple:

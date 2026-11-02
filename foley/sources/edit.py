@@ -207,11 +207,13 @@ class EditCall:
         backend: The edit source that will run it.
         prompt: The prompt sent (the source's caption when none was given).
         source: The source sound's record (the edit's ``derived_from``).
+        op: The edit op (a :data:`foley.base.EDIT_OPS` name).
     """
 
     backend: str
     prompt: str
     source: SoundRecord
+    op: str
 
 
 def resolve_edit(
@@ -258,14 +260,7 @@ def resolve_edit(
     from ..licensing import upload_refusal
     from .generate import backend_is_paid, paid_generation_opted_in
 
-    taken = sorted({"audio", "derived_from"} & set(affordances or ()))
-    if taken:
-        raise ValueError(
-            f"edit() takes the source clip and its rights from the library, not "
-            f"{', '.join(f'{k}=' for k in taken)}: pass its sound id as source= (a clip "
-            "that is not in the library: foley.generate(prompt, backend=<an edit "
-            "backend>, audio=<the clip>, derived_from=<its LicenseRecord>))"
-        )
+    _refuse_given_source(affordances or {})
     _check_op(op)
     try:
         record = library[source]
@@ -280,14 +275,19 @@ def resolve_edit(
         )
     injected = getattr(adapter, "config", None)
     named = edit_backend(op, backend, injected=injected)
-    unnamed = not (backend or (injected or {}).get("name"))
-    if unnamed and backend_is_paid(named) and not paid_generation_opted_in(mode="edit"):
+    if (
+        _named_backend(backend, injected) is None
+        and backend_is_paid(named)
+        and not paid_generation_opted_in(mode="edit")
+    ):
         raise SourceConfigurationError(
             f"the {op} edit's default backend {named!r} is paid, and paid "
             "generation is not opted in: set $FOLEY_GENERATE_PAID=1, or name "
             f"backend={named!r}; nothing was generated"
         )
-    call = EditCall(backend=named, prompt=prompt or record.caption or "", source=record)
+    call = EditCall(
+        backend=named, prompt=prompt or record.caption or "", source=record, op=op
+    )
     use = (affordances or {}).get("intended_use")
     why = edit_use_refusal(call, use) if use is not None else None
     if why is not None:
@@ -315,7 +315,7 @@ def edit_backend(op: str, backend: Optional[str] = None, *, injected=None) -> st
 
     _check_op(op)
     injected = injected or {}
-    named = backend or injected.get("name")
+    named = _named_backend(backend, injected)
     if named is None:
         return default_edit_backend(op)
     config = injected if injected.get("name") == named else _registered_config(named)
@@ -333,15 +333,32 @@ def edit_use_refusal(call: EditCall, intended_use) -> Optional[str]:
     The edit's rights are its backend's narrowed to its source's
     (:meth:`EditLineage.apply`), so the use is refused when either refuses it: an edit
     of a non-commercial sound under a commercial use is money spent on a clip nobody
-    may place. Decided before anything is paid for.
+    may place. Decided before anything is paid for; a backend's refusal names the
+    other backends of the op whose licence fits.
     """
     from ..licensing import refusal_reason
-    from .generate import generation_rights_refusal
+    from .generate import backend_license_refusal, edit_backends
 
     why = refusal_reason(call.source.license, intended_use)
     if why is not None:
         return f"its source's licence does not allow it ({why})"
-    return generation_rights_refusal(call.backend, intended_use)
+    refused = backend_license_refusal(call.backend, intended_use)
+    if refused is None:
+        return None
+    license_id, why, hint = refused
+    fits = [
+        name
+        for name in edit_backends(call.op)
+        if name != call.backend and backend_license_refusal(name, intended_use) is None
+    ]
+    if fits:
+        advice = f"name a {call.op} edit backend whose licence fits ({', '.join(fits)}), or {hint}"
+    else:
+        advice = hint
+    return (
+        f"{call.backend!r} edits under {license_id!r}, which this use does not allow: "
+        f"{why}; {advice}"
+    )
 
 
 #: What an edit priced without its source clip is given in the clip's place: bytes
@@ -374,19 +391,23 @@ def estimate_edit(
         source: The library id of the sound to edit (optional).
         backend: An edit source doing ``op``; ``None``: the op's default.
         library: The library holding ``source``.
-        adapter: An injected adapter (its config names the backend), as the call's.
+        adapter: An injected adapter, as the call's: its config names the backend
+            and prices it (the plan prices the adapter's config).
         **kwargs: The op's parameters and the call's other keywords (the ones that
             are not generation affordances, ``prompt=`` included, are ignored).
 
     Raises:
-        ValueError: For an unknown op, a backend that does another op, or the op's
-            parameters missing or out of range.
+        ValueError: For an unknown op, a backend that does another op, the op's
+            parameters missing or out of range, or an ``audio=`` / ``derived_from=``
+            (as :func:`foley.edit`).
         KeyError: For an unknown backend, or a ``source`` not in the library.
     """
     from ._dispatch import estimate_generation
     from .generate import priced_affordances
 
-    name = edit_backend(op, backend, injected=getattr(adapter, "config", None))
+    _refuse_given_source(kwargs)
+    injected = getattr(adapter, "config", None)
+    name = edit_backend(op, backend, injected=injected)
     if source is None:
         audio = _UNREAD_CLIP
     else:
@@ -395,7 +416,28 @@ def estimate_edit(
 
             library = default_library()
         audio = library.audio(source)
-    return estimate_generation(name, audio=audio, **priced_affordances(kwargs))
+    config = injected if (injected or {}).get("name") == name else None
+    return estimate_generation(
+        name, audio=audio, config=config, **priced_affordances(kwargs)
+    )
+
+
+def _refuse_given_source(affordances: dict) -> None:
+    """Raise ``ValueError`` for an ``audio=`` or ``derived_from=``: an edit of a
+    library sound takes both from the library."""
+    taken = sorted({"audio", "derived_from"} & set(affordances))
+    if taken:
+        raise ValueError(
+            f"edit() takes the source clip and its rights from the library, not "
+            f"{', '.join(f'{k}=' for k in taken)}: pass its sound id as source= (a clip "
+            "that is not in the library: foley.generate(prompt, backend=<an edit "
+            "backend>, audio=<the clip>, derived_from=<its LicenseRecord>))"
+        )
+
+
+def _named_backend(backend: Optional[str], injected: Optional[dict]) -> Optional[str]:
+    """The backend an edit call names: ``backend``, else its injected adapter's."""
+    return backend or (injected or {}).get("name")
 
 
 def _check_op(op: str) -> None:

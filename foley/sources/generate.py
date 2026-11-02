@@ -268,7 +268,26 @@ def generation_rights_refusal(backend: str, intended_use) -> Optional[str]:
     model under the default commercial intent) is money spent on a sound nobody can
     use. A backend whose licence depends on the account (ElevenLabs direct: its
     plan) has no fixed row, is not judged here, and is gated after generation as
-    before.
+    before. See :func:`backend_license_refusal`.
+    """
+    refused = backend_license_refusal(backend, intended_use)
+    if refused is None:
+        return None
+    license_id, why, hint = refused
+    return (
+        f"{backend!r} generates under {license_id!r}, which this use does not allow: "
+        f"{why}; nothing was generated. Pick a backend whose licence fits "
+        f"(fal_stable_audio_3 is commercial under $1M revenue), or {hint}."
+    )
+
+
+def backend_license_refusal(
+    backend: str, intended_use
+) -> "Optional[tuple[str, str, str]]":
+    """``(license_id, why, hint)`` when the licence row ``backend`` generates under
+    cannot serve ``intended_use``, else ``None`` (also for a backend with no fixed row).
+
+    ``hint`` says how to change the use (a non-commercial one, or a territory).
     """
     from ..licensing import refusal_reason
     from .base import generated_license
@@ -296,11 +315,7 @@ def generation_rights_refusal(backend: str, intended_use) -> Optional[str]:
         else "change the use as the reason says (territory=<the ISO country code where the "
         "sound is used>, for a licence that excludes territories)"
     )
-    return (
-        f"{backend!r} generates under {license_id!r}, which this use does not allow: "
-        f"{why}; nothing was generated. Pick a backend whose licence fits "
-        f"(fal_stable_audio_3 is commercial under $1M revenue), or {hint}."
-    )
+    return license_id, why, hint
 
 
 #: The consent note stamped on a stored generation whose license forbids AI
@@ -961,7 +976,7 @@ def priced_affordances(kwargs: Mapping) -> dict:
     return {
         k: v
         for k, v in kwargs.items()
-        if (k not in _GENERATE_KNOWN and k != "prompt") or k == "on_unsupported"
+        if k not in _NOT_AFFORDANCES or k == "on_unsupported"
     }
 
 
@@ -1199,6 +1214,8 @@ _GENERATE_KNOWN = frozenset(
         "derived_from",
     }
 )
+#: The keywords of a generation call that are not affordances (the prompt aside).
+_NOT_AFFORDANCES = _GENERATE_KNOWN | {"prompt"}
 
 
 @functools.wraps(_generate)
@@ -1220,9 +1237,7 @@ def generate(*args, **kwargs) -> IngestReport:
     backend = kwargs.get("backend") or default_generate_backend(
         mode=generation_mode(kwargs)
     )
-    affordances = {
-        k: v for k, v in kwargs.items() if k not in _GENERATE_KNOWN and k != "prompt"
-    }
+    affordances = {k: v for k, v in kwargs.items() if k not in _NOT_AFFORDANCES}
     params = {
         k: _manifest_value(kwargs[k])
         for k in (

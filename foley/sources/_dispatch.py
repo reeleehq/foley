@@ -1144,7 +1144,11 @@ def _demux_kept(
 
 
 def estimate_generation(
-    backend: str, *, on_unsupported: Optional[str] = None, **affordances
+    backend: str,
+    *,
+    on_unsupported: Optional[str] = None,
+    config: Optional[dict] = None,
+    **affordances,
 ) -> Optional[float]:
     """What :func:`plan_generation` would price this call at (same translation, clamp
     and input cover: :func:`_priced_call`).
@@ -1152,14 +1156,17 @@ def estimate_generation(
     The same unsupported-parameter policy as the call (#164), ``on_unsupported``
     included: by default a meaning-carrying parameter the backend cannot honour raises
     :class:`UnsupportedParameter`, as ``generate`` would before anything is paid; any
-    other is dropped (silently here, warnings included).
+    other is dropped (silently here, warnings included). ``config``: the source's
+    config, as :func:`plan_generation` takes it (an injected adapter's); default: the
+    registry's.
     """
     from .registry import SOURCE_REGISTRY, discover_sources, get_source
 
-    discover_sources()
-    if backend not in SOURCE_REGISTRY:
-        get_source(backend)  # raises the informative KeyError
-    config = SOURCE_REGISTRY[backend]["config"]
+    if config is None:
+        discover_sources()
+        if backend not in SOURCE_REGISTRY:
+            get_source(backend)  # raises the informative KeyError
+        config = SOURCE_REGISTRY[backend]["config"]
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         kept, _ = translate_affordances(

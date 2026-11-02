@@ -986,6 +986,7 @@ def test_the_edit_verb_refuses_a_source_its_intent_cannot_use(library, served, c
     sid = _add(library, "CC-BY-NC-4.0")
     out = mcp.foley_edit(sid, "extend", extend_after_s=1.0)  # commercial by default
     assert out["ok"] is False and out["status"] == "refused"
+    assert out["backend"] == "fal_stable_audio_3_extend"  # the op's default, named
     assert "for this use" in out["error"] and "commercial" in out["error"]
     assert cli.main(["edit", sid, "extend", "--extend-after-s", "1"]) == 1
     assert json.loads(capsys.readouterr().out)["status"] == "refused"
@@ -1084,3 +1085,72 @@ def test_an_edit_estimate_refuses_what_the_edit_would(library):
                        inpaint_start_s=0.5, inpaint_end_s=9.0)
     with pytest.raises(KeyError):
         foley.estimate("edit", op="extend", backend="nope", extend_after_s=1.0)
+
+
+def test_a_bad_session_id_is_refused_before_anything_is_paid(library, served):
+    from foley.agent import mcp
+
+    sid = _add(library)
+    out = mcp.foley_edit(sid, "extend", extend_after_s=1.0, session="../../x/y")
+    assert out["ok"] is False and out["status"] == "invalid" and "session id" in out["error"]
+    assert all(runner.calls == [] for runner in served.values())
+    (row,) = mcp.foley_find("a door creaks", session="..")
+    assert row["status"] == "invalid" and "session id" in row["error"]
+
+
+def test_the_edit_verb_is_refused_offline(library, served):
+    from foley.agent import verbs
+
+    verbs._configure(runtime=foley.RuntimeConfig.offline_local())
+    out = verbs.foley_edit(_add(library), "extend", extend_after_s=1.0)
+    assert out["status"] == "refused" and "offline" in out["error"]
+    assert out["backend"] == "fal_stable_audio_3_extend"
+    assert all(runner.calls == [] for runner in served.values())
+
+
+@pytest.fixture
+def nc_extend():
+    """An extend backend generating under a non-commercial licence."""
+    import copy
+
+    from foley.sources.registry import SOURCE_REGISTRY, register_source
+
+    cfg = copy.deepcopy(CONFIGS["fal_stable_audio_3_extend"])
+    cfg["name"] = "nc_extend"
+    cfg["license"] = {**cfg["license"], "default_license_id": "CC-BY-NC-4.0"}
+    register_source("nc_extend", cfg)
+    yield cfg
+    SOURCE_REGISTRY.pop("nc_extend", None)
+
+
+def test_a_backend_licence_refusal_names_an_edit_backend_that_fits(library, served,
+                                                                    nc_extend):
+    from foley.agent import mcp
+
+    out = mcp.foley_edit(_add(library), "extend", backend="nc_extend", extend_after_s=1.0)
+    assert out["status"] == "refused" and out["backend"] == "nc_extend"
+    assert "fal_stable_audio_3_extend" in out["error"]
+    assert "fal_stable_audio_3 is" not in out["error"]  # no text-to-audio suggestion
+    assert out["error"].count("nothing was generated") == 1
+
+
+def test_an_edit_estimate_with_an_adapter_is_what_that_adapter_charges(library):
+    import copy
+
+    cfg = copy.deepcopy(CONFIGS["fal_stable_audio_3_extend"])
+    cfg["name"] = "custom_extend"  # not registered
+    cfg["pricing"] = {**cfg["pricing"], "amount_usd": 0.9}
+    adapter = FalAdapter(cfg, api_key="k", runner=Runner(), uploader=Uploader())
+    estimate = foley.estimate("edit", op="extend", adapter=adapter, extend_after_s=1.0)
+    cand = foley.edit(_add(library), "extend", adapter=adapter, library=library,
+                      provenance_store={}, extend_after_s=1.0)
+    assert estimate == cand.cost_actual_usd == pytest.approx(0.9)
+
+
+def test_an_edit_estimate_refuses_audio_as_the_edit_does(library):
+    sid = _add(library)
+    for kw in ({"audio": b"x"}, {"derived_from": _rights()}):
+        with pytest.raises(ValueError, match="from the library"):
+            foley.estimate("edit", op="extend", extend_after_s=1.0, **kw)
+        with pytest.raises(ValueError, match="from the library"):
+            foley.edit(sid, "extend", library=library, extend_after_s=1.0, **kw)
