@@ -56,7 +56,7 @@ the CatID and the optional VendorCategory to the FXName. `category` and
 `subcategory` come from the table row of `catid`; a block the name does not
 have is `None`.
 
-### *class* foley.index.taxonomy.model.UcsRow(catid, category, subcategory, synonyms=(), confident=False)
+### *class* foley.index.taxonomy.model.UcsRow(catid, category, subcategory, synonyms=(), confident=False, explanation='')
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 

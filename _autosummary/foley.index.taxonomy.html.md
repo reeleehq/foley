@@ -24,6 +24,7 @@ EnvSound-UCS mapping drop in later as JSON under `data/` with no logic change.
 
 | [`load_ucs_table`](#foley.index.taxonomy.load_ucs_table)(\*[, data_dir, include_seed])      | Build the UCS lookup: the seed rows, overridden/extended by a JSON drop.                                                                     |
 |----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| [`load_ucs_master`](#foley.index.taxonomy.load_ucs_master)()                                 | The authoritative UCS v8.2.1 master (753 rows, 82 categories), without the seed.                                                             |
 | [`default_ucs_table`](#foley.index.taxonomy.default_ucs_table)()                               | The process-wide default UCS table (seed + any JSON drop), built once.                                                                       |
 | [`parse_ucs_filename`](#foley.index.taxonomy.parse_ucs_filename)(filename, \*[, table])         | Parse a UCS-conformant filename to `(ucs_category, ucs_subcategory)`.                                                                        |
 | [`parse_ucs_name`](#foley.index.taxonomy.parse_ucs_name)(filename, \*[, table, ...])        | Every block of a UCS filename as a [`UcsName`](foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName), else `None`. |
@@ -111,7 +112,7 @@ the CatID and the optional VendorCategory to the FXName. `category` and
 `subcategory` come from the table row of `catid`; a block the name does not
 have is `None`.
 
-### *class* foley.index.taxonomy.UcsRow(catid, category, subcategory, synonyms=(), confident=False)
+### *class* foley.index.taxonomy.UcsRow(catid, category, subcategory, synonyms=(), confident=False, explanation='')
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -181,6 +182,25 @@ Build the AudioSet(name|MID) -> UCS-CatID map.
   A ready [`AudioSetUcsMap`](foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.AudioSetUcsMap).
 * **Raises:**
   [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If any entry targets a CatID absent from `table`.
+
+### foley.index.taxonomy.load_ucs_master()
+
+The authoritative UCS v8.2.1 master (753 rows, 82 categories), without the seed.
+
+Opt-in for now: the default table ([`default_ucs_table()`](#foley.index.taxonomy.default_ucs_table)) is still the
+in-code seed, whose CatIDs mostly predate the master. Pass it where a table is
+taken (`parse_ucs_name(name, table=load_ucs_master())`). Row fields are the
+master’s, verbatim (`SubCategory` in capitals: `('DOORS', 'WOOD')`), with its
+explanation and synonyms (lowercased).
+
+```pycon
+>>> t = load_ucs_master()
+>>> len(t), t.get("doorwood").subcategory, "WOODHndl" in t
+(753, 'WOOD', True)
+```
+
+* **Return type:**
+  [`UcsTable`](foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)
 
 ### foley.index.taxonomy.load_ucs_table(, data_dir=None, include_seed=True)
 

@@ -1,0 +1,28 @@
+foley.index.license\_sidecar
+============================
+
+.. automodule:: foley.index.license_sidecar
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      SIDECAR_NAMES
+      SIDECAR_FIELDS
+      SIDECAR_SOURCE
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      find_sidecar
+      read_sidecar
+      sidecar_license
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      SidecarError
+   

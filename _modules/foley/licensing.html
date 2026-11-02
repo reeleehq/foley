@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=5c5ca7ce"></script>
+    <script src="../../_static/documentation_options.js?v=cfdca9bd"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.104" />
+  <meta name="docsearch:version" content="0.0.106" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -857,6 +857,10 @@ window.runMermaid = runMermaid;</script>
         <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">None</span>
     <span class="p">),</span>
     <span class="s2">"MIT"</span><span class="p">:</span> <span class="n">LicenseFlags</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="c1"># A purchased sound-effects library (BOOM, Pro Sound Effects, ...), stated in a</span>
+    <span class="c1"># folder sidecar (#229): the usual EULA grants use in productions, never the raw</span>
+    <span class="c1"># files on their own, and says nothing of AI training (so: no).</span>
+    <span class="s2">"owned-pack"</span><span class="p">:</span> <span class="n">LicenseFlags</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
     <span class="c1"># Procedural synthesis output (#76; the sfxr family: pyfxr, jsfxr, ZzFX, rFXGen):</span>
     <span class="c1"># the tools' licences cover their code, and the sound a parameter set renders</span>
     <span class="c1"># carries none. All rights, no attribution.</span>
@@ -907,6 +911,15 @@ window.runMermaid = runMermaid;</script>
         <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">CC_VERSIONS</span>
     <span class="p">}</span>
 <span class="p">)</span>
+
+<span class="c1">#: Licence ids that can never be *asserted* as verified (on ingest, restamp or in a</span>
+<span class="c1">#: folder sidecar): ``unknown`` by definition, ``PDM-1.0`` (a claim about the work, not</span>
+<span class="c1">#: a grant — verify it by building the ``LicenseRecord`` yourself), and the legacy</span>
+<span class="c1">#: ``ElevenLabs-SFX`` row (say the plan).</span>
+<span class="n">UNASSERTABLE_LICENSE_IDS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">"unknown"</span><span class="p">,</span> <span class="s2">"PDM-1.0"</span><span class="p">,</span> <span class="s2">"ElevenLabs-SFX"</span><span class="p">})</span>
+
+<span class="c1">#: The ids a user may assert (``foley ingest --license``, a ``foley-license.toml``).</span>
+<span class="n">ASSERTABLE_LICENSE_IDS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">LICENSE_FLAGS</span><span class="p">)</span> <span class="o">-</span> <span class="n">UNASSERTABLE_LICENSE_IDS</span>
 
 <span class="c1">#: A CC version token (``3.0``, ``2.5``) in a URL path or a label.</span>
 <span class="n">_CC_VERSION_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^\d\.\d$"</span><span class="p">)</span>
@@ -1218,6 +1231,11 @@ window.runMermaid = runMermaid;</script>
         <span class="s2">"https://fal.ai/legal/terms-of-service"</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="s2">"MIT"</span><span class="p">:</span> <span class="n">LicenseMeta</span><span class="p">(</span><span class="s2">"MIT License"</span><span class="p">,</span> <span class="s2">"https://opensource.org/license/mit"</span><span class="p">),</span>
+    <span class="s2">"owned-pack"</span><span class="p">:</span> <span class="n">LicenseMeta</span><span class="p">(</span>
+        <span class="s2">"Purchased sound-effects library (its EULA: use in productions, no "</span>
+        <span class="s2">"redistribution of the raw files)"</span><span class="p">,</span>
+        <span class="kc">None</span><span class="p">,</span>
+    <span class="p">),</span>
     <span class="s2">"procedural-free"</span><span class="p">:</span> <span class="n">LicenseMeta</span><span class="p">(</span>
         <span class="s2">"Procedural synthesis output (no licence attaches)"</span><span class="p">,</span> <span class="kc">None</span>
     <span class="p">),</span>

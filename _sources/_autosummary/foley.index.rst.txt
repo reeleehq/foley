@@ -13,6 +13,8 @@ foley.index
       default_zeroshot_tagger
       ingest_one
       ingest_folder
+      sidecar_license
+      find_sidecar
       resolve_ingest_license
       restamp_rights
       default_index
@@ -47,6 +49,12 @@ foley.index
       SoundLibrary
       CatIdResolution
    
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      SidecarError
+   
 .. rubric:: Modules
 
 .. autosummary::
@@ -58,6 +66,7 @@ foley.index
    indexes
    ingest
    library
+   license_sidecar
    onnx_clap
    protocols
    search

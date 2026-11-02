@@ -23,12 +23,10 @@ module costs only the stdlib.
 
 ### Module Attributes
 
-| [`AUDIO_EXTS`](#foley.index.ingest.AUDIO_EXTS)               | Audio file extensions the folder walker ingests.                                                                                                                                   |
-|---------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`UNASSERTABLE_LICENSE_IDS`](#foley.index.ingest.UNASSERTABLE_LICENSE_IDS) | `unknown` by definition, `PDM-1.0` (a claim about the work, not a grant — verify it by building the `LicenseRecord` yourself), and the legacy `ElevenLabs-SFX` row (say the plan). |
-| [`ASSERTABLE_LICENSE_IDS`](#foley.index.ingest.ASSERTABLE_LICENSE_IDS)   | The ids a caller may assert on ingest / restamp (`foley ingest --license`).                                                                                                        |
-| [`LEGACY_SELECTORS`](#foley.index.ingest.LEGACY_SELECTORS)         | Named selections for [`restamp_rights()`](#foley.index.ingest.restamp_rights) (`foley restamp-rights --select NAME`).                                                     |
-| [`FROM_LICENSE_URL`](#foley.index.ingest.FROM_LICENSE_URL)         | re-derive each record's id from the licence URL / label its source served (kept in `license_url`).                                                                                 |
+| [`AUDIO_EXTS`](#foley.index.ingest.AUDIO_EXTS)       | Audio file extensions the folder walker ingests.                                                                               |
+|-------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| [`LEGACY_SELECTORS`](#foley.index.ingest.LEGACY_SELECTORS) | Named selections for [`restamp_rights()`](#foley.index.ingest.restamp_rights) (`foley restamp-rights --select NAME`). |
+| [`FROM_LICENSE_URL`](#foley.index.ingest.FROM_LICENSE_URL) | re-derive each record's id from the licence URL / label its source served (kept in `license_url`).                             |
 
 ### Functions
 
@@ -48,10 +46,6 @@ module costs only the stdlib.
 | [`IngestReport`](#foley.index.ingest.IngestReport)(root[, results, notes])        | The rolled-up outcome of a folder ingest (JSON-serializable).   |
 |----------------------------------------------------------------------------------------------|-----------------------------------------------------------------|
 | [`IngestResult`](#foley.index.ingest.IngestResult)(id, status[, record, qc, ...]) | The outcome of ingesting one clip.                              |
-
-### foley.index.ingest.ASSERTABLE_LICENSE_IDS *= frozenset({'CC-BY-2.0', 'CC-BY-2.5', 'CC-BY-3.0', 'CC-BY-4.0', 'CC-BY-NC-2.0', 'CC-BY-NC-2.5', 'CC-BY-NC-3.0', 'CC-BY-NC-4.0', 'CC-Sampling+-1.0', 'CC0-1.0', 'MIT', 'Pixabay-Content', 'RemArc', 'Sonniss-GDC', 'Stability-Community', 'Tencent-Hunyuan-Community', 'elevenlabs-free-plan', 'elevenlabs-paid-plan', 'fal-partner-unverified', 'procedural-free', 'research-only', 'user-owned'})*
-
-The ids a caller may assert on ingest / restamp (`foley ingest --license`).
 
 ### foley.index.ingest.AUDIO_EXTS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('.wav', '.flac', '.aiff', '.aif', '.ogg', '.mp3', '.opus', '.m4a')*
 
@@ -153,15 +147,6 @@ What the provider returned besides the audio of a generation (#61; see
 ### foley.index.ingest.LEGACY_SELECTORS *= {'has-license-url': <function has_license_url>, 'legacy-elevenlabs': <function is_legacy_elevenlabs>, 'legacy-user-owned': <function is_legacy_default_user_owned>}*
 
 Named selections for [`restamp_rights()`](#foley.index.ingest.restamp_rights) (`foley restamp-rights --select NAME`).
-
-### foley.index.ingest.UNASSERTABLE_LICENSE_IDS *= frozenset({'ElevenLabs-SFX', 'PDM-1.0', 'unknown'})*
-
-`unknown` by definition,
-`PDM-1.0` (a claim about the work, not a grant — verify it by building the
-`LicenseRecord` yourself), and the legacy `ElevenLabs-SFX` row (say the plan).
-
-* **Type:**
-  Licence ids that can never be *asserted* as verified
 
 ### foley.index.ingest.content_id(src)
 

@@ -1,32 +1,32 @@
 {
   "schema_version": 1,
-  "built_at": "2026-11-02T01:12:40Z",
+  "built_at": "2026-11-02T01:29:37Z",
   "package": {
     "name": "foley",
-    "version": "0.0.104",
+    "version": "0.0.106",
     "display_name": "foley",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "3b947168cdb29aa06b777f837dc96b08c4d09873",
-    "short_commit": "3b94716",
+    "commit": "5a65fe9237441d0c1bdf6c3abe0be2a216e6770a",
+    "short_commit": "5a65fe9",
     "branch": "main",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/reeleehq/foley",
-    "commit_url": "https://github.com/reeleehq/foley/commit/3b947168cdb29aa06b777f837dc96b08c4d09873",
+    "commit_url": "https://github.com/reeleehq/foley/commit/5a65fe9237441d0c1bdf6c3abe0be2a216e6770a",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "reeleehq/foley",
-    "sha": "3b947168cdb29aa06b777f837dc96b08c4d09873",
+    "sha": "7be811afa531e2cbf946c77a44ea79af08a1fcdf",
     "sha_in_history": true,
     "ref": "refs/heads/main",
     "ref_name": "main",
-    "run_id": "41371016367",
-    "run_url": "https://github.com/reeleehq/foley/actions/runs/41371016367",
+    "run_id": "41372540840",
+    "run_url": "https://github.com/reeleehq/foley/actions/runs/41372540840",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -55,21 +55,21 @@
     "docs_dir": "docsrc"
   },
   "site": {
-    "modules_documented": 123,
-    "objects_documented": 1764
+    "modules_documented": 124,
+    "objects_documented": 1777
   },
   "pypi": {
     "checked": true,
-    "latest": "0.0.105",
+    "latest": "0.0.107",
     "relation": "behind",
     "error": null
   },
-  "reproduce": "git clone https://github.com/reeleehq/foley && cd foley\ngit checkout 3b947168cdb29aa06b777f837dc96b08c4d09873\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/reeleehq/foley && cd foley\ngit checkout 5a65fe9237441d0c1bdf6c3abe0be2a216e6770a\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
     "aligned": false,
     "notes": [
-      "The documented version (0.0.104) is behind the latest release on PyPI (0.0.105): `pip install foley` gives newer code than these docs describe."
+      "The documented version (0.0.106) is behind the latest release on PyPI (0.0.107): `pip install foley` gives newer code than these docs describe."
     ]
   }
 }

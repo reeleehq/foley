@@ -21,6 +21,7 @@
 - [foley.index.indexes](_autosummary/foley.index.indexes.html.md): Concrete vector + keyword index backends (the swappable retrieval engines).
 - [foley.index.ingest](_autosummary/foley.index.ingest.html.md): The ingestion pipeline — turn any audio file into a searchable SoundRecord.
 - [foley.index.library](_autosummary/foley.index.library.html.md): The &#96;SoundLibrary&#96; façade — one searchable, license-aware sound library.
+- [foley.index.license_sidecar](_autosummary/foley.index.license_sidecar.html.md): A licence stated once per folder: the sidecar for owned sound packs (#229).
 - [foley.index.onnx_clap](_autosummary/foley.index.onnx_clap.html.md): CLAP on a small host: the same checkpoint through ONNX Runtime, no torch, no transformers.
 - [foley.index.protocols](_autosummary/foley.index.protocols.html.md): Structural contracts for the foley index (the retrieval boundary).
 - [foley.index.search](_autosummary/foley.index.search.html.md): Hybrid retrieval: reciprocal rank fusion over a vector list and a keyword list.
@@ -131,7 +132,7 @@
 - [foley.sources.wikimedia_commons.config](_autosummary/foley.sources.wikimedia_commons.config.html.md): &#96;SOURCE_CONFIG&#96; for the Wikimedia Commons retrieve source (#79 · report 14 §3.3).
 - [foley.stores](_autosummary/foley.stores.html.md): dol-backed storage for foley: content-addressed bytes + a metadata store.
 - [For AI agents](ai-agents.html.md): &#96;foley&#96; ships artifacts for coding agents alongside its code. This page lists
-- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-11-02 01:12 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
+- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-11-02 01:29 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
 
 ## Optional
 

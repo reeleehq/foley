@@ -9,6 +9,7 @@ foley.index.taxonomy
    .. autosummary::
    
       load_ucs_table
+      load_ucs_master
       default_ucs_table
       parse_ucs_filename
       parse_ucs_name

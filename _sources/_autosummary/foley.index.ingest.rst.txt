@@ -9,8 +9,6 @@ foley.index.ingest
    .. autosummary::
    
       AUDIO_EXTS
-      UNASSERTABLE_LICENSE_IDS
-      ASSERTABLE_LICENSE_IDS
       LEGACY_SELECTORS
       FROM_LICENSE_URL
    

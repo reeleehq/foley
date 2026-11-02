@@ -17,13 +17,15 @@ loader merges the in-code seed with an optional full-table JSON drop under
 
 ### Module Attributes
 
-| [`BLOCK_SEP`](#foley.index.taxonomy.ucs.BLOCK_SEP)   | The block separator of a UCS filename, and the one that attaches the optional UserCategory to the CatID and VendorCategory to the FXName.   |
-|--------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| [`UCS_MASTER_FILE`](#foley.index.taxonomy.ucs.UCS_MASTER_FILE)   | The UCS v8.2.1 master as shipped (`tools/build_ucs_table.py`; #227).                                                                      |
+|--------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| [`BLOCK_SEP`](#foley.index.taxonomy.ucs.BLOCK_SEP)         | The block separator of a UCS filename, and the one that attaches the optional UserCategory to the CatID and VendorCategory to the FXName. |
 
 ### Functions
 
 | [`default_ucs_table`](#foley.index.taxonomy.ucs.default_ucs_table)()                          | The process-wide default UCS table (seed + any JSON drop), built once.                                                                       |
 |-----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| [`load_ucs_master`](#foley.index.taxonomy.ucs.load_ucs_master)()                            | The authoritative UCS v8.2.1 master (753 rows, 82 categories), without the seed.                                                             |
 | [`load_ucs_table`](#foley.index.taxonomy.ucs.load_ucs_table)(\*[, data_dir, include_seed]) | Build the UCS lookup: the seed rows, overridden/extended by a JSON drop.                                                                     |
 | [`looks_like_vendor_tag`](#foley.index.taxonomy.ucs.looks_like_vendor_tag)(prefix)                | Whether the text before an FXName's first hyphen reads as a VendorCategory.                                                                  |
 | [`parse_catid_token`](#foley.index.taxonomy.ucs.parse_catid_token)(filename)                  | Return the CatID candidate of a UCS-style filename, else `None`.                                                                             |
@@ -35,9 +37,32 @@ loader merges the in-code seed with an optional full-table JSON drop under
 The block separator of a UCS filename, and the one that attaches the optional
 UserCategory to the CatID and VendorCategory to the FXName.
 
+### foley.index.taxonomy.ucs.UCS_MASTER_FILE *= PosixPath('/home/runner/work/foley/foley/foley/index/taxonomy/data/ucs_master.json')*
+
+The UCS v8.2.1 master as shipped (`tools/build_ucs_table.py`; #227).
+
 ### foley.index.taxonomy.ucs.default_ucs_table()
 
 The process-wide default UCS table (seed + any JSON drop), built once.
+
+* **Return type:**
+  [`UcsTable`](foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)
+
+### foley.index.taxonomy.ucs.load_ucs_master()
+
+The authoritative UCS v8.2.1 master (753 rows, 82 categories), without the seed.
+
+Opt-in for now: the default table ([`default_ucs_table()`](#foley.index.taxonomy.ucs.default_ucs_table)) is still the
+in-code seed, whose CatIDs mostly predate the master. Pass it where a table is
+taken (`parse_ucs_name(name, table=load_ucs_master())`). Row fields are the
+master’s, verbatim (`SubCategory` in capitals: `('DOORS', 'WOOD')`), with its
+explanation and synonyms (lowercased).
+
+```pycon
+>>> t = load_ucs_master()
+>>> len(t), t.get("doorwood").subcategory, "WOODHndl" in t
+(753, 'WOOD', True)
+```
 
 * **Return type:**
   [`UcsTable`](foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)

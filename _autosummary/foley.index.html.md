@@ -15,24 +15,26 @@ only the stdlib; install the capability you use via the matching extra
 
 ### Functions
 
-| [`default_embedder`](#foley.index.default_embedder)()                                 | Return a process-wide default [`ClapEmbedder`](#foley.index.ClapEmbedder) (loaded once, reused).   |
-|-----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| [`default_tagger`](#foley.index.default_tagger)()                                   | The default supervised tagger (PANNs CNN14; `foley[tag]`).                                                           |
-| [`default_zeroshot_tagger`](#foley.index.default_zeroshot_tagger)([embedder])                | The default zero-shot tagger (CLAP vs UCS subcategories; `foley[clap]`).                                             |
-| [`ingest_one`](#foley.index.ingest_one)(src, \*[, library, sound_id, ...])      | Ingest one clip into `library` and return an [`IngestResult`](#foley.index.IngestResult).          |
-| [`ingest_folder`](#foley.index.ingest_folder)(path, \*[, library, recursive, ...]) | Ingest every audio file under `path` and return an [`IngestReport`](#foley.index.IngestReport).    |
-| [`resolve_ingest_license`](#foley.index.resolve_ingest_license)(license, \*[, source_url])  | The rights record for a local ingest: fail-closed unless rights are asserted (#55).                                  |
-| [`restamp_rights`](#foley.index.restamp_rights)([library, license, ids, ...])       | Re-stamp the licence of stored sounds; a dry run unless `apply=True`.                                                |
-| [`default_index`](#foley.index.default_index)(\*, data_dir, dim)                   | Build the best available persistent index for a library.                                                             |
-| [`lancedb_available`](#foley.index.lancedb_available)()                                | True if `lancedb` is importable (the `foley[index]` extra is present).                                               |
-| [`sqlite_vec_loadable`](#foley.index.sqlite_vec_loadable)()                              | True if `sqlite_vec` is installed AND this interpreter can load it.                                                  |
-| [`reciprocal_rank_fusion`](#foley.index.reciprocal_rank_fusion)(ranked_id_lists, \*[, k])   | Fuse several ranked id lists into one, by reciprocal rank.                                                           |
-| [`fuse_hits`](#foley.index.fuse_hits)(vector_hits, keyword_hits, \*, k[, ...]) | RRF-fuse a vector ranker's hits with a keyword ranker's hits.                                                        |
-| [`hybrid_search`](#foley.index.hybrid_search)(query, \*, embedder, vindex, kindex) | Embed `query`, run the vector + keyword rankers, and RRF-fuse them.                                                  |
-| [`vector_search`](#foley.index.vector_search)(qvec, \*, vindex[, k, where])        | Pure audio<->audio (or clip->library) vector search — no keyword leg.                                                |
-| [`default_library`](#foley.index.default_library)()                                  | The process-wide default library (local stores + CLAP + best index).                                                 |
-| [`resolve_catid`](#foley.index.resolve_catid)(\*[, tags, caption, ...])            | Resolve inputs to a best UCS CatID by the staged precedence.                                                         |
-| [`parse_ucs_filename`](#foley.index.parse_ucs_filename)(filename, \*[, table])          | Parse a UCS-conformant filename to `(ucs_category, ucs_subcategory)`.                                                |
+| [`default_embedder`](#foley.index.default_embedder)()                                 | Return a process-wide default [`ClapEmbedder`](#foley.index.ClapEmbedder) (loaded once, reused).                  |
+|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| [`default_tagger`](#foley.index.default_tagger)()                                   | The default supervised tagger (PANNs CNN14; `foley[tag]`).                                                                          |
+| [`default_zeroshot_tagger`](#foley.index.default_zeroshot_tagger)([embedder])                | The default zero-shot tagger (CLAP vs UCS subcategories; `foley[clap]`).                                                            |
+| [`ingest_one`](#foley.index.ingest_one)(src, \*[, library, sound_id, ...])      | Ingest one clip into `library` and return an [`IngestResult`](#foley.index.IngestResult).                         |
+| [`ingest_folder`](#foley.index.ingest_folder)(path, \*[, library, recursive, ...]) | Ingest every audio file under `path` and return an [`IngestReport`](#foley.index.IngestReport).                   |
+| [`sidecar_license`](#foley.index.sidecar_license)(path, \*[, root])                  | The [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord) the nearest sidecar asserts for `path`. |
+| [`find_sidecar`](#foley.index.find_sidecar)(path, \*[, root])                     | The nearest sidecar for `path` (a file or folder), searching up to `root`.                                                          |
+| [`resolve_ingest_license`](#foley.index.resolve_ingest_license)(license, \*[, source_url])  | The rights record for a local ingest: fail-closed unless rights are asserted (#55).                                                 |
+| [`restamp_rights`](#foley.index.restamp_rights)([library, license, ids, ...])       | Re-stamp the licence of stored sounds; a dry run unless `apply=True`.                                                               |
+| [`default_index`](#foley.index.default_index)(\*, data_dir, dim)                   | Build the best available persistent index for a library.                                                                            |
+| [`lancedb_available`](#foley.index.lancedb_available)()                                | True if `lancedb` is importable (the `foley[index]` extra is present).                                                              |
+| [`sqlite_vec_loadable`](#foley.index.sqlite_vec_loadable)()                              | True if `sqlite_vec` is installed AND this interpreter can load it.                                                                 |
+| [`reciprocal_rank_fusion`](#foley.index.reciprocal_rank_fusion)(ranked_id_lists, \*[, k])   | Fuse several ranked id lists into one, by reciprocal rank.                                                                          |
+| [`fuse_hits`](#foley.index.fuse_hits)(vector_hits, keyword_hits, \*, k[, ...]) | RRF-fuse a vector ranker's hits with a keyword ranker's hits.                                                                       |
+| [`hybrid_search`](#foley.index.hybrid_search)(query, \*, embedder, vindex, kindex) | Embed `query`, run the vector + keyword rankers, and RRF-fuse them.                                                                 |
+| [`vector_search`](#foley.index.vector_search)(qvec, \*, vindex[, k, where])        | Pure audio<->audio (or clip->library) vector search — no keyword leg.                                                               |
+| [`default_library`](#foley.index.default_library)()                                  | The process-wide default library (local stores + CLAP + best index).                                                                |
+| [`resolve_catid`](#foley.index.resolve_catid)(\*[, tags, caption, ...])            | Resolve inputs to a best UCS CatID by the staged precedence.                                                                        |
+| [`parse_ucs_filename`](#foley.index.parse_ucs_filename)(filename, \*[, table])          | Parse a UCS-conformant filename to `(ucs_category, ucs_subcategory)`.                                                               |
 
 ### Classes
 
@@ -53,6 +55,11 @@ only the stdlib; install the capability you use via the matching extra
 | [`FusedHit`](#foley.index.FusedHit)(id[, rrf_score, clap_score, bm25_score]) | One fused retrieval hit: an id plus the scores that produced it.            |
 | [`SoundLibrary`](#foley.index.SoundLibrary)(\*[, sounds, meta, vindex, ...])     | A searchable, license-aware library of sounds (the foley INDEX façade).     |
 | [`CatIdResolution`](#foley.index.CatIdResolution)([catid, category, ...])           | The result of resolving free tags/caption/labels to a UCS CatID.            |
+
+### Exceptions
+
+| [`SidecarError`](#foley.index.SidecarError)   | A missing, unreadable or invalid licence sidecar: the file is not ingested.   |
+|-----------------------------------------------------------------|-------------------------------------------------------------------------------|
 
 ### *class* foley.index.Captioner(\*args, \*\*kwargs)
 
@@ -545,6 +552,12 @@ Return the top-`k` `(AudioSet label, score)` tags, best first.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float)]]
 
+### *exception* foley.index.SidecarError
+
+Bases: [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueError)
+
+A missing, unreadable or invalid licence sidecar: the file is not ingested.
+
 ### *class* foley.index.SoundLibrary(, sounds=None, meta=None, vindex=None, kindex=None, embedder=None, data_dir=None, candidate_k=50, rrf_k=60)
 
 Bases: [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)
@@ -893,6 +906,20 @@ default embedder.
 * **Return type:**
   [`ClapZeroShotTagger`](foley.index.taggers.html.md#foley.index.taggers.ClapZeroShotTagger)
 
+### foley.index.find_sidecar(path, , root=None)
+
+The nearest sidecar for `path` (a file or folder), searching up to `root`.
+
+`root` (default: the filesystem root) bounds the search, so a library folder
+never inherits a sidecar from above it. The path is walked as given, not through
+symlinks, so a linked file takes the sidecar of the folder it is listed in.
+
+* **Raises:**
+  [**SidecarError**](#foley.index.SidecarError) – If `path` is not under `root`, or a folder holds two
+      sidecars, or a sidecar name is not a file.
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)]
+
 ### foley.index.fuse_hits(vector_hits, keyword_hits, , k, rrf_k=60)
 
 RRF-fuse a vector ranker’s hits with a keyword ranker’s hits.
@@ -1142,6 +1169,21 @@ bounded by its parent’s licence, not its grandparent’s.
 * **Raises:**
   [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `license` or `select` is unknown.
 
+### foley.index.sidecar_license(path, , root=None)
+
+The [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord) the nearest sidecar asserts for `path`.
+
+`rights_verified` is `True` (the user asserted it, as with
+`foley.ingest(path, license=...)`), the flags come from the licence row, and
+`ai_training = false` narrows the row’s flag (`true` never widens it). The
+licensor is the rights holder; the pack is named in `license_name` after the
+licence’s own name (`"CC0 1.0 Universal (Public Domain Dedication) (GDC 2024)"`).
+
+* **Raises:**
+  [**SidecarError**](#foley.index.SidecarError) – If no sidecar covers `path` (up to `root`), or it is invalid.
+* **Return type:**
+  [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)
+
 ### foley.index.sqlite_vec_loadable()
 
 True if `sqlite_vec` is installed AND this interpreter can load it.
@@ -1186,13 +1228,14 @@ fusion).
 
 ### Modules
 
-| [`taxonomy`](foley.index.taxonomy.html.md#module-foley.index.taxonomy)   | UCS + AudioSet taxonomy: the `tags -> UCS CatID` resolver for foley.                       |
-|-----------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
-| [`embedders`](foley.index.embedders.html.md#module-foley.index.embedders) | Embedders — the joint text<->audio space that powers retrieval.                            |
-| [`indexes`](foley.index.indexes.html.md#module-foley.index.indexes)     | Concrete vector + keyword index backends (the swappable retrieval engines).                |
-| [`ingest`](foley.index.ingest.html.md#module-foley.index.ingest)       | The ingestion pipeline — turn any audio file into a searchable SoundRecord.                |
-| [`library`](foley.index.library.html.md#module-foley.index.library)     | The `SoundLibrary` façade — one searchable, license-aware sound library.                   |
-| [`onnx_clap`](foley.index.onnx_clap.html.md#module-foley.index.onnx_clap) | CLAP on a small host: the same checkpoint through ONNX Runtime, no torch, no transformers. |
-| [`protocols`](foley.index.protocols.html.md#module-foley.index.protocols) | Structural contracts for the foley index (the retrieval boundary).                         |
-| [`search`](foley.index.search.html.md#module-foley.index.search)       | Hybrid retrieval: reciprocal rank fusion over a vector list and a keyword list.            |
-| [`taggers`](foley.index.taggers.html.md#module-foley.index.taggers)     | Taggers — auto-fill a sound's semantic labels on ingest (report 03).                       |
+| [`taxonomy`](foley.index.taxonomy.html.md#module-foley.index.taxonomy)               | UCS + AudioSet taxonomy: the `tags -> UCS CatID` resolver for foley.                       |
+|-----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
+| [`embedders`](foley.index.embedders.html.md#module-foley.index.embedders)             | Embedders — the joint text<->audio space that powers retrieval.                            |
+| [`indexes`](foley.index.indexes.html.md#module-foley.index.indexes)                 | Concrete vector + keyword index backends (the swappable retrieval engines).                |
+| [`ingest`](foley.index.ingest.html.md#module-foley.index.ingest)                   | The ingestion pipeline — turn any audio file into a searchable SoundRecord.                |
+| [`library`](foley.index.library.html.md#module-foley.index.library)                 | The `SoundLibrary` façade — one searchable, license-aware sound library.                   |
+| [`license_sidecar`](foley.index.license_sidecar.html.md#module-foley.index.license_sidecar) | A licence stated once per folder: the sidecar for owned sound packs (#229).                |
+| [`onnx_clap`](foley.index.onnx_clap.html.md#module-foley.index.onnx_clap)             | CLAP on a small host: the same checkpoint through ONNX Runtime, no torch, no transformers. |
+| [`protocols`](foley.index.protocols.html.md#module-foley.index.protocols)             | Structural contracts for the foley index (the retrieval boundary).                         |
+| [`search`](foley.index.search.html.md#module-foley.index.search)                   | Hybrid retrieval: reciprocal rank fusion over a vector list and a keyword list.            |
+| [`taggers`](foley.index.taggers.html.md#module-foley.index.taggers)                 | Taggers — auto-fill a sound's semantic labels on ingest (report 03).                       |

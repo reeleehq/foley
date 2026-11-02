@@ -1,4 +1,4 @@
-> built 2026-11-02 01:12 UTC from 3b94716 (main) · foley 0.0.104. Details: build_info.json
+> built 2026-11-02 01:29 UTC from 5a65fe9 (main) · foley 0.0.106. Details: build_info.json
 
 # index.html.md
 
@@ -9773,24 +9773,26 @@ only the stdlib; install the capability you use via the matching extra
 
 ### Functions
 
-| [`default_embedder`](_autosummary/foley.index.html.md#foley.index.default_embedder)()                                 | Return a process-wide default [`ClapEmbedder`](_autosummary/foley.index.html.md#foley.index.ClapEmbedder) (loaded once, reused).   |
-|-----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| [`default_tagger`](_autosummary/foley.index.html.md#foley.index.default_tagger)()                                   | The default supervised tagger (PANNs CNN14; `foley[tag]`).                                                           |
-| [`default_zeroshot_tagger`](_autosummary/foley.index.html.md#foley.index.default_zeroshot_tagger)([embedder])                | The default zero-shot tagger (CLAP vs UCS subcategories; `foley[clap]`).                                             |
-| [`ingest_one`](_autosummary/foley.index.html.md#foley.index.ingest_one)(src, \*[, library, sound_id, ...])      | Ingest one clip into `library` and return an [`IngestResult`](_autosummary/foley.index.html.md#foley.index.IngestResult).          |
-| [`ingest_folder`](_autosummary/foley.index.html.md#foley.index.ingest_folder)(path, \*[, library, recursive, ...]) | Ingest every audio file under `path` and return an [`IngestReport`](_autosummary/foley.index.html.md#foley.index.IngestReport).    |
-| [`resolve_ingest_license`](_autosummary/foley.index.html.md#foley.index.resolve_ingest_license)(license, \*[, source_url])  | The rights record for a local ingest: fail-closed unless rights are asserted (#55).                                  |
-| [`restamp_rights`](_autosummary/foley.index.html.md#foley.index.restamp_rights)([library, license, ids, ...])       | Re-stamp the licence of stored sounds; a dry run unless `apply=True`.                                                |
-| [`default_index`](_autosummary/foley.index.html.md#foley.index.default_index)(\*, data_dir, dim)                   | Build the best available persistent index for a library.                                                             |
-| [`lancedb_available`](_autosummary/foley.index.html.md#foley.index.lancedb_available)()                                | True if `lancedb` is importable (the `foley[index]` extra is present).                                               |
-| [`sqlite_vec_loadable`](_autosummary/foley.index.html.md#foley.index.sqlite_vec_loadable)()                              | True if `sqlite_vec` is installed AND this interpreter can load it.                                                  |
-| [`reciprocal_rank_fusion`](_autosummary/foley.index.html.md#foley.index.reciprocal_rank_fusion)(ranked_id_lists, \*[, k])   | Fuse several ranked id lists into one, by reciprocal rank.                                                           |
-| [`fuse_hits`](_autosummary/foley.index.html.md#foley.index.fuse_hits)(vector_hits, keyword_hits, \*, k[, ...]) | RRF-fuse a vector ranker's hits with a keyword ranker's hits.                                                        |
-| [`hybrid_search`](_autosummary/foley.index.html.md#foley.index.hybrid_search)(query, \*, embedder, vindex, kindex) | Embed `query`, run the vector + keyword rankers, and RRF-fuse them.                                                  |
-| [`vector_search`](_autosummary/foley.index.html.md#foley.index.vector_search)(qvec, \*, vindex[, k, where])        | Pure audio<->audio (or clip->library) vector search — no keyword leg.                                                |
-| [`default_library`](_autosummary/foley.index.html.md#foley.index.default_library)()                                  | The process-wide default library (local stores + CLAP + best index).                                                 |
-| [`resolve_catid`](_autosummary/foley.index.html.md#foley.index.resolve_catid)(\*[, tags, caption, ...])            | Resolve inputs to a best UCS CatID by the staged precedence.                                                         |
-| [`parse_ucs_filename`](_autosummary/foley.index.html.md#foley.index.parse_ucs_filename)(filename, \*[, table])          | Parse a UCS-conformant filename to `(ucs_category, ucs_subcategory)`.                                                |
+| [`default_embedder`](_autosummary/foley.index.html.md#foley.index.default_embedder)()                                 | Return a process-wide default [`ClapEmbedder`](_autosummary/foley.index.html.md#foley.index.ClapEmbedder) (loaded once, reused).                  |
+|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| [`default_tagger`](_autosummary/foley.index.html.md#foley.index.default_tagger)()                                   | The default supervised tagger (PANNs CNN14; `foley[tag]`).                                                                          |
+| [`default_zeroshot_tagger`](_autosummary/foley.index.html.md#foley.index.default_zeroshot_tagger)([embedder])                | The default zero-shot tagger (CLAP vs UCS subcategories; `foley[clap]`).                                                            |
+| [`ingest_one`](_autosummary/foley.index.html.md#foley.index.ingest_one)(src, \*[, library, sound_id, ...])      | Ingest one clip into `library` and return an [`IngestResult`](_autosummary/foley.index.html.md#foley.index.IngestResult).                         |
+| [`ingest_folder`](_autosummary/foley.index.html.md#foley.index.ingest_folder)(path, \*[, library, recursive, ...]) | Ingest every audio file under `path` and return an [`IngestReport`](_autosummary/foley.index.html.md#foley.index.IngestReport).                   |
+| [`sidecar_license`](_autosummary/foley.index.html.md#foley.index.sidecar_license)(path, \*[, root])                  | The [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) the nearest sidecar asserts for `path`. |
+| [`find_sidecar`](_autosummary/foley.index.html.md#foley.index.find_sidecar)(path, \*[, root])                     | The nearest sidecar for `path` (a file or folder), searching up to `root`.                                                          |
+| [`resolve_ingest_license`](_autosummary/foley.index.html.md#foley.index.resolve_ingest_license)(license, \*[, source_url])  | The rights record for a local ingest: fail-closed unless rights are asserted (#55).                                                 |
+| [`restamp_rights`](_autosummary/foley.index.html.md#foley.index.restamp_rights)([library, license, ids, ...])       | Re-stamp the licence of stored sounds; a dry run unless `apply=True`.                                                               |
+| [`default_index`](_autosummary/foley.index.html.md#foley.index.default_index)(\*, data_dir, dim)                   | Build the best available persistent index for a library.                                                                            |
+| [`lancedb_available`](_autosummary/foley.index.html.md#foley.index.lancedb_available)()                                | True if `lancedb` is importable (the `foley[index]` extra is present).                                                              |
+| [`sqlite_vec_loadable`](_autosummary/foley.index.html.md#foley.index.sqlite_vec_loadable)()                              | True if `sqlite_vec` is installed AND this interpreter can load it.                                                                 |
+| [`reciprocal_rank_fusion`](_autosummary/foley.index.html.md#foley.index.reciprocal_rank_fusion)(ranked_id_lists, \*[, k])   | Fuse several ranked id lists into one, by reciprocal rank.                                                                          |
+| [`fuse_hits`](_autosummary/foley.index.html.md#foley.index.fuse_hits)(vector_hits, keyword_hits, \*, k[, ...]) | RRF-fuse a vector ranker's hits with a keyword ranker's hits.                                                                       |
+| [`hybrid_search`](_autosummary/foley.index.html.md#foley.index.hybrid_search)(query, \*, embedder, vindex, kindex) | Embed `query`, run the vector + keyword rankers, and RRF-fuse them.                                                                 |
+| [`vector_search`](_autosummary/foley.index.html.md#foley.index.vector_search)(qvec, \*, vindex[, k, where])        | Pure audio<->audio (or clip->library) vector search — no keyword leg.                                                               |
+| [`default_library`](_autosummary/foley.index.html.md#foley.index.default_library)()                                  | The process-wide default library (local stores + CLAP + best index).                                                                |
+| [`resolve_catid`](_autosummary/foley.index.html.md#foley.index.resolve_catid)(\*[, tags, caption, ...])            | Resolve inputs to a best UCS CatID by the staged precedence.                                                                        |
+| [`parse_ucs_filename`](_autosummary/foley.index.html.md#foley.index.parse_ucs_filename)(filename, \*[, table])          | Parse a UCS-conformant filename to `(ucs_category, ucs_subcategory)`.                                                               |
 
 ### Classes
 
@@ -9811,6 +9813,11 @@ only the stdlib; install the capability you use via the matching extra
 | [`FusedHit`](_autosummary/foley.index.html.md#foley.index.FusedHit)(id[, rrf_score, clap_score, bm25_score]) | One fused retrieval hit: an id plus the scores that produced it.            |
 | [`SoundLibrary`](_autosummary/foley.index.html.md#foley.index.SoundLibrary)(\*[, sounds, meta, vindex, ...])     | A searchable, license-aware library of sounds (the foley INDEX façade).     |
 | [`CatIdResolution`](_autosummary/foley.index.html.md#foley.index.CatIdResolution)([catid, category, ...])           | The result of resolving free tags/caption/labels to a UCS CatID.            |
+
+### Exceptions
+
+| [`SidecarError`](_autosummary/foley.index.html.md#foley.index.SidecarError)   | A missing, unreadable or invalid licence sidecar: the file is not ingested.   |
+|-----------------------------------------------------------------|-------------------------------------------------------------------------------|
 
 ### *class* foley.index.Captioner(\*args, \*\*kwargs)
 
@@ -10303,6 +10310,12 @@ Return the top-`k` `(AudioSet label, score)` tags, best first.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float)]]
 
+### *exception* foley.index.SidecarError
+
+Bases: [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueError)
+
+A missing, unreadable or invalid licence sidecar: the file is not ingested.
+
 ### *class* foley.index.SoundLibrary(, sounds=None, meta=None, vindex=None, kindex=None, embedder=None, data_dir=None, candidate_k=50, rrf_k=60)
 
 Bases: [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)
@@ -10651,6 +10664,20 @@ default embedder.
 * **Return type:**
   [`ClapZeroShotTagger`](_autosummary/foley.index.taggers.html.md#foley.index.taggers.ClapZeroShotTagger)
 
+### foley.index.find_sidecar(path, , root=None)
+
+The nearest sidecar for `path` (a file or folder), searching up to `root`.
+
+`root` (default: the filesystem root) bounds the search, so a library folder
+never inherits a sidecar from above it. The path is walked as given, not through
+symlinks, so a linked file takes the sidecar of the folder it is listed in.
+
+* **Raises:**
+  [**SidecarError**](_autosummary/foley.index.html.md#foley.index.SidecarError) – If `path` is not under `root`, or a folder holds two
+      sidecars, or a sidecar name is not a file.
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)]
+
 ### foley.index.fuse_hits(vector_hits, keyword_hits, , k, rrf_k=60)
 
 RRF-fuse a vector ranker’s hits with a keyword ranker’s hits.
@@ -10900,6 +10927,21 @@ bounded by its parent’s licence, not its grandparent’s.
 * **Raises:**
   [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `license` or `select` is unknown.
 
+### foley.index.sidecar_license(path, , root=None)
+
+The [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) the nearest sidecar asserts for `path`.
+
+`rights_verified` is `True` (the user asserted it, as with
+`foley.ingest(path, license=...)`), the flags come from the licence row, and
+`ai_training = false` narrows the row’s flag (`true` never widens it). The
+licensor is the rights holder; the pack is named in `license_name` after the
+licence’s own name (`"CC0 1.0 Universal (Public Domain Dedication) (GDC 2024)"`).
+
+* **Raises:**
+  [**SidecarError**](_autosummary/foley.index.html.md#foley.index.SidecarError) – If no sidecar covers `path` (up to `root`), or it is invalid.
+* **Return type:**
+  [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
+
 ### foley.index.sqlite_vec_loadable()
 
 True if `sqlite_vec` is installed AND this interpreter can load it.
@@ -10944,16 +10986,17 @@ fusion).
 
 ### Modules
 
-| [`taxonomy`](_autosummary/foley.index.taxonomy.html.md#module-foley.index.taxonomy)   | UCS + AudioSet taxonomy: the `tags -> UCS CatID` resolver for foley.                       |
-|-----------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
-| [`embedders`](_autosummary/foley.index.embedders.html.md#module-foley.index.embedders) | Embedders — the joint text<->audio space that powers retrieval.                            |
-| [`indexes`](_autosummary/foley.index.indexes.html.md#module-foley.index.indexes)     | Concrete vector + keyword index backends (the swappable retrieval engines).                |
-| [`ingest`](_autosummary/foley.index.ingest.html.md#module-foley.index.ingest)       | The ingestion pipeline — turn any audio file into a searchable SoundRecord.                |
-| [`library`](_autosummary/foley.index.library.html.md#module-foley.index.library)     | The `SoundLibrary` façade — one searchable, license-aware sound library.                   |
-| [`onnx_clap`](_autosummary/foley.index.onnx_clap.html.md#module-foley.index.onnx_clap) | CLAP on a small host: the same checkpoint through ONNX Runtime, no torch, no transformers. |
-| [`protocols`](_autosummary/foley.index.protocols.html.md#module-foley.index.protocols) | Structural contracts for the foley index (the retrieval boundary).                         |
-| [`search`](_autosummary/foley.index.search.html.md#module-foley.index.search)       | Hybrid retrieval: reciprocal rank fusion over a vector list and a keyword list.            |
-| [`taggers`](_autosummary/foley.index.taggers.html.md#module-foley.index.taggers)     | Taggers — auto-fill a sound's semantic labels on ingest (report 03).                       |
+| [`taxonomy`](_autosummary/foley.index.taxonomy.html.md#module-foley.index.taxonomy)               | UCS + AudioSet taxonomy: the `tags -> UCS CatID` resolver for foley.                       |
+|-----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
+| [`embedders`](_autosummary/foley.index.embedders.html.md#module-foley.index.embedders)             | Embedders — the joint text<->audio space that powers retrieval.                            |
+| [`indexes`](_autosummary/foley.index.indexes.html.md#module-foley.index.indexes)                 | Concrete vector + keyword index backends (the swappable retrieval engines).                |
+| [`ingest`](_autosummary/foley.index.ingest.html.md#module-foley.index.ingest)                   | The ingestion pipeline — turn any audio file into a searchable SoundRecord.                |
+| [`library`](_autosummary/foley.index.library.html.md#module-foley.index.library)                 | The `SoundLibrary` façade — one searchable, license-aware sound library.                   |
+| [`license_sidecar`](_autosummary/foley.index.license_sidecar.html.md#module-foley.index.license_sidecar) | A licence stated once per folder: the sidecar for owned sound packs (#229).                |
+| [`onnx_clap`](_autosummary/foley.index.onnx_clap.html.md#module-foley.index.onnx_clap)             | CLAP on a small host: the same checkpoint through ONNX Runtime, no torch, no transformers. |
+| [`protocols`](_autosummary/foley.index.protocols.html.md#module-foley.index.protocols)             | Structural contracts for the foley index (the retrieval boundary).                         |
+| [`search`](_autosummary/foley.index.search.html.md#module-foley.index.search)                   | Hybrid retrieval: reciprocal rank fusion over a vector list and a keyword list.            |
+| [`taggers`](_autosummary/foley.index.taggers.html.md#module-foley.index.taggers)                 | Taggers — auto-fill a sound's semantic labels on ingest (report 03).                       |
 
 
 # _autosummary/foley.index.indexes.html.md
@@ -11258,12 +11301,10 @@ module costs only the stdlib.
 
 ### Module Attributes
 
-| [`AUDIO_EXTS`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.AUDIO_EXTS)               | Audio file extensions the folder walker ingests.                                                                                                                                   |
-|---------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`UNASSERTABLE_LICENSE_IDS`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.UNASSERTABLE_LICENSE_IDS) | `unknown` by definition, `PDM-1.0` (a claim about the work, not a grant — verify it by building the `LicenseRecord` yourself), and the legacy `ElevenLabs-SFX` row (say the plan). |
-| [`ASSERTABLE_LICENSE_IDS`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.ASSERTABLE_LICENSE_IDS)   | The ids a caller may assert on ingest / restamp (`foley ingest --license`).                                                                                                        |
-| [`LEGACY_SELECTORS`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.LEGACY_SELECTORS)         | Named selections for [`restamp_rights()`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.restamp_rights) (`foley restamp-rights --select NAME`).                                                     |
-| [`FROM_LICENSE_URL`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.FROM_LICENSE_URL)         | re-derive each record's id from the licence URL / label its source served (kept in `license_url`).                                                                                 |
+| [`AUDIO_EXTS`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.AUDIO_EXTS)       | Audio file extensions the folder walker ingests.                                                                               |
+|-------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| [`LEGACY_SELECTORS`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.LEGACY_SELECTORS) | Named selections for [`restamp_rights()`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.restamp_rights) (`foley restamp-rights --select NAME`). |
+| [`FROM_LICENSE_URL`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.FROM_LICENSE_URL) | re-derive each record's id from the licence URL / label its source served (kept in `license_url`).                             |
 
 ### Functions
 
@@ -11283,10 +11324,6 @@ module costs only the stdlib.
 | [`IngestReport`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestReport)(root[, results, notes])        | The rolled-up outcome of a folder ingest (JSON-serializable).   |
 |----------------------------------------------------------------------------------------------|-----------------------------------------------------------------|
 | [`IngestResult`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestResult)(id, status[, record, qc, ...]) | The outcome of ingesting one clip.                              |
-
-### foley.index.ingest.ASSERTABLE_LICENSE_IDS *= frozenset({'CC-BY-2.0', 'CC-BY-2.5', 'CC-BY-3.0', 'CC-BY-4.0', 'CC-BY-NC-2.0', 'CC-BY-NC-2.5', 'CC-BY-NC-3.0', 'CC-BY-NC-4.0', 'CC-Sampling+-1.0', 'CC0-1.0', 'MIT', 'Pixabay-Content', 'RemArc', 'Sonniss-GDC', 'Stability-Community', 'Tencent-Hunyuan-Community', 'elevenlabs-free-plan', 'elevenlabs-paid-plan', 'fal-partner-unverified', 'procedural-free', 'research-only', 'user-owned'})*
-
-The ids a caller may assert on ingest / restamp (`foley ingest --license`).
 
 ### foley.index.ingest.AUDIO_EXTS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('.wav', '.flac', '.aiff', '.aif', '.ogg', '.mp3', '.opus', '.m4a')*
 
@@ -11388,15 +11425,6 @@ What the provider returned besides the audio of a generation (#61; see
 ### foley.index.ingest.LEGACY_SELECTORS *= {'has-license-url': <function has_license_url>, 'legacy-elevenlabs': <function is_legacy_elevenlabs>, 'legacy-user-owned': <function is_legacy_default_user_owned>}*
 
 Named selections for [`restamp_rights()`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.restamp_rights) (`foley restamp-rights --select NAME`).
-
-### foley.index.ingest.UNASSERTABLE_LICENSE_IDS *= frozenset({'ElevenLabs-SFX', 'PDM-1.0', 'unknown'})*
-
-`unknown` by definition,
-`PDM-1.0` (a claim about the work, not a grant — verify it by building the
-`LicenseRecord` yourself), and the legacy `ElevenLabs-SFX` row (say the plan).
-
-* **Type:**
-  Licence ids that can never be *asserted* as verified
 
 ### foley.index.ingest.content_id(src)
 
@@ -11817,6 +11845,110 @@ The process-wide default library (local stores + CLAP + best index).
 
 * **Return type:**
   [`SoundLibrary`](_autosummary/foley.index.library.html.md#foley.index.library.SoundLibrary)
+
+
+# _autosummary/foley.index.license_sidecar.html.md
+
+# foley.index.license_sidecar
+
+A licence stated once per folder: the sidecar for owned sound packs (#229).
+
+A purchased pack’s licence is not in its files, so the user writes it once, in a
+`foley-license.toml` (or `foley-license.json`) at the pack’s root:
+
+```default
+license = "owned-pack"          # a foley.licensing.LICENSE_FLAGS row
+licensor = "Sonniss"
+pack = "GDC 2024 Game Audio Bundle"
+license_url = "https://sonniss.com/gdc-bundle-license"   # optional
+attribution = "Sound effects: Sonniss GDC 2024"          # optional
+ai_training = false             # optional: can only narrow the row's flag
+```
+
+A file takes the nearest sidecar in its folder or above (up to `root`), so a
+sub-folder can override its pack. The licence goes through the licence SSOT
+([`foley.licensing.apply_license_flags()`](_autosummary/foley.licensing.html.md#foley.licensing.apply_license_flags)) like any asserted licence, and only an
+id the user may assert ([`foley.licensing.ASSERTABLE_LICENSE_IDS`](_autosummary/foley.licensing.html.md#foley.licensing.ASSERTABLE_LICENSE_IDS)) is taken. A
+sidecar can narrow a grant, never widen it: `ai_training = true` does not unlock
+training a licence forbids. Fail-closed: no sidecar, two in one folder, an unreadable
+one, an unknown key or an unassertable licence raises [`SidecarError`](_autosummary/foley.index.license_sidecar.html.md#foley.index.license_sidecar.SidecarError); nothing
+is guessed.
+
+### Module Attributes
+
+| [`SIDECAR_NAMES`](_autosummary/foley.index.license_sidecar.html.md#foley.index.license_sidecar.SIDECAR_NAMES)   | Sidecar file names, by precedence within one folder.                  |
+|------------------------------------------------------------------|-----------------------------------------------------------------------|
+| [`SIDECAR_FIELDS`](_autosummary/foley.index.license_sidecar.html.md#foley.index.license_sidecar.SIDECAR_FIELDS)  | The keys a sidecar may hold, with their types; `license` is required. |
+| [`SIDECAR_SOURCE`](_autosummary/foley.index.license_sidecar.html.md#foley.index.license_sidecar.SIDECAR_SOURCE)  | `LicenseRecord.source` of a sound whose licence a sidecar states.     |
+
+### Functions
+
+| [`find_sidecar`](_autosummary/foley.index.license_sidecar.html.md#foley.index.license_sidecar.find_sidecar)(path, \*[, root])    | The nearest sidecar for `path` (a file or folder), searching up to `root`.                                                          |
+|------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| [`read_sidecar`](_autosummary/foley.index.license_sidecar.html.md#foley.index.license_sidecar.read_sidecar)(sidecar)             | A sidecar's fields, checked against [`SIDECAR_FIELDS`](_autosummary/foley.index.license_sidecar.html.md#foley.index.license_sidecar.SIDECAR_FIELDS).                                |
+| [`sidecar_license`](_autosummary/foley.index.license_sidecar.html.md#foley.index.license_sidecar.sidecar_license)(path, \*[, root]) | The [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) the nearest sidecar asserts for `path`. |
+
+### Exceptions
+
+| [`SidecarError`](_autosummary/foley.index.license_sidecar.html.md#foley.index.license_sidecar.SidecarError)   | A missing, unreadable or invalid licence sidecar: the file is not ingested.   |
+|-----------------------------------------------------------------|-------------------------------------------------------------------------------|
+
+### foley.index.license_sidecar.SIDECAR_FIELDS *= {'ai_training': <class 'bool'>, 'attribution': <class 'str'>, 'license': <class 'str'>, 'license_url': <class 'str'>, 'licensor': <class 'str'>, 'pack': <class 'str'>}*
+
+The keys a sidecar may hold, with their types; `license` is required.
+
+### foley.index.license_sidecar.SIDECAR_NAMES *= ('foley-license.toml', 'foley-license.json')*
+
+Sidecar file names, by precedence within one folder.
+
+### foley.index.license_sidecar.SIDECAR_SOURCE *= 'licensed_library'*
+
+`LicenseRecord.source` of a sound whose licence a sidecar states.
+
+### *exception* foley.index.license_sidecar.SidecarError
+
+Bases: [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueError)
+
+A missing, unreadable or invalid licence sidecar: the file is not ingested.
+
+### foley.index.license_sidecar.find_sidecar(path, , root=None)
+
+The nearest sidecar for `path` (a file or folder), searching up to `root`.
+
+`root` (default: the filesystem root) bounds the search, so a library folder
+never inherits a sidecar from above it. The path is walked as given, not through
+symlinks, so a linked file takes the sidecar of the folder it is listed in.
+
+* **Raises:**
+  [**SidecarError**](_autosummary/foley.index.license_sidecar.html.md#foley.index.license_sidecar.SidecarError) – If `path` is not under `root`, or a folder holds two
+      sidecars, or a sidecar name is not a file.
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)]
+
+### foley.index.license_sidecar.read_sidecar(sidecar)
+
+A sidecar’s fields, checked against [`SIDECAR_FIELDS`](_autosummary/foley.index.license_sidecar.html.md#foley.index.license_sidecar.SIDECAR_FIELDS).
+
+* **Raises:**
+  [**SidecarError**](_autosummary/foley.index.license_sidecar.html.md#foley.index.license_sidecar.SidecarError) – If it cannot be parsed, holds an unknown key or a wrong type,
+      lacks `license`, or names a licence that has no `LICENSE_FLAGS` row.
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.index.license_sidecar.sidecar_license(path, , root=None)
+
+The [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) the nearest sidecar asserts for `path`.
+
+`rights_verified` is `True` (the user asserted it, as with
+`foley.ingest(path, license=...)`), the flags come from the licence row, and
+`ai_training = false` narrows the row’s flag (`true` never widens it). The
+licensor is the rights holder; the pack is named in `license_name` after the
+licence’s own name (`"CC0 1.0 Universal (Public Domain Dedication) (GDC 2024)"`).
+
+* **Raises:**
+  [**SidecarError**](_autosummary/foley.index.license_sidecar.html.md#foley.index.license_sidecar.SidecarError) – If no sidecar covers `path` (up to `root`), or it is invalid.
+* **Return type:**
+  [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
 
 
 # _autosummary/foley.index.onnx_clap.html.md
@@ -12522,6 +12654,7 @@ EnvSound-UCS mapping drop in later as JSON under `data/` with no logic change.
 
 | [`load_ucs_table`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.load_ucs_table)(\*[, data_dir, include_seed])      | Build the UCS lookup: the seed rows, overridden/extended by a JSON drop.                                                                     |
 |----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| [`load_ucs_master`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.load_ucs_master)()                                 | The authoritative UCS v8.2.1 master (753 rows, 82 categories), without the seed.                                                             |
 | [`default_ucs_table`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_ucs_table)()                               | The process-wide default UCS table (seed + any JSON drop), built once.                                                                       |
 | [`parse_ucs_filename`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_ucs_filename)(filename, \*[, table])         | Parse a UCS-conformant filename to `(ucs_category, ucs_subcategory)`.                                                                        |
 | [`parse_ucs_name`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_ucs_name)(filename, \*[, table, ...])        | Every block of a UCS filename as a [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName), else `None`. |
@@ -12609,7 +12742,7 @@ the CatID and the optional VendorCategory to the FXName. `category` and
 `subcategory` come from the table row of `catid`; a block the name does not
 have is `None`.
 
-### *class* foley.index.taxonomy.UcsRow(catid, category, subcategory, synonyms=(), confident=False)
+### *class* foley.index.taxonomy.UcsRow(catid, category, subcategory, synonyms=(), confident=False, explanation='')
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -12679,6 +12812,25 @@ Build the AudioSet(name|MID) -> UCS-CatID map.
   A ready [`AudioSetUcsMap`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.AudioSetUcsMap).
 * **Raises:**
   [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If any entry targets a CatID absent from `table`.
+
+### foley.index.taxonomy.load_ucs_master()
+
+The authoritative UCS v8.2.1 master (753 rows, 82 categories), without the seed.
+
+Opt-in for now: the default table ([`default_ucs_table()`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_ucs_table)) is still the
+in-code seed, whose CatIDs mostly predate the master. Pass it where a table is
+taken (`parse_ucs_name(name, table=load_ucs_master())`). Row fields are the
+master’s, verbatim (`SubCategory` in capitals: `('DOORS', 'WOOD')`), with its
+explanation and synonyms (lowercased).
+
+```pycon
+>>> t = load_ucs_master()
+>>> len(t), t.get("doorwood").subcategory, "WOODHndl" in t
+(753, 'WOOD', True)
+```
+
+* **Return type:**
+  [`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)
 
 ### foley.index.taxonomy.load_ucs_table(, data_dir=None, include_seed=True)
 
@@ -12840,7 +12992,7 @@ the CatID and the optional VendorCategory to the FXName. `category` and
 `subcategory` come from the table row of `catid`; a block the name does not
 have is `None`.
 
-### *class* foley.index.taxonomy.model.UcsRow(catid, category, subcategory, synonyms=(), confident=False)
+### *class* foley.index.taxonomy.model.UcsRow(catid, category, subcategory, synonyms=(), confident=False, explanation='')
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -13018,13 +13170,15 @@ loader merges the in-code seed with an optional full-table JSON drop under
 
 ### Module Attributes
 
-| [`BLOCK_SEP`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.BLOCK_SEP)   | The block separator of a UCS filename, and the one that attaches the optional UserCategory to the CatID and VendorCategory to the FXName.   |
-|--------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| [`UCS_MASTER_FILE`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.UCS_MASTER_FILE)   | The UCS v8.2.1 master as shipped (`tools/build_ucs_table.py`; #227).                                                                      |
+|--------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| [`BLOCK_SEP`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.BLOCK_SEP)         | The block separator of a UCS filename, and the one that attaches the optional UserCategory to the CatID and VendorCategory to the FXName. |
 
 ### Functions
 
 | [`default_ucs_table`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.default_ucs_table)()                          | The process-wide default UCS table (seed + any JSON drop), built once.                                                                       |
 |-----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| [`load_ucs_master`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.load_ucs_master)()                            | The authoritative UCS v8.2.1 master (753 rows, 82 categories), without the seed.                                                             |
 | [`load_ucs_table`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.load_ucs_table)(\*[, data_dir, include_seed]) | Build the UCS lookup: the seed rows, overridden/extended by a JSON drop.                                                                     |
 | [`looks_like_vendor_tag`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.looks_like_vendor_tag)(prefix)                | Whether the text before an FXName's first hyphen reads as a VendorCategory.                                                                  |
 | [`parse_catid_token`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_catid_token)(filename)                  | Return the CatID candidate of a UCS-style filename, else `None`.                                                                             |
@@ -13036,9 +13190,32 @@ loader merges the in-code seed with an optional full-table JSON drop under
 The block separator of a UCS filename, and the one that attaches the optional
 UserCategory to the CatID and VendorCategory to the FXName.
 
+### foley.index.taxonomy.ucs.UCS_MASTER_FILE *= PosixPath('/home/runner/work/foley/foley/foley/index/taxonomy/data/ucs_master.json')*
+
+The UCS v8.2.1 master as shipped (`tools/build_ucs_table.py`; #227).
+
 ### foley.index.taxonomy.ucs.default_ucs_table()
 
 The process-wide default UCS table (seed + any JSON drop), built once.
+
+* **Return type:**
+  [`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)
+
+### foley.index.taxonomy.ucs.load_ucs_master()
+
+The authoritative UCS v8.2.1 master (753 rows, 82 categories), without the seed.
+
+Opt-in for now: the default table ([`default_ucs_table()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.default_ucs_table)) is still the
+in-code seed, whose CatIDs mostly predate the master. Pass it where a table is
+taken (`parse_ucs_name(name, table=load_ucs_master())`). Row fields are the
+master’s, verbatim (`SubCategory` in capitals: `('DOORS', 'WOOD')`), with its
+explanation and synonyms (lowercased).
+
+```pycon
+>>> t = load_ucs_master()
+>>> len(t), t.get("doorwood").subcategory, "WOODHndl" in t
+(753, 'WOOD', True)
+```
 
 * **Return type:**
   [`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)
@@ -13308,19 +13485,21 @@ item is redistributable but stored by-reference.
 
 ### Module Attributes
 
-| [`DEFAULT_INTENDED_USE`](_autosummary/foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE)         | The ONE rights intent every verb and surface defaults to (#63, maintainer decision 2026-10-03): commercial publishing, attributable.                                                                                                                       |
-|-------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`UNKNOWN_LICENSE_FLAGS`](_autosummary/foley.licensing.html.md#foley.licensing.UNKNOWN_LICENSE_FLAGS)        | Fail-closed fallback for unknown / `Proprietary-*` license ids (all False, cap None).                                                                                                                                                                      |
-| [`LICENSE_FLAGS`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_FLAGS)                | `license_id` -> default flag set (report 07 §8.1 seed table).                                                                                                                                                                                              |
-| [`CC_VERSIONS`](_autosummary/foley.licensing.html.md#foley.licensing.CC_VERSIONS)                  | The CC versions foley has rows for (Freesound, FSD50K, Clotho and Wikimedia use these).                                                                                                                                                                    |
-| [`DEFAULT_CC_VERSION`](_autosummary/foley.licensing.html.md#foley.licensing.DEFAULT_CC_VERSION)           | The version assumed when a source gives a CC family with no version at all (Freesound's search labels: `"Attribution"`).                                                                                                                                   |
-| [`UNKNOWN_LICENSE_META`](_autosummary/foley.licensing.html.md#foley.licensing.UNKNOWN_LICENSE_META)         | Fail-closed display fallback for unknown / `Proprietary-*` license ids.                                                                                                                                                                                    |
-| [`LICENSE_META`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_META)                 | `license_id` -> display name + canonical URL (one row per [`LICENSE_FLAGS`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_FLAGS) key).                                                                                                                             |
-| [`AI_TRAINING_SCOPES`](_autosummary/foley.licensing.html.md#foley.licensing.AI_TRAINING_SCOPES)           | The `ai_training_scope` values (`None` = no narrowing beyond `ai_training_ok`).                                                                                                                                                                            |
-| [`GEN_AI_PREFERENCE_SCOPES`](_autosummary/foley.licensing.html.md#foley.licensing.GEN_AI_PREFERENCE_SCOPES)     | Freesound `gen_ai_preference` -> `(ai_training_ok override, ai_training_scope)`.                                                                                                                                                                           |
-| [`EU_MEMBER_STATES`](_autosummary/foley.licensing.html.md#foley.licensing.EU_MEMBER_STATES)             | The EU's member states (ISO 3166-1 alpha-2), for a licence that excludes "EU", with the EU territories that carry their own codes: France's outermost regions (Réunion, French Guiana, Guadeloupe, Martinique, Mayotte, Saint-Martin) and Finland's Åland. |
-| [`LICENSE_EXCLUDED_TERRITORIES`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_EXCLUDED_TERRITORIES) | `license_id` -> the territories where it grants nothing (ISO 3166-1 alpha-2 codes, plus `"EU"` for every member state).                                                                                                                                    |
-| [`NO_RECORD_REASON`](_autosummary/foley.licensing.html.md#foley.licensing.NO_RECORD_REASON)             | The reason a placed sound with no record (nothing to read a licence from) is refused.                                                                                                                                                                      |
+| [`DEFAULT_INTENDED_USE`](_autosummary/foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE)         | The ONE rights intent every verb and surface defaults to (#63, maintainer decision 2026-10-03): commercial publishing, attributable.                                                                                                                                                 |
+|-------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`UNKNOWN_LICENSE_FLAGS`](_autosummary/foley.licensing.html.md#foley.licensing.UNKNOWN_LICENSE_FLAGS)        | Fail-closed fallback for unknown / `Proprietary-*` license ids (all False, cap None).                                                                                                                                                                                                |
+| [`LICENSE_FLAGS`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_FLAGS)                | `license_id` -> default flag set (report 07 §8.1 seed table).                                                                                                                                                                                                                        |
+| [`CC_VERSIONS`](_autosummary/foley.licensing.html.md#foley.licensing.CC_VERSIONS)                  | The CC versions foley has rows for (Freesound, FSD50K, Clotho and Wikimedia use these).                                                                                                                                                                                              |
+| [`UNASSERTABLE_LICENSE_IDS`](_autosummary/foley.licensing.html.md#foley.licensing.UNASSERTABLE_LICENSE_IDS)     | Licence ids that can never be *asserted* as verified (on ingest, restamp or in a folder sidecar): `unknown` by definition, `PDM-1.0` (a claim about the work, not a grant — verify it by building the `LicenseRecord` yourself), and the legacy `ElevenLabs-SFX` row (say the plan). |
+| [`ASSERTABLE_LICENSE_IDS`](_autosummary/foley.licensing.html.md#foley.licensing.ASSERTABLE_LICENSE_IDS)       | The ids a user may assert (`foley ingest --license`, a `foley-license.toml`).                                                                                                                                                                                                        |
+| [`DEFAULT_CC_VERSION`](_autosummary/foley.licensing.html.md#foley.licensing.DEFAULT_CC_VERSION)           | The version assumed when a source gives a CC family with no version at all (Freesound's search labels: `"Attribution"`).                                                                                                                                                             |
+| [`UNKNOWN_LICENSE_META`](_autosummary/foley.licensing.html.md#foley.licensing.UNKNOWN_LICENSE_META)         | Fail-closed display fallback for unknown / `Proprietary-*` license ids.                                                                                                                                                                                                              |
+| [`LICENSE_META`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_META)                 | `license_id` -> display name + canonical URL (one row per [`LICENSE_FLAGS`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_FLAGS) key).                                                                                                                                                       |
+| [`AI_TRAINING_SCOPES`](_autosummary/foley.licensing.html.md#foley.licensing.AI_TRAINING_SCOPES)           | The `ai_training_scope` values (`None` = no narrowing beyond `ai_training_ok`).                                                                                                                                                                                                      |
+| [`GEN_AI_PREFERENCE_SCOPES`](_autosummary/foley.licensing.html.md#foley.licensing.GEN_AI_PREFERENCE_SCOPES)     | Freesound `gen_ai_preference` -> `(ai_training_ok override, ai_training_scope)`.                                                                                                                                                                                                     |
+| [`EU_MEMBER_STATES`](_autosummary/foley.licensing.html.md#foley.licensing.EU_MEMBER_STATES)             | The EU's member states (ISO 3166-1 alpha-2), for a licence that excludes "EU", with the EU territories that carry their own codes: France's outermost regions (Réunion, French Guiana, Guadeloupe, Martinique, Mayotte, Saint-Martin) and Finland's Åland.                           |
+| [`LICENSE_EXCLUDED_TERRITORIES`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_EXCLUDED_TERRITORIES) | `license_id` -> the territories where it grants nothing (ISO 3166-1 alpha-2 codes, plus `"EU"` for every member state).                                                                                                                                                              |
+| [`NO_RECORD_REASON`](_autosummary/foley.licensing.html.md#foley.licensing.NO_RECORD_REASON)             | The reason a placed sound with no record (nothing to read a licence from) is refused.                                                                                                                                                                                                |
 
 ### Functions
 
@@ -13366,6 +13545,10 @@ item is redistributable but stored by-reference.
 
 The `ai_training_scope` values (`None` = no narrowing beyond `ai_training_ok`).
 
+### foley.licensing.ASSERTABLE_LICENSE_IDS *= frozenset({'CC-BY-2.0', 'CC-BY-2.5', 'CC-BY-3.0', 'CC-BY-4.0', 'CC-BY-NC-2.0', 'CC-BY-NC-2.5', 'CC-BY-NC-3.0', 'CC-BY-NC-4.0', 'CC-Sampling+-1.0', 'CC0-1.0', 'MIT', 'Pixabay-Content', 'RemArc', 'Sonniss-GDC', 'Stability-Community', 'Tencent-Hunyuan-Community', 'elevenlabs-free-plan', 'elevenlabs-paid-plan', 'fal-partner-unverified', 'owned-pack', 'procedural-free', 'research-only', 'user-owned'})*
+
+The ids a user may assert (`foley ingest --license`, a `foley-license.toml`).
+
 ### foley.licensing.CC_VERSIONS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('2.0', '2.5', '3.0', '4.0')*
 
 The CC versions foley has rows for (Freesound, FSD50K, Clotho and Wikimedia use these).
@@ -13402,7 +13585,7 @@ closed (see [`ai_scope_from_gen_ai_preference()`](_autosummary/foley.licensing.h
 codes, plus `"EU"` for every member state). A row here makes the territory part
 of the use: [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) refuses when it is excluded, and when it is not stated.
 
-### foley.licensing.LICENSE_FLAGS *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [LicenseFlags](_autosummary/foley.licensing.html.md#foley.licensing.LicenseFlags)]* *= {'CC-BY-2.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-2.5': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-3.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-4.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-2.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-2.5': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-3.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-4.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-Sampling+-1.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC0-1.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=False, revenue_cap_usd=None), 'ElevenLabs-SFX': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'MIT': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'PDM-1.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=False, revenue_cap_usd=None), 'Pixabay-Content': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'RemArc': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'Sonniss-GDC': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'Stability-Community': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=1000000), 'Tencent-Hunyuan-Community': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'elevenlabs-free-plan': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'elevenlabs-paid-plan': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'fal-partner-unverified': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'procedural-free': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=False, revenue_cap_usd=None), 'research-only': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=False, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=False, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'unknown': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=False, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'user-owned': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=False, revenue_cap_usd=None)}*
+### foley.licensing.LICENSE_FLAGS *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [LicenseFlags](_autosummary/foley.licensing.html.md#foley.licensing.LicenseFlags)]* *= {'CC-BY-2.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-2.5': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-3.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-4.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-2.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-2.5': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-3.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-4.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-Sampling+-1.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC0-1.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=False, revenue_cap_usd=None), 'ElevenLabs-SFX': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'MIT': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'PDM-1.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=False, revenue_cap_usd=None), 'Pixabay-Content': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'RemArc': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'Sonniss-GDC': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'Stability-Community': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=1000000), 'Tencent-Hunyuan-Community': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'elevenlabs-free-plan': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'elevenlabs-paid-plan': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'fal-partner-unverified': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'owned-pack': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'procedural-free': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=False, revenue_cap_usd=None), 'research-only': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=False, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=False, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'unknown': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=False, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'user-owned': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=False, revenue_cap_usd=None)}*
 
 `license_id` -> default flag set (report 07 §8.1 seed table).
 
@@ -13416,7 +13599,7 @@ ai_training, requires_attribution, revenue_cap_usd
 * **Type:**
   SSOT
 
-### foley.licensing.LICENSE_META *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [LicenseMeta](_autosummary/foley.licensing.html.md#foley.licensing.LicenseMeta)]* *= {'CC-BY-2.0': LicenseMeta(display_name='CC BY 2.0', url='https://creativecommons.org/licenses/by/2.0/'), 'CC-BY-2.5': LicenseMeta(display_name='CC BY 2.5', url='https://creativecommons.org/licenses/by/2.5/'), 'CC-BY-3.0': LicenseMeta(display_name='CC BY 3.0', url='https://creativecommons.org/licenses/by/3.0/'), 'CC-BY-4.0': LicenseMeta(display_name='CC BY 4.0', url='https://creativecommons.org/licenses/by/4.0/'), 'CC-BY-NC-2.0': LicenseMeta(display_name='CC BY-NC 2.0', url='https://creativecommons.org/licenses/by-nc/2.0/'), 'CC-BY-NC-2.5': LicenseMeta(display_name='CC BY-NC 2.5', url='https://creativecommons.org/licenses/by-nc/2.5/'), 'CC-BY-NC-3.0': LicenseMeta(display_name='CC BY-NC 3.0', url='https://creativecommons.org/licenses/by-nc/3.0/'), 'CC-BY-NC-4.0': LicenseMeta(display_name='CC BY-NC 4.0', url='https://creativecommons.org/licenses/by-nc/4.0/'), 'CC-Sampling+-1.0': LicenseMeta(display_name='CC Sampling+ 1.0', url='https://creativecommons.org/licenses/sampling+/1.0/'), 'CC0-1.0': LicenseMeta(display_name='CC0 1.0 Universal (Public Domain Dedication)', url='https://creativecommons.org/publicdomain/zero/1.0/'), 'ElevenLabs-SFX': LicenseMeta(display_name='ElevenLabs Sound Effects Terms (legacy: paid plan assumed)', url='https://elevenlabs.io/terms-of-use'), 'MIT': LicenseMeta(display_name='MIT License', url='https://opensource.org/license/mit'), 'PDM-1.0': LicenseMeta(display_name='Public Domain Mark 1.0 (unverified claim)', url='https://creativecommons.org/publicdomain/mark/1.0/'), 'Pixabay-Content': LicenseMeta(display_name='Pixabay Content License', url='https://pixabay.com/service/license-summary/'), 'RemArc': LicenseMeta(display_name='BBC RemArc Licence', url='https://sound-effects.bbcrewind.co.uk/licensing'), 'Sonniss-GDC': LicenseMeta(display_name='Sonniss GDC Game Audio Bundle License', url='https://sonniss.com/gdc-bundle-license'), 'Stability-Community': LicenseMeta(display_name='Stability AI Community License', url='https://stability.ai/community-license-agreement'), 'Tencent-Hunyuan-Community': LicenseMeta(display_name='Tencent Hunyuan Community License (not valid in the EU, the UK or South Korea)', url='https://huggingface.co/tencent/HunyuanVideo-Foley/blob/main/LICENSE'), 'elevenlabs-free-plan': LicenseMeta(display_name='ElevenLabs Terms (free plan: non-commercial, attribution required)', url='https://elevenlabs.io/terms-of-use'), 'elevenlabs-paid-plan': LicenseMeta(display_name='ElevenLabs Terms (paid plan)', url='https://elevenlabs.io/terms-of-use'), 'fal-partner-unverified': LicenseMeta(display_name='fal.ai partner model (vendor terms for fal-routed calls unverified: treated as non-commercial)', url='https://fal.ai/legal/terms-of-service'), 'procedural-free': LicenseMeta(display_name='Procedural synthesis output (no licence attaches)', url=None), 'research-only': LicenseMeta(display_name='Research use only (no commercial or public use)', url=None), 'unknown': LicenseMeta(display_name='Unknown / unverified license', url=None), 'user-owned': LicenseMeta(display_name='User-owned / original work', url=None)}*
+### foley.licensing.LICENSE_META *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [LicenseMeta](_autosummary/foley.licensing.html.md#foley.licensing.LicenseMeta)]* *= {'CC-BY-2.0': LicenseMeta(display_name='CC BY 2.0', url='https://creativecommons.org/licenses/by/2.0/'), 'CC-BY-2.5': LicenseMeta(display_name='CC BY 2.5', url='https://creativecommons.org/licenses/by/2.5/'), 'CC-BY-3.0': LicenseMeta(display_name='CC BY 3.0', url='https://creativecommons.org/licenses/by/3.0/'), 'CC-BY-4.0': LicenseMeta(display_name='CC BY 4.0', url='https://creativecommons.org/licenses/by/4.0/'), 'CC-BY-NC-2.0': LicenseMeta(display_name='CC BY-NC 2.0', url='https://creativecommons.org/licenses/by-nc/2.0/'), 'CC-BY-NC-2.5': LicenseMeta(display_name='CC BY-NC 2.5', url='https://creativecommons.org/licenses/by-nc/2.5/'), 'CC-BY-NC-3.0': LicenseMeta(display_name='CC BY-NC 3.0', url='https://creativecommons.org/licenses/by-nc/3.0/'), 'CC-BY-NC-4.0': LicenseMeta(display_name='CC BY-NC 4.0', url='https://creativecommons.org/licenses/by-nc/4.0/'), 'CC-Sampling+-1.0': LicenseMeta(display_name='CC Sampling+ 1.0', url='https://creativecommons.org/licenses/sampling+/1.0/'), 'CC0-1.0': LicenseMeta(display_name='CC0 1.0 Universal (Public Domain Dedication)', url='https://creativecommons.org/publicdomain/zero/1.0/'), 'ElevenLabs-SFX': LicenseMeta(display_name='ElevenLabs Sound Effects Terms (legacy: paid plan assumed)', url='https://elevenlabs.io/terms-of-use'), 'MIT': LicenseMeta(display_name='MIT License', url='https://opensource.org/license/mit'), 'PDM-1.0': LicenseMeta(display_name='Public Domain Mark 1.0 (unverified claim)', url='https://creativecommons.org/publicdomain/mark/1.0/'), 'Pixabay-Content': LicenseMeta(display_name='Pixabay Content License', url='https://pixabay.com/service/license-summary/'), 'RemArc': LicenseMeta(display_name='BBC RemArc Licence', url='https://sound-effects.bbcrewind.co.uk/licensing'), 'Sonniss-GDC': LicenseMeta(display_name='Sonniss GDC Game Audio Bundle License', url='https://sonniss.com/gdc-bundle-license'), 'Stability-Community': LicenseMeta(display_name='Stability AI Community License', url='https://stability.ai/community-license-agreement'), 'Tencent-Hunyuan-Community': LicenseMeta(display_name='Tencent Hunyuan Community License (not valid in the EU, the UK or South Korea)', url='https://huggingface.co/tencent/HunyuanVideo-Foley/blob/main/LICENSE'), 'elevenlabs-free-plan': LicenseMeta(display_name='ElevenLabs Terms (free plan: non-commercial, attribution required)', url='https://elevenlabs.io/terms-of-use'), 'elevenlabs-paid-plan': LicenseMeta(display_name='ElevenLabs Terms (paid plan)', url='https://elevenlabs.io/terms-of-use'), 'fal-partner-unverified': LicenseMeta(display_name='fal.ai partner model (vendor terms for fal-routed calls unverified: treated as non-commercial)', url='https://fal.ai/legal/terms-of-service'), 'owned-pack': LicenseMeta(display_name='Purchased sound-effects library (its EULA: use in productions, no redistribution of the raw files)', url=None), 'procedural-free': LicenseMeta(display_name='Procedural synthesis output (no licence attaches)', url=None), 'research-only': LicenseMeta(display_name='Research use only (no commercial or public use)', url=None), 'unknown': LicenseMeta(display_name='Unknown / unverified license', url=None), 'user-owned': LicenseMeta(display_name='User-owned / original work', url=None)}*
 
 `license_id` -> display name + canonical URL (one row per
 [`LICENSE_FLAGS`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_FLAGS) key). Used only for human-readable credits; never for
@@ -13463,6 +13646,13 @@ refused sound ([`refusals()`](_autosummary/foley.licensing.html.md#foley.licensi
 ### foley.licensing.NO_RECORD_REASON *= 'it has no record in the library, so its licence cannot be checked'*
 
 The reason a placed sound with no record (nothing to read a licence from) is refused.
+
+### foley.licensing.UNASSERTABLE_LICENSE_IDS *= frozenset({'ElevenLabs-SFX', 'PDM-1.0', 'unknown'})*
+
+Licence ids that can never be *asserted* as verified (on ingest, restamp or in a
+folder sidecar): `unknown` by definition, `PDM-1.0` (a claim about the work, not
+a grant — verify it by building the `LicenseRecord` yourself), and the legacy
+`ElevenLabs-SFX` row (say the plan).
 
 ### foley.licensing.UNKNOWN_LICENSE_FLAGS *= LicenseFlags(commercial_ok=False, embed_in_derivative_ok=False, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None)*
 
@@ -15309,7 +15499,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'tudum', 'ta dum', 'ta-dum', 'netflix chime', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel inside', 'intel chime', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', 'homer doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'ta-dum', 'netflix chime', 'netflix sound', 'netflix intro', 'ta dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel bong', 'intel chime', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer doh', 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -25415,18 +25605,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 01:12 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/3b947168cdb29aa06b777f837dc96b08c4d09873"><code>3b94716</code></a> on branch <code>main</code>, for **foley 0.0.104** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 01:29 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/5a65fe9237441d0c1bdf6c3abe0be2a216e6770a"><code>5a65fe9</code></a> on branch <code>main</code>, for **foley 0.0.106** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.104) is behind the latest release on PyPI (0.0.105): `pip install foley` gives newer code than these docs describe.
+- The documented version (0.0.106) is behind the latest release on PyPI (0.0.107): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/3b947168cdb29aa06b777f837dc96b08c4d09873"><code>3b947168cdb29aa06b777f837dc96b08c4d09873</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/5a65fe9237441d0c1bdf6c3abe0be2a216e6770a"><code>5a65fe9237441d0c1bdf6c3abe0be2a216e6770a</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -25437,9 +25627,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41371016367">41371016367</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41372540840">41372540840</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>3b947168cdb29aa06b777f837dc96b08c4d09873</code> (in the history of the built commit) |
+| Event commit | <code>7be811afa531e2cbf946c77a44ea79af08a1fcdf</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -25464,13 +25654,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.105/">0.0.105</a>, newer than the documented version (0.0.104).
+Latest release: <a href="https://pypi.org/project/foley/0.0.107/">0.0.107</a>, newer than the documented version (0.0.106).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 3b947168cdb29aa06b777f837dc96b08c4d09873
+git checkout 5a65fe9237441d0c1bdf6c3abe0be2a216e6770a
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

@@ -8,6 +8,7 @@ foley.index.taxonomy.ucs
 
    .. autosummary::
    
+      UCS_MASTER_FILE
       BLOCK_SEP
    
    .. rubric:: Functions
@@ -15,6 +16,7 @@ foley.index.taxonomy.ucs
    .. autosummary::
    
       default_ucs_table
+      load_ucs_master
       load_ucs_table
       looks_like_vendor_tag
       parse_catid_token
