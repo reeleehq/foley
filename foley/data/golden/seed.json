@@ -2537,11 +2537,11 @@
       {
         "query": "owl hoots dark woods",
         "ucs_catid": "BirdAnml",
-        "layer": "ambience",
+        "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": null
+        "onset_hint": "on 'hooted'"
       }
     ],
     "answer_clip_ids": {
@@ -2719,11 +2719,11 @@
       {
         "query": "train horn sounds far line",
         "ucs_catid": "TrainVeh",
-        "layer": "ambience",
+        "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": null
+        "onset_hint": "on 'moaned'"
       }
     ],
     "answer_clip_ids": {
@@ -2901,11 +2901,11 @@
       {
         "query": "ship foghorn blasts mist",
         "ucs_catid": "BoatVeh",
-        "layer": "ambience",
+        "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": null
+        "onset_hint": "on 'boomed'"
       }
     ],
     "answer_clip_ids": {
@@ -3811,11 +3811,11 @@
       {
         "query": "lone owl calls still night",
         "ucs_catid": "NightAmb",
-        "layer": "ambience",
+        "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": null
+        "onset_hint": "on 'called'"
       }
     ],
     "answer_clip_ids": {
@@ -4045,11 +4045,11 @@
       {
         "query": "jet plane roars high overhead",
         "ucs_catid": "PlaneVeh",
-        "layer": "ambience",
+        "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": null
+        "onset_hint": "on 'roared'"
       }
     ],
     "answer_clip_ids": {
