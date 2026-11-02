@@ -69,8 +69,10 @@ _PATH_END = r"\s'\",;)\]"
 #: not inside a word, a ``~/`` path, a URL or a relative path).
 _ABSOLUTE_PATH = re.compile(
     rf"file:/[^{_PATH_END}]*"
-    rf"|\\\\[^{_PATH_END}]+"
-    rf"|(?<![A-Za-z])[A-Za-z]:[\\/][^{_PATH_END}]*"
+    # A Windows drive or UNC path may hold spaces ("C:\\Users\\Ada Lovelace\\..."): it
+    # takes the rest of the line, so nothing after a space can leak (fail-closed).
+    r"|\\\\[^\n]+"
+    r"|(?<![A-Za-z])[A-Za-z]:[\\/][^\n]*"
     rf"|(?<![\w~.:/\\])/[^{_PATH_END}]+"
 )
 
@@ -97,8 +99,10 @@ def redact_paths(
     other absolute path (:data:`_ABSOLUTE_PATH`), and a path's rest after a replaced
     prefix, become ``placeholder`` too.
 
-    >>> redact_paths("no file at /opt/x/y.wav or C:/data/z.wav; see ~/notes, a/b")
-    'no file at <path> or <path>; see ~/notes, a/b'
+    >>> redact_paths("no file at /opt/x/y.wav; see ~/notes, a/b")
+    'no file at <path>; see ~/notes, a/b'
+    >>> redact_paths(r"cannot open C:\\Users\\Ada Lovelace\\x.wav (exit 2)")
+    'cannot open <path>'
     """
     known = {p for p in (*prefixes, *local_path_prefixes()) if p and len(p) > 1}
     known |= {p.replace("\\", "/") for p in known}
