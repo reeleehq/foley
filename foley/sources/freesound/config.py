@@ -115,6 +115,12 @@ SOURCE_CONFIG = {
         # Freesound serves CC0 and CC BY 3.0 / 4.0 (+ NC, SA, ND, which stay out).
         "accepted_license_ids": ["CC0-1.0", "CC-BY-3.0", "CC-BY-4.0"],
         "cc0_license_ids": ["CC0-1.0"],  # what ``license='cc0'`` keeps
+        # An API-level obligation each sound carries (#77; report 14 §3.1), whatever
+        # its CC licence: the maintainer has asked UPF, so it stays until they answer.
+        "terms_notes": [
+            "Freesound API terms §3: commercial use of the API is negotiated case by "
+            "case with UPF (Universitat Pompeu Fabra, which runs Freesound)."
+        ],
     },
     # The token-tier API is free to call (commercial use of the API is negotiated
     # separately with UPF; see report 14 and the maintainer's open question).

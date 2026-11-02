@@ -603,8 +603,9 @@ def carry_lineage(new: LicenseRecord, old: LicenseRecord) -> LicenseRecord:
     """Copy ``old``'s lineage onto ``new``, in place, and return ``new``.
 
     The lineage is what a re-stamped record must keep from the one it replaces: its
-    ``transformations`` (the edits and fixes, so the credit still reads "(modified)")
-    and its ``derived_from_license_ids`` (the licences bounding it, #214). Fresh lists,
+    ``transformations`` (the edits and fixes, so the credit still reads "(modified)"),
+    its ``derived_from_license_ids`` (the licences bounding it, #214) and its
+    ``terms_notes`` (added to ``new``'s: the source's API obligations, #77). Fresh lists,
     so the two records never share one; a ``None`` reads as empty. ``new``'s flags are
     then bounded by every licence it now derives from (never widened), so the copy is
     safe on its own; a later :func:`apply_license_flags` re-derives under the same bound.
@@ -623,6 +624,8 @@ def carry_lineage(new: LicenseRecord, old: LicenseRecord) -> LicenseRecord:
     """
     new.transformations = list(old.transformations or ())
     new.derived_from_license_ids = list(old.derived_from_license_ids or ())
+    # The obligations of the terms the bytes were obtained under outlive a restamp.
+    new.terms_notes = _merged_notes(new.terms_notes, old.terms_notes)
     return _set_flags(new, _bounded_by_lineage(_flags_of(new), new))
 
 
@@ -757,6 +760,98 @@ def ai_use_permitted(
     return False  # 'none' or an unrecognised scope: fail closed
 
 
+# ---------------------------------------------------------------------------
+# What a source states about its terms (#77): basis, vendor reuse, API obligations
+# ---------------------------------------------------------------------------
+
+#: What a record's rights rest on (``LicenseRecord.license_basis``): the model's own
+#: licence (its weights), the vendor's terms of service, or a label an aggregator put
+#: on it (fal's ``commercial``, an Openverse row), which is a claim about another
+#: party's licence and never that licence itself.
+LICENSE_BASES: "tuple[str, ...]" = ("model-licence", "vendor-tos", "aggregator-label")
+
+#: How sure foley is that the basis applies to the route the sound came by.
+LICENSE_BASIS_CONFIDENCES: "tuple[str, ...]" = ("confirmed", "unverified")
+
+#: Who stated a vendor's watermark (``LicenseRecord.vendor_watermark['reported_by']``):
+#: the source's config (its terms), or the vendor's response for this clip.
+VENDOR_WATERMARK_REPORTERS: "tuple[str, ...]" = ("config", "response")
+
+#: The :class:`~foley.base.LicenseRecord` fields a source *states* (in its config's
+#: ``license`` block, or per clip): none is derived from a ``license_id`` row and none
+#: is a permission, so stamping them never widens a record.
+SOURCE_STATED_FIELDS: "tuple[str, ...]" = (
+    "license_basis",
+    "license_basis_confidence",
+    "vendor_trains_on_output",
+    "terms_notes",
+    "vendor_watermark",
+)
+
+
+def _checked_stated(name: str, value):
+    """``value`` for the stated field ``name``, or ``ValueError`` (a config typo must
+    not read as "not stated")."""
+    allowed = {
+        "license_basis": LICENSE_BASES,
+        "license_basis_confidence": LICENSE_BASIS_CONFIDENCES,
+    }.get(name)
+    if allowed is not None and value is not None and value not in allowed:
+        raise ValueError(f"{name}={value!r}; use one of {allowed} or None")
+    if name == "vendor_trains_on_output" and value not in (True, False, None):
+        raise ValueError(f"vendor_trains_on_output={value!r}; use True, False or None")
+    if name == "terms_notes" and (
+        isinstance(value, str) or not all(isinstance(n, str) for n in value or ())
+    ):
+        raise ValueError("terms_notes must be a list of sentences (str)")
+    if name == "vendor_watermark" and value is not None:
+        if (
+            value.get("present") not in (True, False, None)
+            or value.get("reported_by") not in VENDOR_WATERMARK_REPORTERS
+        ):
+            raise ValueError(
+                f"vendor_watermark={value!r}: 'present' is True, False or None and "
+                f"'reported_by' one of {VENDOR_WATERMARK_REPORTERS}"
+            )
+    return value
+
+
+def stamp_source_terms(record: LicenseRecord, stated: Mapping) -> LicenseRecord:
+    """Write what a source ``stated`` about its terms onto ``record``, in place, and return it.
+
+    ``stated`` maps :data:`SOURCE_STATED_FIELDS` names to values (a config's, see
+    :func:`foley.sources.base.source_stated_terms`). No permission flag is touched;
+    ``terms_notes`` are added to the record's own, once each.
+
+    >>> lic = stamp_source_terms(LicenseRecord(source="s"),
+    ...     {"license_basis": "vendor-tos", "terms_notes": ["Pay the piper."]})
+    >>> lic.license_basis, lic.terms_notes, lic.commercial_ok
+    ('vendor-tos', ['Pay the piper.'], False)
+
+    Raises:
+        ValueError: On a name that is not a stated field, or a value it does not take.
+    """
+    unknown = set(stated) - set(SOURCE_STATED_FIELDS)
+    if unknown:
+        raise ValueError(
+            f"not source-stated licence fields: {sorted(unknown)}; "
+            f"use {SOURCE_STATED_FIELDS}"
+        )
+    for name, value in stated.items():
+        value = _checked_stated(name, value)
+        if name == "terms_notes":
+            value = _merged_notes(record.terms_notes, value)
+        elif name == "vendor_watermark" and value is not None:
+            value = dict(value)
+        setattr(record, name, value)
+    return record
+
+
+def _merged_notes(*note_lists) -> "list[str]":
+    """Every note of ``note_lists``, in order, once each (``None`` reads as empty)."""
+    return list(dict.fromkeys(n for notes in note_lists for n in notes or () if n))
+
+
 #: The EU's member states (ISO 3166-1 alpha-2), for a licence that excludes "EU",
 #: with the EU territories that carry their own codes: France's outermost regions
 #: (Réunion, French Guiana, Guadeloupe, Martinique, Mayotte, Saint-Martin) and
@@ -776,6 +871,24 @@ LICENSE_EXCLUDED_TERRITORIES: "dict[str, frozenset]" = {
     # cannot over-grant is to exclude them too (fail closed).
     "Tencent-Hunyuan-Community": frozenset({"EU", "GB", "KR", "JE", "GG", "IM", "GI"}),
 }
+
+
+def excluded_territories(record: LicenseRecord) -> "list[str]":
+    """Where ``record``'s licence, or any licence it derives from, grants nothing.
+
+    :data:`LICENSE_EXCLUDED_TERRITORIES` is the SSOT (an exclusion is a term of the
+    licence, not of one sound), read over the record's whole lineage
+    (:func:`derived_license_ids`), so a record restamped or narrowed by an excluding
+    licence is gated too. Sorted codes; ``[]`` when nothing is excluded.
+
+    >>> excluded_territories(LicenseRecord(source="s", license_id="CC0-1.0"))
+    []
+    >>> excluded_territories(LicenseRecord(source="s", license_id="CC0-1.0",
+    ...     derived_from_license_ids=["Tencent-Hunyuan-Community"]))[:3]
+    ['EU', 'GB', 'GG']
+    """
+    ids = (record.license_id, *derived_license_ids(record))
+    return sorted(set().union(*(LICENSE_EXCLUDED_TERRITORIES.get(i, ()) for i in ids)))
 
 
 def territory_excluded(excluded, territory: Optional[str]) -> bool:
@@ -830,7 +943,7 @@ def refusal_reason(record: LicenseRecord, intended_use: IntendedUse) -> Optional
         record.contains_recognizable_voice or record.potential_trademark
     ):
         return "it is flagged for a recognizable voice or a trademark"
-    excluded = LICENSE_EXCLUDED_TERRITORIES.get(record.license_id, ())
+    excluded = excluded_territories(record)
     if territory_excluded(excluded, intended_use.territory):
         where = ", ".join(sorted(excluded))
         if intended_use.territory is None:
@@ -1071,7 +1184,7 @@ def derivative_refusal(source: LicenseRecord) -> Optional[str]:
         return f"foley has no licence row for {lid!r}, so the edit's rights cannot be derived"
     if not source.modification_ok:
         return "its licence does not allow modification"
-    if LICENSE_EXCLUDED_TERRITORIES.get(lid):
+    if excluded_territories(source):
         return "its licence excludes territories, which the edit's record cannot carry"
     return None
 
@@ -1117,7 +1230,7 @@ def narrow_to_source(output: LicenseRecord, source: LicenseRecord) -> LicenseRec
     generator's licence and the source's allow. Each permission of
     :data:`_DERIVATIVE_SHARED_FLAGS` is kept only when both hold it, attribution is
     required when either requires it, the revenue cap is the lower one, the AI-use
-    scope is the stricter one, and the source's required notice, stated AI-use
+    scope is the stricter one, and the source's required notice, terms notes, stated AI-use
     preference and safety flags carry over. ``cache_bytes_ok`` stays the output's (it
     is about storing the new bytes). Routed through :func:`apply_license_flags`, so the
     flags still come from the policy layer, never set by hand.
@@ -1150,6 +1263,7 @@ def narrow_to_source(output: LicenseRecord, source: LicenseRecord) -> LicenseRec
         output.ai_training_scope, source.ai_training_scope
     )
     output.gen_ai_preference = source.gen_ai_preference or output.gen_ai_preference
+    output.terms_notes = _merged_notes(output.terms_notes, source.terms_notes)
     notices = (output.notice_text_required, source.notice_text_required)
     output.notice_text_required = (
         "\n".join(dict.fromkeys(n for n in notices if n)) or None
@@ -1167,7 +1281,7 @@ def wider_rights(record: LicenseRecord, bound: LicenseRecord) -> "list[str]":
     """What ``record`` allows that ``bound`` does not (``[]``: no wider than ``bound``).
 
     A permission of :data:`_DERIVATIVE_SHARED_FLAGS` it holds and ``bound`` lacks, an
-    attribution or a notice ``bound`` requires and it does not, a higher (or no)
+    attribution, a notice or a terms note ``bound`` carries and it does not, a higher (or no)
     revenue cap, a looser AI-use scope, a voice or trademark flag ``bound`` raises
     and it does not, another stated AI-use preference. How an edit tells that a byte-identical sound
     already in the library is not the edit it made (see :func:`narrow_to_source`).
@@ -1190,6 +1304,8 @@ def wider_rights(record: LicenseRecord, bound: LicenseRecord) -> "list[str]":
         and bound.notice_text_required != record.notice_text_required
     ):
         wider.append("notice_text_required")
+    if set(bound.terms_notes or ()) - set(record.terms_notes or ()):
+        wider.append("terms_notes")
     if bound.revenue_cap_usd is not None and (
         record.revenue_cap_usd is None or record.revenue_cap_usd > bound.revenue_cap_usd
     ):

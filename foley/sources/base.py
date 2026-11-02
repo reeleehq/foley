@@ -53,7 +53,7 @@ from typing import (
 )
 
 from ..base import AcquisitionMethod, LicenseRecord, reject_renamed
-from ..licensing import apply_license_flags
+from ..licensing import SOURCE_STATED_FIELDS, apply_license_flags, stamp_source_terms
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from ..base import Candidate, SoundRecord
@@ -1065,6 +1065,45 @@ class GenerateAdapter(Protocol):
         ...
 
 
+#: The license-block keys a config may state about its terms (#77); the vendor's
+#: watermark is read from ``capabilities`` instead, where ``watermarked`` already lives.
+_LICENSE_BLOCK_TERMS = tuple(f for f in SOURCE_STATED_FIELDS if f != "vendor_watermark")
+
+
+def source_stated_terms(config: Mapping) -> dict:
+    """What a source config states about its terms, as licence-record fields (#77).
+
+    Only what is stated, so a record's ``None`` keeps meaning "unknown":
+
+    * ``license_basis`` / ``license_basis_confidence`` / ``vendor_trains_on_output`` /
+      ``terms_notes`` from the config's ``license`` block;
+    * ``vendor_watermark`` from ``capabilities['watermarked']`` (the vendor-side fact
+      :func:`foley.sources.capabilities.capabilities_of` already serves) and
+      ``capabilities['watermark_statement']`` (what the vendor says about it);
+    * ``vendor_trains_on_output=False`` for a generating source that runs on this
+      machine (``data_egress='local'``): no vendor ever sees its output.
+
+    >>> source_stated_terms({"kind": "generate", "data_egress": "local",
+    ...     "license": {"license_basis": "model-licence"}, "capabilities": {"watermarked": False}})
+    ... # doctest: +NORMALIZE_WHITESPACE
+    {'license_basis': 'model-licence', 'vendor_trains_on_output': False,
+     'vendor_watermark': {'present': False, 'statement': None, 'reported_by': 'config'}}
+    """
+    block = config.get("license") or {}
+    stated = {k: block[k] for k in _LICENSE_BLOCK_TERMS if k in block}
+    local = config.get("data_egress") == "local"
+    if local and config.get("kind") in GENERATING_KINDS:
+        stated.setdefault("vendor_trains_on_output", False)
+    caps = config.get("capabilities") or {}
+    if "watermarked" in caps or "watermark_statement" in caps:
+        stated["vendor_watermark"] = {
+            "present": caps.get("watermarked"),
+            "statement": caps.get("watermark_statement"),
+            "reported_by": "config",
+        }
+    return stated
+
+
 def _build_license(
     *,
     source: str,
@@ -1077,6 +1116,7 @@ def _build_license(
     license_url: Optional[str] = None,
     creator_name: Optional[str] = None,
     attribution_text: Optional[str] = None,
+    terms: Optional[Mapping] = None,
 ) -> LicenseRecord:
     """Construct a :class:`~foley.base.LicenseRecord` and derive its flags (SSOT).
 
@@ -1087,7 +1127,9 @@ def _build_license(
     ``overrides``) — never hand-set. ``rights_verified`` is passed through
     unchanged (it is not a derived flag): ``True`` only for an
     authoritatively-recognized license, so an unknown id stays fail-closed and
-    :func:`foley.keep` drops it while its provenance is still recorded.
+    :func:`foley.keep` drops it while its provenance is still recorded. ``terms``
+    (:func:`source_stated_terms`) stamps what the source states about its terms
+    (:func:`~foley.licensing.stamp_source_terms`); it grants nothing.
     """
     record = LicenseRecord(
         source=source,
@@ -1100,6 +1142,7 @@ def _build_license(
         attribution_text=attribution_text,
         rights_verified=rights_verified,
     )
+    stamp_source_terms(record, terms or {})
     # The eight permission flags are DERIVED from license_id (+ overrides) by
     # apply_license_flags — never hand-set here.
     return apply_license_flags(record, overrides=overrides)
@@ -1162,6 +1205,7 @@ def api_license(
     license_url: Optional[str] = None,
     creator_name: Optional[str] = None,
     attribution_text: Optional[str] = None,
+    terms: Optional[Mapping] = None,
 ) -> LicenseRecord:
     """Build an API-acquisition :class:`~foley.base.LicenseRecord`, flags derived.
 
@@ -1189,6 +1233,7 @@ def api_license(
         license_url: The license URL/label exactly as the source served it.
         creator_name: The uploader/creator (required for CC-BY attribution).
         attribution_text: A ready-made attribution string, if supplied.
+        terms: What the source states about its terms (:func:`source_stated_terms`).
 
     Returns:
         A populated ``LicenseRecord`` with its derived flags (+ overrides) applied.
@@ -1204,6 +1249,7 @@ def api_license(
         license_url=license_url,
         creator_name=creator_name,
         attribution_text=attribution_text,
+        terms=terms,
     )
 
 
@@ -1281,6 +1327,7 @@ def generated_license(
     creator_name: Optional[str] = None,
     attribution_text: Optional[str] = None,
     ai_generated: bool = True,
+    terms: Optional[Mapping] = None,
 ) -> LicenseRecord:
     """Build a generated :class:`~foley.base.LicenseRecord`, flags derived + provenance stamped.
 
@@ -1333,6 +1380,9 @@ def generated_license(
             procedural synthesis (a ``'procedural'`` source, #76): the record then
             has ``is_ai_generated=False`` and ``disclosure_recommended=False``
             (whatever was passed), and still carries the generation-provenance block.
+        terms: What the source states about its terms (:func:`source_stated_terms`:
+            the licence basis, whether the vendor reuses its output, API obligations,
+            the vendor's watermark statement).
 
     Returns:
         A populated ``LicenseRecord`` with derived flags applied AND
@@ -1349,6 +1399,7 @@ def generated_license(
         license_url=license_url,
         creator_name=creator_name,
         attribution_text=attribution_text,
+        terms=terms,
     )
     # Generation-provenance block — stamped after flag derivation, in one place, so
     # no adapter hand-sets flags and every generator populates provenance identically.

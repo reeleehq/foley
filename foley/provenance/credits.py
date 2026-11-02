@@ -74,6 +74,9 @@ class CreditEntry(SerializableMixin):
     requires_attribution: bool = False
     attribution_text: Optional[str] = None  # source-supplied line; printed verbatim
     notice_text_required: Optional[str] = None
+    # Obligations of the source's API terms (#77: Freesound API ToS §3): for whoever
+    # publishes, so in the manifest, never printed in CREDITS.md.
+    terms_notes: list = field(default_factory=list)
     is_ai_generated: bool = False
     generator_model: Optional[str] = None
     disclosure_recommended: bool = False
@@ -227,6 +230,7 @@ def credit_entry(record: CreditInput, *, title: Optional[str] = None) -> CreditE
         requires_attribution=lic.requires_attribution,
         attribution_text=lic.attribution_text,
         notice_text_required=lic.notice_text_required,
+        terms_notes=list(lic.terms_notes or ()),
         is_ai_generated=lic.is_ai_generated,
         generator_model=lic.generator_model,
         disclosure_recommended=lic.disclosure_recommended,

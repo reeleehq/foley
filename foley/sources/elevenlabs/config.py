@@ -145,6 +145,15 @@ SOURCE_CONFIG = {
             "elevenlabs-free-plan": "Created with ElevenLabs (elevenlabs.io)"
         },
         "cache_bytes_ok": True,
+        # What the rights rest on, and what ElevenLabs keeps (#77; report 07 §5.1).
+        "license_basis": "vendor-tos",
+        "license_basis_confidence": "confirmed",
+        "vendor_trains_on_output": True,  # sublicensed unless the account disables it
+        "terms_notes": [
+            "ElevenLabs' sound-effects terms sublicense outputs to other ElevenLabs "
+            "users unless the account's 'Disable' control is set (prospectively); "
+            "foley cannot see that setting."
+        ],
     },
     "commercial_ok": None,  # decided by the plan's LICENSE_FLAGS row
     # falaw-style price (foley.cost.estimate_call): $0.12 per minute of audio, the API

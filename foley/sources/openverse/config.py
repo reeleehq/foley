@@ -87,6 +87,12 @@ SOURCE_CONFIG = {
             "PDM-1.0",
         ],
         "cc0_license_ids": ["CC0-1.0"],
+        # Openverse passes on the licence its origin provider reported and "does not
+        # verify its licensing status" (#77): an aggregator's label, never a grant
+        # checked by foley. Its "made using Openverse" notice is the credit notice
+        # (``notice`` above, stamped as notice_text_required).
+        "license_basis": "aggregator-label",
+        "license_basis_confidence": "unverified",
     },
     # What a caller's ``provider_params`` (#61) may not do: the query and licence
     # filter are foley's; ``excluded_source`` (Freesound's terms) can only grow.

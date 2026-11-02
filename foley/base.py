@@ -638,6 +638,18 @@ class LicenseRecord(SerializableMixin):
     ai_training_scope: Optional[str] = None
     gen_ai_preference: Optional[str] = None  # the raw value a source served (Freesound)
     revenue_cap_usd: Optional[int] = None  # e.g. 1_000_000 for Stability-Community
+    # What the licence rests on, so an aggregator's label is never read as the model's
+    # licence (#77): None (not stated) | 'model-licence' | 'vendor-tos' |
+    # 'aggregator-label' (foley.licensing.LICENSE_BASES), and how sure foley is that it
+    # applies to this route: None | 'confirmed' | 'unverified'.
+    license_basis: Optional[str] = None
+    license_basis_confidence: Optional[str] = None
+    # Whether the vendor that made the clip keeps a licence to reuse it (trains on it,
+    # or sublicenses it to other users): None = unknown, never "no". Not a grant.
+    vendor_trains_on_output: Optional[bool] = None
+    # Obligations of the source's API terms that are not a credit line (Freesound API
+    # ToS §3), one sentence each; a credit's notice goes in notice_text_required.
+    terms_notes: list = field(default_factory=list)
 
     # attribution
     requires_attribution: bool = False
@@ -665,6 +677,10 @@ class LicenseRecord(SerializableMixin):
     watermark: Optional[dict] = (
         None  # {"present": True, "method": "audioseal", "version": ...}
     )
+    # The VENDOR's own watermark statement (#77), never foley's AudioSeal above:
+    # {"present": True | False | None, "statement": str | None, "reported_by":
+    # "config" | "response"}. None: the source says nothing.
+    vendor_watermark: Optional[dict] = None
     c2pa_manifest_ref: Optional[str] = None
 
     @property
@@ -702,6 +718,8 @@ class LicenseRecord(SerializableMixin):
             self.transformations = []
         if self.derived_from_license_ids is None:
             self.derived_from_license_ids = []
+        if self.terms_notes is None:
+            self.terms_notes = []
 
 
 # ---------------------------------------------------------------------------

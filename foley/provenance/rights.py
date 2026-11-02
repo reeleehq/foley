@@ -11,7 +11,10 @@
   foley's id, the sha256 of the archived bytes AND of the exported bytes (a FLAC
   archive re-encoded to WAV hashes differently, so both are kept to chain them) and
   whether the re-encode was lossless, the eight licence flags (``ai_training_ok``,
-  ``revenue_cap_usd``, ...), a required notice, excluded territories, the safety
+  ``revenue_cap_usd``, ...), a required notice, the source's API obligations
+  (``terms_notes``), what the licence rests on (``license_basis`` and its
+  confidence), whether the vendor reuses its output, the vendor's own watermark
+  statement (beside foley's AudioSeal one), excluded territories, the safety
   flags, the edit lineage and, for an AI-generated clip, its EU AI Act Art. 50
   checklist with the generation block.
 
@@ -56,12 +59,12 @@ from urllib.parse import unquote
 
 from ..base import LicenseRecord, SoundRecord
 from ..licensing import (
-    LICENSE_EXCLUDED_TERRITORIES,
     LICENSE_TERMS_PROVIDER,
     LicenseFlags,
     LicenseRefusal,
     consumer_license_code,
     derived_license_ids,
+    excluded_territories,
     export_refusal,
     license_meta,
     rights_license_id,
@@ -171,16 +174,6 @@ def _ai_disclosure(record: SoundRecord) -> Optional[dict]:
     return art50_checklist(record)
 
 
-def excluded_territories(lic: LicenseRecord) -> "list[str]":
-    """Where ``lic`` or any licence it derives from grants nothing (sorted codes).
-
-    >>> excluded_territories(LicenseRecord(source="s", license_id="CC0-1.0"))
-    []
-    """
-    ids = (lic.license_id, *derived_license_ids(lic))
-    return sorted(set().union(*(LICENSE_EXCLUDED_TERRITORIES.get(i, ()) for i in ids)))
-
-
 def sound_provenance(
     record: SoundRecord,
     *,
@@ -227,6 +220,11 @@ def sound_provenance(
         "ai_training_scope": lic.ai_training_scope,
         "gen_ai_preference": lic.gen_ai_preference,
         "notice_text_required": lic.notice_text_required,
+        "terms_notes": list(lic.terms_notes or ()),
+        "license_basis": lic.license_basis,
+        "license_basis_confidence": lic.license_basis_confidence,
+        "vendor_trains_on_output": lic.vendor_trains_on_output,
+        "vendor_watermark": lic.vendor_watermark,
         "excluded_territories": excluded_territories(lic),
         "contains_recognizable_voice": lic.contains_recognizable_voice,
         "potential_trademark": lic.potential_trademark,

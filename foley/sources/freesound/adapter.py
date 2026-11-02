@@ -37,6 +37,7 @@ from ...base import Candidate, CandidateOrigin, SoundRecord
 from ...licensing import ai_scope_from_gen_ai_preference, wanted_license_ids
 from ..base import (
     api_license,
+    source_stated_terms,
     check_owned_fields,
     check_provider_params,
     merge_provider_params,
@@ -398,6 +399,7 @@ class FreesoundAdapter:
 
         page = item.get("url") or f"https://freesound.org/s/{raw_id}/"
         lic = api_license(
+            terms=source_stated_terms(self.config),
             source="freesound",
             source_id=str(raw_id),
             source_url=page,  # stable human page = the by-reference re-fetch handle

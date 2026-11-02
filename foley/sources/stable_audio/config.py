@@ -86,6 +86,8 @@ SOURCE_CONFIG = {
     "license": {
         "default_license_id": "Stability-Community",
         "cache_bytes_ok": True,
+        "license_basis": "model-licence",  # the weights' licence binds the output (#77)
+        "license_basis_confidence": "confirmed",
     },
     "commercial_ok": True,  # generate guardrail (revenue-capped; enforced by keep())
     # What a caller's ``provider_params`` (#61) may not do: the prompt (and its
