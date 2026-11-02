@@ -41,6 +41,7 @@ dependency-light.
 | [`DEFAULT_WATERMARK_MESSAGE`](#foley.provenance.disclosure.DEFAULT_WATERMARK_MESSAGE)      | The FIXED 16-bit foley provenance id embedded by AudioSeal.                                                 |
 |---------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
 | [`IPTC_TRAINED_ALGORITHMIC_MEDIA`](#foley.provenance.disclosure.IPTC_TRAINED_ALGORITHMIC_MEDIA) | IPTC digitalSourceType vocabulary (C2PA `c2pa.actions` assertion).                                          |
+| [`IPTC_ALGORITHMIC_MEDIA`](#foley.provenance.disclosure.IPTC_ALGORITHMIC_MEDIA)         | procedural synthesis (#76).                                                                                 |
 | [`C2PA_CREATED`](#foley.provenance.disclosure.C2PA_CREATED)                   | C2PA vocabulary the mix manifest uses (action names, ingredient relationship, id scheme).                   |
 | [`INGREDIENT_SOURCE_KEY`](#foley.provenance.disclosure.INGREDIENT_SOURCE_KEY)          | The key under which an edit's source ingredient carries what foley knows of it.                             |
 | [`TRADEMARK_REGISTRY`](#foley.provenance.disclosure.TRADEMARK_REGISTRY)             | Seed registry of branded audio logos foley must not knowingly generate for commercial use (report 07 §7.2). |
@@ -134,6 +135,13 @@ The one key under which an ingredient carries foley’s full per-sound credentia
 
 The key under which an edit’s source ingredient carries what foley knows of it.
 
+### foley.provenance.disclosure.IPTC_ALGORITHMIC_MEDIA *= 'http://cv.iptc.org/newscodes/digitalsourcetype/algorithmicMedia'*
+
+procedural synthesis (#76).
+
+* **Type:**
+  Made purely by an algorithm, from no sampled training data
+
 ### foley.provenance.disclosure.IPTC_TRAINED_ALGORITHMIC_MEDIA *= 'http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia'*
 
 IPTC digitalSourceType vocabulary (C2PA `c2pa.actions` assertion).
@@ -156,7 +164,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chime', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'ta dum', 'netflix sound', 'netflix chime', 'ta-dum', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel chime', 'intel inside', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc three-note', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix chime', 'tudum', 'ta-dum', 'netflix sound', 'ta dum', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel bong', 'intel inside', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer doh', 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of

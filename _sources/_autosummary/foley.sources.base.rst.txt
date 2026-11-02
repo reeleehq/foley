@@ -8,12 +8,15 @@ foley.sources.base
 
    .. autosummary::
    
+      GENERATING_KINDS
       CORPUS_REGISTRY
    
    .. rubric:: Functions
 
    .. autosummary::
    
+      resolve_preset
+      pad_to_qc_minimum
       check_prompt_influence
       check_provider_params
       require_params_mapping

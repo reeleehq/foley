@@ -1,0 +1,12 @@
+foley.sources.pyfxr.config
+==========================
+
+.. automodule:: foley.sources.pyfxr.config
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      SFX_PARAMS
+   

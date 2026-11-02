@@ -1127,12 +1127,14 @@ hand-set the derived flags — always route through the policy layer.
 
 `True` iff a seed was recorded.
 
-`None` for a sound that was not generated. A backend with no seed
-(ElevenLabs, Sonilo) records none, so its clips read `False` rather than
-carrying a seed that would reproduce nothing (#75). A seed is necessary, not
-sufficient: a hosted endpoint can change its model behind the same id. A
-prompt the backend rewrote (`expand_prompt`) is `False` too: replaying it
-runs the rewrite again.
+`None` for a sound that was not generated (by a model, or procedurally). A
+backend with no seed (ElevenLabs, Sonilo) records none, so its clips read
+`False` rather than carrying a seed that would reproduce nothing (#75). A
+seed is necessary, not sufficient: a hosted endpoint can change its model
+behind the same id. A clip whose `generation_params` say `bit_exact`
+is `False` (pyfxr’s noise waveform, #76) is `False`: the same seed and
+params render different bytes. A prompt the backend rewrote
+(`expand_prompt`) is `False` too: replaying it runs the rewrite again.
 
 * **Type:**
   Whether this generated clip can be made again
@@ -2135,11 +2137,13 @@ Keys: `kind`, `affordances` (what the source accepts), `deterministic`
 `offline_capable` (`data_egress == 'local'`), `max_duration_s` /
 `min_duration_s` / `sample_rate` (`None` when undeclared).
 `deterministic` and `loopable` are `None` for retrieve sources (they only
-describe generators). A `config['capabilities']` dict adds facts a config cannot
-imply (e.g. `watermarked`); it may not redefine a derived key.
+describe the generating kinds, `'generate'` and `'procedural'`). A `config['capabilities']` dict adds facts a config cannot
+imply (e.g. `watermarked`); it may not redefine a derived key, except to narrow
+a derived `True` to `False` (pyfxr takes a seed, but its noise waveform does
+not reproduce, so it declares `deterministic: False`).
 
 * **Raises:**
-  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `config['capabilities']` collides with a derived key.
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `config['capabilities']` widens or retypes a derived key.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
@@ -3096,7 +3100,7 @@ Return the display [`LicenseMeta`](#foley.LicenseMeta) for `license_id` (fail-cl
 Names of registered live sources, filtered by `kind` and by what they support.
 
 * **Parameters:**
-  * **kind** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – `'generate'` or `'retrieve'` (`None`: both).
+  * **kind** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – `'generate'`, `'procedural'` or `'retrieve'` (`None`: all).
   * **supports** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – One name or a list (all must hold). A name is an affordance the
     source accepts (`'seed'`, `'negative_prompt'`, `'loop'` …) or a
     true flag of [`capabilities_of()`](#foley.capabilities_of) (`'deterministic'`,

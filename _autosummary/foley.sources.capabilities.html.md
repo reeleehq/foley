@@ -34,11 +34,13 @@ Keys: `kind`, `affordances` (what the source accepts), `deterministic`
 `offline_capable` (`data_egress == 'local'`), `max_duration_s` /
 `min_duration_s` / `sample_rate` (`None` when undeclared).
 `deterministic` and `loopable` are `None` for retrieve sources (they only
-describe generators). A `config['capabilities']` dict adds facts a config cannot
-imply (e.g. `watermarked`); it may not redefine a derived key.
+describe the generating kinds, `'generate'` and `'procedural'`). A `config['capabilities']` dict adds facts a config cannot
+imply (e.g. `watermarked`); it may not redefine a derived key, except to narrow
+a derived `True` to `False` (pyfxr takes a seed, but its noise waveform does
+not reproduce, so it declares `deterministic: False`).
 
 * **Raises:**
-  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `config['capabilities']` collides with a derived key.
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `config['capabilities']` widens or retypes a derived key.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
@@ -60,7 +62,7 @@ Implemented vs planned backends, computed from the registry (never hand-kept).
 Names of registered live sources, filtered by `kind` and by what they support.
 
 * **Parameters:**
-  * **kind** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – `'generate'` or `'retrieve'` (`None`: both).
+  * **kind** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – `'generate'`, `'procedural'` or `'retrieve'` (`None`: all).
   * **supports** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – One name or a list (all must hold). A name is an affordance the
     source accepts (`'seed'`, `'negative_prompt'`, `'loop'` …) or a
     true flag of [`capabilities_of()`](#foley.sources.capabilities.capabilities_of) (`'deterministic'`,

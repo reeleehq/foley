@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=97d53703"></script>
+    <script src="../../../_static/documentation_options.js?v=5c5ca7ce"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.103" />
+  <meta name="docsearch:version" content="0.0.104" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -776,6 +776,9 @@ window.runMermaid = runMermaid;</script>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Candidate</span><span class="p">,</span> <span class="n">SoundRecord</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"GENERATING_KINDS"</span><span class="p">,</span>
+    <span class="s2">"resolve_preset"</span><span class="p">,</span>
+    <span class="s2">"pad_to_qc_minimum"</span><span class="p">,</span>
     <span class="s2">"check_prompt_influence"</span><span class="p">,</span>
     <span class="s2">"check_provider_params"</span><span class="p">,</span>
     <span class="s2">"require_params_mapping"</span><span class="p">,</span>
@@ -812,6 +815,13 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"corpora_in_rings"</span><span class="p">,</span>
     <span class="s2">"select_corpora"</span><span class="p">,</span>
 <span class="p">]</span>
+
+
+<span class="c1">#: The source kinds that make a sound rather than fetch one (SSOT): ``'generate'`` (a</span>
+<span class="c1">#: model or a hosted API, AI output) and ``'procedural'`` (deterministic synthesis such</span>
+<span class="c1">#: as the sfxr family, #76: not AI, no watermark). Both go through</span>
+<span class="c1">#: :func:`foley.generate` (estimate, budget, cache, QC) and serve its generation modes.</span>
+<span class="n">GENERATING_KINDS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"generate"</span><span class="p">,</span> <span class="s2">"procedural"</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="SourceConfigurationError">
@@ -978,7 +988,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    foley estimated and reserved from its own request) are refused, before anything</span>
 <span class="sd">    is sent or paid for. So is a grouped ``append`` value that would close its</span>
 <span class="sd">    ``(...)`` group: checked here, a search refuses it before its try, as it does a</span>
-<span class="sd">    reserved key, rather than recording it as a failed search (#181).</span>
+<span class="sd">    reserved key, rather than recording it as a failed search (#181). ``known`` is the</span>
+<span class="sd">    one allow-list among these deny-lists: a policy that lists the source's native</span>
+<span class="sd">    params there refuses any other key (a typo), before any call.</span>
 
 <span class="sd">    &gt;&gt;&gt; check_provider_params({"steps": 8}, policy={"reserved": ["prompt"]})</span>
 <span class="sd">    {'steps': 8}</span>
@@ -993,9 +1005,9 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        TypeError: If ``provider_params`` is not a mapping, or a key is not a ``str``.</span>
-<span class="sd">        ValueError: If a key is ``reserved`` or ``priced`` by the policy, an</span>
-<span class="sd">            ``append``-ed value would escape its group, or the source declares no</span>
-<span class="sd">            policy at all.</span>
+<span class="sd">        ValueError: If a key is ``reserved`` or ``priced`` by the policy, or not</span>
+<span class="sd">            among its ``known`` ones, an ``append``-ed value would escape its group,</span>
+<span class="sd">            or the source declares no policy at all.</span>
 <span class="sd">    """</span>
     <span class="k">if</span> <span class="n">provider_params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">{}</span>
@@ -1032,6 +1044,13 @@ window.runMermaid = runMermaid;</script>
                 <span class="s2">"estimates and reserves from its own request: use the unified "</span>
                 <span class="s2">"argument (e.g. duration_s=) or the source config instead"</span>
             <span class="p">)</span>
+    <span class="n">known</span> <span class="o">=</span> <span class="n">policy</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"known"</span><span class="p">)</span>
+    <span class="n">unknown</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">provider_params</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">known</span><span class="p">))</span> <span class="k">if</span> <span class="n">known</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"provider_params </span><span class="si">{</span><span class="n">unknown</span><span class="si">}</span><span class="s2"> are not native params of this source; it "</span>
+            <span class="sa">f</span><span class="s2">"takes </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">known</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
     <span class="n">append</span> <span class="o">=</span> <span class="n">policy</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"append"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">provider_params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">append</span> <span class="ow">and</span> <span class="n">_append_spec</span><span class="p">(</span><span class="n">append</span><span class="p">[</span><span class="n">key</span><span class="p">])[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -1376,6 +1395,86 @@ window.runMermaid = runMermaid;</script>
         <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
     <span class="p">]</span>
     <span class="k">return</span> <span class="n">notes</span>
+
+
+<div class="viewcode-block" id="resolve_preset">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.resolve_preset">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">resolve_preset</span><span class="p">(</span>
+    <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">preset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[str, Optional[str]]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``(preset, note)``: the category preset a procedural source plays (#76).</span>
+
+<span class="sd">    ``preset`` when given (the note is then ``None``); else the preset whose keyword</span>
+<span class="sd">    (``config['preset_keywords']``, a plural ``s`` allowed) comes first in ``prompt``,</span>
+<span class="sd">    with a note saying so. The source's ``config['presets']`` is the SSOT of what it</span>
+<span class="sd">    plays, so a new procedural source adds presets in its config alone.</span>
+
+<span class="sd">    &gt;&gt;&gt; cfg = {"name": "x", "presets": {"laser": "laser", "jump": "jump"},</span>
+<span class="sd">    ...        "preset_keywords": {"laser": ["zap"], "jump": ["boing"]}}</span>
+<span class="sd">    &gt;&gt;&gt; resolve_preset(cfg, "two zaps, then a boing")</span>
+<span class="sd">    ('laser', "preset 'laser' matched from the prompt word 'zap'")</span>
+<span class="sd">    &gt;&gt;&gt; resolve_preset(cfg, "", "jump")</span>
+<span class="sd">    ('jump', None)</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        UnsupportedParameter: For a preset the source does not have, or no preset and</span>
+<span class="sd">            no keyword in the prompt; before any work, so the generation order skips it.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">ocracy.kit</span><span class="w"> </span><span class="kn">import</span> <span class="n">UnsupportedParameter</span>
+
+    <span class="n">presets</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"presets"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">listed</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">presets</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">preset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">preset</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">presets</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">UnsupportedParameter</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">config</span><span class="p">[</span><span class="s1">'name'</span><span class="p">]</span><span class="si">}</span><span class="s2"> has no preset </span><span class="si">{</span><span class="n">preset</span><span class="si">!r}</span><span class="s2">; its presets: </span><span class="si">{</span><span class="n">listed</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">preset</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">hits</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">start</span><span class="p">(),</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">),</span> <span class="n">name</span><span class="p">,</span> <span class="n">word</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">words</span> <span class="ow">in</span> <span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"preset_keywords"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="p">[</span><span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">rf</span><span class="s2">"\b</span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">word</span><span class="p">)</span><span class="si">}</span><span class="s2">(?:e?s)?\b"</span><span class="p">,</span> <span class="n">prompt</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">m</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">hits</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">UnsupportedParameter</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">config</span><span class="p">[</span><span class="s1">'name'</span><span class="p">]</span><span class="si">}</span><span class="s2"> plays category presets and none matches the prompt "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">prompt</span><span class="si">!r}</span><span class="s2">: pass preset= (one of </span><span class="si">{</span><span class="n">listed</span><span class="si">}</span><span class="s2">) or name one in the prompt"</span>
+        <span class="p">)</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">word</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">hits</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">name</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"preset </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> matched from the prompt word </span><span class="si">{</span><span class="n">word</span><span class="si">!r}</span><span class="s2">"</span></div>
+
+
+
+<div class="viewcode-block" id="pad_to_qc_minimum">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.pad_to_qc_minimum">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">pad_to_qc_minimum</span><span class="p">(</span>
+    <span class="n">samples</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[object, Optional[float]]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``(samples, padded_to_s)``: a clip shorter than Tier-0 QC admits, padded with</span>
+<span class="sd">    trailing silence to that minimum (noted), else unchanged with ``None``.</span>
+
+<span class="sd">    For a source whose sounds are legitimately that short (a 50 ms UI blip), which</span>
+<span class="sd">    :func:`foley.qc.run_qc` would otherwise reject as too short. ``samples`` is a float</span>
+<span class="sd">    array, time-first (mono, or ``(frames, channels)``).</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..qc</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_QC_THRESHOLDS</span>
+
+    <span class="n">min_s</span> <span class="o">=</span> <span class="n">DEFAULT_QC_THRESHOLDS</span><span class="o">.</span><span class="n">duration_min_s</span>
+    <span class="n">frames</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
+    <span class="n">shortfall</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">min_s</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">))</span> <span class="o">-</span> <span class="n">frames</span>
+    <span class="k">if</span> <span class="n">shortfall</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">samples</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">pad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">shortfall</span><span class="p">,</span> <span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">samples</span><span class="p">)[</span><span class="mi">1</span><span class="p">:]),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"padded with </span><span class="si">{</span><span class="n">shortfall</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">sample_rate</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1000</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> ms of silence to the "</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">min_s</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2"> s QC minimum (the sound is </span><span class="si">{</span><span class="n">frames</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">sample_rate</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> s)"</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">samples</span><span class="p">,</span> <span class="n">pad</span><span class="p">]),</span> <span class="n">min_s</span></div>
+
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">auth_env_vars</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[str, ...]"</span><span class="p">:</span>
@@ -2005,8 +2104,9 @@ window.runMermaid = runMermaid;</script>
     <span class="n">license_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">creator_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">attribution_text</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">ai_generated</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LicenseRecord</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Build an AI-generated :class:`~foley.base.LicenseRecord`, flags derived + provenance stamped.</span>
+<span class="w">    </span><span class="sd">"""Build a generated :class:`~foley.base.LicenseRecord`, flags derived + provenance stamped.</span>
 
 <span class="sd">    The generation sibling of :func:`bulk_license` / :func:`api_license`</span>
 <span class="sd">    (``acquisition_method=generated``): it routes through the shared</span>
@@ -2053,10 +2153,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        license_url: Optional license URL/label.</span>
 <span class="sd">        creator_name: Optional creator (usually unset for generation).</span>
 <span class="sd">        attribution_text: Optional ready-made attribution string.</span>
+<span class="sd">        ai_generated: ``True`` (default) for a model's output. ``False`` for</span>
+<span class="sd">            procedural synthesis (a ``'procedural'`` source, #76): the record then</span>
+<span class="sd">            has ``is_ai_generated=False`` and ``disclosure_recommended=False``</span>
+<span class="sd">            (whatever was passed), and still carries the generation-provenance block.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A populated ``LicenseRecord`` with derived flags applied AND</span>
-<span class="sd">        ``is_ai_generated=True`` plus the full generation-provenance block.</span>
+<span class="sd">        ``is_ai_generated=ai_generated`` plus the full generation-provenance block.</span>
 <span class="sd">    """</span>
     <span class="n">record</span> <span class="o">=</span> <span class="n">_build_license</span><span class="p">(</span>
         <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span>
@@ -2072,14 +2176,14 @@ window.runMermaid = runMermaid;</script>
     <span class="p">)</span>
     <span class="c1"># Generation-provenance block — stamped after flag derivation, in one place, so</span>
     <span class="c1"># no adapter hand-sets flags and every generator populates provenance identically.</span>
-    <span class="n">record</span><span class="o">.</span><span class="n">is_ai_generated</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">record</span><span class="o">.</span><span class="n">is_ai_generated</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">ai_generated</span><span class="p">)</span>
     <span class="n">record</span><span class="o">.</span><span class="n">generator_model</span> <span class="o">=</span> <span class="n">generator_model</span>
     <span class="n">record</span><span class="o">.</span><span class="n">generator_version</span> <span class="o">=</span> <span class="n">generator_version</span>
     <span class="n">record</span><span class="o">.</span><span class="n">generation_prompt</span> <span class="o">=</span> <span class="n">generation_prompt</span>
     <span class="n">record</span><span class="o">.</span><span class="n">generation_prompt_used</span> <span class="o">=</span> <span class="n">generation_prompt_used</span>
     <span class="n">record</span><span class="o">.</span><span class="n">generation_seed</span> <span class="o">=</span> <span class="n">generation_seed</span>
     <span class="n">record</span><span class="o">.</span><span class="n">generation_params</span> <span class="o">=</span> <span class="n">generation_params</span> <span class="ow">or</span> <span class="p">{}</span>
-    <span class="n">record</span><span class="o">.</span><span class="n">disclosure_recommended</span> <span class="o">=</span> <span class="n">disclosure_recommended</span>
+    <span class="n">record</span><span class="o">.</span><span class="n">disclosure_recommended</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">ai_generated</span> <span class="ow">and</span> <span class="n">disclosure_recommended</span><span class="p">)</span>
     <span class="n">record</span><span class="o">.</span><span class="n">watermark</span> <span class="o">=</span> <span class="n">watermark</span>
     <span class="n">record</span><span class="o">.</span><span class="n">c2pa_manifest_ref</span> <span class="o">=</span> <span class="n">c2pa_manifest_ref</span>
     <span class="k">return</span> <span class="n">record</span></div>

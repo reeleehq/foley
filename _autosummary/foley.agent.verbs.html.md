@@ -113,7 +113,7 @@ licence that excludes territories is refused while it is unstated.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
 
-### foley.agent.verbs.foley_generate(prompt, backend='auto', commercial_ok=True, session='default', territory=None)
+### foley.agent.verbs.foley_generate(prompt, backend='auto', commercial_ok=True, session='default', territory=None, preset=None)
 
 Generate a sound from a text prompt (local backends only when offline).
 
@@ -129,6 +129,8 @@ stored (the repair is in the result’s notes). A refused generation’s dict ca
 (`foley.generations.get(cache_key)`, on the host — bytes never travel over MCP).
 `territory`: where the sound is used (an ISO country code, or `"WORLD"`); a
 backend whose licence excludes territories (HunyuanVideo-Foley) needs it stated.
+`preset`: a category preset for a procedural backend (`backend='pyfxr'`:
+`laser`, `pickup`, `explosion`, …); other backends ignore it with a note.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)

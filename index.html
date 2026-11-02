@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="_static/documentation_options.js?v=97d53703"></script>
+    <script src="_static/documentation_options.js?v=5c5ca7ce"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.103" />
+  <meta name="docsearch:version" content="0.0.104" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -387,6 +387,11 @@ for what’s next. Follow along in <a class="reference internal" href="#misc/doc
 <span class="c1"># Several takes on one request, each stored and replayable (seeded: seed, seed+1, …)</span>
 <span class="n">takes</span> <span class="o">=</span> <span class="n">foley</span><span class="o">.</span><span class="n">variations</span><span class="p">(</span><span class="s2">"a single wooden door creak"</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">duration_s</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
 
+<span class="c1"># UI and game-style cues, synthesized procedurally (foley[pyfxr]): free, offline, seeded;</span>
+<span class="c1"># preset= or a prompt naming one (laser, coin pickup, explosion, power-up, hurt, jump,</span>
+<span class="c1"># menu blip). Not AI output, so no watermark or disclosure; licence procedural-free</span>
+<span class="n">clip</span> <span class="o">=</span> <span class="n">foley</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="s2">"a coin pickup"</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">"pyfxr"</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+
 <span class="c1"># Sound timed to picture (video-to-audio): video= walks the V2A order (Mirelo SFX 2.0,</span>
 <span class="c1"># then Sonilo, both on fal; FOLEY_V2A_ORDER replaces it). Their fal-route output terms</span>
 <span class="c1"># are unverified, so name the backend (its licence is then gated by keep()) — #170</span>
@@ -557,13 +562,16 @@ lazily, so a bare install stays light. What each adds:</p>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">freesound</span></code> · <code class="docutils literal notranslate"><span class="pre">stable-audio</span></code> · <code class="docutils literal notranslate"><span class="pre">elevenlabs</span></code> · <code class="docutils literal notranslate"><span class="pre">fal</span></code></p></td>
 <td><p>live retrieve / generate sources (<code class="docutils literal notranslate"><span class="pre">fal</span></code>: the fal-hosted generators through <code class="docutils literal notranslate"><span class="pre">falaw</span></code>)</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">agent</span></code> · <code class="docutils literal notranslate"><span class="pre">local-llm</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">pyfxr</span></code></p></td>
+<td><p>procedural sfxr-style cues (UI blips, lasers, coins): free, offline, seeded, no licence attached, not AI</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">agent</span></code> · <code class="docutils literal notranslate"><span class="pre">local-llm</span></code></p></td>
 <td><p>the SELECT LLM rungs (Claude / a local OpenAI-compatible endpoint)</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">align</span></code> · <code class="docutils literal notranslate"><span class="pre">weave</span></code> · <code class="docutils literal notranslate"><span class="pre">provenance</span></code> · <code class="docutils literal notranslate"><span class="pre">c2pa</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">align</span></code> · <code class="docutils literal notranslate"><span class="pre">weave</span></code> · <code class="docutils literal notranslate"><span class="pre">provenance</span></code> · <code class="docutils literal notranslate"><span class="pre">c2pa</span></code></p></td>
 <td><p>word timing (WhisperX), OTIO/rubberband, watermarking, signed C2PA</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mcp</span></code> · <code class="docutils literal notranslate"><span class="pre">obs</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mcp</span></code> · <code class="docutils literal notranslate"><span class="pre">obs</span></code></p></td>
 <td><p>the MCP server · OpenTelemetry export</p></td>
 </tr>
 </tbody>
@@ -588,7 +596,7 @@ what’s degraded. Full docs: <strong><a class="reference external" href="https:
 </section>
 </section>
 
-<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-11-02 00:45 UTC from <a href="https://github.com/reeleehq/foley/commit/1e992cdd12324027d7f05fed91fb7f25aac44a18">1e992cd</a> (main) · foley 0.0.103 · <a href="about-this-build.html">about this build</a></p>
+<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-11-02 01:12 UTC from <a href="https://github.com/reeleehq/foley/commit/3b947168cdb29aa06b777f837dc96b08c4d09873">3b94716</a> (main) · foley 0.0.104 · <a href="about-this-build.html">about this build</a></p>
 
                 </article>
               

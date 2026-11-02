@@ -67,6 +67,7 @@ foley.sources
    music_library
    openverse
    pull
+   pyfxr
    registry
    resilience
    sonniss

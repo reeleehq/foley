@@ -16,21 +16,21 @@ Three adapter kinds share the one ingest pipeline: the narrow **bulk-corpus**
 
 ### Functions
 
-| [`bulk_license`](#foley.sources.bulk_license)(\*, source, license_id, ...[, ...])   | Build a bulk-acquisition [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived.                   |
-|-----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`corpora_in_rings`](#foley.sources.corpora_in_rings)(rings)                            | Registered adapters whose ring is in `rings` (sorted by name).                                                                                     |
-| [`register_corpus`](#foley.sources.register_corpus)(adapter)                           | Register `adapter` in `CORPUS_REGISTRY` (idempotent) and return it.                                                                                |
-| [`ring_of`](#foley.sources.ring_of)(name)                                      | Return the ring of the registered corpus `name` (raises `KeyError`).                                                                               |
-| [`select_corpora`](#foley.sources.select_corpora)(\*[, rings, corpora])               | Resolve the adapters a bootstrap run should touch.                                                                                                 |
-| [`api_license`](#foley.sources.api_license)(\*, source, license_id, ...[, ...])    | Build an API-acquisition [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived.                   |
-| [`add_from`](#foley.sources.add_from)(source, \*, query[, license, limit, ...]) | Search a live `source` and ingest its license-clean hits into `library`.                                                                           |
-| [`discover_sources`](#foley.sources.discover_sources)()                                 | Scan [`foley.sources`](#module-foley.sources) sub-packages for a `SOURCE_CONFIG` and register them.                          |
-| [`get_source`](#foley.sources.get_source)(name)                                   | Return the `{'config', 'adapter'}` entry for `name`, lazily building the adapter.                                                                  |
-| [`list_sources`](#foley.sources.list_sources)(\*[, egress_allow])                   | Return the names of registered live sources (runs discovery first).                                                                                |
-| [`register_source`](#foley.sources.register_source)(name, config[, adapter])           | Register a live source directly (out-of-tree plugin or a test double).                                                                             |
-| [`generated_license`](#foley.sources.generated_license)(\*, source, license_id, ...)     | Build an AI-generated [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped. |
-| [`generate`](#foley.sources.generate)(prompt, \*[, backend, library, ...])      | Generate a sound via `backend` and ingest it (by-value) into `library`.                                                                            |
-| [`candidate_of`](#foley.sources.candidate_of)(result)                               | Wrap a stored [`IngestResult`](foley.index.ingest.html.md#foley.index.ingest.IngestResult) as a generated candidate.              |
+| [`bulk_license`](#foley.sources.bulk_license)(\*, source, license_id, ...[, ...])   | Build a bulk-acquisition [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived.               |
+|-----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`corpora_in_rings`](#foley.sources.corpora_in_rings)(rings)                            | Registered adapters whose ring is in `rings` (sorted by name).                                                                                 |
+| [`register_corpus`](#foley.sources.register_corpus)(adapter)                           | Register `adapter` in `CORPUS_REGISTRY` (idempotent) and return it.                                                                            |
+| [`ring_of`](#foley.sources.ring_of)(name)                                      | Return the ring of the registered corpus `name` (raises `KeyError`).                                                                           |
+| [`select_corpora`](#foley.sources.select_corpora)(\*[, rings, corpora])               | Resolve the adapters a bootstrap run should touch.                                                                                             |
+| [`api_license`](#foley.sources.api_license)(\*, source, license_id, ...[, ...])    | Build an API-acquisition [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived.               |
+| [`add_from`](#foley.sources.add_from)(source, \*, query[, license, limit, ...]) | Search a live `source` and ingest its license-clean hits into `library`.                                                                       |
+| [`discover_sources`](#foley.sources.discover_sources)()                                 | Scan [`foley.sources`](#module-foley.sources) sub-packages for a `SOURCE_CONFIG` and register them.                      |
+| [`get_source`](#foley.sources.get_source)(name)                                   | Return the `{'config', 'adapter'}` entry for `name`, lazily building the adapter.                                                              |
+| [`list_sources`](#foley.sources.list_sources)(\*[, egress_allow])                   | Return the names of registered live sources (runs discovery first).                                                                            |
+| [`register_source`](#foley.sources.register_source)(name, config[, adapter])           | Register a live source directly (out-of-tree plugin or a test double).                                                                         |
+| [`generated_license`](#foley.sources.generated_license)(\*, source, license_id, ...)     | Build a generated [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped. |
+| [`generate`](#foley.sources.generate)(prompt, \*[, backend, library, ...])      | Generate a sound via `backend` and ingest it (by-value) into `library`.                                                                        |
+| [`candidate_of`](#foley.sources.candidate_of)(result)                               | Wrap a stored [`IngestResult`](foley.index.ingest.html.md#foley.index.ingest.IngestResult) as a generated candidate.          |
 
 ### Classes
 
@@ -751,9 +751,9 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
         not allow it (before anything is paid for).
   * [**WatermarkUnavailable**](foley.provenance.disclosure.html.md#foley.provenance.disclosure.WatermarkUnavailable) – If `watermark=True` but `foley[provenance]` is absent.
 
-### foley.sources.generated_license(, source, license_id, generator_model, generation_prompt, rights_verified=True, generator_version=None, generation_seed=None, generation_params=None, generation_prompt_used=None, disclosure_recommended=True, watermark=None, c2pa_manifest_ref=None, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None)
+### foley.sources.generated_license(, source, license_id, generator_model, generation_prompt, rights_verified=True, generator_version=None, generation_seed=None, generation_params=None, generation_prompt_used=None, disclosure_recommended=True, watermark=None, c2pa_manifest_ref=None, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None, ai_generated=True)
 
-Build an AI-generated [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped.
+Build a generated [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped.
 
 The generation sibling of [`bulk_license()`](#foley.sources.bulk_license) / [`api_license()`](#foley.sources.api_license)
 (`acquisition_method=generated`): it routes through the shared
@@ -800,11 +800,15 @@ but never flips the flag, so [`foley.keep()`](foley.html.md#foley.keep) still re
   * **license_url** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional license URL/label.
   * **creator_name** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional creator (usually unset for generation).
   * **attribution_text** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional ready-made attribution string.
+  * **ai_generated** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – `True` (default) for a model’s output. `False` for
+    procedural synthesis (a `'procedural'` source, #76): the record then
+    has `is_ai_generated=False` and `disclosure_recommended=False`
+    (whatever was passed), and still carries the generation-provenance block.
 * **Return type:**
   [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)
 * **Returns:**
   A populated `LicenseRecord` with derived flags applied AND
-  `is_ai_generated=True` plus the full generation-provenance block.
+  `is_ai_generated=ai_generated` plus the full generation-provenance block.
 
 ### foley.sources.get_source(name)
 
@@ -899,6 +903,7 @@ the default `rings` — it is opt-in only.
 | [`music_library`](foley.sources.music_library.html.md#module-foley.sources.music_library)         | Acquire a licensed music library, with provenance: verified files, a tracks table, attribution.                  |
 | [`openverse`](foley.sources.openverse.html.md#module-foley.sources.openverse)                 | Openverse retrieve source: keyless, licence-rich audio search (`foley[openverse]`).                              |
 | [`pull`](foley.sources.pull.html.md#module-foley.sources.pull)                           | `add_from` — the live-source pull façade (SOURCE → INDEX in one call).                                           |
+| [`pyfxr`](foley.sources.pyfxr.html.md#module-foley.sources.pyfxr)                         | pyfxr procedural source: sfxr-family category presets, free, offline and seeded (#76).                           |
 | [`registry`](foley.sources.registry.html.md#module-foley.sources.registry)                   | Live-source adapter registry: auto-discovery + lazy loading (arioso's registry, ported).                         |
 | [`resilience`](foley.sources.resilience.html.md#module-foley.sources.resilience)               | Graceful degradation for HTTP source adapters — throttle · backoff · circuit-break (#12).                        |
 | [`sonniss`](foley.sources.sonniss.html.md#module-foley.sources.sonniss)                     | Sonniss GameAudioGDC — a Ring-2, quarantined corpus.                                                             |

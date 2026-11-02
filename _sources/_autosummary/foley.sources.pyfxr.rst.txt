@@ -1,0 +1,21 @@
+foley.sources.pyfxr
+===================
+
+.. automodule:: foley.sources.pyfxr
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Adapter
+      PyfxrAdapter
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   adapter
+   config

@@ -111,6 +111,9 @@
 - [foley.sources.openverse.adapter](foley.sources.openverse.adapter.html.md): Openverse retrieve adapter: keyless audio search with ready attribution strings.
 - [foley.sources.openverse.config](foley.sources.openverse.config.html.md): &#96;SOURCE_CONFIG&#96; for the Openverse retrieve source (#79 · report 14 §3.2).
 - [foley.sources.pull](foley.sources.pull.html.md): &#96;add_from&#96; — the live-source pull façade (SOURCE → INDEX in one call).
+- [foley.sources.pyfxr](foley.sources.pyfxr.html.md): pyfxr procedural source: sfxr-family category presets, free, offline and seeded (#76).
+- [foley.sources.pyfxr.adapter](foley.sources.pyfxr.adapter.html.md): pyfxr procedural adapter: a category preset, seeded, rendered to audio bytes (#76).
+- [foley.sources.pyfxr.config](foley.sources.pyfxr.config.html.md): &#96;SOURCE_CONFIG&#96; for pyfxr, the first procedural source (#76; report 13 §2E, §5.12).
 - [foley.sources.registry](foley.sources.registry.html.md): Live-source adapter registry: auto-discovery + lazy loading (arioso’s registry, ported).
 - [foley.sources.resilience](foley.sources.resilience.html.md): Graceful degradation for HTTP source adapters — throttle · backoff · circuit-break (#12).
 - [foley.sources.sonniss](foley.sources.sonniss.html.md): Sonniss GameAudioGDC — a Ring-2, quarantined corpus.

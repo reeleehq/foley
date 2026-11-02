@@ -36,37 +36,40 @@ so the derived permission flags stay single-sourced.
 
 ### Module Attributes
 
-| [`CORPUS_REGISTRY`](#foley.sources.base.CORPUS_REGISTRY)   | Registry of concrete bulk-corpus adapters, keyed by `adapter.name`.   |
-|--------------------------------------------------------------------|-----------------------------------------------------------------------|
+| [`GENERATING_KINDS`](#foley.sources.base.GENERATING_KINDS)   | `'generate'` (a model or a hosted API, AI output) and `'procedural'` (deterministic synthesis such as the sfxr family, #76: not AI, no watermark).   |
+|---------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`CORPUS_REGISTRY`](#foley.sources.base.CORPUS_REGISTRY)    | Registry of concrete bulk-corpus adapters, keyed by `adapter.name`.                                                                                  |
 
 ### Functions
 
-| [`check_prompt_influence`](#foley.sources.base.check_prompt_influence)(value)                     | Raise `ValueError` unless `value` is `None` or a real number in `0..1`.                                                                                                                                 |
-|----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`check_provider_params`](#foley.sources.base.check_provider_params)([provider_params, policy])  | `provider_params` as a plain dict, checked against a source's `policy` (#61).                                                                                                                           |
-| [`require_params_mapping`](#foley.sources.base.require_params_mapping)(provider_params)           | Raise `TypeError` unless `provider_params` is a mapping (#61).                                                                                                                                          |
-| [`merge_provider_params`](#foley.sources.base.merge_provider_params)(native[, ...])              | `native` with the caller's vendor-native `provider_params` merged on top (#61).                                                                                                                         |
-| [`names_field`](#foley.sources.base.names_field)(clause, field)                        | Whether a Solr-ish `clause` names `field` as a field (`field:`).                                                                                                                                        |
-| [`check_owned_fields`](#foley.sources.base.check_owned_fields)(provider_params, key, owned)   | Refuse `provider_params[key]` when it names a field foley already sends.                                                                                                                                |
-| [`recorded_params`](#foley.sources.base.recorded_params)(sent[, provider_params])          | The `generation_params` a generator records: the native params it `sent` (provider params already merged in), plus a `provider_params` entry listing what the caller supplied, when anything was (#61). |
-| [`native_adherence`](#foley.sources.base.native_adherence)(config, prompt_influence, notes) | Map foley's unified `prompt_influence` (0..1) onto a source's native scale.                                                                                                                             |
-| [`resolve_source_key`](#foley.sources.base.resolve_source_key)(config[, api_key])             | A source's API token: `api_key`, else a bound key, else its env var(s).                                                                                                                                 |
-| [`using_source_accounts`](#foley.sources.base.using_source_accounts)(\*\*accounts)               | Bind per-request source accounts (a key, and what goes with it) for a `with` block.                                                                                                                     |
-| [`bound_source_account`](#foley.sources.base.bound_source_account)(source)                      | The account bound for `source` in this context, or `None` when no key is bound.                                                                                                                         |
-| [`key_fingerprint`](#foley.sources.base.key_fingerprint)(key)                              | A short, one-way id for an API key: tells accounts apart without keeping the key.                                                                                                                       |
-| [`source_account_id`](#foley.sources.base.source_account_id)(config[, api_key])              | Which account a call to the source is made on: `'operator'`, or a key's fingerprint.                                                                                                                    |
-| [`bulk_license`](#foley.sources.base.bulk_license)(\*, source, license_id, ...[, ...])  | Build a bulk-acquisition [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived.                                                                        |
-| [`per_clip_license_meta`](#foley.sources.base.per_clip_license_meta)(license_url, \*[, ...])     | The `ClipSpec.meta` rights fields for a clip that carries its own CC licence.                                                                                                                           |
-| [`license_from_clip_meta`](#foley.sources.base.license_from_clip_meta)(source, spec)              | Build a clip's rights record from [`per_clip_license_meta()`](#foley.sources.base.per_clip_license_meta) fields (fail-closed).                                                                        |
-| [`api_license`](#foley.sources.base.api_license)(\*, source, license_id, ...[, ...])   | Build an API-acquisition [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived.                                                                        |
-| [`generated_license`](#foley.sources.base.generated_license)(\*, source, license_id, ...)    | Build an AI-generated [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped.                                                      |
-| [`draw_seed`](#foley.sources.base.draw_seed)()                                       | A random seed in `0..2**31-1`, for a seed-capable backend asked for none.                                                                                                                               |
-| [`derived_seed`](#foley.sources.base.derived_seed)(seed, index)                         | The seed of variation `index` of a request seeded with `seed` (#161).                                                                                                                                   |
-| [`require_count`](#foley.sources.base.require_count)(name, value, \*, minimum)           | `value` as an `int`, or `ValueError` unless it is an integer >= `minimum`.                                                                                                                              |
-| [`register_corpus`](#foley.sources.base.register_corpus)(adapter)                          | Register `adapter` in [`CORPUS_REGISTRY`](#foley.sources.base.CORPUS_REGISTRY) (idempotent) and return it.                                                                                      |
-| [`ring_of`](#foley.sources.base.ring_of)(name)                                     | Return the ring of the registered corpus `name` (raises `KeyError`).                                                                                                                                    |
-| [`corpora_in_rings`](#foley.sources.base.corpora_in_rings)(rings)                           | Registered adapters whose ring is in `rings` (sorted by name).                                                                                                                                          |
-| [`select_corpora`](#foley.sources.base.select_corpora)(\*[, rings, corpora])              | Resolve the adapters a bootstrap run should touch.                                                                                                                                                      |
+| [`resolve_preset`](#foley.sources.base.resolve_preset)(config, prompt[, preset])           | `(preset, note)`: the category preset a procedural source plays (#76).                                                                                                                                  |
+|-----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`pad_to_qc_minimum`](#foley.sources.base.pad_to_qc_minimum)(samples, sample_rate, \*, notes) | `(samples, padded_to_s)`: a clip shorter than Tier-0 QC admits, padded with trailing silence to that minimum (noted), else unchanged with `None`.                                                       |
+| [`check_prompt_influence`](#foley.sources.base.check_prompt_influence)(value)                      | Raise `ValueError` unless `value` is `None` or a real number in `0..1`.                                                                                                                                 |
+| [`check_provider_params`](#foley.sources.base.check_provider_params)([provider_params, policy])   | `provider_params` as a plain dict, checked against a source's `policy` (#61).                                                                                                                           |
+| [`require_params_mapping`](#foley.sources.base.require_params_mapping)(provider_params)            | Raise `TypeError` unless `provider_params` is a mapping (#61).                                                                                                                                          |
+| [`merge_provider_params`](#foley.sources.base.merge_provider_params)(native[, ...])               | `native` with the caller's vendor-native `provider_params` merged on top (#61).                                                                                                                         |
+| [`names_field`](#foley.sources.base.names_field)(clause, field)                         | Whether a Solr-ish `clause` names `field` as a field (`field:`).                                                                                                                                        |
+| [`check_owned_fields`](#foley.sources.base.check_owned_fields)(provider_params, key, owned)    | Refuse `provider_params[key]` when it names a field foley already sends.                                                                                                                                |
+| [`recorded_params`](#foley.sources.base.recorded_params)(sent[, provider_params])           | The `generation_params` a generator records: the native params it `sent` (provider params already merged in), plus a `provider_params` entry listing what the caller supplied, when anything was (#61). |
+| [`native_adherence`](#foley.sources.base.native_adherence)(config, prompt_influence, notes)  | Map foley's unified `prompt_influence` (0..1) onto a source's native scale.                                                                                                                             |
+| [`resolve_source_key`](#foley.sources.base.resolve_source_key)(config[, api_key])              | A source's API token: `api_key`, else a bound key, else its env var(s).                                                                                                                                 |
+| [`using_source_accounts`](#foley.sources.base.using_source_accounts)(\*\*accounts)                | Bind per-request source accounts (a key, and what goes with it) for a `with` block.                                                                                                                     |
+| [`bound_source_account`](#foley.sources.base.bound_source_account)(source)                       | The account bound for `source` in this context, or `None` when no key is bound.                                                                                                                         |
+| [`key_fingerprint`](#foley.sources.base.key_fingerprint)(key)                               | A short, one-way id for an API key: tells accounts apart without keeping the key.                                                                                                                       |
+| [`source_account_id`](#foley.sources.base.source_account_id)(config[, api_key])               | Which account a call to the source is made on: `'operator'`, or a key's fingerprint.                                                                                                                    |
+| [`bulk_license`](#foley.sources.base.bulk_license)(\*, source, license_id, ...[, ...])   | Build a bulk-acquisition [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived.                                                                        |
+| [`per_clip_license_meta`](#foley.sources.base.per_clip_license_meta)(license_url, \*[, ...])      | The `ClipSpec.meta` rights fields for a clip that carries its own CC licence.                                                                                                                           |
+| [`license_from_clip_meta`](#foley.sources.base.license_from_clip_meta)(source, spec)               | Build a clip's rights record from [`per_clip_license_meta()`](#foley.sources.base.per_clip_license_meta) fields (fail-closed).                                                                        |
+| [`api_license`](#foley.sources.base.api_license)(\*, source, license_id, ...[, ...])    | Build an API-acquisition [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived.                                                                        |
+| [`generated_license`](#foley.sources.base.generated_license)(\*, source, license_id, ...)     | Build a generated [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped.                                                          |
+| [`draw_seed`](#foley.sources.base.draw_seed)()                                        | A random seed in `0..2**31-1`, for a seed-capable backend asked for none.                                                                                                                               |
+| [`derived_seed`](#foley.sources.base.derived_seed)(seed, index)                          | The seed of variation `index` of a request seeded with `seed` (#161).                                                                                                                                   |
+| [`require_count`](#foley.sources.base.require_count)(name, value, \*, minimum)            | `value` as an `int`, or `ValueError` unless it is an integer >= `minimum`.                                                                                                                              |
+| [`register_corpus`](#foley.sources.base.register_corpus)(adapter)                           | Register `adapter` in [`CORPUS_REGISTRY`](#foley.sources.base.CORPUS_REGISTRY) (idempotent) and return it.                                                                                      |
+| [`ring_of`](#foley.sources.base.ring_of)(name)                                      | Return the ring of the registered corpus `name` (raises `KeyError`).                                                                                                                                    |
+| [`corpora_in_rings`](#foley.sources.base.corpora_in_rings)(rings)                            | Registered adapters whose ring is in `rings` (sorted by name).                                                                                                                                          |
+| [`select_corpora`](#foley.sources.base.select_corpora)(\*[, rings, corpora])               | Resolve the adapters a bootstrap run should touch.                                                                                                                                                      |
 
 ### Classes
 
@@ -166,6 +169,16 @@ Return the fully-derived rights record for `spec` (licensing SSOT).
 
 * **Type:**
   Bootstrap ring
+
+### foley.sources.base.GENERATING_KINDS *= ('generate', 'procedural')*
+
+`'generate'` (a
+model or a hosted API, AI output) and `'procedural'` (deterministic synthesis such
+as the sfxr family, #76: not AI, no watermark). Both go through
+[`foley.generate()`](foley.html.md#foley.generate) (estimate, budget, cache, QC) and serve its generation modes.
+
+* **Type:**
+  The source kinds that make a sound rather than fetch one (SSOT)
 
 ### *class* foley.sources.base.GenerateAdapter(\*args, \*\*kwargs)
 
@@ -500,7 +513,9 @@ path, the model) and a `priced` key (one that changes what the call costs, which
 foley estimated and reserved from its own request) are refused, before anything
 is sent or paid for. So is a grouped `append` value that would close its
 `(...)` group: checked here, a search refuses it before its try, as it does a
-reserved key, rather than recording it as a failed search (#181).
+reserved key, rather than recording it as a failed search (#181). `known` is the
+one allow-list among these deny-lists: a policy that lists the source’s native
+params there refuses any other key (a typo), before any call.
 
 ```pycon
 >>> check_provider_params({"steps": 8}, policy={"reserved": ["prompt"]})
@@ -517,9 +532,9 @@ TypeError: provider_params keys must be str (native parameter names), got int: 1
 
 * **Raises:**
   * [**TypeError**](https://docs.python.org/3/builtins/exceptions.html#TypeError) – If `provider_params` is not a mapping, or a key is not a `str`.
-  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If a key is `reserved` or `priced` by the policy, an
-        `append`-ed value would escape its group, or the source declares no
-        policy at all.
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If a key is `reserved` or `priced` by the policy, or not
+        among its `known` ones, an `append`-ed value would escape its group,
+        or the source declares no policy at all.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
@@ -563,9 +578,9 @@ True
 * **Return type:**
   [`int`](https://docs.python.org/3/builtins/functions.html#int)
 
-### foley.sources.base.generated_license(, source, license_id, generator_model, generation_prompt, rights_verified=True, generator_version=None, generation_seed=None, generation_params=None, generation_prompt_used=None, disclosure_recommended=True, watermark=None, c2pa_manifest_ref=None, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None)
+### foley.sources.base.generated_license(, source, license_id, generator_model, generation_prompt, rights_verified=True, generator_version=None, generation_seed=None, generation_params=None, generation_prompt_used=None, disclosure_recommended=True, watermark=None, c2pa_manifest_ref=None, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None, ai_generated=True)
 
-Build an AI-generated [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped.
+Build a generated [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped.
 
 The generation sibling of [`bulk_license()`](#foley.sources.base.bulk_license) / [`api_license()`](#foley.sources.base.api_license)
 (`acquisition_method=generated`): it routes through the shared
@@ -612,11 +627,15 @@ but never flips the flag, so [`foley.keep()`](foley.html.md#foley.keep) still re
   * **license_url** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional license URL/label.
   * **creator_name** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional creator (usually unset for generation).
   * **attribution_text** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional ready-made attribution string.
+  * **ai_generated** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – `True` (default) for a model’s output. `False` for
+    procedural synthesis (a `'procedural'` source, #76): the record then
+    has `is_ai_generated=False` and `disclosure_recommended=False`
+    (whatever was passed), and still carries the generation-provenance block.
 * **Return type:**
   [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)
 * **Returns:**
   A populated `LicenseRecord` with derived flags applied AND
-  `is_ai_generated=True` plus the full generation-provenance block.
+  `is_ai_generated=ai_generated` plus the full generation-provenance block.
 
 ### foley.sources.base.key_fingerprint(key)
 
@@ -718,6 +737,18 @@ so (#70).
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
+### foley.sources.base.pad_to_qc_minimum(samples, sample_rate, , notes)
+
+`(samples, padded_to_s)`: a clip shorter than Tier-0 QC admits, padded with
+trailing silence to that minimum (noted), else unchanged with `None`.
+
+For a source whose sounds are legitimately that short (a 50 ms UI blip), which
+[`foley.qc.run_qc()`](foley.qc.html.md#foley.qc.run_qc) would otherwise reject as too short. `samples` is a float
+array, time-first (mono, or `(frames, channels)`).
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`object`](https://docs.python.org/3/builtins/functions.html#object), [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]]
+
 ### foley.sources.base.per_clip_license_meta(license_url, , creator_name=None, source_url=None)
 
 The `ClipSpec.meta` rights fields for a clip that carries its own CC licence.
@@ -781,6 +812,30 @@ Raise `TypeError` unless `provider_params` is a mapping (#61).
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### foley.sources.base.resolve_preset(config, prompt, preset=None)
+
+`(preset, note)`: the category preset a procedural source plays (#76).
+
+`preset` when given (the note is then `None`); else the preset whose keyword
+(`config['preset_keywords']`, a plural `s` allowed) comes first in `prompt`,
+with a note saying so. The source’s `config['presets']` is the SSOT of what it
+plays, so a new procedural source adds presets in its config alone.
+
+```pycon
+>>> cfg = {"name": "x", "presets": {"laser": "laser", "jump": "jump"},
+...        "preset_keywords": {"laser": ["zap"], "jump": ["boing"]}}
+>>> resolve_preset(cfg, "two zaps, then a boing")
+('laser', "preset 'laser' matched from the prompt word 'zap'")
+>>> resolve_preset(cfg, "", "jump")
+('jump', None)
+```
+
+* **Raises:**
+  **UnsupportedParameter** – For a preset the source does not have, or no preset and
+      no keyword in the prompt; before any work, so the generation order skips it.
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
 ### foley.sources.base.resolve_source_key(config, api_key=None)
 

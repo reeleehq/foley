@@ -113,6 +113,9 @@
 - [foley.sources.openverse.adapter](_autosummary/foley.sources.openverse.adapter.html.md): Openverse retrieve adapter: keyless audio search with ready attribution strings.
 - [foley.sources.openverse.config](_autosummary/foley.sources.openverse.config.html.md): &#96;SOURCE_CONFIG&#96; for the Openverse retrieve source (#79 · report 14 §3.2).
 - [foley.sources.pull](_autosummary/foley.sources.pull.html.md): &#96;add_from&#96; — the live-source pull façade (SOURCE → INDEX in one call).
+- [foley.sources.pyfxr](_autosummary/foley.sources.pyfxr.html.md): pyfxr procedural source: sfxr-family category presets, free, offline and seeded (#76).
+- [foley.sources.pyfxr.adapter](_autosummary/foley.sources.pyfxr.adapter.html.md): pyfxr procedural adapter: a category preset, seeded, rendered to audio bytes (#76).
+- [foley.sources.pyfxr.config](_autosummary/foley.sources.pyfxr.config.html.md): &#96;SOURCE_CONFIG&#96; for pyfxr, the first procedural source (#76; report 13 §2E, §5.12).
 - [foley.sources.registry](_autosummary/foley.sources.registry.html.md): Live-source adapter registry: auto-discovery + lazy loading (arioso’s registry, ported).
 - [foley.sources.resilience](_autosummary/foley.sources.resilience.html.md): Graceful degradation for HTTP source adapters — throttle · backoff · circuit-break (#12).
 - [foley.sources.sonniss](_autosummary/foley.sources.sonniss.html.md): Sonniss GameAudioGDC — a Ring-2, quarantined corpus.
@@ -128,7 +131,7 @@
 - [foley.sources.wikimedia_commons.config](_autosummary/foley.sources.wikimedia_commons.config.html.md): &#96;SOURCE_CONFIG&#96; for the Wikimedia Commons retrieve source (#79 · report 14 §3.3).
 - [foley.stores](_autosummary/foley.stores.html.md): dol-backed storage for foley: content-addressed bytes + a metadata store.
 - [For AI agents](ai-agents.html.md): &#96;foley&#96; ships artifacts for coding agents alongside its code. This page lists
-- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-11-02 00:45 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
+- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-11-02 01:12 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
 
 ## Optional
 

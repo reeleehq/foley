@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=97d53703"></script>
+    <script src="../_static/documentation_options.js?v=5c5ca7ce"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.103" />
+  <meta name="docsearch:version" content="0.0.104" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -414,6 +414,7 @@
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.music_library.html">foley.sources.music_library</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.openverse.html">foley.sources.openverse</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.pull.html">foley.sources.pull</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.pyfxr.html">foley.sources.pyfxr</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.registry.html">foley.sources.registry</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.resilience.html">foley.sources.resilience</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.sonniss.html">foley.sources.sonniss</a></li>
@@ -529,7 +530,10 @@ so the derived permission flags stay single-sourced.</p>
 <p class="rubric">Module Attributes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.CORPUS_REGISTRY" title="foley.sources.base.CORPUS_REGISTRY"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CORPUS_REGISTRY</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.GENERATING_KINDS" title="foley.sources.base.GENERATING_KINDS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GENERATING_KINDS</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">'generate'</span></code> (a model or a hosted API, AI output) and <code class="docutils literal notranslate"><span class="pre">'procedural'</span></code> (deterministic synthesis such as the sfxr family, #76: not AI, no watermark).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.CORPUS_REGISTRY" title="foley.sources.base.CORPUS_REGISTRY"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CORPUS_REGISTRY</span></code></a></p></td>
 <td><p>Registry of concrete bulk-corpus adapters, keyed by <code class="docutils literal notranslate"><span class="pre">adapter.name</span></code>.</p></td>
 </tr>
 </tbody>
@@ -538,6 +542,12 @@ so the derived permission flags stay single-sourced.</p>
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.resolve_preset" title="foley.sources.base.resolve_preset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolve_preset</span></code></a>(config, prompt[, preset])</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">(preset,</span> <span class="pre">note)</span></code>: the category preset a procedural source plays (#76).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.pad_to_qc_minimum" title="foley.sources.base.pad_to_qc_minimum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pad_to_qc_minimum</span></code></a>(samples, sample_rate, *, notes)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">(samples,</span> <span class="pre">padded_to_s)</span></code>: a clip shorter than Tier-0 QC admits, padded with trailing silence to that minimum (noted), else unchanged with <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></td>
+</tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.check_prompt_influence" title="foley.sources.base.check_prompt_influence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_prompt_influence</span></code></a>(value)</p></td>
 <td><p>Raise <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> unless <code class="docutils literal notranslate"><span class="pre">value</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code> or a real number in <code class="docutils literal notranslate"><span class="pre">0..1</span></code>.</p></td>
 </tr>
@@ -590,7 +600,7 @@ so the derived permission flags stay single-sourced.</p>
 <td><p>Build an API-acquisition <a class="reference internal" href="foley.base.html#foley.base.LicenseRecord" title="foley.base.LicenseRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a>, flags derived.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.generated_license" title="foley.sources.base.generated_license"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generated_license</span></code></a>(*, source, license_id, ...)</p></td>
-<td><p>Build an AI-generated <a class="reference internal" href="foley.base.html#foley.base.LicenseRecord" title="foley.base.LicenseRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a>, flags derived + provenance stamped.</p></td>
+<td><p>Build a generated <a class="reference internal" href="foley.base.html#foley.base.LicenseRecord" title="foley.base.LicenseRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a>, flags derived + provenance stamped.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.draw_seed" title="foley.sources.base.draw_seed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">draw_seed</span></code></a>()</p></td>
 <td><p>A random seed in <code class="docutils literal notranslate"><span class="pre">0..2**31-1</span></code>, for a seed-capable backend asked for none.</p></td>
@@ -772,6 +782,20 @@ two methods below. They perform <strong>no</strong> embedding, storage, or libra
 </dl>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.sources.base.GENERATING_KINDS">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.base.</span></span><span class="sig-name descname"><span class="pre">GENERATING_KINDS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('generate',</span> <span class="pre">'procedural')</span></span><a class="headerlink" href="#foley.sources.base.GENERATING_KINDS" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">'generate'</span></code> (a
+model or a hosted API, AI output) and <code class="docutils literal notranslate"><span class="pre">'procedural'</span></code> (deterministic synthesis such
+as the sfxr family, #76: not AI, no watermark). Both go through
+<a class="reference internal" href="foley.html#foley.generate" title="foley.generate"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.generate()</span></code></a> (estimate, budget, cache, QC) and serve its generation modes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The source kinds that make a sound rather than fetch one (SSOT)</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py class">
@@ -1177,7 +1201,9 @@ path, the model) and a <code class="docutils literal notranslate"><span class="p
 foley estimated and reserved from its own request) are refused, before anything
 is sent or paid for. So is a grouped <code class="docutils literal notranslate"><span class="pre">append</span></code> value that would close its
 <code class="docutils literal notranslate"><span class="pre">(...)</span></code> group: checked here, a search refuses it before its try, as it does a
-reserved key, rather than recording it as a failed search (#181).</p>
+reserved key, rather than recording it as a failed search (#181). <code class="docutils literal notranslate"><span class="pre">known</span></code> is the
+one allow-list among these deny-lists: a policy that lists the source’s native
+params there refuses any other key (a typo), before any call.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">check_provider_params</span><span class="p">({</span><span class="s2">"steps"</span><span class="p">:</span> <span class="mi">8</span><span class="p">},</span> <span class="n">policy</span><span class="o">=</span><span class="p">{</span><span class="s2">"reserved"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"prompt"</span><span class="p">]})</span>
 <span class="go">{'steps': 8}</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">check_provider_params</span><span class="p">({</span><span class="s2">"prompt"</span><span class="p">:</span> <span class="s2">"x"</span><span class="p">},</span> <span class="n">policy</span><span class="o">=</span><span class="p">{</span><span class="s2">"reserved"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"prompt"</span><span class="p">]})</span>
@@ -1194,9 +1220,9 @@ reserved key, rather than recording it as a failed search (#181).</p>
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">provider_params</span></code> is not a mapping, or a key is not a <code class="docutils literal notranslate"><span class="pre">str</span></code>.</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If a key is <code class="docutils literal notranslate"><span class="pre">reserved</span></code> or <code class="docutils literal notranslate"><span class="pre">priced</span></code> by the policy, an
-    <code class="docutils literal notranslate"><span class="pre">append</span></code>-ed value would escape its group, or the source declares no
-    policy at all.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If a key is <code class="docutils literal notranslate"><span class="pre">reserved</span></code> or <code class="docutils literal notranslate"><span class="pre">priced</span></code> by the policy, or not
+    among its <code class="docutils literal notranslate"><span class="pre">known</span></code> ones, an <code class="docutils literal notranslate"><span class="pre">append</span></code>-ed value would escape its group,
+    or the source declares no policy at all.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -1255,8 +1281,8 @@ own randomness (#163).</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="foley.sources.base.generated_license">
-<span class="sig-prename descclassname"><span class="pre">foley.sources.base.</span></span><span class="sig-name descname"><span class="pre">generated_license</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">license_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generator_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generation_prompt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rights_verified</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generator_version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generation_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generation_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generation_prompt_used</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disclosure_recommended</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">watermark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c2pa_manifest_ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overrides</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">license_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">creator_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribution_text</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#generated_license"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.base.generated_license" title="Link to this definition">#</a></dt>
-<dd><p>Build an AI-generated <a class="reference internal" href="foley.base.html#foley.base.LicenseRecord" title="foley.base.LicenseRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a>, flags derived + provenance stamped.</p>
+<span class="sig-prename descclassname"><span class="pre">foley.sources.base.</span></span><span class="sig-name descname"><span class="pre">generated_license</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">license_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generator_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generation_prompt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rights_verified</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generator_version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generation_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generation_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generation_prompt_used</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disclosure_recommended</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">watermark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c2pa_manifest_ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overrides</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">license_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">creator_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribution_text</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ai_generated</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#generated_license"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.base.generated_license" title="Link to this definition">#</a></dt>
+<dd><p>Build a generated <a class="reference internal" href="foley.base.html#foley.base.LicenseRecord" title="foley.base.LicenseRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a>, flags derived + provenance stamped.</p>
 <p>The generation sibling of <a class="reference internal" href="#foley.sources.base.bulk_license" title="foley.sources.base.bulk_license"><code class="xref py py-func docutils literal notranslate"><span class="pre">bulk_license()</span></code></a> / <a class="reference internal" href="#foley.sources.base.api_license" title="foley.sources.base.api_license"><code class="xref py py-func docutils literal notranslate"><span class="pre">api_license()</span></code></a>
 (<code class="docutils literal notranslate"><span class="pre">acquisition_method=generated</span></code>): it routes through the shared
 <code class="xref py py-func docutils literal notranslate"><span class="pre">_build_license()</span></code> core — so the eight permission flags are DERIVED from
@@ -1302,6 +1328,10 @@ credits AI-disclosure line render immediately (#9a already reads it).</p></li>
 <li><p><strong>license_url</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – Optional license URL/label.</p></li>
 <li><p><strong>creator_name</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – Optional creator (usually unset for generation).</p></li>
 <li><p><strong>attribution_text</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – Optional ready-made attribution string.</p></li>
+<li><p><strong>ai_generated</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – <code class="docutils literal notranslate"><span class="pre">True</span></code> (default) for a model’s output. <code class="docutils literal notranslate"><span class="pre">False</span></code> for
+procedural synthesis (a <code class="docutils literal notranslate"><span class="pre">'procedural'</span></code> source, #76): the record then
+has <code class="docutils literal notranslate"><span class="pre">is_ai_generated=False</span></code> and <code class="docutils literal notranslate"><span class="pre">disclosure_recommended=False</span></code>
+(whatever was passed), and still carries the generation-provenance block.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -1309,7 +1339,7 @@ credits AI-disclosure line render immediately (#9a already reads it).</p></li>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>A populated <code class="docutils literal notranslate"><span class="pre">LicenseRecord</span></code> with derived flags applied AND
-<code class="docutils literal notranslate"><span class="pre">is_ai_generated=True</span></code> plus the full generation-provenance block.</p>
+<code class="docutils literal notranslate"><span class="pre">is_ai_generated=ai_generated</span></code> plus the full generation-provenance block.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1433,6 +1463,21 @@ so (#70).</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.base.pad_to_qc_minimum">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.base.</span></span><span class="sig-name descname"><span class="pre">pad_to_qc_minimum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">notes</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#pad_to_qc_minimum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.base.pad_to_qc_minimum" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">(samples,</span> <span class="pre">padded_to_s)</span></code>: a clip shorter than Tier-0 QC admits, padded with
+trailing silence to that minimum (noted), else unchanged with <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<p>For a source whose sounds are legitimately that short (a 50 ms UI blip), which
+<a class="reference internal" href="foley.qc.html#foley.qc.run_qc" title="foley.qc.run_qc"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.qc.run_qc()</span></code></a> would otherwise reject as too short. <code class="docutils literal notranslate"><span class="pre">samples</span></code> is a float
+array, time-first (mono, or <code class="docutils literal notranslate"><span class="pre">(frames,</span> <span class="pre">channels)</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.sources.base.per_clip_license_meta">
 <span class="sig-prename descclassname"><span class="pre">foley.sources.base.</span></span><span class="sig-name descname"><span class="pre">per_clip_license_meta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">license_url</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">creator_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#per_clip_license_meta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.base.per_clip_license_meta" title="Link to this definition">#</a></dt>
 <dd><p>The <code class="docutils literal notranslate"><span class="pre">ClipSpec.meta</span></code> rights fields for a clip that carries its own CC licence.</p>
@@ -1509,6 +1554,33 @@ nor does a float, however whole.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.base.resolve_preset">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.base.</span></span><span class="sig-name descname"><span class="pre">resolve_preset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#resolve_preset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.base.resolve_preset" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">(preset,</span> <span class="pre">note)</span></code>: the category preset a procedural source plays (#76).</p>
+<p><code class="docutils literal notranslate"><span class="pre">preset</span></code> when given (the note is then <code class="docutils literal notranslate"><span class="pre">None</span></code>); else the preset whose keyword
+(<code class="docutils literal notranslate"><span class="pre">config['preset_keywords']</span></code>, a plural <code class="docutils literal notranslate"><span class="pre">s</span></code> allowed) comes first in <code class="docutils literal notranslate"><span class="pre">prompt</span></code>,
+with a note saying so. The source’s <code class="docutils literal notranslate"><span class="pre">config['presets']</span></code> is the SSOT of what it
+plays, so a new procedural source adds presets in its config alone.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"x"</span><span class="p">,</span> <span class="s2">"presets"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"laser"</span><span class="p">:</span> <span class="s2">"laser"</span><span class="p">,</span> <span class="s2">"jump"</span><span class="p">:</span> <span class="s2">"jump"</span><span class="p">},</span>
+<span class="gp">... </span>       <span class="s2">"preset_keywords"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"laser"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"zap"</span><span class="p">],</span> <span class="s2">"jump"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"boing"</span><span class="p">]}}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">resolve_preset</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">"two zaps, then a boing"</span><span class="p">)</span>
+<span class="go">('laser', "preset 'laser' matched from the prompt word 'zap'")</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">resolve_preset</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">"jump"</span><span class="p">)</span>
+<span class="go">('jump', None)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>UnsupportedParameter</strong> – For a preset the source does not have, or no preset and
+    no keyword in the prompt; before any work, so the generation order skips it.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1667,6 +1739,7 @@ block the operator’s key and plan apply again.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.CorpusAdapter.ring"><code class="docutils literal notranslate"><span class="pre">CorpusAdapter.ring</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.GENERATING_KINDS"><code class="docutils literal notranslate"><span class="pre">GENERATING_KINDS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.GenerateAdapter"><code class="docutils literal notranslate"><span class="pre">GenerateAdapter</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.GenerateAdapter.generate"><code class="docutils literal notranslate"><span class="pre">GenerateAdapter.generate()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.GenerateAdapter.name"><code class="docutils literal notranslate"><span class="pre">GenerateAdapter.name</span></code></a></li>
@@ -1709,11 +1782,13 @@ block the operator’s key and plan apply again.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.merge_provider_params"><code class="docutils literal notranslate"><span class="pre">merge_provider_params()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.names_field"><code class="docutils literal notranslate"><span class="pre">names_field()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.native_adherence"><code class="docutils literal notranslate"><span class="pre">native_adherence()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.pad_to_qc_minimum"><code class="docutils literal notranslate"><span class="pre">pad_to_qc_minimum()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.per_clip_license_meta"><code class="docutils literal notranslate"><span class="pre">per_clip_license_meta()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.recorded_params"><code class="docutils literal notranslate"><span class="pre">recorded_params()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.register_corpus"><code class="docutils literal notranslate"><span class="pre">register_corpus()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.require_count"><code class="docutils literal notranslate"><span class="pre">require_count()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.require_params_mapping"><code class="docutils literal notranslate"><span class="pre">require_params_mapping()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.resolve_preset"><code class="docutils literal notranslate"><span class="pre">resolve_preset()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.resolve_source_key"><code class="docutils literal notranslate"><span class="pre">resolve_source_key()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.ring_of"><code class="docutils literal notranslate"><span class="pre">ring_of()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.select_corpora"><code class="docutils literal notranslate"><span class="pre">select_corpora()</span></code></a></li>

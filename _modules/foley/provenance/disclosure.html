@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=97d53703"></script>
+    <script src="../../../_static/documentation_options.js?v=5c5ca7ce"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.103" />
+  <meta name="docsearch:version" content="0.0.104" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -792,6 +792,10 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"</span>
 <span class="p">)</span>
 <span class="n">IPTC_DIGITAL_CREATION</span> <span class="o">=</span> <span class="s2">"http://cv.iptc.org/newscodes/digitalsourcetype/digitalCreation"</span>
+<span class="c1">#: Made purely by an algorithm, from no sampled training data: procedural synthesis (#76).</span>
+<span class="n">IPTC_ALGORITHMIC_MEDIA</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"http://cv.iptc.org/newscodes/digitalsourcetype/algorithmicMedia"</span>
+<span class="p">)</span>
 <span class="c1">#: C2PA vocabulary the mix manifest uses (action names, ingredient relationship, id scheme).</span>
 <span class="n">C2PA_CREATED</span> <span class="o">=</span> <span class="s2">"c2pa.created"</span>
 <span class="n">C2PA_PLACED</span> <span class="o">=</span> <span class="s2">"c2pa.placed"</span>
@@ -1229,6 +1233,16 @@ window.runMermaid = runMermaid;</script>
     <span class="p">)</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_procedural</span><span class="p">(</span><span class="n">lic</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Generated, but not by a model: procedural synthesis (#76; a ``'procedural'`` source)."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">AcquisitionMethod</span>
+
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="ow">not</span> <span class="n">lic</span><span class="o">.</span><span class="n">is_ai_generated</span>
+        <span class="ow">and</span> <span class="n">lic</span><span class="o">.</span><span class="n">acquisition_method</span> <span class="o">==</span> <span class="n">AcquisitionMethod</span><span class="o">.</span><span class="n">generated</span>
+    <span class="p">)</span>
+
+
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>  <span class="c1"># pragma: no cover</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span>
 
@@ -1269,9 +1283,11 @@ window.runMermaid = runMermaid;</script>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">license_meta</span>
 
     <span class="n">lic</span><span class="p">,</span> <span class="n">caption</span><span class="p">,</span> <span class="n">fmt</span> <span class="o">=</span> <span class="n">_coerce</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
-    <span class="n">source_type</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">IPTC_TRAINED_ALGORITHMIC_MEDIA</span> <span class="k">if</span> <span class="n">lic</span><span class="o">.</span><span class="n">is_ai_generated</span> <span class="k">else</span> <span class="n">IPTC_DIGITAL_CREATION</span>
-    <span class="p">)</span>
+    <span class="n">procedural</span> <span class="o">=</span> <span class="n">_procedural</span><span class="p">(</span><span class="n">lic</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">lic</span><span class="o">.</span><span class="n">is_ai_generated</span><span class="p">:</span>
+        <span class="n">source_type</span> <span class="o">=</span> <span class="n">IPTC_TRAINED_ALGORITHMIC_MEDIA</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">source_type</span> <span class="o">=</span> <span class="n">IPTC_ALGORITHMIC_MEDIA</span> <span class="k">if</span> <span class="n">procedural</span> <span class="k">else</span> <span class="n">IPTC_DIGITAL_CREATION</span>
     <span class="c1"># Prefer the record's own URL, else the canonical URL from the licensing SSOT</span>
     <span class="c1"># (a resolvable URL is what a machine-readable credential needs), else the id.</span>
     <span class="n">license_ref</span> <span class="o">=</span> <span class="n">lic</span><span class="o">.</span><span class="n">license_url</span> <span class="ow">or</span> <span class="n">license_meta</span><span class="p">(</span><span class="n">lic</span><span class="o">.</span><span class="n">license_id</span><span class="p">)</span><span class="o">.</span><span class="n">url</span> <span class="ow">or</span> <span class="n">lic</span><span class="o">.</span><span class="n">license_id</span>
@@ -1346,7 +1362,7 @@ window.runMermaid = runMermaid;</script>
         <span class="p">{</span><span class="s2">"label"</span><span class="p">:</span> <span class="s2">"stds.schema-org.CreativeWork"</span><span class="p">,</span> <span class="s2">"data"</span><span class="p">:</span> <span class="n">creative_work</span><span class="p">},</span>
     <span class="p">]</span>
     <span class="c1"># foley-native reproducibility assertion (self-asserted; kept in the local sidecar)</span>
-    <span class="k">if</span> <span class="n">lic</span><span class="o">.</span><span class="n">is_ai_generated</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">lic</span><span class="o">.</span><span class="n">is_ai_generated</span> <span class="ow">or</span> <span class="n">procedural</span><span class="p">:</span>
         <span class="n">assertions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
             <span class="p">{</span>
                 <span class="s2">"label"</span><span class="p">:</span> <span class="s2">"foley.generation"</span><span class="p">,</span>

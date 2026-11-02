@@ -1,0 +1,19 @@
+foley.sources.pyfxr.adapter
+===========================
+
+.. automodule:: foley.sources.pyfxr.adapter
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      Adapter
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Adapter
+      PyfxrAdapter
+   

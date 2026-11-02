@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=97d53703"></script>
+    <script src="../../../_static/documentation_options.js?v=5c5ca7ce"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.103" />
+  <meta name="docsearch:version" content="0.0.104" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -1156,6 +1156,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">commercial_ok</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_INTENDED_USE</span><span class="o">.</span><span class="n">commercial</span><span class="p">,</span>
     <span class="n">session</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"default"</span><span class="p">,</span>
     <span class="n">territory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">preset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Generate a sound from a text prompt (local backends only when offline).</span>
 
@@ -1171,6 +1172,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    (``foley.generations.get(cache_key)``, on the host — bytes never travel over MCP).</span>
 <span class="sd">    ``territory``: where the sound is used (an ISO country code, or ``"WORLD"``); a</span>
 <span class="sd">    backend whose licence excludes territories (HunyuanVideo-Foley) needs it stated.</span>
+<span class="sd">    ``preset``: a category preset for a procedural backend (``backend='pyfxr'``:</span>
+<span class="sd">    ``laser``, ``pickup``, ``explosion``, ...); other backends ignore it with a note.</span>
 <span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerationError</span><span class="p">,</span> <span class="n">generate</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..cost</span><span class="w"> </span><span class="kn">import</span> <span class="n">BudgetExceeded</span><span class="p">,</span> <span class="n">spend_scope</span>
@@ -1232,6 +1235,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">backend</span><span class="o">=</span><span class="n">order</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">order</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">order</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
                 <span class="n">library</span><span class="o">=</span><span class="n">_lib</span><span class="p">(),</span>
                 <span class="n">intended_use</span><span class="o">=</span><span class="n">use</span><span class="p">,</span>
+                <span class="o">**</span><span class="p">({</span><span class="s2">"preset"</span><span class="p">:</span> <span class="n">preset</span><span class="p">}</span> <span class="k">if</span> <span class="n">preset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{}),</span>
             <span class="p">)</span>
         <span class="n">backend</span> <span class="o">=</span> <span class="n">cand</span><span class="o">.</span><span class="n">sound</span><span class="o">.</span><span class="n">license</span><span class="o">.</span><span class="n">source</span> <span class="ow">or</span> <span class="n">backend</span>  <span class="c1"># the one that served it</span>
     <span class="k">except</span> <span class="p">(</span>

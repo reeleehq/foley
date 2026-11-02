@@ -55,6 +55,11 @@ clip.sound.qc["prompt_match"]  # CLAP prompt-vs-audio verdict, or 'unchecked'
 # Several takes on one request, each stored and replayable (seeded: seed, seed+1, …)
 takes = foley.variations("a single wooden door creak", 4, duration_s=3)
 
+# UI and game-style cues, synthesized procedurally (foley[pyfxr]): free, offline, seeded;
+# preset= or a prompt naming one (laser, coin pickup, explosion, power-up, hurt, jump,
+# menu blip). Not AI output, so no watermark or disclosure; licence procedural-free
+clip = foley.generate("a coin pickup", backend="pyfxr", seed=7)
+
 # Sound timed to picture (video-to-audio): video= walks the V2A order (Mirelo SFX 2.0,
 # then Sonilo, both on fal; FOLEY_V2A_ORDER replaces it). Their fal-route output terms
 # are unverified, so name the backend (its licence is then gated by keep()) — #170
@@ -194,15 +199,16 @@ foley agent-install                       # drop the agent kit into ./.claude (s
 foley is **zero-dep at its core** and grows by capability via optional extras — each imported
 lazily, so a bare install stays light. What each adds:
 
-| Extra                                               | Adds                                                                                |
-|-----------------------------------------------------|-------------------------------------------------------------------------------------|
-| `audio`                                             | numpy/soundfile DSP + LUFS mastering                                                |
-| `clap`                                              | the CLAP text↔audio retrieval engine                                                |
-| `index` / `index-sqlite`                            | the hybrid vector+keyword index (LanceDB / sqlite-vec)                              |
-| `freesound` · `stable-audio` · `elevenlabs` · `fal` | live retrieve / generate sources (`fal`: the fal-hosted generators through `falaw`) |
-| `agent` · `local-llm`                               | the SELECT LLM rungs (Claude / a local OpenAI-compatible endpoint)                  |
-| `align` · `weave` · `provenance` · `c2pa`           | word timing (WhisperX), OTIO/rubberband, watermarking, signed C2PA                  |
-| `mcp` · `obs`                                       | the MCP server · OpenTelemetry export                                               |
+| Extra                                               | Adds                                                                                                     |
+|-----------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| `audio`                                             | numpy/soundfile DSP + LUFS mastering                                                                     |
+| `clap`                                              | the CLAP text↔audio retrieval engine                                                                     |
+| `index` / `index-sqlite`                            | the hybrid vector+keyword index (LanceDB / sqlite-vec)                                                   |
+| `freesound` · `stable-audio` · `elevenlabs` · `fal` | live retrieve / generate sources (`fal`: the fal-hosted generators through `falaw`)                      |
+| `pyfxr`                                             | procedural sfxr-style cues (UI blips, lasers, coins): free, offline, seeded, no licence attached, not AI |
+| `agent` · `local-llm`                               | the SELECT LLM rungs (Claude / a local OpenAI-compatible endpoint)                                       |
+| `align` · `weave` · `provenance` · `c2pa`           | word timing (WhisperX), OTIO/rubberband, watermarking, signed C2PA                                       |
+| `mcp` · `obs`                                       | the MCP server · OpenTelemetry export                                                                    |
 
 **Nothing paid runs unless you ask for it.** Having `ANTHROPIC_API_KEY` set does not switch the SELECT rungs to Claude: pass `llm="anthropic"` to `find()` / `score()` or set `FOLEY_LLM=anthropic` (`llm="local"` uses `FOLEY_LLM_BASE_URL`). By default they run the free deterministic fakes, or your local endpoint if one is configured. `with foley.offline():` (or `FOLEY_OFFLINE=1`) blocks every external source and LLM call foley makes, on every surface, raising `foley.runtime.EgressBlocked` (model weights are never downloaded offline: a model not already cached raises `foley.runtime.ModelNotCached`, naming the command to fetch it while online).
 
