@@ -147,7 +147,7 @@ def edit_lineage(
     """
     from ..licensing import derivative_refusal
     from ..provenance.credits import attribution_line
-    from .video import recorded_video_key
+    from .media import recorded_media_key
 
     if derived_from is None:
         raise EditRefusal(
@@ -174,7 +174,7 @@ def edit_lineage(
             source_id=source_id,
             reason=why,
         )
-    content = recorded_video_key(affordances["audio"])  # a URL without its token
+    content = recorded_media_key(affordances["audio"])  # a URL without its token
     if (
         record is not None
         and record.content_sha256

@@ -248,7 +248,7 @@ class FalAdapter:
         """The exact payload this adapter sends for ``prompt`` and translated ``affordances``."""
         from .._dispatch import native_request
 
-        from ..video import MEDIA
+        from ..media import MEDIA
 
         reject_renamed(affordances)  # generate() builds its payload here too
         nd = self.config.get("native_defaults") or {}
@@ -314,17 +314,17 @@ class FalAdapter:
     def _media_url(self, media, *, kind: str = "video") -> str:
         """The URL fal fetches a media input from: a URL as is, a path or bytes uploaded
         (bytes through a temporary file named by their sniffed format,
-        :meth:`foley.sources.video.MediaInput.suffix`)."""
-        from ..video import MEDIA, local_video_file, video_url
+        :meth:`foley.sources.media.MediaInput.suffix`)."""
+        from ..media import MEDIA, local_media_file, media_url
 
-        url = video_url(media)
+        url = media_url(media)
         if url is not None:
             return url
         key = self.api_key  # a missing key is its own, clearer refusal
         raw = isinstance(media, (bytes, bytearray))
         suffix = MEDIA[kind].suffix(media) if raw else None
         try:
-            with local_video_file(media, suffix=suffix) as path:
+            with local_media_file(media, suffix=suffix) as path:
                 return self._uploader(path, api_key=key)
         except Exception as exc:  # nothing was generated, so nothing was billed
             raise SourceConfigurationError(  # the type only: no path or URL in notes
@@ -361,13 +361,13 @@ class FalAdapter:
         The key is also what the request was keyed on, so the answered request matches
         the planned one and a repeat is served from the generations cache.
         """
-        from ..video import MEDIA_INPUTS, recorded_video_key
+        from ..media import MEDIA_INPUTS, recorded_media_key
 
         out = dict(args)
         for name in MEDIA_INPUTS:
             field = (self.config["param_map"].get(name) or {}).get("native_name")
             if field in out and affordances.get(name) is not None:
-                out[field] = recorded_video_key(affordances[name])
+                out[field] = recorded_media_key(affordances[name])
         return out
 
     def generate(
@@ -530,7 +530,7 @@ def _compute_seconds(metrics: Optional[dict], field: Optional[str]):
 
 def _audio_seconds(audio: bytes) -> Optional[float]:
     """The length of encoded ``audio`` in seconds, or ``None`` when it cannot be read."""
-    from ..video import audio_seconds
+    from ..media import audio_seconds
 
     return audio_seconds(audio)
 

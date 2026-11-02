@@ -212,7 +212,7 @@ from .sources import (
     candidate_of,
 )
 from .sources import generate as _generate_backend
-from .sources.video import RemoteVideo  # a video URL keyed by its content (#173)
+from .sources.media import RemoteVideo  # a video URL keyed by its content (#173)
 
 # --- eval: Tier-1 retrieval metrics + the nDCG PR gate (numpy lazy) -----------
 from . import eval  # noqa: A004 - deliberate: foley.eval is the retrieval-eval subpackage

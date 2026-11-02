@@ -132,14 +132,14 @@ def backend_is_paid(backend: str) -> bool:
 
 def generation_mode(affordances: Mapping) -> str:
     """``'v2a'`` when the call gives a ``video``, ``'edit'`` when it gives an ``audio``
-    (and no video), else ``'t2a'`` (see :data:`foley.sources.video.MEDIA`).
+    (and no video), else ``'t2a'`` (see :data:`foley.sources.media.MEDIA`).
 
     >>> generation_mode({"video": "clip.mp4"}), generation_mode({"duration_s": 2})
     ('v2a', 't2a')
     >>> generation_mode({"audio": b"RIFF"})
     'edit'
     """
-    from .video import MEDIA
+    from .media import MEDIA
 
     return next(
         (m.mode for m in MEDIA.values() if affordances.get(m.name) is not None),
@@ -1231,7 +1231,7 @@ def generate(*args, **kwargs) -> IngestReport:
     """
     from ..obs.recorder import facade_run
     from ..obs.run_artifact import ingest_digest
-    from .video import keyed
+    from .media import keyed
 
     prompt = args[0] if args else kwargs.get("prompt")
     backend = kwargs.get("backend") or default_generate_backend(
