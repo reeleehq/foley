@@ -28,6 +28,7 @@ from .indexes import (
     lancedb_available,
     sqlite_vec_loadable,
 )
+from .license_sidecar import SidecarError, find_sidecar, sidecar_license
 from .ingest import (
     IngestReport,
     IngestResult,
@@ -73,6 +74,9 @@ __all__ = [
     # ingestion
     "ingest_one",
     "ingest_folder",
+    "sidecar_license",
+    "find_sidecar",
+    "SidecarError",
     "resolve_ingest_license",
     "restamp_rights",
     "IngestResult",
