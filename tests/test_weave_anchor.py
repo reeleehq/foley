@@ -29,6 +29,10 @@ def test_parse_bed_is_sentence_span():
     assert p.anchor is Anchor.sentence and p.ref == "rain"
     p2 = parse_symbolic_anchor(None, layer=Layer.ambience, loop=True)
     assert p2.anchor is Anchor.sentence and p2.ref is None
+    # an unquoted span phrase names no word: "the" must not fuzzy-claim a word (#266)
+    p3 = parse_symbolic_anchor("under the whole line", layer=Layer.ambience)
+    assert p3.anchor is Anchor.sentence and p3.ref is None
+    assert resolve_anchor(p3, WT) == (0.0, 2.6)
 
 
 def test_parse_stinger_is_scene_boundary():

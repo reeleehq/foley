@@ -201,7 +201,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'creaked'"
       }
     ],
     "answer_clip_ids": {
@@ -227,7 +227,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'knocks'"
       }
     ],
     "answer_clip_ids": {
@@ -253,7 +253,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'clicked'"
       }
     ],
     "answer_clip_ids": {
@@ -279,7 +279,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'slammed'"
       }
     ],
     "answer_clip_ids": {
@@ -305,7 +305,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -331,7 +331,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -357,7 +357,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'dripped'"
       }
     ],
     "answer_clip_ids": {
@@ -383,7 +383,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'drummed'"
       }
     ],
     "answer_clip_ids": {
@@ -409,7 +409,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -435,7 +435,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -461,7 +461,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -487,7 +487,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'moaning'"
       }
     ],
     "answer_clip_ids": {
@@ -513,7 +513,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -539,7 +539,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'snapped'"
       }
     ],
     "answer_clip_ids": {
@@ -565,7 +565,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -591,7 +591,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'struck'"
       }
     ],
     "answer_clip_ids": {
@@ -617,7 +617,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'clatter'"
       }
     ],
     "answer_clip_ids": {
@@ -643,7 +643,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'set'"
       }
     ],
     "answer_clip_ids": {
@@ -669,7 +669,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'rattled'"
       }
     ],
     "answer_clip_ids": {
@@ -695,7 +695,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -721,7 +721,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'strikes'"
       }
     ],
     "answer_clip_ids": {
@@ -747,7 +747,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'rasped'"
       }
     ],
     "answer_clip_ids": {
@@ -773,7 +773,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'whirred'"
       }
     ],
     "answer_clip_ids": {
@@ -799,7 +799,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'clicking'"
       }
     ],
     "answer_clip_ids": {
@@ -825,7 +825,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'barked'"
       }
     ],
     "answer_clip_ids": {
@@ -851,7 +851,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'growled'"
       }
     ],
     "answer_clip_ids": {
@@ -877,7 +877,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'panting'"
       }
     ],
     "answer_clip_ids": {
@@ -903,7 +903,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'whined'"
       }
     ],
     "answer_clip_ids": {
@@ -929,7 +929,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'started'"
       }
     ],
     "answer_clip_ids": {
@@ -955,7 +955,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'thudded'"
       }
     ],
     "answer_clip_ids": {
@@ -981,7 +981,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'honked'"
       }
     ],
     "answer_clip_ids": {
@@ -1007,7 +1007,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'screeched'"
       }
     ],
     "answer_clip_ids": {
@@ -1033,7 +1033,7 @@
         "diegetic": false,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -1059,7 +1059,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'applause'"
       }
     ],
     "answer_clip_ids": {
@@ -1085,7 +1085,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'cheers'"
       }
     ],
     "answer_clip_ids": {
@@ -1111,7 +1111,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'gasped'"
       }
     ],
     "answer_clip_ids": {
@@ -1137,7 +1137,7 @@
         "diegetic": false,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'rushed'"
       }
     ],
     "answer_clip_ids": {
@@ -1163,7 +1163,7 @@
         "diegetic": false,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'boom'"
       }
     ],
     "answer_clip_ids": {
@@ -1189,7 +1189,7 @@
         "diegetic": false,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -1215,7 +1215,7 @@
         "diegetic": false,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'revealed'"
       }
     ],
     "answer_clip_ids": {
@@ -1241,7 +1241,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'squeaked'"
       }
     ],
     "answer_clip_ids": {
@@ -1267,7 +1267,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'clanged'"
       }
     ],
     "answer_clip_ids": {
@@ -1293,7 +1293,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'banged'"
       }
     ],
     "answer_clip_ids": {
@@ -1319,7 +1319,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'footsteps'"
       }
     ],
     "answer_clip_ids": {
@@ -1345,7 +1345,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'climbed'"
       }
     ],
     "answer_clip_ids": {
@@ -1371,7 +1371,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'creak'"
       }
     ],
     "answer_clip_ids": {
@@ -1397,7 +1397,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'crunched'"
       }
     ],
     "answer_clip_ids": {
@@ -1423,7 +1423,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'crunched'"
       }
     ],
     "answer_clip_ids": {
@@ -1449,7 +1449,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'waded'"
       }
     ],
     "answer_clip_ids": {
@@ -1475,7 +1475,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'clicked'"
       }
     ],
     "answer_clip_ids": {
@@ -1501,7 +1501,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'splashing'"
       }
     ],
     "answer_clip_ids": {
@@ -1527,7 +1527,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'pounded'"
       }
     ],
     "answer_clip_ids": {
@@ -1553,7 +1553,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -1579,7 +1579,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'cracked'"
       }
     ],
     "answer_clip_ids": {
@@ -1605,7 +1605,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -1631,7 +1631,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -1657,7 +1657,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -1683,7 +1683,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -1709,7 +1709,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -1735,7 +1735,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'crashed'"
       }
     ],
     "answer_clip_ids": {
@@ -1761,7 +1761,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -1787,7 +1787,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'whistled'"
       }
     ],
     "answer_clip_ids": {
@@ -1813,7 +1813,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'bubbled'"
       }
     ],
     "answer_clip_ids": {
@@ -1839,7 +1839,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'sizzled'"
       }
     ],
     "answer_clip_ids": {
@@ -1865,7 +1865,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'scraped'"
       }
     ],
     "answer_clip_ids": {
@@ -1891,7 +1891,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'clinking'"
       }
     ],
     "answer_clip_ids": {
@@ -1917,7 +1917,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'chopped'"
       }
     ],
     "answer_clip_ids": {
@@ -1943,7 +1943,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'beeped'"
       }
     ],
     "answer_clip_ids": {
@@ -1969,7 +1969,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'whirred'"
       }
     ],
     "answer_clip_ids": {
@@ -1995,7 +1995,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'popped'"
       }
     ],
     "answer_clip_ids": {
@@ -2021,7 +2021,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'turned'"
       }
     ],
     "answer_clip_ids": {
@@ -2047,7 +2047,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'crumpled'"
       }
     ],
     "answer_clip_ids": {
@@ -2073,7 +2073,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'tore'"
       }
     ],
     "answer_clip_ids": {
@@ -2099,7 +2099,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'scribbled'"
       }
     ],
     "answer_clip_ids": {
@@ -2125,7 +2125,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'scratched'"
       }
     ],
     "answer_clip_ids": {
@@ -2151,7 +2151,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'clacked'"
       }
     ],
     "answer_clip_ids": {
@@ -2177,7 +2177,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'glugging'"
       }
     ],
     "answer_clip_ids": {
@@ -2203,7 +2203,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'popped'"
       }
     ],
     "answer_clip_ids": {
@@ -2229,7 +2229,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'fizzed'"
       }
     ],
     "answer_clip_ids": {
@@ -2255,7 +2255,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'clanged'"
       }
     ],
     "answer_clip_ids": {
@@ -2281,7 +2281,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'rang'"
       }
     ],
     "answer_clip_ids": {
@@ -2307,7 +2307,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'wobbled'"
       }
     ],
     "answer_clip_ids": {
@@ -2333,7 +2333,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'rustling'"
       }
     ],
     "answer_clip_ids": {
@@ -2359,7 +2359,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'ripped'"
       }
     ],
     "answer_clip_ids": {
@@ -2385,7 +2385,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'zipped'"
       }
     ],
     "answer_clip_ids": {
@@ -2411,7 +2411,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'meowed'"
       }
     ],
     "answer_clip_ids": {
@@ -2437,7 +2437,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'purred'"
       }
     ],
     "answer_clip_ids": {
@@ -2463,7 +2463,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'hissed'"
       }
     ],
     "answer_clip_ids": {
@@ -2489,7 +2489,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -2515,7 +2515,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'cawed'"
       }
     ],
     "answer_clip_ids": {
@@ -2541,7 +2541,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -2567,7 +2567,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'galloped'"
       }
     ],
     "answer_clip_ids": {
@@ -2593,7 +2593,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'neighed'"
       }
     ],
     "answer_clip_ids": {
@@ -2619,7 +2619,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'clopping'"
       }
     ],
     "answer_clip_ids": {
@@ -2645,7 +2645,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -2671,7 +2671,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'buzzed'"
       }
     ],
     "answer_clip_ids": {
@@ -2697,7 +2697,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'whined'"
       }
     ],
     "answer_clip_ids": {
@@ -2723,7 +2723,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -2749,7 +2749,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'clattered'"
       }
     ],
     "answer_clip_ids": {
@@ -2775,7 +2775,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'screeched'"
       }
     ],
     "answer_clip_ids": {
@@ -2801,7 +2801,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'rang'"
       }
     ],
     "answer_clip_ids": {
@@ -2827,7 +2827,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'whirred'"
       }
     ],
     "answer_clip_ids": {
@@ -2853,7 +2853,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'chugged'"
       }
     ],
     "answer_clip_ids": {
@@ -2879,7 +2879,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'dipping'"
       }
     ],
     "answer_clip_ids": {
@@ -2905,7 +2905,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -2931,7 +2931,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'thumping'"
       }
     ],
     "answer_clip_ids": {
@@ -2957,7 +2957,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'breathing'"
       }
     ],
     "answer_clip_ids": {
@@ -2983,7 +2983,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'clap'"
       }
     ],
     "answer_clip_ids": {
@@ -3009,7 +3009,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'tolled'"
       }
     ],
     "answer_clip_ids": {
@@ -3035,7 +3035,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'rang'"
       }
     ],
     "answer_clip_ids": {
@@ -3061,7 +3061,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -3087,7 +3087,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -3113,7 +3113,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'rang'"
       }
     ],
     "answer_clip_ids": {
@@ -3139,7 +3139,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'chimed'"
       }
     ],
     "answer_clip_ids": {
@@ -3165,7 +3165,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'rang'"
       }
     ],
     "answer_clip_ids": {
@@ -3191,7 +3191,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'buzzed'"
       }
     ],
     "answer_clip_ids": {
@@ -3217,7 +3217,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'pinged'"
       }
     ],
     "answer_clip_ids": {
@@ -3243,7 +3243,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -3269,7 +3269,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -3295,7 +3295,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -3321,7 +3321,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -3347,7 +3347,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -3373,7 +3373,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'clanged'"
       }
     ],
     "answer_clip_ids": {
@@ -3399,7 +3399,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'rubbed'"
       }
     ],
     "answer_clip_ids": {
@@ -3425,7 +3425,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'worked'"
       }
     ],
     "answer_clip_ids": {
@@ -3451,7 +3451,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'thud'"
       }
     ],
     "answer_clip_ids": {
@@ -3477,7 +3477,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'snapped'"
       }
     ],
     "answer_clip_ids": {
@@ -3503,7 +3503,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'dragged'"
       }
     ],
     "answer_clip_ids": {
@@ -3529,7 +3529,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'jingled'"
       }
     ],
     "answer_clip_ids": {
@@ -3555,7 +3555,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'chimed'"
       }
     ],
     "answer_clip_ids": {
@@ -3581,7 +3581,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'knocks'"
       }
     ],
     "answer_clip_ids": {
@@ -3607,7 +3607,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'opened'"
       }
     ],
     "answer_clip_ids": {
@@ -3633,7 +3633,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -3659,7 +3659,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'scraped'"
       }
     ],
     "answer_clip_ids": {
@@ -3685,7 +3685,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -3711,7 +3711,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'thump'"
       }
     ],
     "answer_clip_ids": {
@@ -3737,7 +3737,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'splash'"
       }
     ],
     "answer_clip_ids": {
@@ -3763,7 +3763,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -3789,7 +3789,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -3815,7 +3815,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -3841,7 +3841,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -3867,7 +3867,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'whispered'"
       }
     ],
     "answer_clip_ids": {
@@ -3893,7 +3893,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -3919,7 +3919,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'shattered'"
       }
     ],
     "answer_clip_ids": {
@@ -3945,7 +3945,7 @@
         "diegetic": true,
         "salience": "high",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'crash'"
       }
     ],
     "answer_clip_ids": {
@@ -3971,7 +3971,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'cracked'"
       }
     ],
     "answer_clip_ids": {
@@ -3997,7 +3997,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'ripped'"
       }
     ],
     "answer_clip_ids": {
@@ -4023,7 +4023,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "on 'creaked'"
       }
     ],
     "answer_clip_ids": {
@@ -4049,7 +4049,7 @@
         "diegetic": true,
         "salience": "medium",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {
@@ -4075,7 +4075,7 @@
         "diegetic": true,
         "salience": "low",
         "audioset": [],
-        "onset_hint": "on cue"
+        "onset_hint": "under the whole line"
       }
     ],
     "answer_clip_ids": {

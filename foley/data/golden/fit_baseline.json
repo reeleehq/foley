@@ -17,7 +17,7 @@
   "golden": {
     "revision": "gld-v2",
     "n_items": 156,
-    "seed_sha256": "bf5a611b38a4ab79a79fa1542369d6627d18f730a7ce34b72d11c666e69e6ee0"
+    "seed_sha256": "96b65b21756b0cd49845667da7827c5433f556570dc7d7c691c5dc01ff098d88"
   },
-  "updated_at": "2026-10-26"
+  "updated_at": "2026-11-02"
 }
