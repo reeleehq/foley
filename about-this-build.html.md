@@ -4,8 +4,10 @@
 
 This documentation was built on **2026-11-02 01:12 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/3b947168cdb29aa06b777f837dc96b08c4d09873"><code>3b94716</code></a> on branch <code>main</code>, for **foley 0.0.104** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.104) is behind the latest release on PyPI (0.0.105): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
@@ -22,9 +24,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41371006467">41371006467</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41371016367">41371016367</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>c5c212a6cd486b57da83dba9aaad69da8202f162</code> (in the history of the built commit) |
+| Event commit | <code>3b947168cdb29aa06b777f837dc96b08c4d09873</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -49,7 +51,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.104/">0.0.104</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.105/">0.0.105</a>, newer than the documented version (0.0.104).
 
 ## Reproduce
 
