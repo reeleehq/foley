@@ -1239,21 +1239,35 @@ def rights_license_id(record: LicenseRecord) -> Optional[str]:
     ``None``, since a ``Rights`` record has one licence field and the source's public
     code would drop the clip's restriction (Stability's revenue cap).
 
-    >>> rights_license_id(LicenseRecord(source="s", license_id="CC-BY-4.0", rights_verified=True))
+    The final gate, whatever the path (an edit, a restamp, a broadcast, a plain
+    record), is :func:`code_implies_at_most`: a code that would let a consumer do more
+    than the record allows gives ``None`` (#274). No other code stands in: CC BY-NC-SA
+    is not what a CC BY-SA record bounded by CC BY-NC may be released under (BY-SA
+    requires adaptations under BY-SA or a compatible licence, and NC-SA is neither).
+
+    >>> def rec(lid, *lineage):
+    ...     return apply_license_flags(LicenseRecord(source="s", license_id=lid,
+    ...         rights_verified=True, derived_from_license_ids=list(lineage)))
+    >>> rights_license_id(rec("CC-BY-4.0"))
     'CC-BY-4.0'
-    >>> rights_license_id(LicenseRecord(source="g", license_id="elevenlabs-free-plan",
-    ...     rights_verified=True, derived_from_license_ids=["CC-BY-4.0"]))
+    >>> rights_license_id(rec("elevenlabs-free-plan", "CC-BY-4.0"))
     'elevenlabs-free-plan'
-    >>> rights_license_id(LicenseRecord(source="g", license_id="procedural-free",
-    ...     rights_verified=True, derived_from_license_ids=["CC-BY-NC-4.0"]))
+    >>> rights_license_id(rec("procedural-free", "CC-BY-NC-4.0"))
     'CC-BY-NC-4.0'
-    >>> rights_license_id(LicenseRecord(source="g", license_id="Stability-Community",
-    ...     rights_verified=True, derived_from_license_ids=["CC-BY-4.0"])) is None
+    >>> rights_license_id(rec("Stability-Community", "CC-BY-4.0")) is None
     True
-    >>> rights_license_id(LicenseRecord(source="g", license_id="Stability-Community",
-    ...     rights_verified=True, derived_from_license_ids=["Tencent-Hunyuan-Community"])) is None
+    >>> rights_license_id(rec("Stability-Community", "Tencent-Hunyuan-Community")) is None
+    True
+    >>> rights_license_id(rec("CC-BY-SA-4.0", "CC-BY-NC-4.0")) is None
     True
     """
+    code = _strictest_license_id(record)
+    return code if code_implies_at_most(code, record) else None
+
+
+def _strictest_license_id(record: LicenseRecord) -> Optional[str]:
+    """The most restrictive licence of ``record``'s chain, by consumer class
+    (:func:`rights_license_id` before its final gate)."""
     if not record.rights_verified:
         return None
     own = record.license_id
@@ -1285,6 +1299,91 @@ def carries_own_restriction(license_id: str) -> bool:
     """
     flags = LICENSE_FLAGS.get(license_id, UNKNOWN_LICENSE_FLAGS)
     return flags.revenue_cap_usd is not None or license_id in LICENSE_TERMS_PROVIDER
+
+
+def granted_flags(license_id: Optional[str]) -> LicenseFlags:
+    """What ``license_id`` grants anyone, as a consumer reads its code (fail closed).
+
+    Its :data:`LICENSE_FLAGS` row; for a share-alike licence foley can name, the row
+    of its family without the share-alike term (CC BY-SA 4.0 grants what CC BY 4.0
+    does, under the obligation to share alike): :data:`SHARE_ALIKE_LICENSE_FLAGS` is
+    what foley grants *itself* under it, not what the licence grants. Else all False.
+
+    >>> granted_flags("CC-BY-SA-4.0") == LICENSE_FLAGS["CC-BY-4.0"]
+    True
+    >>> granted_flags("CC-BY-NC-SA-3.0") == LICENSE_FLAGS["CC-BY-NC-3.0"]
+    True
+    >>> granted_flags(None) == UNKNOWN_LICENSE_FLAGS
+    True
+    """
+    if license_id in SHARE_ALIKE_FLAGS:
+        license_id = license_id.replace("-SA-", "-")
+    return LICENSE_FLAGS.get(license_id, UNKNOWN_LICENSE_FLAGS)
+
+
+def _license_chain(record: LicenseRecord) -> "tuple[str, ...]":
+    """``record``'s own licence id, then every licence it derives from."""
+    return (record.license_id, *derived_license_ids(record))
+
+
+#: The permissions a licence code tells a consumer about. ``ai_training_ok`` is not one
+#: (like ``cache_bytes_ok``): neither ``lacing.Rights`` nor ``an``'s ``AssetSource``
+#: has an AI field and no consumer class reads it, so an AI-use restriction travels in
+#: the export's provenance (its flags, ``ai_training_scope``, ``gen_ai_preference``).
+_CODE_PERMISSIONS = (
+    "commercial_ok",
+    "embed_in_derivative_ok",
+    "redistribute_standalone_ok",
+    "modification_ok",
+)
+
+
+def _no_wider(flags: LicenseFlags, bound: LicenseFlags) -> bool:
+    """Whether ``flags`` allows nothing ``bound`` does not: each of
+    :data:`_CODE_PERMISSIONS`, owing no attribution ``bound`` owes, a cap no higher."""
+    cap, bound_cap = flags.revenue_cap_usd, bound.revenue_cap_usd
+    return (
+        all(getattr(bound, n) or not getattr(flags, n) for n in _CODE_PERMISSIONS)
+        and (flags.requires_attribution or not bound.requires_attribution)
+        and (bound_cap is None or (cap is not None and cap <= bound_cap))
+    )
+
+
+def code_implies_at_most(code: Optional[str], record: LicenseRecord) -> bool:
+    """Whether exporting ``record`` under the licence ``code`` tells a consumer no
+    more than ``record`` allows (``None``, UNKNOWN, implies nothing).
+
+    Every one must hold (:func:`_no_wider`: the permissions of
+    :data:`_CODE_PERMISSIONS`, attribution, the revenue cap):
+
+    * the code's row (what foley derives under it) is no wider than the record's own
+      flags, so a narrowing the record holds is never dropped;
+    * what the code grants anyone (:func:`granted_flags`) is no wider than what each
+      licence of the record's chain grants, so a lineage restriction is never dropped
+      (needed for share-alike, whose flags are foley's self-limit and show none);
+    * it excludes every territory the chain excludes (:func:`excluded_territories`);
+    * it is every share-alike licence of the chain: no other licence (another
+      version, CC BY-NC-SA for CC BY-SA) satisfies a share-alike term.
+
+    AI use is not compared: a code says nothing a consumer reads about it, so the
+    consumer reads it from the export's provenance (see :data:`_CODE_PERMISSIONS`).
+
+    >>> sa_nc = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-SA-4.0",
+    ...     derived_from_license_ids=["CC-BY-NC-4.0"]))
+    >>> [code_implies_at_most(c, sa_nc) for c in ("CC-BY-SA-4.0", "CC-BY-NC-4.0",
+    ...                                           "CC-BY-NC-SA-4.0", None)]
+    [False, False, False, True]
+    """
+    if code is None:
+        return True
+    chain, granted = _license_chain(record), granted_flags(code)
+    return (
+        _no_wider(derive_license_flags(code), _flags_of(record))
+        and all(_no_wider(granted, granted_flags(i)) for i in chain)
+        and set(excluded_territories(record))
+        <= LICENSE_EXCLUDED_TERRITORIES.get(code, frozenset())
+        and all(code == i for i in chain if is_share_alike(i))
+    )
 
 
 def derivative_refusal(source: LicenseRecord) -> Optional[str]:
