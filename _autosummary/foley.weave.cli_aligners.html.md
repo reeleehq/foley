@@ -25,12 +25,10 @@ Installation and the trade-offs between the aligners: `misc/docs/aligners.md`.
 
 ### Module Attributes
 
-| [`Runner`](#foley.weave.cli_aligners.Runner)           | Runs a command (`subprocess.run`'s signature); injected in tests.                                                                                           |
-|-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`MFA_MODELS`](#foley.weave.cli_aligners.MFA_MODELS)       | MFA's (dictionary, acoustic model) per foley language code; names as in `mfa model download`.                                                               |
+|-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`AENEAS_LANGUAGES`](#foley.weave.cli_aligners.AENEAS_LANGUAGES) | aeneas task languages (ISO 639-3) per foley language code.                                                                                                  |
 | [`UNKNOWN_TOKENS`](#foley.weave.cli_aligners.UNKNOWN_TOKENS)   | The tokens an aligner writes for a word it could not spell (MFA's out-of-vocabulary marker); each stands for whichever transcript word(s) sit at its place. |
-| [`ERROR_TAIL_CHARS`](#foley.weave.cli_aligners.ERROR_TAIL_CHARS) | How much of a failed program's output an error quotes (its tail, in characters).                                                                            |
 | [`MFA_INSTALL`](#foley.weave.cli_aligners.MFA_INSTALL)      | Install hints, printed when the program is missing.                                                                                                         |
 
 ### Functions
@@ -40,7 +38,6 @@ Installation and the trade-offs between the aligners: `misc/docs/aligners.md`.
 | [`parse_aeneas_json`](#foley.weave.cli_aligners.parse_aeneas_json)(text)                         | aeneas's JSON sync map (one fragment per word) → `word_timeline`.              |
 | [`parse_mfa_json`](#foley.weave.cli_aligners.parse_mfa_json)(text)                            | MFA's `--output_format json` → `word_timeline` (silences dropped).             |
 | [`run_cli_aligner`](#foley.weave.cli_aligners.run_cli_aligner)(audio, sample_rate, words, ...) | Align `words` to `audio` with an external program; return its `word_timeline`. |
-| [`with_program_dir_on_path`](#foley.weave.cli_aligners.with_program_dir_on_path)(program)               | This process's environment with `program`'s directory first on `PATH`.         |
 
 ### Classes
 
@@ -76,10 +73,6 @@ Align `transcript` to `audio`; `[]` when there is no transcript.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
-
-### foley.weave.cli_aligners.ERROR_TAIL_CHARS *= 800*
-
-How much of a failed program’s output an error quotes (its tail, in characters).
 
 ### *class* foley.weave.cli_aligners.MFAAligner(\*, mfa='mfa', models=None, extra_args=(), timeout=None, runner=<function run>)
 
@@ -118,12 +111,6 @@ Install hints, printed when the program is missing.
 
 MFA’s (dictionary, acoustic model) per foley language code; names as in
 `mfa model download`. Extend with `MFAAligner(models={...})`.
-
-### foley.weave.cli_aligners.Runner
-
-Runs a command (`subprocess.run`’s signature); injected in tests.
-
-alias of `Callable`[[…], [`subprocess.CompletedProcess`](https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess)]
 
 ### foley.weave.cli_aligners.UNKNOWN_TOKENS *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= frozenset({'<oov>', '<unk>', 'spn'})*
 
@@ -196,15 +183,3 @@ this process’s); `timeout` (seconds) bounds the run.
   * [**TimeoutExpired**](https://docs.python.org/3/library/subprocess.html#subprocess.TimeoutExpired) – If it runs past `timeout`.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
-
-### foley.weave.cli_aligners.with_program_dir_on_path(program)
-
-This process’s environment with `program`’s directory first on `PATH`.
-
-A conda-installed program (MFA) calls helper binaries (`fstcompile`) from its
-own `bin`, which is on `PATH` only while that env is activated; this makes a
-path to the executable (or a symlink to it) enough. POSIX layout: on Windows a
-conda env keeps its helpers in `Library\bin`, so activate the env there.
-
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]

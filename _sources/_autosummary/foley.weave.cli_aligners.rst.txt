@@ -8,11 +8,9 @@ foley.weave.cli\_aligners
 
    .. autosummary::
    
-      Runner
       MFA_MODELS
       AENEAS_LANGUAGES
       UNKNOWN_TOKENS
-      ERROR_TAIL_CHARS
       MFA_INSTALL
    
    .. rubric:: Functions
@@ -23,7 +21,6 @@ foley.weave.cli\_aligners
       parse_aeneas_json
       parse_mfa_json
       run_cli_aligner
-      with_program_dir_on_path
    
    .. rubric:: Classes
 

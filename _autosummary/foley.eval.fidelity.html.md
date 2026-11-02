@@ -13,9 +13,10 @@ embeddings, toolkits, or versions\*\*.
 
 Pure numpy / stdlib — `numpy` is imported function-locally (`import foley` stays
 dol-only), and the PSD matrix-square-root trace is computed via `numpy.linalg.eigvals`
-(there is **no** `scipy.linalg.sqrtm` in the numpy-only CI env). Reference toolkits
-(`fadtk` / `kadtk`) are optional externals for reproducing exact published numbers;
-the functions here cover the math.
+(there is **no** `scipy.linalg.sqrtm` in the numpy-only CI env). For numbers
+comparable with published ones, [`foley.eval.fadtk.FadtkFidelity`](foley.eval.fadtk.html.md#foley.eval.fadtk.FadtkFidelity) runs the
+reference toolkit (`fadtk`) in its own interpreter and returns the same
+[`FidelityResult`](#foley.eval.fidelity.FidelityResult), stamped `toolkit='fadtk'`; the functions here cover the math.
 
 ### Functions
 

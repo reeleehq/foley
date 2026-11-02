@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=cdca99f8"></script>
+    <script src="../_static/documentation_options.js?v=fa321392"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.121" />
+  <meta name="docsearch:version" content="0.0.122" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -376,6 +376,8 @@
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.panel.html">foley.eval.panel</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.baseline.html">foley.eval.baseline</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.embedder.html">foley.eval.embedder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.fadtk.html">foley.eval.fadtk</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.fadtk_driver.html">foley.eval.fadtk_driver</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.fidelity.html">foley.eval.fidelity</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.fit.html">foley.eval.fit</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.golden.html">foley.eval.golden</a></li>
@@ -398,6 +400,7 @@
 <li class="toctree-l2"><a class="reference internal" href="foley.cli.html">foley.cli</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.cost.html">foley.cost</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.embedded_metadata.html">foley.embedded_metadata</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.external.html">foley.external</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.level.html">foley.level</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.licensing.html">foley.licensing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.prompt_match.html">foley.prompt_match</a></li>
@@ -640,19 +643,22 @@ default). All numpy imports are function-local so <code class="docutils literal 
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.FidelityStamp" title="foley.eval.FidelityStamp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FidelityStamp</span></code></a>(embedding, toolkit, version, ...)</p></td>
 <td><p>Mandatory provenance for a FAD/KAD score — it is meaningless without it.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.FidelityResult" title="foley.eval.FidelityResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FidelityResult</span></code></a>(metric, value, stamp)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.FadtkFidelity" title="foley.eval.FadtkFidelity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FadtkFidelity</span></code></a>(*[, python, model, models, ...])</p></td>
+<td><p>Set-level FAD computed by <code class="docutils literal notranslate"><span class="pre">fadtk</span></code> in a separate interpreter.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.FidelityResult" title="foley.eval.FidelityResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FidelityResult</span></code></a>(metric, value, stamp)</p></td>
 <td><p>A stamped set-level fidelity score (attached to <code class="docutils literal notranslate"><span class="pre">FitReport.fidelity</span></code>).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.Passage" title="foley.eval.Passage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Passage</span></code></a>(id, segments[, audio])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.Passage" title="foley.eval.Passage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Passage</span></code></a>(id, segments[, audio])</p></td>
 <td><p>One narration passage: its segments (what <code class="docutils literal notranslate"><span class="pre">foley.score</span></code> takes) and optional audio.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.PassageTaste" title="foley.eval.PassageTaste"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PassageTaste</span></code></a>(passage_id[, restraint, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.PassageTaste" title="foley.eval.PassageTaste"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PassageTaste</span></code></a>(passage_id[, restraint, ...])</p></td>
 <td><p>The four measurements for one passage (JSON-safe via <code class="xref py py-meth docutils literal notranslate"><span class="pre">to_dict()</span></code>).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.TasteReport" title="foley.eval.TasteReport"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TasteReport</span></code></a>(designer, passages[, thresholds])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.TasteReport" title="foley.eval.TasteReport"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TasteReport</span></code></a>(designer, passages[, thresholds])</p></td>
 <td><p>The tasteful-weave eval over a passage set: per passage + aggregated, plus thresholds.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.TasteThresholds" title="foley.eval.TasteThresholds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TasteThresholds</span></code></a>([sounds_per_sentence, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.TasteThresholds" title="foley.eval.TasteThresholds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TasteThresholds</span></code></a>([sounds_per_sentence, ...])</p></td>
 <td><p>The eval's thresholds in one place (defaults: the module constants).</p></td>
 </tr>
 </tbody>
@@ -667,6 +673,28 @@ default). All numpy imports are function-local so <code class="docutils literal 
 unattended use only once its agreement with the human raters reaches the
 <code class="xref py py-data docutils literal notranslate"><span class="pre">ALPHA_RELIABLE</span></code> band.</p>
 <dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.eval.FadtkFidelity">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.eval.</span></span><span class="sig-name descname"><span class="pre">FadtkFidelity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">python</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'encodec-emb'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">models</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">runner</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">run&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/fadtk.html#FadtkFidelity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.FadtkFidelity" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Set-level FAD computed by <code class="docutils literal notranslate"><span class="pre">fadtk</span></code> in a separate interpreter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>python</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – An interpreter with <code class="docutils literal notranslate"><span class="pre">fadtk</span></code> installed, usually in its own venv
+(default: <code class="docutils literal notranslate"><span class="pre">$FOLEY_FADTK_PYTHON</span></code>; neither set raises with the install).</p></li>
+<li><p><strong>model</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – A key of <code class="docutils literal notranslate"><span class="pre">models</span></code> (default <code class="xref py py-data docutils literal notranslate"><span class="pre">DEFAULT_FADTK_MODEL</span></code>).</p></li>
+<li><p><strong>models</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>]]]</span>) – fadtk name → (loader class, args) (default <code class="xref py py-data docutils literal notranslate"><span class="pre">FADTK_MODELS</span></code>).</p></li>
+<li><p><strong>workers</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – fadtk’s embedding worker processes (each loads the model).</p></li>
+<li><p><strong>env</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]</span>) – The program’s environment (default: this process’s), e.g. to set
+<code class="docutils literal notranslate"><span class="pre">TORCH_HOME</span></code> where the weights are cached.</p></li>
+<li><p><strong>timeout</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span>) – Seconds before the run is abandoned (default: none).</p></li>
+<li><p><strong>runner</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/constants.html#Ellipsis" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">CompletedProcess</span></code></a>]</span>) – Runs the command (default <code class="docutils literal notranslate"><span class="pre">subprocess.run</span></code>).</p></li>
+</ul>
+</dd>
 </dl>
 </dd></dl>
 
@@ -1587,6 +1615,12 @@ once its numbers are stable, which records that judge in <code class="docutils l
 <tr class="row-even"><td><p><a class="reference internal" href="foley.eval.embedder.html#module-foley.eval.embedder" title="foley.eval.embedder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">embedder</span></code></a></p></td>
 <td><p>A deterministic, numpy-only text embedder for the retrieval eval gate.</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="foley.eval.fadtk.html#module-foley.eval.fadtk" title="foley.eval.fadtk"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fadtk</span></code></a></p></td>
+<td><p>Reference FAD from Microsoft's <code class="docutils literal notranslate"><span class="pre">fadtk</span></code>, run in its own interpreter (#48).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="foley.eval.fadtk_driver.html#module-foley.eval.fadtk_driver" title="foley.eval.fadtk_driver"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fadtk_driver</span></code></a></p></td>
+<td><p>The script <a class="reference internal" href="foley.eval.fadtk.html#foley.eval.fadtk.FadtkFidelity" title="foley.eval.fadtk.FadtkFidelity"><code class="xref py py-class docutils literal notranslate"><span class="pre">foley.eval.fadtk.FadtkFidelity</span></code></a> runs inside fadtk's own interpreter.</p></td>
+</tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="foley.eval.fidelity.html#module-foley.eval.fidelity" title="foley.eval.fidelity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fidelity</span></code></a></p></td>
 <td><p>Set-level generation-fidelity — Fréchet Audio Distance (FAD) + Kernel Audio Distance (KAD).</p></td>
 </tr>
@@ -1664,6 +1698,7 @@ once its numbers are stable, which records that judge in <code class="docutils l
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.AlphaResult"><code class="docutils literal notranslate"><span class="pre">AlphaResult</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.FadtkFidelity"><code class="docutils literal notranslate"><span class="pre">FadtkFidelity</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.FidelityResult"><code class="docutils literal notranslate"><span class="pre">FidelityResult</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.FidelityStamp"><code class="docutils literal notranslate"><span class="pre">FidelityStamp</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.FitReport"><code class="docutils literal notranslate"><span class="pre">FitReport</span></code></a><ul class="nav section-nav flex-column">

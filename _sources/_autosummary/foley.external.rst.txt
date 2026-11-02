@@ -1,0 +1,21 @@
+foley.external
+==============
+
+.. automodule:: foley.external
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      Runner
+      ERROR_TAIL_CHARS
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      resolve_program
+      run_program
+      with_program_dir_on_path
+   

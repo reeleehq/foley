@@ -4,10 +4,20 @@ foley.agent.verify
 .. automodule:: foley.agent.verify
 
    
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      AQA_ANSWER_WORDS
+      AUDIOLM_LOAD_KWARGS
+      MODEL_ONLY_LOAD_KWARGS
+   
    .. rubric:: Functions
 
    .. autosummary::
    
+      aqa_conversation
+      qwen2_audio_pipeline
       verify_match
    
    .. rubric:: Classes

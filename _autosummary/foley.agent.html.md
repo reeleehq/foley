@@ -102,17 +102,26 @@ Call Claude for `n` paraphrases; the original `query` is always first.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
-### *class* foley.agent.AudioLMJudge(, pipeline=None, model='Qwen/Qwen2-Audio-7B-Instruct', max_tokens=300, tau=0.5)
+### *class* foley.agent.AudioLMJudge(, pipeline=None, model='Qwen/Qwen2-Audio-7B-Instruct', max_tokens=300, tau=0.5, load_kwargs=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 The audio-LM `listen` rung (`foley[fit]`): Qwen2-Audio “does this contain {event}?”.
 
-`transformers`/`torch` are imported lazily inside [`judge()`](#foley.agent.AudioLMJudge.judge); an injected
-`pipeline` (the test seam, mirroring the Stable-Audio fake-pipeline seam) drives the
-whole byte-decode → prompt → P(yes) → `Verdict` path with no torch. Stashes
-`self.model` + `self.last_response` so `verify_match`’s GenAI span stays
-informative (same getattr contract [`AnthropicJudge`](#foley.agent.AnthropicJudge) uses).
+With no `pipeline`, the first [`judge()`](#foley.agent.AudioLMJudge.judge) loads `model` (`transformers`,
+`torch`, imported lazily; the 7B weights download on first use) and reads
+P(yes) from one forward pass (`qwen2_audio_pipeline()`); later calls reuse it.
+An injected `pipeline` (the test seam, mirroring the Stable-Audio fake-pipeline
+seam) drives the whole byte-decode → prompt → P(yes) → `Verdict` path with
+no torch. Stashes `self.model` + `self.last_response` so `verify_match`’s
+GenAI span stays informative (same getattr contract [`AnthropicJudge`](#foley.agent.AnthropicJudge) uses).
+
+* **Parameters:**
+  * **pipeline** – `(prompt, wav, sr) -> {'p_yes': float}` or yes/no text.
+  * **model** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The Hugging Face checkpoint to load when no pipeline is given.
+  * **max_tokens** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Kept for the GenAI span contract (the read-out generates none).
+  * **tau** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The P(yes) threshold for a match.
+  * **load_kwargs** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – `from_pretrained` options (default `AUDIOLM_LOAD_KWARGS`).
 
 #### judge(event, candidate, , level=VerifyLevel.listen)
 
@@ -234,6 +243,17 @@ Charge one refine loop.
 #### *property* spent_usd *: [float](https://docs.python.org/3/builtins/functions.html#float)*
 
 Dollars charged so far this run (calls of unknown cost count as 0 here).
+
+#### without_generation()
+
+A fresh budget with these limits and the generation fallback off.
+
+For a retrieval-only run (`foley.score(allow_generate=False)`). The copy’s
+counters start at zero; spend made while it is in force is still charged to
+every enclosing budget ([`foley.cost.spend_scope()`](foley.cost.html.md#foley.cost.spend_scope)), so this one’s cap holds.
+
+* **Return type:**
+  [`Budget`](foley.agent.policy.html.md#foley.agent.policy.Budget)
 
 ### *class* foley.agent.ClapJudge
 

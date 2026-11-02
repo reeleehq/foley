@@ -1,0 +1,23 @@
+foley.eval.fadtk
+================
+
+.. automodule:: foley.eval.fadtk
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      FADTK_MODELS
+      DEFAULT_FADTK_MODEL
+      DRIVER
+      FADTK_PYTHON_ENV
+      FADTK_INSTALL
+      MAX_CHANNELS
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      FadtkFidelity
+   

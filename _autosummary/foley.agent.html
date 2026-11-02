@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=cdca99f8"></script>
+    <script src="../_static/documentation_options.js?v=fa321392"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.121" />
+  <meta name="docsearch:version" content="0.0.122" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -376,6 +376,8 @@
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.panel.html">foley.eval.panel</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.baseline.html">foley.eval.baseline</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.embedder.html">foley.eval.embedder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.fadtk.html">foley.eval.fadtk</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.fadtk_driver.html">foley.eval.fadtk_driver</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.fidelity.html">foley.eval.fidelity</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.fit.html">foley.eval.fit</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.golden.html">foley.eval.golden</a></li>
@@ -398,6 +400,7 @@
 <li class="toctree-l2"><a class="reference internal" href="foley.cli.html">foley.cli</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.cost.html">foley.cost</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.embedded_metadata.html">foley.embedded_metadata</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.external.html">foley.external</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.level.html">foley.level</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.licensing.html">foley.licensing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.prompt_match.html">foley.prompt_match</a></li>
@@ -673,15 +676,26 @@ conventions (<code class="docutils literal notranslate"><span class="pre">claude
 
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.agent.AudioLMJudge">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.agent.</span></span><span class="sig-name descname"><span class="pre">AudioLMJudge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">pipeline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Qwen/Qwen2-Audio-7B-Instruct'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_tokens</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">300</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tau</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/agent/verify.html#AudioLMJudge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.agent.AudioLMJudge" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.agent.</span></span><span class="sig-name descname"><span class="pre">AudioLMJudge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">pipeline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Qwen/Qwen2-Audio-7B-Instruct'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_tokens</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">300</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tau</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/agent/verify.html#AudioLMJudge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.agent.AudioLMJudge" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>The audio-LM <code class="docutils literal notranslate"><span class="pre">listen</span></code> rung (<code class="docutils literal notranslate"><span class="pre">foley[fit]</span></code>): Qwen2-Audio “does this contain {event}?”.</p>
-<p><code class="docutils literal notranslate"><span class="pre">transformers</span></code>/<code class="docutils literal notranslate"><span class="pre">torch</span></code> are imported lazily inside <a class="reference internal" href="#foley.agent.AudioLMJudge.judge" title="foley.agent.AudioLMJudge.judge"><code class="xref py py-meth docutils literal notranslate"><span class="pre">judge()</span></code></a>; an injected
-<code class="docutils literal notranslate"><span class="pre">pipeline</span></code> (the test seam, mirroring the Stable-Audio fake-pipeline seam) drives the
-whole byte-decode → prompt → P(yes) → <code class="xref py py-class docutils literal notranslate"><span class="pre">Verdict</span></code> path with no torch. Stashes
-<code class="docutils literal notranslate"><span class="pre">self.model</span></code> + <code class="docutils literal notranslate"><span class="pre">self.last_response</span></code> so <code class="docutils literal notranslate"><span class="pre">verify_match</span></code>’s GenAI span stays
-informative (same getattr contract <a class="reference internal" href="#foley.agent.AnthropicJudge" title="foley.agent.AnthropicJudge"><code class="xref py py-class docutils literal notranslate"><span class="pre">AnthropicJudge</span></code></a> uses).</p>
+<p>With no <code class="docutils literal notranslate"><span class="pre">pipeline</span></code>, the first <a class="reference internal" href="#foley.agent.AudioLMJudge.judge" title="foley.agent.AudioLMJudge.judge"><code class="xref py py-meth docutils literal notranslate"><span class="pre">judge()</span></code></a> loads <code class="docutils literal notranslate"><span class="pre">model</span></code> (<code class="docutils literal notranslate"><span class="pre">transformers</span></code>,
+<code class="docutils literal notranslate"><span class="pre">torch</span></code>, imported lazily; the 7B weights download on first use) and reads
+P(yes) from one forward pass (<code class="xref py py-func docutils literal notranslate"><span class="pre">qwen2_audio_pipeline()</span></code>); later calls reuse it.
+An injected <code class="docutils literal notranslate"><span class="pre">pipeline</span></code> (the test seam, mirroring the Stable-Audio fake-pipeline
+seam) drives the whole byte-decode → prompt → P(yes) → <code class="xref py py-class docutils literal notranslate"><span class="pre">Verdict</span></code> path with
+no torch. Stashes <code class="docutils literal notranslate"><span class="pre">self.model</span></code> + <code class="docutils literal notranslate"><span class="pre">self.last_response</span></code> so <code class="docutils literal notranslate"><span class="pre">verify_match</span></code>’s
+GenAI span stays informative (same getattr contract <a class="reference internal" href="#foley.agent.AnthropicJudge" title="foley.agent.AnthropicJudge"><code class="xref py py-class docutils literal notranslate"><span class="pre">AnthropicJudge</span></code></a> uses).</p>
 <dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pipeline</strong> – <code class="docutils literal notranslate"><span class="pre">(prompt,</span> <span class="pre">wav,</span> <span class="pre">sr)</span> <span class="pre">-&gt;</span> <span class="pre">{'p_yes':</span> <span class="pre">float}</span></code> or yes/no text.</p></li>
+<li><p><strong>model</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – The Hugging Face checkpoint to load when no pipeline is given.</p></li>
+<li><p><strong>max_tokens</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Kept for the GenAI span contract (the read-out generates none).</p></li>
+<li><p><strong>tau</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – The P(yes) threshold for a match.</p></li>
+<li><p><strong>load_kwargs</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span>) – <code class="docutils literal notranslate"><span class="pre">from_pretrained</span></code> options (default <code class="xref py py-data docutils literal notranslate"><span class="pre">AUDIOLM_LOAD_KWARGS</span></code>).</p></li>
+</ul>
+</dd>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="foley.agent.AudioLMJudge.judge">
@@ -847,6 +861,20 @@ Settling a known reservation with an equal actual changes nothing.</p>
 <dt class="sig sig-object py" id="foley.agent.Budget.spent_usd">
 <span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">spent_usd</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></span><a class="headerlink" href="#foley.agent.Budget.spent_usd" title="Link to this definition">#</a></dt>
 <dd><p>Dollars charged so far this run (calls of unknown cost count as 0 here).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.agent.Budget.without_generation">
+<span class="sig-name descname"><span class="pre">without_generation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/agent/policy.html#Budget.without_generation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.agent.Budget.without_generation" title="Link to this definition">#</a></dt>
+<dd><p>A fresh budget with these limits and the generation fallback off.</p>
+<p>For a retrieval-only run (<code class="docutils literal notranslate"><span class="pre">foley.score(allow_generate=False)</span></code>). The copy’s
+counters start at zero; spend made while it is in force is still charged to
+every enclosing budget (<a class="reference internal" href="foley.cost.html#foley.cost.spend_scope" title="foley.cost.spend_scope"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.cost.spend_scope()</span></code></a>), so this one’s cap holds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.agent.policy.html#foley.agent.policy.Budget" title="foley.agent.policy.Budget"><code class="xref py py-class docutils literal notranslate"><span class="pre">Budget</span></code></a></span></p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -1397,6 +1425,7 @@ escalates to the injected/​default judge for that rung and returns <em>its</em
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.Budget.spend_gen"><code class="docutils literal notranslate"><span class="pre">Budget.spend_gen()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.Budget.spend_refine"><code class="docutils literal notranslate"><span class="pre">Budget.spend_refine()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.Budget.spent_usd"><code class="docutils literal notranslate"><span class="pre">Budget.spent_usd</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.Budget.without_generation"><code class="docutils literal notranslate"><span class="pre">Budget.without_generation()</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.ClapJudge"><code class="docutils literal notranslate"><span class="pre">ClapJudge</span></code></a><ul class="nav section-nav flex-column">

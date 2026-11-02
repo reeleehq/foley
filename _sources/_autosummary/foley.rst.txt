@@ -199,6 +199,7 @@
    cli
    cost
    embedded_metadata
+   external
    level
    licensing
    prompt_match

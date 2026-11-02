@@ -1,4 +1,4 @@
-> built 2026-11-02 05:57 UTC from 94ecc95 (main) · foley 0.0.121. Details: build_info.json
+> built 2026-11-02 06:00 UTC from f7b4323 (main) · foley 0.0.122. Details: build_info.json
 
 # index.html.md
 
@@ -217,6 +217,7 @@ lazily, so a bare install stays light. What each adds:
 | `agent` · `local-llm`                               | the SELECT LLM rungs (Claude / a local OpenAI-compatible endpoint)                                       |
 | `align` · `weave` · `provenance` · `c2pa`           | word timing (WhisperX), OTIO/rubberband, watermarking, signed C2PA                                       |
 | `mcp` · `obs`                                       | the MCP server · OpenTelemetry export                                                                    |
+| `fit`                                               | the Qwen2-Audio listen judge for Tier-2 fit eval; reference FAD runs [fadtk in its own venv]()           |
 
 **Nothing paid runs unless you ask for it.** Having `ANTHROPIC_API_KEY` set does not switch the SELECT rungs to Claude: pass `llm="anthropic"` to `find()` / `score()` or set `FOLEY_LLM=anthropic` (`llm="local"` uses `FOLEY_LLM_BASE_URL`). By default they run the free deterministic fakes, or your local endpoint if one is configured. `with foley.offline():` (or `FOLEY_OFFLINE=1`) blocks every external source and LLM call foley makes, on every surface, raising `foley.runtime.EgressBlocked` (model weights are never downloaded offline: a model not already cached raises `foley.runtime.ModelNotCached`, naming the command to fetch it while online).
 
@@ -437,17 +438,26 @@ Call Claude for `n` paraphrases; the original `query` is always first.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
-### *class* foley.agent.AudioLMJudge(, pipeline=None, model='Qwen/Qwen2-Audio-7B-Instruct', max_tokens=300, tau=0.5)
+### *class* foley.agent.AudioLMJudge(, pipeline=None, model='Qwen/Qwen2-Audio-7B-Instruct', max_tokens=300, tau=0.5, load_kwargs=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 The audio-LM `listen` rung (`foley[fit]`): Qwen2-Audio “does this contain {event}?”.
 
-`transformers`/`torch` are imported lazily inside [`judge()`](_autosummary/foley.agent.html.md#foley.agent.AudioLMJudge.judge); an injected
-`pipeline` (the test seam, mirroring the Stable-Audio fake-pipeline seam) drives the
-whole byte-decode → prompt → P(yes) → `Verdict` path with no torch. Stashes
-`self.model` + `self.last_response` so `verify_match`’s GenAI span stays
-informative (same getattr contract [`AnthropicJudge`](_autosummary/foley.agent.html.md#foley.agent.AnthropicJudge) uses).
+With no `pipeline`, the first [`judge()`](_autosummary/foley.agent.html.md#foley.agent.AudioLMJudge.judge) loads `model` (`transformers`,
+`torch`, imported lazily; the 7B weights download on first use) and reads
+P(yes) from one forward pass (`qwen2_audio_pipeline()`); later calls reuse it.
+An injected `pipeline` (the test seam, mirroring the Stable-Audio fake-pipeline
+seam) drives the whole byte-decode → prompt → P(yes) → `Verdict` path with
+no torch. Stashes `self.model` + `self.last_response` so `verify_match`’s
+GenAI span stays informative (same getattr contract [`AnthropicJudge`](_autosummary/foley.agent.html.md#foley.agent.AnthropicJudge) uses).
+
+* **Parameters:**
+  * **pipeline** – `(prompt, wav, sr) -> {'p_yes': float}` or yes/no text.
+  * **model** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The Hugging Face checkpoint to load when no pipeline is given.
+  * **max_tokens** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Kept for the GenAI span contract (the read-out generates none).
+  * **tau** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The P(yes) threshold for a match.
+  * **load_kwargs** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – `from_pretrained` options (default `AUDIOLM_LOAD_KWARGS`).
 
 #### judge(event, candidate, , level=VerifyLevel.listen)
 
@@ -569,6 +579,17 @@ Charge one refine loop.
 #### *property* spent_usd *: [float](https://docs.python.org/3/builtins/functions.html#float)*
 
 Dollars charged so far this run (calls of unknown cost count as 0 here).
+
+#### without_generation()
+
+A fresh budget with these limits and the generation fallback off.
+
+For a retrieval-only run (`foley.score(allow_generate=False)`). The copy’s
+counters start at zero; spend made while it is in force is still charged to
+every enclosing budget ([`foley.cost.spend_scope()`](_autosummary/foley.cost.html.md#foley.cost.spend_scope)), so this one’s cap holds.
+
+* **Return type:**
+  [`Budget`](_autosummary/foley.agent.policy.html.md#foley.agent.policy.Budget)
 
 ### *class* foley.agent.ClapJudge
 
@@ -1433,6 +1454,17 @@ Charge one refine loop.
 
 Dollars charged so far this run (calls of unknown cost count as 0 here).
 
+#### without_generation()
+
+A fresh budget with these limits and the generation fallback off.
+
+For a retrieval-only run (`foley.score(allow_generate=False)`). The copy’s
+counters start at zero; spend made while it is in force is still charged to
+every enclosing budget ([`foley.cost.spend_scope()`](_autosummary/foley.cost.html.md#foley.cost.spend_scope)), so this one’s cap holds.
+
+* **Return type:**
+  [`Budget`](_autosummary/foley.agent.policy.html.md#foley.agent.policy.Budget)
+
 ### *class* foley.agent.policy.DecideAction(\*values)
 
 Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)
@@ -2239,7 +2271,7 @@ Reject a sound (feeds `foley_refine` relevance feedback).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### foley.agent.verbs.foley_score(context, commercial_ok=True, verify='listen', max_events=6, session='default', territory=None)
+### foley.agent.verbs.foley_score(context, commercial_ok=True, verify='listen', max_events=6, session='default', territory=None, allow_generate=True)
 
 Score a narration passage → an editable sound-design timeline + a per-event rationale.
 
@@ -2249,6 +2281,7 @@ timeline plus a rationale for each chosen sound. Weaving (rendering the mastered
 clip, nudge an onset, drop a cue — before committing to a render. `territory`:
 where the sound is used (an ISO country code, or `"WORLD"` for online publishing);
 a licence that excludes territories is refused while it is unstated.
+`allow_generate=False`: retrieval only (no generation fallback, no generation spend).
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -2352,9 +2385,9 @@ accepted (report 05 §3). Three rungs, cheapest first:
 
 * `clap` — [`ClapJudge`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.ClapJudge), the zero-config gate on the retrieval cosine (no ML).
 * `listen` — an audio-LM “does this contain {event}?” check; **#7 ships the
-  deterministic :class:\`StringOverlapJudge\`** here (caption/tag overlap). The real
-  Qwen2-Audio impl is a future [`Judge`](_autosummary/foley.agent.protocols.html.md#foley.agent.protocols.Judge) behind this same
-  `VerifyLevel` seam — no orchestrator change.
+  deterministic :class:\`StringOverlapJudge\`** here (caption/tag overlap); the real
+  Qwen2-Audio [`AudioLMJudge`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.AudioLMJudge) (`foley[fit]`) is a
+  [`Judge`](_autosummary/foley.agent.protocols.html.md#foley.agent.protocols.Judge) behind this same `VerifyLevel` seam.
 * `judge` — [`AnthropicJudge`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.AnthropicJudge), an LLM arbiter (ties + scene consistency),
   `foley[agent]`; `anthropic` imported lazily.
 
@@ -2363,10 +2396,19 @@ to confirm. \*\*This module is the extension point #10b (the Tier-2 fit-judge) p
 into\*\* — a new `Judge` bound at `level=judge` via the `judge=` keyword, with its
 own fit-precision metric; it does not touch retrieval ranking (the [nDCG@10](mailto:nDCG@10) gate).
 
+### Module Attributes
+
+| [`AQA_ANSWER_WORDS`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.AQA_ANSWER_WORDS)       | (yes-words, no-words).                                                                                                                                  |
+|-------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`AUDIOLM_LOAD_KWARGS`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.AUDIOLM_LOAD_KWARGS)    | the checkpoint's own dtype (bf16 for Qwen2-Audio, ~15 GB) placed by `accelerate` across what devices there are.                                         |
+| [`MODEL_ONLY_LOAD_KWARGS`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.MODEL_ONLY_LOAD_KWARGS) | `load_kwargs` that only the model takes; the rest (`revision`, `cache_dir`, `token`, ...) also go to the processor so both come from the same snapshot. |
+
 ### Functions
 
-| [`verify_match`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.verify_match)(event, candidate, \*[, level, ...])   | Verify `candidate` against `event` up to rung `level` (AND-confirming ladder).   |
-|-----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| [`aqa_conversation`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.aqa_conversation)(prompt)                          | The one-turn chat the audio-LM sees: the clip as an audio part, then `prompt`.   |
+|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| [`qwen2_audio_pipeline`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.qwen2_audio_pipeline)(processor, model, \*[, ...]) | The `(prompt, wav, sr) -> {'p_yes', 'p_no'}` pipeline over a loaded Qwen2-Audio. |
+| [`verify_match`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.verify_match)(event, candidate, \*[, level, ...])  | Verify `candidate` against `event` up to rung `level` (AND-confirming ladder).   |
 
 ### Classes
 
@@ -2375,6 +2417,22 @@ own fit-precision metric; it does not touch retrieval ranking (the [nDCG@10](mai
 | [`AudioLMJudge`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.AudioLMJudge)(\*[, pipeline, model, ...])          | The audio-LM `listen` rung (`foley[fit]`): Qwen2-Audio "does this contain {event}?". |
 | [`ClapJudge`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.ClapJudge)()                                       | The zero-config `clap` rung: gate on the retrieval cosine (no ML, no network).       |
 | [`StringOverlapJudge`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.StringOverlapJudge)(\*[, threshold])               | Deterministic stand-in for the `listen`/`judge` rungs (the hermetic CI fake).        |
+
+### foley.agent.verify.AQA_ANSWER_WORDS *= (('Yes', 'yes'), ('No', 'no'))*
+
+(yes-words, no-words). Each must be
+a single token; P(yes) is the softmax mass on the yes-group over both groups.
+
+* **Type:**
+  The answer spellings AQAScore reads P(yes) from
+
+### foley.agent.verify.AUDIOLM_LOAD_KWARGS *= {'device_map': 'auto', 'dtype': 'auto'}*
+
+the checkpoint’s own dtype (bf16 for
+Qwen2-Audio, ~15 GB) placed by `accelerate` across what devices there are.
+
+* **Type:**
+  `from_pretrained` options for the audio-LM
 
 ### *class* foley.agent.verify.AnthropicJudge(, client=None, model='claude-opus-4-8', max_tokens=500)
 
@@ -2392,17 +2450,26 @@ Call Claude to arbitrate the match; returns a `Verdict` at `level`.
 * **Return type:**
   [`Verdict`](_autosummary/foley.base.html.md#foley.base.Verdict)
 
-### *class* foley.agent.verify.AudioLMJudge(, pipeline=None, model='Qwen/Qwen2-Audio-7B-Instruct', max_tokens=300, tau=0.5)
+### *class* foley.agent.verify.AudioLMJudge(, pipeline=None, model='Qwen/Qwen2-Audio-7B-Instruct', max_tokens=300, tau=0.5, load_kwargs=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 The audio-LM `listen` rung (`foley[fit]`): Qwen2-Audio “does this contain {event}?”.
 
-`transformers`/`torch` are imported lazily inside [`judge()`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.AudioLMJudge.judge); an injected
-`pipeline` (the test seam, mirroring the Stable-Audio fake-pipeline seam) drives the
-whole byte-decode → prompt → P(yes) → `Verdict` path with no torch. Stashes
-`self.model` + `self.last_response` so `verify_match`’s GenAI span stays
-informative (same getattr contract [`AnthropicJudge`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.AnthropicJudge) uses).
+With no `pipeline`, the first [`judge()`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.AudioLMJudge.judge) loads `model` (`transformers`,
+`torch`, imported lazily; the 7B weights download on first use) and reads
+P(yes) from one forward pass ([`qwen2_audio_pipeline()`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.qwen2_audio_pipeline)); later calls reuse it.
+An injected `pipeline` (the test seam, mirroring the Stable-Audio fake-pipeline
+seam) drives the whole byte-decode → prompt → P(yes) → `Verdict` path with
+no torch. Stashes `self.model` + `self.last_response` so `verify_match`’s
+GenAI span stays informative (same getattr contract [`AnthropicJudge`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.AnthropicJudge) uses).
+
+* **Parameters:**
+  * **pipeline** – `(prompt, wav, sr) -> {'p_yes': float}` or yes/no text.
+  * **model** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The Hugging Face checkpoint to load when no pipeline is given.
+  * **max_tokens** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Kept for the GenAI span contract (the read-out generates none).
+  * **tau** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The P(yes) threshold for a match.
+  * **load_kwargs** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – `from_pretrained` options (default [`AUDIOLM_LOAD_KWARGS`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.AUDIOLM_LOAD_KWARGS)).
 
 #### judge(event, candidate, , level=VerifyLevel.listen)
 
@@ -2427,6 +2494,11 @@ Return the `clap`-rung `Verdict` for `candidate`.
 * **Return type:**
   [`Verdict`](_autosummary/foley.base.html.md#foley.base.Verdict)
 
+### foley.agent.verify.MODEL_ONLY_LOAD_KWARGS *= frozenset({'attn_implementation', 'device_map', 'dtype', 'low_cpu_mem_usage', 'max_memory', 'quantization_config', 'torch_dtype'})*
+
+`load_kwargs` that only the model takes; the rest (`revision`, `cache_dir`,
+`token`, …) also go to the processor so both come from the same snapshot.
+
 ### *class* foley.agent.verify.StringOverlapJudge(, threshold=0.3)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
@@ -2443,6 +2515,24 @@ Return the token-overlap `Verdict` at the requested `level`.
 
 * **Return type:**
   [`Verdict`](_autosummary/foley.base.html.md#foley.base.Verdict)
+
+### foley.agent.verify.aqa_conversation(prompt)
+
+The one-turn chat the audio-LM sees: the clip as an audio part, then `prompt`.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.agent.verify.qwen2_audio_pipeline(processor, model, , answers=(('Yes', 'yes'), ('No', 'no')))
+
+The `(prompt, wav, sr) -> {'p_yes', 'p_no'}` pipeline over a loaded Qwen2-Audio.
+
+One forward pass, no generation: the clip (mono, resampled to the processor’s
+rate) and the question go through the chat template with the assistant turn
+opened, and P(yes) is the next-token softmax mass on the yes-spellings, over the
+yes- and no-spellings together (the AQAScore read-out, report 08 §2.1). A clip
+longer than the feature extractor’s window (Whisper’s 30 s) is truncated by it,
+so that is warned about.
 
 ### foley.agent.verify.verify_match(event, candidate, , level=VerifyLevel.clap, judge=None, tau_clap=0.35, \_span=None)
 
@@ -4533,6 +4623,126 @@ offline retrieval regression; real retrieval uses CLAP.
 Embed `text` (or a list of texts) -> a `(n, dim)` float32 array.
 
 
+# _autosummary/foley.eval.fadtk.html.md
+
+# foley.eval.fadtk
+
+Reference FAD from Microsoft’s `fadtk`, run in its own interpreter (#48).
+
+[`foley.eval.fidelity.frechet_distance()`](_autosummary/foley.eval.fidelity.html.md#foley.eval.fidelity.frechet_distance) is the FAD math in pure numpy, fed by any
+embedder. To report a number comparable with published ones, use the reference
+toolkit, [fadtk](https://github.com/microsoft/fadtk): its embedding models, its
+audio loading and resampling, its statistics. fadtk 1.1 pins `numpy<2` and pulls
+torch, torchvision and two CLAP packages, so it cannot share foley’s environment.
+[`FadtkFidelity`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FadtkFidelity) runs it the way [`foley.weave.cli_aligners`](_autosummary/foley.weave.cli_aligners.html.md#module-foley.weave.cli_aligners) runs MFA and
+aeneas: the two wav sets are written to a temporary directory, the interpreter of a
+virtualenv holding fadtk runs [`foley.eval.fadtk_driver`](_autosummary/foley.eval.fadtk_driver.html.md#module-foley.eval.fadtk_driver) on them, and its JSON
+answer becomes a [`FidelityResult`](_autosummary/foley.eval.fidelity.html.md#foley.eval.fidelity.FidelityResult) stamped
+`toolkit='fadtk'`. Nothing from fadtk is imported here.
+
+```default
+fad = FadtkFidelity(python="~/venvs/fadtk/bin/python")
+result = fad(reference_wavs, generated_wavs, sr=48000)
+result.value, result.stamp  # FAD, FidelityStamp(embedding='encodec-emb', toolkit='fadtk', ...)
+```
+
+fadtk’s FAD is over embedding **frames** (every frame of every clip), not one vector
+per clip as [`generation_fidelity()`](_autosummary/foley.eval.fidelity.html.md#foley.eval.fidelity.generation_fidelity) takes, so the two numbers
+differ unless fed the same frames. Install and model choice: `misc/docs/fidelity.md`.
+
+### Module Attributes
+
+| [`FADTK_MODELS`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FADTK_MODELS)        | fadtk embedding models by fadtk's name → (loader class in `fadtk.model_loader`, its constructor args).          |
+|----------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
+| [`DEFAULT_FADTK_MODEL`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.DEFAULT_FADTK_MODEL) | The default fadtk model (lightest download; see [`FADTK_MODELS`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FADTK_MODELS)). |
+| [`DRIVER`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.DRIVER)              | The script run inside fadtk's interpreter.                                                                      |
+| [`FADTK_PYTHON_ENV`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FADTK_PYTHON_ENV)    | The environment variable naming fadtk's interpreter when `python=` is not given.                                |
+| [`FADTK_INSTALL`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FADTK_INSTALL)       | Install hint, printed when the interpreter is missing or lacks fadtk.                                           |
+| [`MAX_CHANNELS`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.MAX_CHANNELS)        | The most channels a clip may have.                                                                              |
+
+### Classes
+
+| [`FadtkFidelity`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FadtkFidelity)(\*[, python, model, models, ...])   | Set-level FAD computed by `fadtk` in a separate interpreter.   |
+|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------|
+
+### foley.eval.fadtk.DEFAULT_FADTK_MODEL *= 'encodec-emb'*
+
+The default fadtk model (lightest download; see [`FADTK_MODELS`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FADTK_MODELS)).
+
+### foley.eval.fadtk.DRIVER *= PosixPath('/home/runner/work/foley/foley/foley/eval/fadtk_driver.py')*
+
+The script run inside fadtk’s interpreter.
+
+### foley.eval.fadtk.FADTK_INSTALL *= "uv venv ~/venvs/fadtk --python 3.11 && uv pip install --python ~/venvs/fadtk/bin/python fadtk torchcodec; then FadtkFidelity(python='~/venvs/fadtk/bin/python') or set FOLEY_FADTK_PYTHON"*
+
+Install hint, printed when the interpreter is missing or lacks fadtk.
+
+### foley.eval.fadtk.FADTK_MODELS *: [Mapping](https://docs.python.org/3/library/typing.html#typing.Mapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)]]* *= {'clap-2023': ('CLAPModel', ('2023',)), 'clap-laion-audio': ('CLAPLaionModel', ('audio',)), 'clap-laion-music': ('CLAPLaionModel', ('music',)), 'encodec-emb': ('EncodecEmbModel', ('24k',)), 'encodec-emb-48k': ('EncodecEmbModel', ('48k',)), 'vggish': ('VGGishModel', ())}*
+
+fadtk embedding models by fadtk’s name → (loader class in `fadtk.model_loader`,
+its constructor args). Extend with `FadtkFidelity(models={...})`. The default,
+`encodec-emb`, downloads the smallest weights (EnCodec 24 kHz, about 90 MB).
+
+### foley.eval.fadtk.FADTK_PYTHON_ENV *= 'FOLEY_FADTK_PYTHON'*
+
+The environment variable naming fadtk’s interpreter when `python=` is not given.
+
+### *class* foley.eval.fadtk.FadtkFidelity(\*, python=None, model='encodec-emb', models=None, workers=1, env=None, timeout=None, runner=<function run>)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Set-level FAD computed by `fadtk` in a separate interpreter.
+
+* **Parameters:**
+  * **python** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – An interpreter with `fadtk` installed, usually in its own venv
+    (default: `$FOLEY_FADTK_PYTHON`; neither set raises with the install).
+  * **model** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – A key of `models` (default [`DEFAULT_FADTK_MODEL`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.DEFAULT_FADTK_MODEL)).
+  * **models** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)]]]) – fadtk name → (loader class, args) (default [`FADTK_MODELS`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FADTK_MODELS)).
+  * **workers** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – fadtk’s embedding worker processes (each loads the model).
+  * **env** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – The program’s environment (default: this process’s), e.g. to set
+    `TORCH_HOME` where the weights are cached.
+  * **timeout** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds before the run is abandoned (default: none).
+  * **runner** ([`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`CompletedProcess`](https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess)]) – Runs the command (default `subprocess.run`).
+
+### foley.eval.fadtk.MAX_CHANNELS *= 8*
+
+The most channels a clip may have. A 2-D array with at most this many rows and more
+columns than that is channel-first, and is refused (`_as_frames_channels()`).
+
+
+# _autosummary/foley.eval.fadtk_driver.html.md
+
+# foley.eval.fadtk_driver
+
+The script [`foley.eval.fadtk.FadtkFidelity`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FadtkFidelity) runs inside fadtk’s own interpreter.
+
+It is not imported by foley: foley runs it as `python -I fadtk_driver.py SPEC_JSON`
+with the interpreter of a virtualenv that has `fadtk` installed (fadtk pins
+`numpy<2` and pulls torch, so it cannot share foley’s environment). It imports only
+the standard library and fadtk, and only inside [`main()`](_autosummary/foley.eval.fadtk_driver.html.md#foley.eval.fadtk_driver.main), so foley’s test
+collection and linters can load this file without fadtk.
+
+It builds ONE fadtk embedding model from `spec["loader"]` (a class name in
+`fadtk.model_loader`) and `spec["args"]`. fadtk’s own command line
+(`python -m fadtk`) instantiates every model it knows first, and two of those
+download CLAP checkpoints (about 2.5 GB) in their constructors; building one model
+avoids that. Then it runs fadtk’s own pipeline (`cache_embedding_files` on each
+directory, `FrechetAudioDistance.score`) and writes the score, fadtk’s version, the
+model name, the embedding-frame counts and the embedding dimension as JSON to `spec["out"]`.
+
+### Functions
+
+| [`main`](_autosummary/foley.eval.fadtk_driver.html.md#foley.eval.fadtk_driver.main)(spec_json)   | Score `spec['ref']` against `spec['gen']` with fadtk; write JSON to `spec['out']`.   |
+|--------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+
+### foley.eval.fadtk_driver.main(spec_json)
+
+Score `spec['ref']` against `spec['gen']` with fadtk; write JSON to `spec['out']`.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+
 # _autosummary/foley.eval.fidelity.html.md
 
 # foley.eval.fidelity
@@ -4550,9 +4760,10 @@ embeddings, toolkits, or versions\*\*.
 
 Pure numpy / stdlib — `numpy` is imported function-locally (`import foley` stays
 dol-only), and the PSD matrix-square-root trace is computed via `numpy.linalg.eigvals`
-(there is **no** `scipy.linalg.sqrtm` in the numpy-only CI env). Reference toolkits
-(`fadtk` / `kadtk`) are optional externals for reproducing exact published numbers;
-the functions here cover the math.
+(there is **no** `scipy.linalg.sqrtm` in the numpy-only CI env). For numbers
+comparable with published ones, [`foley.eval.fadtk.FadtkFidelity`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FadtkFidelity) runs the
+reference toolkit (`fadtk`) in its own interpreter and returns the same
+[`FidelityResult`](_autosummary/foley.eval.fidelity.html.md#foley.eval.fidelity.FidelityResult), stamped `toolkit='fadtk'`; the functions here cover the math.
 
 ### Functions
 
@@ -5022,6 +5233,7 @@ default). All numpy imports are function-local so `import foley` stays dol-only.
 | [`FitReport`](_autosummary/foley.eval.html.md#foley.eval.FitReport)([per_item, fit_precision, ...])         | Tier-2 fit metrics over a stratified golden sample (JSON-friendly, mirrors `RetrievalReport`). |
 | [`AlphaResult`](_autosummary/foley.eval.html.md#foley.eval.AlphaResult)(alpha, level, n_units, n_raters, ...) | A judge-vs-human calibration record (surfaced as `FitReport.calibration`).                     |
 | [`FidelityStamp`](_autosummary/foley.eval.html.md#foley.eval.FidelityStamp)(embedding, toolkit, version, ...)   | Mandatory provenance for a FAD/KAD score — it is meaningless without it.                       |
+| [`FadtkFidelity`](_autosummary/foley.eval.html.md#foley.eval.FadtkFidelity)(\*[, python, model, models, ...])   | Set-level FAD computed by `fadtk` in a separate interpreter.                                   |
 | [`FidelityResult`](_autosummary/foley.eval.html.md#foley.eval.FidelityResult)(metric, value, stamp)              | A stamped set-level fidelity score (attached to `FitReport.fidelity`).                         |
 | [`Passage`](_autosummary/foley.eval.html.md#foley.eval.Passage)(id, segments[, audio])                    | One narration passage: its segments (what `foley.score` takes) and optional audio.             |
 | [`PassageTaste`](_autosummary/foley.eval.html.md#foley.eval.PassageTaste)(passage_id[, restraint, ...])        | The four measurements for one passage (JSON-safe via `to_dict()`).                             |
@@ -5037,6 +5249,23 @@ A judge-vs-human calibration record (surfaced as `FitReport.calibration`).
 Codifies the promotion rule in one legible object: a model judge is `promoted` to
 unattended use only once its agreement with the human raters reaches the
 `ALPHA_RELIABLE` band.
+
+### *class* foley.eval.FadtkFidelity(\*, python=None, model='encodec-emb', models=None, workers=1, env=None, timeout=None, runner=<function run>)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Set-level FAD computed by `fadtk` in a separate interpreter.
+
+* **Parameters:**
+  * **python** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – An interpreter with `fadtk` installed, usually in its own venv
+    (default: `$FOLEY_FADTK_PYTHON`; neither set raises with the install).
+  * **model** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – A key of `models` (default `DEFAULT_FADTK_MODEL`).
+  * **models** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)]]]) – fadtk name → (loader class, args) (default `FADTK_MODELS`).
+  * **workers** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – fadtk’s embedding worker processes (each loads the model).
+  * **env** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – The program’s environment (default: this process’s), e.g. to set
+    `TORCH_HOME` where the weights are cached.
+  * **timeout** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds before the run is abandoned (default: none).
+  * **runner** ([`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`CompletedProcess`](https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess)]) – Runs the command (default `subprocess.run`).
 
 ### *class* foley.eval.FidelityResult(metric, value, stamp)
 
@@ -5683,19 +5912,21 @@ once its numbers are stable, which records that judge in `run`.
 
 ### Modules
 
-| [`bradley_terry`](_autosummary/foley.eval.bradley_terry.html.md#module-foley.eval.bradley_terry)   | Bradley-Terry ranking from pairwise preferences (2AFC human panels; #49).                             |
-|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
-| [`panel`](_autosummary/foley.eval.panel.html.md#module-foley.eval.panel)                   | Human-panel infrastructure: blind tasks, a listening page, responses, and the calibration feed (#49). |
-| [`baseline`](_autosummary/foley.eval.baseline.html.md#module-foley.eval.baseline)             | The committed nDCG baseline — the PR gate's SSOT + staleness stamps.                                  |
-| [`embedder`](_autosummary/foley.eval.embedder.html.md#module-foley.eval.embedder)             | A deterministic, numpy-only text embedder for the retrieval eval gate.                                |
-| [`fidelity`](_autosummary/foley.eval.fidelity.html.md#module-foley.eval.fidelity)             | Set-level generation-fidelity — Fréchet Audio Distance (FAD) + Kernel Audio Distance (KAD).           |
-| [`fit`](_autosummary/foley.eval.fit.html.md#module-foley.eval.fit)                       | Tier-2 fit evaluation — "does the accepted clip actually match the intent?" (report 08 §2/§5).        |
-| [`golden`](_autosummary/foley.eval.golden.html.md#module-foley.eval.golden)                 | The frozen golden set + the deterministic Ring-0 retrieval harness.                                   |
-| [`panel_page`](_autosummary/foley.eval.panel_page.html.md#module-foley.eval.panel_page)         | A self-contained listening page for a human panel (#49): open it in a browser, rate, download.        |
-| [`prompt_match`](_autosummary/foley.eval.prompt_match.html.md#module-foley.eval.prompt_match)     | Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).               |
-| [`reliability`](_autosummary/foley.eval.reliability.html.md#module-foley.eval.reliability)       | Inter-rater reliability — Krippendorff's α + the judge-vs-human calibration guardrail.                |
-| [`retrieval`](_autosummary/foley.eval.retrieval.html.md#module-foley.eval.retrieval)           | Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.                           |
-| [`taste`](_autosummary/foley.eval.taste.html.md#module-foley.eval.taste)                   | The "tasteful weave" eval: does a sound designer produce a *restrained, clean, well-placed* result?   |
+| [`bradley_terry`](_autosummary/foley.eval.bradley_terry.html.md#module-foley.eval.bradley_terry)   | Bradley-Terry ranking from pairwise preferences (2AFC human panels; #49).                                                                                      |
+|--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`panel`](_autosummary/foley.eval.panel.html.md#module-foley.eval.panel)                   | Human-panel infrastructure: blind tasks, a listening page, responses, and the calibration feed (#49).                                                          |
+| [`baseline`](_autosummary/foley.eval.baseline.html.md#module-foley.eval.baseline)             | The committed nDCG baseline — the PR gate's SSOT + staleness stamps.                                                                                           |
+| [`embedder`](_autosummary/foley.eval.embedder.html.md#module-foley.eval.embedder)             | A deterministic, numpy-only text embedder for the retrieval eval gate.                                                                                         |
+| [`fadtk`](_autosummary/foley.eval.fadtk.html.md#module-foley.eval.fadtk)                   | Reference FAD from Microsoft's `fadtk`, run in its own interpreter (#48).                                                                                      |
+| [`fadtk_driver`](_autosummary/foley.eval.fadtk_driver.html.md#module-foley.eval.fadtk_driver)     | The script [`foley.eval.fadtk.FadtkFidelity`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FadtkFidelity) runs inside fadtk's own interpreter. |
+| [`fidelity`](_autosummary/foley.eval.fidelity.html.md#module-foley.eval.fidelity)             | Set-level generation-fidelity — Fréchet Audio Distance (FAD) + Kernel Audio Distance (KAD).                                                                    |
+| [`fit`](_autosummary/foley.eval.fit.html.md#module-foley.eval.fit)                       | Tier-2 fit evaluation — "does the accepted clip actually match the intent?" (report 08 §2/§5).                                                                 |
+| [`golden`](_autosummary/foley.eval.golden.html.md#module-foley.eval.golden)                 | The frozen golden set + the deterministic Ring-0 retrieval harness.                                                                                            |
+| [`panel_page`](_autosummary/foley.eval.panel_page.html.md#module-foley.eval.panel_page)         | A self-contained listening page for a human panel (#49): open it in a browser, rate, download.                                                                 |
+| [`prompt_match`](_autosummary/foley.eval.prompt_match.html.md#module-foley.eval.prompt_match)     | Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).                                                                        |
+| [`reliability`](_autosummary/foley.eval.reliability.html.md#module-foley.eval.reliability)       | Inter-rater reliability — Krippendorff's α + the judge-vs-human calibration guardrail.                                                                         |
+| [`retrieval`](_autosummary/foley.eval.retrieval.html.md#module-foley.eval.retrieval)           | Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.                                                                                    |
+| [`taste`](_autosummary/foley.eval.taste.html.md#module-foley.eval.taste)                   | The "tasteful weave" eval: does a sound designer produce a *restrained, clean, well-placed* result?                                                            |
 
 
 # _autosummary/foley.eval.panel.html.md
@@ -6634,6 +6865,74 @@ production behaviour.
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Passage`](_autosummary/foley.eval.taste.html.md#foley.eval.taste.Passage)], [`ScoreResult`](_autosummary/foley.html.md#foley.ScoreResult)]
 
 
+# _autosummary/foley.external.html.md
+
+# foley.external
+
+Running a tool as an external program: find it, run it, report its failure.
+
+Some backends cannot share foley’s process or environment: MFA installs with conda,
+aeneas is AGPL, fadtk pins `numpy<2`. foley runs each as a subprocess (often an
+interpreter in its own virtualenv) that writes its result to a file. This module is
+the shared part: resolving the executable with an install hint, and running the
+command with an injectable `runner` so that a non-zero exit or a missing output file
+raises with the tail of the program’s output; and giving a conda program its env’s
+`bin` on `PATH`. Stdlib only.
+
+### Module Attributes
+
+| [`Runner`](_autosummary/foley.external.html.md#foley.external.Runner)           | Runs a command (`subprocess.run`'s signature); injected in tests.                |
+|-------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| [`ERROR_TAIL_CHARS`](_autosummary/foley.external.html.md#foley.external.ERROR_TAIL_CHARS) | How much of a failed program's output an error quotes (its tail, in characters). |
+
+### Functions
+
+| [`resolve_program`](_autosummary/foley.external.html.md#foley.external.resolve_program)(program, \*, what, install)       | `program` as an executable path, or a [`FileNotFoundError`](https://docs.python.org/3/builtins/exceptions.html#FileNotFoundError) saying how to get it.   |
+|----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`run_program`](_autosummary/foley.external.html.md#foley.external.run_program)(command, \*, out[, runner, env, ...]) | Run `command`, which must write `out`; return that file's text.                                                                                           |
+| [`with_program_dir_on_path`](_autosummary/foley.external.html.md#foley.external.with_program_dir_on_path)(program)                 | This process's environment with `program`'s directory first on `PATH`.                                                                                    |
+
+### foley.external.ERROR_TAIL_CHARS *= 800*
+
+How much of a failed program’s output an error quotes (its tail, in characters).
+
+### foley.external.Runner
+
+Runs a command (`subprocess.run`’s signature); injected in tests.
+
+alias of `Callable`[[…], [`subprocess.CompletedProcess`](https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess)]
+
+### foley.external.resolve_program(program, , what, install)
+
+`program` as an executable path, or a [`FileNotFoundError`](https://docs.python.org/3/builtins/exceptions.html#FileNotFoundError) saying how to get it.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.external.run_program(command, \*, out, runner=<function run>, env=None, timeout=None, cwd=None, what='external program')
+
+Run `command`, which must write `out`; return that file’s text.
+
+* **Raises:**
+  * [**RuntimeError**](https://docs.python.org/3/builtins/exceptions.html#RuntimeError) – If the program exits non-zero or writes no `out` (the tail of
+        its stderr, else stdout, is in the message).
+  * [**TimeoutExpired**](https://docs.python.org/3/library/subprocess.html#subprocess.TimeoutExpired) – If it runs past `timeout` seconds.
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.external.with_program_dir_on_path(program)
+
+This process’s environment with `program`’s directory first on `PATH`.
+
+A conda-installed program (MFA) calls helper binaries (`fstcompile`) from its
+own `bin`, which is on `PATH` only while that env is activated; this makes a
+path to the executable (or a symlink to it) enough. POSIX layout: on Windows a
+conda env keeps its helpers in `Library\bin`, so activate the env there.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+
 # _autosummary/foley.html.md
 
 # foley
@@ -7149,6 +7448,17 @@ Charge one refine loop.
 #### *property* spent_usd *: [float](https://docs.python.org/3/builtins/functions.html#float)*
 
 Dollars charged so far this run (calls of unknown cost count as 0 here).
+
+#### without_generation()
+
+A fresh budget with these limits and the generation fallback off.
+
+For a retrieval-only run (`foley.score(allow_generate=False)`). The copy’s
+counters start at zero; spend made while it is in force is still charged to
+every enclosing budget ([`foley.cost.spend_scope()`](_autosummary/foley.cost.html.md#foley.cost.spend_scope)), so this one’s cap holds.
+
+* **Return type:**
+  [`Budget`](_autosummary/foley.agent.policy.html.md#foley.agent.policy.Budget)
 
 ### *class* foley.Candidate(sound, origin=CandidateOrigin.retrieved, event=None, clap_score=None, bm25_score=None, rrf_score=None, rerank_score=None, verdict=None, license_ok=None, preview_uri=None, notes=list(), cost_estimate_usd=None, cost_actual_usd=None)
 
@@ -10493,7 +10803,7 @@ Write `samples` to `dst` as `fmt`/`subtype` (default = FLAC archive).
 
 Lazy dependency: `soundfile`.
 
-### foley.score(segments, , audio=None, transcript=None, library=None, intended_use=None, commercial_ok=None, max_events=6, verify='listen', master='podcast', weave=None, llm=None, budget=None, \*\*weave_kwargs)
+### foley.score(segments, , audio=None, transcript=None, library=None, intended_use=None, commercial_ok=None, max_events=6, verify='listen', backend='auto', allow_generate=True, master='podcast', weave=None, llm=None, budget=None, \*\*weave_kwargs)
 
 Choose sounds for narration text and (optionally) weave them into the narration audio.
 
@@ -10522,7 +10832,20 @@ editable [`SoundDesignTimeline`](_autosummary/foley.base.html.md#foley.base.Soun
     `False` explicitly admits non-commercial material.
   * **max_events** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – The sparse density cap **per segment** (restraint).
   * **verify** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The max verify rung — `'clap'` | `'listen'` | `'judge'`.
-  * **master** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The delivery [`MASTER_PROFILES`](_autosummary/foley.base.html.md#foley.base.MASTER_PROFILES) target (`'podcast'` default).
+  * **backend** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)]) – The generation fallback’s backend (a name, or a tuple of names as your
+    own order), forwarded to [`foley.find()`](_autosummary/foley.html.md#foley.find) (`'auto'` walks the
+    generation order).
+  * **allow_generate** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – `False` makes the run retrieval-only: no generation fallback
+    (so no generation spend and no local model process); an event nothing in the
+    library fits stays silent. Same name as
+    `allow_generate`: `False` overrides a
+    `budget` that allows generation; `True` (default) leaves the budget’s
+    own setting in force.
+  * **master** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`MasterProfile`](_autosummary/foley.base.html.md#foley.base.MasterProfile)]) – The delivery [`MASTER_PROFILES`](_autosummary/foley.base.html.md#foley.base.MASTER_PROFILES) target (`'podcast'`
+    default) or a [`MasterProfile`](_autosummary/foley.base.html.md#foley.base.MasterProfile). foley always masters the
+    woven mix (the true-peak limiter is what keeps the summed voice + beds +
+    spots from clipping): pass your delivery target here rather than
+    re-levelling `result.weave.audio`.
   * **weave** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`bool`](https://docs.python.org/3/builtins/functions.html#bool)]) – Force weaving on/off; default auto (`True` iff `audio` is given).
   * **llm** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Which LLM the SELECT rungs use (`'fake'` | `'local'` | `'anthropic'`;
     `None` reads `$FOLEY_LLM`, else the free default) — see [`foley.find()`](_autosummary/foley.html.md#foley.find).
@@ -10530,11 +10853,17 @@ editable [`SoundDesignTimeline`](_autosummary/foley.base.html.md#foley.base.Soun
     (`max_usd`) across every segment’s paid calls (#57). Default: $1, or $3
     when `llm` (or `$FOLEY_LLM`) is `'anthropic'`
     ([`foley.cost.default_max_usd()`](_autosummary/foley.cost.html.md#foley.cost.default_max_usd), #88).
-  * **\*\*weave_kwargs** – Forwarded to [`foley.weave()`](_autosummary/foley.weave.html.md#module-foley.weave) (e.g. `language`, `sign_cert`, `watermark`).
+  * **\*\*weave_kwargs** – Forwarded to [`foley.weave()`](_autosummary/foley.weave.html.md#module-foley.weave) (e.g. `language`, `aligner`,
+    `sign_cert`, `watermark`). Checked against `weave`’s signature before
+    anything runs, so a typo costs nothing.
 * **Return type:**
   [`ScoreResult`](_autosummary/foley.html.md#foley.ScoreResult)
 * **Returns:**
   A [`ScoreResult`](_autosummary/foley.html.md#foley.ScoreResult) (`timeline` + `events` rationale; `weave` when woven).
+* **Raises:**
+  * [**TypeError**](https://docs.python.org/3/builtins/exceptions.html#TypeError) – If a `weave_kwargs` key is not a [`foley.weave()`](_autosummary/foley.weave.html.md#module-foley.weave) option (raised
+        before any find, verify or generation call).
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `master` is an unknown profile name (raised just as early).
 
 ### foley.search(query, , k=10, filters=None, commercial_ok=None, ucs_category=None, min_snr=None, duration_range=None, rerank=False, intended_use=None, library=None)
 
@@ -10871,6 +11200,7 @@ escalates to the injected/​default judge for that rung and returns *its* verdi
 | [`cli`](_autosummary/foley.cli.html.md#module-foley.cli)                             | The `foley` command-line interface (`argparse`, the verbs generated by `cw`).                                                                        |
 | [`cost`](_autosummary/foley.cost.html.md#module-foley.cost)                           | Cost: what a call will cost before it is made, and a cumulative cap on a run (#57).                                                                  |
 | [`embedded_metadata`](_autosummary/foley.embedded_metadata.html.md#module-foley.embedded_metadata) | What a pro sound file says about itself: Broadcast-WAV `bext` and iXML (#228, #231).                                                                 |
+| [`external`](_autosummary/foley.external.html.md#module-foley.external)                   | Running a tool as an external program: find it, run it, report its failure.                                                                          |
 | [`level`](_autosummary/foley.level.html.md#module-foley.level)                         | Level a clip to a stated loudness target for its class, so relative levels are sane.                                                                 |
 | [`licensing`](_autosummary/foley.licensing.html.md#module-foley.licensing)                 | License policy for foley: the license_id -> flag-set SSOT, flag derivation (with per-source overrides), and the fail-closed candidate `keep()` gate. |
 | [`prompt_match`](_autosummary/foley.prompt_match.html.md#module-foley.prompt_match)           | Does a generated clip sound like what was asked for? A text-audio check, or an honest "unchecked".                                                   |
@@ -17469,7 +17799,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chime', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta-dum', 'ta dum', 'netflix intro', 'netflix sound', 'tudum', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel bong', 'intel inside', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'netflix intro', 'tudum', 'ta dum', 'ta-dum', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel chime', 'intel bong', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer doh', 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -27510,12 +27840,10 @@ Installation and the trade-offs between the aligners: `misc/docs/aligners.md`.
 
 ### Module Attributes
 
-| [`Runner`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.Runner)           | Runs a command (`subprocess.run`'s signature); injected in tests.                                                                                           |
-|-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`MFA_MODELS`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.MFA_MODELS)       | MFA's (dictionary, acoustic model) per foley language code; names as in `mfa model download`.                                                               |
+|-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`AENEAS_LANGUAGES`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.AENEAS_LANGUAGES) | aeneas task languages (ISO 639-3) per foley language code.                                                                                                  |
 | [`UNKNOWN_TOKENS`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.UNKNOWN_TOKENS)   | The tokens an aligner writes for a word it could not spell (MFA's out-of-vocabulary marker); each stands for whichever transcript word(s) sit at its place. |
-| [`ERROR_TAIL_CHARS`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.ERROR_TAIL_CHARS) | How much of a failed program's output an error quotes (its tail, in characters).                                                                            |
 | [`MFA_INSTALL`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.MFA_INSTALL)      | Install hints, printed when the program is missing.                                                                                                         |
 
 ### Functions
@@ -27525,7 +27853,6 @@ Installation and the trade-offs between the aligners: `misc/docs/aligners.md`.
 | [`parse_aeneas_json`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.parse_aeneas_json)(text)                         | aeneas's JSON sync map (one fragment per word) → `word_timeline`.              |
 | [`parse_mfa_json`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.parse_mfa_json)(text)                            | MFA's `--output_format json` → `word_timeline` (silences dropped).             |
 | [`run_cli_aligner`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.run_cli_aligner)(audio, sample_rate, words, ...) | Align `words` to `audio` with an external program; return its `word_timeline`. |
-| [`with_program_dir_on_path`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.with_program_dir_on_path)(program)               | This process's environment with `program`'s directory first on `PATH`.         |
 
 ### Classes
 
@@ -27561,10 +27888,6 @@ Align `transcript` to `audio`; `[]` when there is no transcript.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
-
-### foley.weave.cli_aligners.ERROR_TAIL_CHARS *= 800*
-
-How much of a failed program’s output an error quotes (its tail, in characters).
 
 ### *class* foley.weave.cli_aligners.MFAAligner(\*, mfa='mfa', models=None, extra_args=(), timeout=None, runner=<function run>)
 
@@ -27603,12 +27926,6 @@ Install hints, printed when the program is missing.
 
 MFA’s (dictionary, acoustic model) per foley language code; names as in
 `mfa model download`. Extend with `MFAAligner(models={...})`.
-
-### foley.weave.cli_aligners.Runner
-
-Runs a command (`subprocess.run`’s signature); injected in tests.
-
-alias of `Callable`[[…], [`subprocess.CompletedProcess`](https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess)]
 
 ### foley.weave.cli_aligners.UNKNOWN_TOKENS *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= frozenset({'<oov>', '<unk>', 'spn'})*
 
@@ -27681,18 +27998,6 @@ this process’s); `timeout` (seconds) bounds the run.
   * [**TimeoutExpired**](https://docs.python.org/3/library/subprocess.html#subprocess.TimeoutExpired) – If it runs past `timeout`.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
-
-### foley.weave.cli_aligners.with_program_dir_on_path(program)
-
-This process’s environment with `program`’s directory first on `PATH`.
-
-A conda-installed program (MFA) calls helper binaries (`fstcompile`) from its
-own `bin`, which is on `PATH` only while that env is activated; this makes a
-path to the executable (or a symlink to it) enough. POSIX layout: on Windows a
-conda env keeps its helpers in `Library\bin`, so activate the env there.
-
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 
 # _autosummary/foley.weave.html.md
@@ -29233,18 +29538,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 05:57 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/94ecc952a653f636db245a9e63b6009bd84975f7"><code>94ecc95</code></a> on branch <code>main</code>, for **foley 0.0.121** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 06:00 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/f7b43237382a8043b6a7cf4a5bb4bf73e429b973"><code>f7b4323</code></a> on branch <code>main</code>, for **foley 0.0.122** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.121) is behind the latest release on PyPI (0.0.122): `pip install foley` gives newer code than these docs describe.
+- The documented version (0.0.122) is ahead of the latest release on PyPI (0.0.121): these docs describe unreleased code.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/94ecc952a653f636db245a9e63b6009bd84975f7"><code>94ecc952a653f636db245a9e63b6009bd84975f7</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/f7b43237382a8043b6a7cf4a5bb4bf73e429b973"><code>f7b43237382a8043b6a7cf4a5bb4bf73e429b973</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -29255,9 +29560,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41396721713">41396721713</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41397060264">41397060264</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>94ecc952a653f636db245a9e63b6009bd84975f7</code> (in the history of the built commit) |
+| Event commit | <code>30673069800c4b0b4090c0b54eb651d359667b48</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -29282,13 +29587,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.122/">0.0.122</a>, newer than the documented version (0.0.121).
+Latest release: <a href="https://pypi.org/project/foley/0.0.121/">0.0.121</a>, older than the documented version (0.0.122).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 94ecc952a653f636db245a9e63b6009bd84975f7
+git checkout f7b43237382a8043b6a7cf4a5bb4bf73e429b973
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

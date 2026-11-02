@@ -145,6 +145,17 @@ Charge one refine loop.
 
 Dollars charged so far this run (calls of unknown cost count as 0 here).
 
+#### without_generation()
+
+A fresh budget with these limits and the generation fallback off.
+
+For a retrieval-only run (`foley.score(allow_generate=False)`). The copy’s
+counters start at zero; spend made while it is in force is still charged to
+every enclosing budget ([`foley.cost.spend_scope()`](foley.cost.html.md#foley.cost.spend_scope)), so this one’s cap holds.
+
+* **Return type:**
+  [`Budget`](#foley.agent.policy.Budget)
+
 ### *class* foley.agent.policy.DecideAction(\*values)
 
 Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)

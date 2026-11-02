@@ -229,7 +229,7 @@ Reject a sound (feeds `foley_refine` relevance feedback).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### foley.agent.verbs.foley_score(context, commercial_ok=True, verify='listen', max_events=6, session='default', territory=None)
+### foley.agent.verbs.foley_score(context, commercial_ok=True, verify='listen', max_events=6, session='default', territory=None, allow_generate=True)
 
 Score a narration passage → an editable sound-design timeline + a per-event rationale.
 
@@ -239,6 +239,7 @@ timeline plus a rationale for each chosen sound. Weaving (rendering the mastered
 clip, nudge an onset, drop a cue — before committing to a render. `territory`:
 where the sound is used (an ISO country code, or `"WORLD"` for online publishing);
 a licence that excludes territories is refused while it is unstated.
+`allow_generate=False`: retrieval only (no generation fallback, no generation spend).
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)

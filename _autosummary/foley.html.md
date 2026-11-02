@@ -512,6 +512,17 @@ Charge one refine loop.
 
 Dollars charged so far this run (calls of unknown cost count as 0 here).
 
+#### without_generation()
+
+A fresh budget with these limits and the generation fallback off.
+
+For a retrieval-only run (`foley.score(allow_generate=False)`). The copy’s
+counters start at zero; spend made while it is in force is still charged to
+every enclosing budget ([`foley.cost.spend_scope()`](foley.cost.html.md#foley.cost.spend_scope)), so this one’s cap holds.
+
+* **Return type:**
+  [`Budget`](foley.agent.policy.html.md#foley.agent.policy.Budget)
+
 ### *class* foley.Candidate(sound, origin=CandidateOrigin.retrieved, event=None, clap_score=None, bm25_score=None, rrf_score=None, rerank_score=None, verdict=None, license_ok=None, preview_uri=None, notes=list(), cost_estimate_usd=None, cost_actual_usd=None)
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
@@ -3855,7 +3866,7 @@ Write `samples` to `dst` as `fmt`/`subtype` (default = FLAC archive).
 
 Lazy dependency: `soundfile`.
 
-### foley.score(segments, , audio=None, transcript=None, library=None, intended_use=None, commercial_ok=None, max_events=6, verify='listen', master='podcast', weave=None, llm=None, budget=None, \*\*weave_kwargs)
+### foley.score(segments, , audio=None, transcript=None, library=None, intended_use=None, commercial_ok=None, max_events=6, verify='listen', backend='auto', allow_generate=True, master='podcast', weave=None, llm=None, budget=None, \*\*weave_kwargs)
 
 Choose sounds for narration text and (optionally) weave them into the narration audio.
 
@@ -3884,7 +3895,20 @@ editable [`SoundDesignTimeline`](foley.base.html.md#foley.base.SoundDesignTimeli
     `False` explicitly admits non-commercial material.
   * **max_events** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – The sparse density cap **per segment** (restraint).
   * **verify** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The max verify rung — `'clap'` | `'listen'` | `'judge'`.
-  * **master** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The delivery [`MASTER_PROFILES`](foley.base.html.md#foley.base.MASTER_PROFILES) target (`'podcast'` default).
+  * **backend** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)]) – The generation fallback’s backend (a name, or a tuple of names as your
+    own order), forwarded to [`foley.find()`](#foley.find) (`'auto'` walks the
+    generation order).
+  * **allow_generate** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – `False` makes the run retrieval-only: no generation fallback
+    (so no generation spend and no local model process); an event nothing in the
+    library fits stays silent. Same name as
+    `allow_generate`: `False` overrides a
+    `budget` that allows generation; `True` (default) leaves the budget’s
+    own setting in force.
+  * **master** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`MasterProfile`](foley.base.html.md#foley.base.MasterProfile)]) – The delivery [`MASTER_PROFILES`](foley.base.html.md#foley.base.MASTER_PROFILES) target (`'podcast'`
+    default) or a [`MasterProfile`](foley.base.html.md#foley.base.MasterProfile). foley always masters the
+    woven mix (the true-peak limiter is what keeps the summed voice + beds +
+    spots from clipping): pass your delivery target here rather than
+    re-levelling `result.weave.audio`.
   * **weave** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`bool`](https://docs.python.org/3/builtins/functions.html#bool)]) – Force weaving on/off; default auto (`True` iff `audio` is given).
   * **llm** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Which LLM the SELECT rungs use (`'fake'` | `'local'` | `'anthropic'`;
     `None` reads `$FOLEY_LLM`, else the free default) — see [`foley.find()`](#foley.find).
@@ -3892,11 +3916,17 @@ editable [`SoundDesignTimeline`](foley.base.html.md#foley.base.SoundDesignTimeli
     (`max_usd`) across every segment’s paid calls (#57). Default: $1, or $3
     when `llm` (or `$FOLEY_LLM`) is `'anthropic'`
     ([`foley.cost.default_max_usd()`](foley.cost.html.md#foley.cost.default_max_usd), #88).
-  * **\*\*weave_kwargs** – Forwarded to [`foley.weave()`](foley.weave.html.md#module-foley.weave) (e.g. `language`, `sign_cert`, `watermark`).
+  * **\*\*weave_kwargs** – Forwarded to [`foley.weave()`](foley.weave.html.md#module-foley.weave) (e.g. `language`, `aligner`,
+    `sign_cert`, `watermark`). Checked against `weave`’s signature before
+    anything runs, so a typo costs nothing.
 * **Return type:**
   [`ScoreResult`](#foley.ScoreResult)
 * **Returns:**
   A [`ScoreResult`](#foley.ScoreResult) (`timeline` + `events` rationale; `weave` when woven).
+* **Raises:**
+  * [**TypeError**](https://docs.python.org/3/builtins/exceptions.html#TypeError) – If a `weave_kwargs` key is not a [`foley.weave()`](foley.weave.html.md#module-foley.weave) option (raised
+        before any find, verify or generation call).
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `master` is an unknown profile name (raised just as early).
 
 ### foley.search(query, , k=10, filters=None, commercial_ok=None, ucs_category=None, min_snr=None, duration_range=None, rerank=False, intended_use=None, library=None)
 
@@ -4233,6 +4263,7 @@ escalates to the injected/​default judge for that rung and returns *its* verdi
 | [`cli`](foley.cli.html.md#module-foley.cli)                             | The `foley` command-line interface (`argparse`, the verbs generated by `cw`).                                                                        |
 | [`cost`](foley.cost.html.md#module-foley.cost)                           | Cost: what a call will cost before it is made, and a cumulative cap on a run (#57).                                                                  |
 | [`embedded_metadata`](foley.embedded_metadata.html.md#module-foley.embedded_metadata) | What a pro sound file says about itself: Broadcast-WAV `bext` and iXML (#228, #231).                                                                 |
+| [`external`](foley.external.html.md#module-foley.external)                   | Running a tool as an external program: find it, run it, report its failure.                                                                          |
 | [`level`](foley.level.html.md#module-foley.level)                         | Level a clip to a stated loudness target for its class, so relative levels are sane.                                                                 |
 | [`licensing`](foley.licensing.html.md#module-foley.licensing)                 | License policy for foley: the license_id -> flag-set SSOT, flag derivation (with per-source overrides), and the fail-closed candidate `keep()` gate. |
 | [`prompt_match`](foley.prompt_match.html.md#module-foley.prompt_match)           | Does a generated clip sound like what was asked for? A text-audio check, or an honest "unchecked".                                                   |

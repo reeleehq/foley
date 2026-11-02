@@ -64,6 +64,7 @@ default). All numpy imports are function-local so `import foley` stays dol-only.
 | [`FitReport`](#foley.eval.FitReport)([per_item, fit_precision, ...])         | Tier-2 fit metrics over a stratified golden sample (JSON-friendly, mirrors `RetrievalReport`). |
 | [`AlphaResult`](#foley.eval.AlphaResult)(alpha, level, n_units, n_raters, ...) | A judge-vs-human calibration record (surfaced as `FitReport.calibration`).                     |
 | [`FidelityStamp`](#foley.eval.FidelityStamp)(embedding, toolkit, version, ...)   | Mandatory provenance for a FAD/KAD score — it is meaningless without it.                       |
+| [`FadtkFidelity`](#foley.eval.FadtkFidelity)(\*[, python, model, models, ...])   | Set-level FAD computed by `fadtk` in a separate interpreter.                                   |
 | [`FidelityResult`](#foley.eval.FidelityResult)(metric, value, stamp)              | A stamped set-level fidelity score (attached to `FitReport.fidelity`).                         |
 | [`Passage`](#foley.eval.Passage)(id, segments[, audio])                    | One narration passage: its segments (what `foley.score` takes) and optional audio.             |
 | [`PassageTaste`](#foley.eval.PassageTaste)(passage_id[, restraint, ...])        | The four measurements for one passage (JSON-safe via `to_dict()`).                             |
@@ -79,6 +80,23 @@ A judge-vs-human calibration record (surfaced as `FitReport.calibration`).
 Codifies the promotion rule in one legible object: a model judge is `promoted` to
 unattended use only once its agreement with the human raters reaches the
 `ALPHA_RELIABLE` band.
+
+### *class* foley.eval.FadtkFidelity(\*, python=None, model='encodec-emb', models=None, workers=1, env=None, timeout=None, runner=<function run>)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Set-level FAD computed by `fadtk` in a separate interpreter.
+
+* **Parameters:**
+  * **python** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – An interpreter with `fadtk` installed, usually in its own venv
+    (default: `$FOLEY_FADTK_PYTHON`; neither set raises with the install).
+  * **model** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – A key of `models` (default `DEFAULT_FADTK_MODEL`).
+  * **models** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)]]]) – fadtk name → (loader class, args) (default `FADTK_MODELS`).
+  * **workers** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – fadtk’s embedding worker processes (each loads the model).
+  * **env** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – The program’s environment (default: this process’s), e.g. to set
+    `TORCH_HOME` where the weights are cached.
+  * **timeout** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds before the run is abandoned (default: none).
+  * **runner** ([`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`CompletedProcess`](https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess)]) – Runs the command (default `subprocess.run`).
 
 ### *class* foley.eval.FidelityResult(metric, value, stamp)
 
@@ -725,16 +743,18 @@ once its numbers are stable, which records that judge in `run`.
 
 ### Modules
 
-| [`bradley_terry`](foley.eval.bradley_terry.html.md#module-foley.eval.bradley_terry)   | Bradley-Terry ranking from pairwise preferences (2AFC human panels; #49).                             |
-|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
-| [`panel`](foley.eval.panel.html.md#module-foley.eval.panel)                   | Human-panel infrastructure: blind tasks, a listening page, responses, and the calibration feed (#49). |
-| [`baseline`](foley.eval.baseline.html.md#module-foley.eval.baseline)             | The committed nDCG baseline — the PR gate's SSOT + staleness stamps.                                  |
-| [`embedder`](foley.eval.embedder.html.md#module-foley.eval.embedder)             | A deterministic, numpy-only text embedder for the retrieval eval gate.                                |
-| [`fidelity`](foley.eval.fidelity.html.md#module-foley.eval.fidelity)             | Set-level generation-fidelity — Fréchet Audio Distance (FAD) + Kernel Audio Distance (KAD).           |
-| [`fit`](foley.eval.fit.html.md#module-foley.eval.fit)                       | Tier-2 fit evaluation — "does the accepted clip actually match the intent?" (report 08 §2/§5).        |
-| [`golden`](foley.eval.golden.html.md#module-foley.eval.golden)                 | The frozen golden set + the deterministic Ring-0 retrieval harness.                                   |
-| [`panel_page`](foley.eval.panel_page.html.md#module-foley.eval.panel_page)         | A self-contained listening page for a human panel (#49): open it in a browser, rate, download.        |
-| [`prompt_match`](foley.eval.prompt_match.html.md#module-foley.eval.prompt_match)     | Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).               |
-| [`reliability`](foley.eval.reliability.html.md#module-foley.eval.reliability)       | Inter-rater reliability — Krippendorff's α + the judge-vs-human calibration guardrail.                |
-| [`retrieval`](foley.eval.retrieval.html.md#module-foley.eval.retrieval)           | Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.                           |
-| [`taste`](foley.eval.taste.html.md#module-foley.eval.taste)                   | The "tasteful weave" eval: does a sound designer produce a *restrained, clean, well-placed* result?   |
+| [`bradley_terry`](foley.eval.bradley_terry.html.md#module-foley.eval.bradley_terry)   | Bradley-Terry ranking from pairwise preferences (2AFC human panels; #49).                                                                                      |
+|--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`panel`](foley.eval.panel.html.md#module-foley.eval.panel)                   | Human-panel infrastructure: blind tasks, a listening page, responses, and the calibration feed (#49).                                                          |
+| [`baseline`](foley.eval.baseline.html.md#module-foley.eval.baseline)             | The committed nDCG baseline — the PR gate's SSOT + staleness stamps.                                                                                           |
+| [`embedder`](foley.eval.embedder.html.md#module-foley.eval.embedder)             | A deterministic, numpy-only text embedder for the retrieval eval gate.                                                                                         |
+| [`fadtk`](foley.eval.fadtk.html.md#module-foley.eval.fadtk)                   | Reference FAD from Microsoft's `fadtk`, run in its own interpreter (#48).                                                                                      |
+| [`fadtk_driver`](foley.eval.fadtk_driver.html.md#module-foley.eval.fadtk_driver)     | The script [`foley.eval.fadtk.FadtkFidelity`](foley.eval.fadtk.html.md#foley.eval.fadtk.FadtkFidelity) runs inside fadtk's own interpreter. |
+| [`fidelity`](foley.eval.fidelity.html.md#module-foley.eval.fidelity)             | Set-level generation-fidelity — Fréchet Audio Distance (FAD) + Kernel Audio Distance (KAD).                                                                    |
+| [`fit`](foley.eval.fit.html.md#module-foley.eval.fit)                       | Tier-2 fit evaluation — "does the accepted clip actually match the intent?" (report 08 §2/§5).                                                                 |
+| [`golden`](foley.eval.golden.html.md#module-foley.eval.golden)                 | The frozen golden set + the deterministic Ring-0 retrieval harness.                                                                                            |
+| [`panel_page`](foley.eval.panel_page.html.md#module-foley.eval.panel_page)         | A self-contained listening page for a human panel (#49): open it in a browser, rate, download.                                                                 |
+| [`prompt_match`](foley.eval.prompt_match.html.md#module-foley.eval.prompt_match)     | Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).                                                                        |
+| [`reliability`](foley.eval.reliability.html.md#module-foley.eval.reliability)       | Inter-rater reliability — Krippendorff's α + the judge-vs-human calibration guardrail.                                                                         |
+| [`retrieval`](foley.eval.retrieval.html.md#module-foley.eval.retrieval)           | Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.                                                                                    |
+| [`taste`](foley.eval.taste.html.md#module-foley.eval.taste)                   | The "tasteful weave" eval: does a sound designer produce a *restrained, clean, well-placed* result?                                                            |

@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=cdca99f8"></script>
+    <script src="../../../_static/documentation_options.js?v=fa321392"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.121" />
+  <meta name="docsearch:version" content="0.0.122" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -743,8 +743,6 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
@@ -753,12 +751,11 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..audio</span><span class="w"> </span><span class="kn">import</span> <span class="n">save</span><span class="p">,</span> <span class="n">to_mono</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..external</span><span class="w"> </span><span class="kn">import</span> <span class="n">Runner</span><span class="p">,</span> <span class="n">run_program</span><span class="p">,</span> <span class="n">with_program_dir_on_path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..external</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_program</span> <span class="k">as</span> <span class="n">_resolve_program</span>
 
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>  <span class="c1"># pragma: no cover - typing only</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">ndarray</span>
-
-<span class="c1">#: Runs a command (``subprocess.run``'s signature); injected in tests.</span>
-<span class="n">Runner</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="s2">"subprocess.CompletedProcess"</span><span class="p">]</span>
 
 <span class="c1">#: MFA's (dictionary, acoustic model) per foley language code; names as in</span>
 <span class="c1">#: ``mfa model download``. Extend with ``MFAAligner(models={...})``.</span>
@@ -779,9 +776,6 @@ window.runMermaid = runMermaid;</script>
 <span class="c1">#: marker); each stands for whichever transcript word(s) sit at its place.</span>
 <span class="n">UNKNOWN_TOKENS</span><span class="p">:</span> <span class="s2">"frozenset[str]"</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">"&lt;unk&gt;"</span><span class="p">,</span> <span class="s2">"&lt;oov&gt;"</span><span class="p">,</span> <span class="s2">"spn"</span><span class="p">})</span>
 
-<span class="c1">#: How much of a failed program's output an error quotes (its tail, in characters).</span>
-<span class="n">ERROR_TAIL_CHARS</span> <span class="o">=</span> <span class="mi">800</span>
-
 <span class="c1">#: Install hints, printed when the program is missing.</span>
 <span class="n">MFA_INSTALL</span> <span class="o">=</span> <span class="p">(</span>
     <span class="s2">"conda create -n mfa -c conda-forge montreal-forced-aligner, then "</span>
@@ -791,16 +785,6 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"install espeak and ffmpeg (brew/apt), then pip install numpy aeneas "</span>
     <span class="s2">"(in a separate venv if it clashes with foley's; pass its python=)"</span>
 <span class="p">)</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_resolve_program</span><span class="p">(</span><span class="n">program</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">what</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">install</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""``program`` as an executable path, or a :class:`FileNotFoundError` saying how to get it."""</span>
-    <span class="n">found</span> <span class="o">=</span> <span class="n">shutil</span><span class="o">.</span><span class="n">which</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">program</span><span class="p">))</span>
-    <span class="k">if</span> <span class="n">found</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">program</span><span class="si">!r}</span><span class="s2"> is not on PATH. Install: </span><span class="si">{</span><span class="n">install</span><span class="si">}</span><span class="s2">"</span>
-        <span class="p">)</span>
-    <span class="k">return</span> <span class="n">found</span>
 
 
 <div class="viewcode-block" id="run_cli_aligner">
@@ -839,20 +823,15 @@ window.runMermaid = runMermaid;</script>
         <span class="p">)</span>
         <span class="n">save</span><span class="p">(</span><span class="n">to_mono</span><span class="p">(</span><span class="n">audio</span><span class="p">),</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">wav</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s2">"WAV"</span><span class="p">,</span> <span class="n">subtype</span><span class="o">=</span><span class="s2">"PCM_16"</span><span class="p">)</span>
         <span class="n">txt</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">text</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span>
-        <span class="n">proc</span> <span class="o">=</span> <span class="n">runner</span><span class="p">(</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">run_program</span><span class="p">(</span>
             <span class="n">command</span><span class="p">(</span><span class="n">wav</span><span class="p">,</span> <span class="n">txt</span><span class="p">,</span> <span class="n">out</span><span class="p">),</span>
-            <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-            <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">out</span><span class="o">=</span><span class="n">out</span><span class="p">,</span>
+            <span class="n">runner</span><span class="o">=</span><span class="n">runner</span><span class="p">,</span>
             <span class="n">env</span><span class="o">=</span><span class="n">env</span><span class="p">,</span>
             <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+            <span class="n">what</span><span class="o">=</span><span class="n">what</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="k">if</span> <span class="n">proc</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">out</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
-            <span class="n">tail</span> <span class="o">=</span> <span class="p">(</span><span class="n">proc</span><span class="o">.</span><span class="n">stderr</span> <span class="ow">or</span> <span class="n">proc</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()[</span><span class="o">-</span><span class="n">ERROR_TAIL_CHARS</span><span class="p">:]</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2"> failed (exit </span><span class="si">{</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span><span class="si">}</span><span class="s2">"</span>
-                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">''</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">out</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">', no output file'</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">tail</span><span class="si">}</span><span class="s2">"</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="n">onto_transcript</span><span class="p">(</span><span class="n">words</span><span class="p">,</span> <span class="n">parse</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)))</span></div>
+        <span class="k">return</span> <span class="n">onto_transcript</span><span class="p">(</span><span class="n">words</span><span class="p">,</span> <span class="n">parse</span><span class="p">(</span><span class="n">output</span><span class="p">))</span></div>
 
 
 
@@ -917,22 +896,6 @@ window.runMermaid = runMermaid;</script>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">word</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">words</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">hits</span>
     <span class="p">]</span></div>
-
-
-
-<div class="viewcode-block" id="with_program_dir_on_path">
-<a class="viewcode-back" href="../../../_autosummary/foley.weave.cli_aligners.html#foley.weave.with_program_dir_on_path">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">with_program_dir_on_path</span><span class="p">(</span><span class="n">program</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"dict[str, str]"</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""This process's environment with ``program``'s directory first on ``PATH``.</span>
-
-<span class="sd">    A conda-installed program (MFA) calls helper binaries (``fstcompile``) from its</span>
-<span class="sd">    own ``bin``, which is on ``PATH`` only while that env is activated; this makes a</span>
-<span class="sd">    path to the executable (or a symlink to it) enough. POSIX layout: on Windows a</span>
-<span class="sd">    conda env keeps its helpers in ``Library\\bin``, so activate the env there.</span>
-<span class="sd">    """</span>
-    <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"PATH"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
-    <span class="n">bin_dir</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">program</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">,</span> <span class="s2">"PATH"</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">pathsep</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">bin_dir</span><span class="p">,</span> <span class="n">path</span><span class="p">])}</span></div>
 
 
 

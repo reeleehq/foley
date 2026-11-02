@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=cdca99f8"></script>
+    <script src="../../../_static/documentation_options.js?v=fa321392"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.121" />
+  <meta name="docsearch:version" content="0.0.122" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -722,9 +722,9 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">* ``clap`` — :class:`ClapJudge`, the zero-config gate on the retrieval cosine (no ML).</span>
 <span class="sd">* ``listen`` — an audio-LM "does this contain {event}?" check; **#7 ships the</span>
-<span class="sd">  deterministic :class:`StringOverlapJudge`** here (caption/tag overlap). The real</span>
-<span class="sd">  Qwen2-Audio impl is a future :class:`~foley.agent.protocols.Judge` behind this same</span>
-<span class="sd">  ``VerifyLevel`` seam — no orchestrator change.</span>
+<span class="sd">  deterministic :class:`StringOverlapJudge`** here (caption/tag overlap); the real</span>
+<span class="sd">  Qwen2-Audio :class:`AudioLMJudge` (``foley[fit]``) is a</span>
+<span class="sd">  :class:`~foley.agent.protocols.Judge` behind this same ``VerifyLevel`` seam.</span>
 <span class="sd">* ``judge`` — :class:`AnthropicJudge`, an LLM arbiter (ties + scene consistency),</span>
 <span class="sd">  ``foley[agent]``; ``anthropic`` imported lazily.</span>
 
@@ -973,16 +973,134 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="p">(</span><span class="mf">1.0</span> <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"yes"</span><span class="p">)</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">),</span> <span class="n">out</span>
 
 
+<span class="c1">#: The answer spellings AQAScore reads P(yes) from: (yes-words, no-words). Each must be</span>
+<span class="c1">#: a single token; P(yes) is the softmax mass on the yes-group over both groups.</span>
+<span class="n">AQA_ANSWER_WORDS</span> <span class="o">=</span> <span class="p">((</span><span class="s2">"Yes"</span><span class="p">,</span> <span class="s2">"yes"</span><span class="p">),</span> <span class="p">(</span><span class="s2">"No"</span><span class="p">,</span> <span class="s2">"no"</span><span class="p">))</span>
+
+<span class="c1">#: ``from_pretrained`` options for the audio-LM: the checkpoint's own dtype (bf16 for</span>
+<span class="c1">#: Qwen2-Audio, ~15 GB) placed by ``accelerate`` across what devices there are.</span>
+<span class="n">AUDIOLM_LOAD_KWARGS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"dtype"</span><span class="p">:</span> <span class="s2">"auto"</span><span class="p">,</span> <span class="s2">"device_map"</span><span class="p">:</span> <span class="s2">"auto"</span><span class="p">}</span>
+
+<span class="c1">#: ``load_kwargs`` that only the model takes; the rest (``revision``, ``cache_dir``,</span>
+<span class="c1">#: ``token``, ...) also go to the processor so both come from the same snapshot.</span>
+<span class="n">MODEL_ONLY_LOAD_KWARGS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span>
+    <span class="p">{</span><span class="s2">"dtype"</span><span class="p">,</span> <span class="s2">"torch_dtype"</span><span class="p">,</span> <span class="s2">"device_map"</span><span class="p">,</span> <span class="s2">"attn_implementation"</span><span class="p">,</span>
+     <span class="s2">"quantization_config"</span><span class="p">,</span> <span class="s2">"low_cpu_mem_usage"</span><span class="p">,</span> <span class="s2">"max_memory"</span><span class="p">}</span>
+<span class="p">)</span>  <span class="c1"># fmt: skip</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_load_qwen2_audio</span><span class="p">(</span><span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">load_kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""``(processor, model)`` for a Qwen2-Audio checkpoint (lazy ``transformers``; downloads it)."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoProcessor</span><span class="p">,</span> <span class="n">Qwen2AudioForConditionalGeneration</span>
+
+    <span class="n">shared</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">load_kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">MODEL_ONLY_LOAD_KWARGS</span><span class="p">}</span>
+    <span class="n">processor</span> <span class="o">=</span> <span class="n">AutoProcessor</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_id</span><span class="p">,</span> <span class="o">**</span><span class="n">shared</span><span class="p">)</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">Qwen2AudioForConditionalGeneration</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_id</span><span class="p">,</span> <span class="o">**</span><span class="n">load_kwargs</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">processor</span><span class="p">,</span> <span class="n">model</span>
+
+
+<div class="viewcode-block" id="aqa_conversation">
+<a class="viewcode-back" href="../../../_autosummary/foley.agent.verify.html#foley.aqa_conversation">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">aqa_conversation</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[dict]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The one-turn chat the audio-LM sees: the clip as an audio part, then ``prompt``."""</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span>
+            <span class="s2">"content"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"audio"</span><span class="p">,</span> <span class="s2">"audio_url"</span><span class="p">:</span> <span class="s2">"candidate"</span><span class="p">},</span>
+                <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"text"</span><span class="p">,</span> <span class="s2">"text"</span><span class="p">:</span> <span class="n">prompt</span><span class="p">},</span>
+            <span class="p">],</span>
+        <span class="p">}</span>
+    <span class="p">]</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_single_token_ids</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">words</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[int]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Each word's token id; a :class:`ValueError` if one is not exactly one token."""</span>
+    <span class="n">ids</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+        <span class="n">toks</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">add_special_tokens</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">toks</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"answer word </span><span class="si">{</span><span class="n">w</span><span class="si">!r}</span><span class="s2"> is </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">toks</span><span class="p">)</span><span class="si">}</span><span class="s2"> tokens for this tokenizer, not 1; "</span>
+                <span class="s2">"pass answers= with single-token spellings"</span>
+            <span class="p">)</span>
+        <span class="n">ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">toks</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">ids</span>
+
+
+<div class="viewcode-block" id="qwen2_audio_pipeline">
+<a class="viewcode-back" href="../../../_autosummary/foley.agent.verify.html#foley.qwen2_audio_pipeline">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">qwen2_audio_pipeline</span><span class="p">(</span><span class="n">processor</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">answers</span><span class="o">=</span><span class="n">AQA_ANSWER_WORDS</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""The ``(prompt, wav, sr) -&gt; {'p_yes', 'p_no'}`` pipeline over a loaded Qwen2-Audio.</span>
+
+<span class="sd">    One forward pass, no generation: the clip (mono, resampled to the processor's</span>
+<span class="sd">    rate) and the question go through the chat template with the assistant turn</span>
+<span class="sd">    opened, and P(yes) is the next-token softmax mass on the yes-spellings, over the</span>
+<span class="sd">    yes- and no-spellings together (the AQAScore read-out, report 08 §2.1). A clip</span>
+<span class="sd">    longer than the feature extractor's window (Whisper's 30 s) is truncated by it,</span>
+<span class="sd">    so that is warned about.</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..audio</span><span class="w"> </span><span class="kn">import</span> <span class="n">resample</span><span class="p">,</span> <span class="n">to_mono</span>
+
+    <span class="n">fe</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">feature_extractor</span>
+    <span class="n">target_sr</span> <span class="o">=</span> <span class="n">fe</span><span class="o">.</span><span class="n">sampling_rate</span>
+    <span class="n">max_seconds</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">fe</span><span class="p">,</span> <span class="s2">"chunk_length"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">yes_words</span><span class="p">,</span> <span class="n">no_words</span> <span class="o">=</span> <span class="n">answers</span>
+    <span class="n">yes_ids</span> <span class="o">=</span> <span class="n">_single_token_ids</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">yes_words</span><span class="p">)</span>
+    <span class="n">no_ids</span> <span class="o">=</span> <span class="n">_single_token_ids</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">no_words</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">pipeline</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">wav</span><span class="p">,</span> <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">audio</span> <span class="o">=</span> <span class="n">resample</span><span class="p">(</span>
+            <span class="n">to_mono</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">wav</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)),</span> <span class="n">sr</span><span class="p">,</span> <span class="n">target_sr</span><span class="o">=</span><span class="n">target_sr</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">max_seconds</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">audio</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_seconds</span> <span class="o">*</span> <span class="n">target_sr</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"clip is </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">audio</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">target_sr</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> s; the audio-LM hears only the "</span>
+                <span class="sa">f</span><span class="s2">"first </span><span class="si">{</span><span class="n">max_seconds</span><span class="si">}</span><span class="s2"> s"</span><span class="p">,</span>
+                <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">apply_chat_template</span><span class="p">(</span>
+            <span class="n">aqa_conversation</span><span class="p">(</span><span class="n">prompt</span><span class="p">),</span> <span class="n">add_generation_prompt</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">tokenize</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+        <span class="n">inputs</span> <span class="o">=</span> <span class="n">processor</span><span class="p">(</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span> <span class="n">audio</span><span class="o">=</span><span class="p">[</span><span class="n">audio</span><span class="p">],</span> <span class="n">sampling_rate</span><span class="o">=</span><span class="n">target_sr</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">inference_mode</span><span class="p">():</span>
+            <span class="n">logits</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span><span class="o">.</span><span class="n">logits</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">probs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">[</span><span class="n">yes_ids</span> <span class="o">+</span> <span class="n">no_ids</span><span class="p">]</span><span class="o">.</span><span class="n">float</span><span class="p">(),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">p_yes</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">probs</span><span class="p">[:</span> <span class="nb">len</span><span class="p">(</span><span class="n">yes_ids</span><span class="p">)]</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"p_yes"</span><span class="p">:</span> <span class="n">p_yes</span><span class="p">,</span> <span class="s2">"p_no"</span><span class="p">:</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">p_yes</span><span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">pipeline</span></div>
+
+
+
 <div class="viewcode-block" id="AudioLMJudge">
 <a class="viewcode-back" href="../../../_autosummary/foley.agent.verify.html#foley.AudioLMJudge">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">AudioLMJudge</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The audio-LM ``listen`` rung (``foley[fit]``): Qwen2-Audio "does this contain {event}?".</span>
 
-<span class="sd">    ``transformers``/``torch`` are imported lazily inside :meth:`judge`; an injected</span>
-<span class="sd">    ``pipeline`` (the test seam, mirroring the Stable-Audio fake-pipeline seam) drives the</span>
-<span class="sd">    whole byte-decode → prompt → P(yes) → :class:`Verdict` path with no torch. Stashes</span>
-<span class="sd">    ``self.model`` + ``self.last_response`` so ``verify_match``'s GenAI span stays</span>
-<span class="sd">    informative (same getattr contract :class:`AnthropicJudge` uses).</span>
+<span class="sd">    With no ``pipeline``, the first :meth:`judge` loads ``model`` (``transformers``,</span>
+<span class="sd">    ``torch``, imported lazily; the 7B weights download on first use) and reads</span>
+<span class="sd">    P(yes) from one forward pass (:func:`qwen2_audio_pipeline`); later calls reuse it.</span>
+<span class="sd">    An injected ``pipeline`` (the test seam, mirroring the Stable-Audio fake-pipeline</span>
+<span class="sd">    seam) drives the whole byte-decode → prompt → P(yes) → :class:`Verdict` path with</span>
+<span class="sd">    no torch. Stashes ``self.model`` + ``self.last_response`` so ``verify_match``'s</span>
+<span class="sd">    GenAI span stays informative (same getattr contract :class:`AnthropicJudge` uses).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pipeline: ``(prompt, wav, sr) -&gt; {'p_yes': float}`` or yes/no text.</span>
+<span class="sd">        model: The Hugging Face checkpoint to load when no pipeline is given.</span>
+<span class="sd">        max_tokens: Kept for the GenAI span contract (the read-out generates none).</span>
+<span class="sd">        tau: The P(yes) threshold for a match.</span>
+<span class="sd">        load_kwargs: ``from_pretrained`` options (default :data:`AUDIOLM_LOAD_KWARGS`).</span>
 <span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
@@ -992,11 +1110,15 @@ window.runMermaid = runMermaid;</script>
         <span class="n">model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Qwen/Qwen2-Audio-7B-Instruct"</span><span class="p">,</span>
         <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span>
         <span class="n">tau</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">load_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_pipeline</span> <span class="o">=</span> <span class="n">pipeline</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_tokens</span> <span class="o">=</span> <span class="n">max_tokens</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tau</span> <span class="o">=</span> <span class="n">tau</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">AUDIOLM_LOAD_KWARGS</span> <span class="k">if</span> <span class="n">load_kwargs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">load_kwargs</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">last_response</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="AudioLMJudge.judge">
@@ -1010,10 +1132,9 @@ window.runMermaid = runMermaid;</script>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Verdict</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Listen to the clip and return the AQAScore :class:`Verdict` (``P(yes) ≥ tau``)."""</span>
         <span class="n">wav</span><span class="p">,</span> <span class="n">sr</span> <span class="o">=</span> <span class="n">_load_candidate_audio</span><span class="p">(</span><span class="n">candidate</span><span class="p">)</span>
-        <span class="n">pipeline</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_pipeline</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipeline</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_pipeline</span><span class="p">()</span>
-        <span class="p">)</span>
-        <span class="n">p_yes</span><span class="p">,</span> <span class="n">raw</span> <span class="o">=</span> <span class="n">_aqa_yes_probability</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">wav</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">query</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipeline</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pipeline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_pipeline</span><span class="p">()</span>
+        <span class="n">p_yes</span><span class="p">,</span> <span class="n">raw</span> <span class="o">=</span> <span class="n">_aqa_yes_probability</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pipeline</span><span class="p">,</span> <span class="n">wav</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">query</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">last_response</span> <span class="o">=</span> <span class="n">raw</span>
         <span class="k">return</span> <span class="n">Verdict</span><span class="p">(</span>
             <span class="n">match</span><span class="o">=</span><span class="n">p_yes</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau</span><span class="p">,</span>
@@ -1023,14 +1144,15 @@ window.runMermaid = runMermaid;</script>
         <span class="p">)</span></div>
 
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_build_pipeline</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-    <span class="p">):</span>  <span class="c1"># pragma: no cover - the real Qwen2-Audio path (foley[fit])</span>
-<span class="w">        </span><span class="sd">"""Lazily build the real Qwen2-Audio pipeline wrapper (heavy; behind ``foley[fit]``)."""</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="s2">"AudioLMJudge needs an injected pipeline or foley[fit] (transformers+torch); "</span>
-            <span class="s2">"the real Qwen2-Audio wrapper is a deferred #10b follow-up."</span>
-        <span class="p">)</span></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Load ``self.model`` and wrap it as the P(yes) pipeline (``foley[fit]``)."""</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">_audiolm_available</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
+                <span class="s2">"AudioLMJudge needs an injected pipeline or foley[fit] "</span>
+                <span class="s2">"(pip install 'foley[fit]': transformers, torch, accelerate)"</span>
+            <span class="p">)</span>
+        <span class="n">processor</span><span class="p">,</span> <span class="n">model</span> <span class="o">=</span> <span class="n">_load_qwen2_audio</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">load_kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">qwen2_audio_pipeline</span><span class="p">(</span><span class="n">processor</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span></div>
 
 
 
@@ -1042,10 +1164,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    :class:`StringOverlapJudge`, so ``foley.evaluate_fit()`` is hermetic and free out of</span>
 <span class="sd">    the box whatever keys are set.</span>
 
-<span class="sd">    :class:`AudioLMJudge` (the audio-LM ``listen`` rung) is **injection-only** in this</span>
-<span class="sd">    slice: its real Qwen2-Audio pipeline is a deferred #10b follow-up, so the resolver</span>
-<span class="sd">    does not auto-select it (it would need ``foley[fit]`` *and* a built pipeline). Pass</span>
-<span class="sd">    ``fit_judge=AudioLMJudge(pipeline=...)`` explicitly to use it. Tests inject explicitly.</span>
+<span class="sd">    :class:`AudioLMJudge` (the audio-LM ``listen`` rung) is **injection-only**: the</span>
+<span class="sd">    resolver never auto-selects it, because it means a ~15 GB Qwen2-Audio download and</span>
+<span class="sd">    ``foley[fit]``. Pass ``fit_judge=AudioLMJudge()`` (or ``AudioLMJudge(pipeline=...)``)</span>
+<span class="sd">    explicitly to use it.</span>
 <span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.llm</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_rung</span>
 

@@ -52,6 +52,7 @@ foley.eval
       FitReport
       AlphaResult
       FidelityStamp
+      FadtkFidelity
       FidelityResult
       Passage
       PassageTaste
@@ -68,6 +69,8 @@ foley.eval
    panel
    baseline
    embedder
+   fadtk
+   fadtk_driver
    fidelity
    fit
    golden
