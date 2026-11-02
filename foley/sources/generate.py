@@ -905,8 +905,7 @@ def estimate_order(backend=None, **affordances) -> Optional[float]:
     passed over only when nothing was billed, see :func:`generate_in_order`), but which
     one depends on who answers, so the bound is the dearest backend the order would try.
     ``None`` (unknown) when any of them is unknown. ``affordances`` may carry the call's
-    ``on_unsupported``; the façade's other keywords (``library=``, ``reuse_cached=``, …)
-    are not affordances and are ignored.
+    other keywords (:func:`priced_affordances`).
 
     Raises:
         UnsupportedParameter: When every backend tried refuses the call (#164).
@@ -914,11 +913,7 @@ def estimate_order(backend=None, **affordances) -> Optional[float]:
     from ._dispatch import UnsupportedParameter, estimate_generation
     from .registry import SOURCE_REGISTRY, discover_sources
 
-    affordances = {
-        k: v
-        for k, v in affordances.items()
-        if k not in _GENERATE_KNOWN or k == "on_unsupported"
-    }
+    affordances = priced_affordances(affordances)
 
     if isinstance(backend, (list, tuple)):
         order, paid_ok = tuple(backend), True
@@ -953,6 +948,21 @@ def estimate_order(backend=None, **affordances) -> Optional[float]:
     if not prices or any(p is None for p in prices):
         return None
     return max(prices)
+
+
+def priced_affordances(kwargs: Mapping) -> dict:
+    """The keywords of a generation call that its price is decided from: its
+    affordances and its ``on_unsupported``. The façade's other keywords (``prompt=``,
+    ``library=``, ``reuse_cached=``, …) are not affordances and are left out.
+
+    >>> priced_affordances({"duration_s": 2, "library": None, "on_unsupported": "note"})
+    {'duration_s': 2, 'on_unsupported': 'note'}
+    """
+    return {
+        k: v
+        for k, v in kwargs.items()
+        if (k not in _GENERATE_KNOWN and k != "prompt") or k == "on_unsupported"
+    }
 
 
 def _unwrap_own_entry(provider_params, name: str) -> Mapping:

@@ -282,7 +282,7 @@ def test_build_mcp_server_registers_the_full_tool_surface(wired):
         expected <= names and "foley_weave" in names and "foley_capabilities" in names
     )
     assert {"foley_score", "foley_guide"} <= names  # the AI-first agent tools
-    assert len(mcp._resolve_tools()) == 22
+    assert len(mcp._resolve_tools()) == 23
 
 
 def test_resolve_tools_subset():

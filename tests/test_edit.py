@@ -906,3 +906,181 @@ def test_a_credential_listing_several_licences_says_all_of_them_apply(library):
     plain_work = {a["label"]: a["data"] for a in plain["manifest"]["assertions"]}[
         "stds.schema-org.CreativeWork"]
     assert "description" not in plain_work
+
+
+# ---------------------------------------------------------------------------
+# the foley_edit verb, over MCP and the CLI (#215)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def served(library, monkeypatch):
+    """The verbs wired to ``library`` and an in-memory session; the fake fal edit
+    adapters registered under their names (the verb takes no adapter=); paid
+    generation opted in (an op's default backend is paid). Yields
+    ``{backend: runner}``; everything is restored afterwards."""
+    from foley.agent import verbs
+    from foley.agent.session import SessionStore
+    from foley.sources.registry import SOURCE_REGISTRY, discover_sources, register_source
+
+    monkeypatch.setenv("FOLEY_GENERATE_PAID", "1")
+    discover_sources()
+    saved_state, sessions = dict(verbs._STATE), {}
+    saved_entries = {name: SOURCE_REGISTRY.get(name) for name, _ in OPS.values()}
+    verbs._configure(
+        library=library,
+        session_factory=lambda sid: sessions.setdefault(
+            sid, SessionStore(sid, candidates={}, picks={}, rejects={})),
+        runtime=foley.RuntimeConfig.default(),
+    )
+    verbs._STATE["budget"] = None
+    runners = {}
+    for name, _ in OPS.values():
+        adapter, runners[name], _ = _adapter(name)
+        register_source(name, CONFIGS[name], adapter)
+    yield runners
+    for name, entry in saved_entries.items():
+        if entry is None:
+            SOURCE_REGISTRY.pop(name, None)
+        else:
+            SOURCE_REGISTRY[name] = entry
+    verbs._STATE.clear()
+    verbs._STATE.update(saved_state)
+
+
+def test_the_edit_verb_returns_the_edits_candidate_row(library, served):
+    from foley.agent import mcp
+
+    sid = _add(library)
+    out = mcp.foley_edit(sid, "extend", "a heavier door", extend_after_s=2.0,
+                         session="s1")
+    assert out["ok"] is True and out["id"] != sid and out["origin"] == "generated"
+    assert out["backend"] == "fal_stable_audio_3_extend" and out["license_ok"] is True
+    assert out["cost_actual_usd"] == pytest.approx(0.0271)
+    assert out["license"]["source"] == "fal_stable_audio_3_extend"
+    (call,) = served["fal_stable_audio_3_extend"].calls
+    assert call[1]["extend_seconds_after"] == 2.0 and "extend_seconds_before" not in call[1]
+    # cached in the session: the edit is a candidate like any other
+    from foley.agent import verbs
+
+    assert [c.sound.id for c in verbs._session("s1").rehydrate([out["id"]])] == [out["id"]]
+    json.dumps(out)
+
+
+def test_the_edit_verb_runs_from_the_generated_cli(library, served, capsys):
+    from foley import cli
+
+    sid = _add(library)
+    code = cli.main(["edit", sid, "inpaint", "--inpaint-start-s", "0.5",
+                     "--inpaint-end-s", "1.0", "--backend", "fal_stable_audio_3_inpaint"])
+    out = json.loads(capsys.readouterr().out)
+    assert code == 0 and out["ok"] is True and out["backend"] == "fal_stable_audio_3_inpaint"
+    (call,) = served["fal_stable_audio_3_inpaint"].calls
+    assert call[1]["mask_start_seconds"] == 0.5 and call[1]["mask_end_seconds"] == 1.0
+
+
+def test_the_edit_verb_refuses_a_source_its_intent_cannot_use(library, served, capsys):
+    from foley import cli
+    from foley.agent import mcp
+
+    sid = _add(library, "CC-BY-NC-4.0")
+    out = mcp.foley_edit(sid, "extend", extend_after_s=1.0)  # commercial by default
+    assert out["ok"] is False and out["status"] == "refused"
+    assert "for this use" in out["error"] and "commercial" in out["error"]
+    assert cli.main(["edit", sid, "extend", "--extend-after-s", "1"]) == 1
+    assert json.loads(capsys.readouterr().out)["status"] == "refused"
+    assert all(runner.calls == [] for runner in served.values())
+    # a non-commercial project may edit it, and gets a non-commercial clip
+    ok = mcp.foley_edit(sid, "extend", extend_after_s=1.0, commercial_ok=False,
+                        backend="fal_stable_audio_3_extend")
+    assert ok["ok"] is True and ok["license"]["commercial_ok"] is False
+
+
+def test_the_edit_verb_refuses_rights_that_forbid_an_edit(library, served):
+    from foley.agent import mcp
+
+    sid = _add(library, verified=False)  # unverified rights: no edit, fail-closed
+    out = mcp.foley_edit(sid, "extend", backend="fal_stable_audio_3_extend",
+                         extend_after_s=1.0)
+    assert out["ok"] is False and out["status"] == "refused" and "cannot edit" in out["error"]
+    assert served["fal_stable_audio_3_extend"].calls == []
+
+
+def test_the_edit_verb_answers_bad_arguments_with_an_invalid_row(library, served):
+    from foley.agent import mcp
+
+    sid = _add(library)
+    for out in (
+        mcp.foley_edit(sid, "reverse"),  # an unknown op
+        mcp.foley_edit("nope", "extend", extend_after_s=1.0),  # an unknown sound
+        mcp.foley_edit(sid, "inpaint", inpaint_start_s=1.0, inpaint_end_s=0.5),
+        mcp.foley_edit(sid, "extend", backend="fal_stable_audio_3_inpaint",
+                       extend_after_s=1.0),  # a backend that does another op
+        mcp.foley_edit(sid, "extend", territory="Mars"),
+    ):
+        assert out["ok"] is False and out["status"] == "invalid" and out["error"]
+    assert all(runner.calls == [] for runner in served.values())
+
+
+def test_the_edit_verb_takes_every_edit_parameter():
+    import inspect
+
+    from foley.agent.verbs import foley_edit
+    from foley.base import EDIT_AFFORDANCES
+
+    assert set(EDIT_AFFORDANCES) - {"audio"} <= set(inspect.signature(foley_edit).parameters)
+
+
+# ---------------------------------------------------------------------------
+# foley.estimate("edit", ...) (#215)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("op", sorted(OPS))
+def test_an_edit_estimate_is_what_the_edit_is_charged(library, op):
+    name, params = OPS[op]
+    sid = _add(library)
+    by_op = foley.estimate("edit", op=op, **params)  # the op's default backend
+    named = foley.estimate("edit", op=op, backend=name, **params)
+    with_source = foley.estimate("edit", op=op, source=sid, library=library,
+                                 prompt="x", **params)
+    cand, _, _ = _edit(library, op, sid)
+    assert by_op == named == with_source == cand.cost_estimate_usd == cand.cost_actual_usd
+    assert by_op == CONFIGS[name]["pricing"]["amount_usd"]
+
+
+def test_an_edit_estimate_follows_the_named_backend(paid_source_edit, monkeypatch):
+    monkeypatch.setenv("FAL_KEY", "k")  # the op's default: the first with its key set
+    assert foley.estimate("edit", op="extend", backend="dear_extend",
+                          extend_after_s=1.0) == pytest.approx(0.5)
+    assert foley.estimate("edit", op="extend", extend_after_s=1.0) == pytest.approx(0.0271)
+
+
+@pytest.fixture
+def paid_source_edit():
+    """A second extend backend, dearer than fal's, registered after it."""
+    import copy
+
+    from foley.sources.registry import SOURCE_REGISTRY, register_source
+
+    cfg = copy.deepcopy(CONFIGS["fal_stable_audio_3_extend"])
+    cfg["name"] = "dear_extend"
+    cfg["pricing"] = {**cfg["pricing"], "amount_usd": 0.5}
+    register_source("dear_extend", cfg)
+    yield cfg
+    SOURCE_REGISTRY.pop("dear_extend", None)
+
+
+def test_an_edit_estimate_refuses_what_the_edit_would(library):
+    with pytest.raises(ValueError, match="unknown edit op 'reverse'"):
+        foley.estimate("edit", op="reverse")
+    with pytest.raises(ValueError, match="does not do the extend edit"):
+        foley.estimate("edit", op="extend", backend="fal_stable_audio_3_inpaint",
+                       extend_after_s=1.0)
+    with pytest.raises(ValueError, match="needs inpaint_end_s="):
+        foley.estimate("edit", op="inpaint", inpaint_start_s=0.5)
+    with pytest.raises(ValueError, match="past the end"):  # the source clip is 1.5 s
+        foley.estimate("edit", op="inpaint", source=_add(library), library=library,
+                       inpaint_start_s=0.5, inpaint_end_s=9.0)
+    with pytest.raises(KeyError):
+        foley.estimate("edit", op="extend", backend="nope", extend_after_s=1.0)

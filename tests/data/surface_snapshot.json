@@ -66,6 +66,20 @@
       "territory": null,
       "preset": null
     },
+    "foley_edit": {
+      "sound_id": "<required>",
+      "op": "<required>",
+      "prompt": "",
+      "backend": null,
+      "commercial_ok": true,
+      "session": "default",
+      "territory": null,
+      "strength": null,
+      "inpaint_start_s": null,
+      "inpaint_end_s": null,
+      "extend_before_s": null,
+      "extend_after_s": null
+    },
     "foley_plan": {
       "session": "default",
       "transcript": null,
@@ -126,6 +140,7 @@
   "cli": [
     "capabilities",
     "drop-pick",
+    "edit",
     "find",
     "generate",
     "guide",

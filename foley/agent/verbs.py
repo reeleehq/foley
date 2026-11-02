@@ -430,10 +430,8 @@ def foley_generate(
     ``laser``, ``pickup``, ``explosion``, ...); other backends ignore it with a note.
     """
     from .. import GenerationError, generate
-    from ..cost import BudgetExceeded, spend_scope
-    from ..runtime import EXTERNAL, EgressBlocked
-    from ..sources._dispatch import UnsupportedParameter
-    from ..sources.base import SourceConfigurationError
+    from ..cost import spend_scope
+    from ..runtime import EXTERNAL
     from ..sources.generate import (
         backend_is_paid,
         first_runnable_backend,
@@ -492,14 +490,109 @@ def foley_generate(
                 **({"preset": preset} if preset is not None else {}),
             )
         backend = cand.sound.license.source or backend  # the one that served it
-    except (
+    except (*_refused_before_billing(), GenerationError) as exc:
+        return _failed_generation(exc, backend=backend)
+    return {
+        "ok": True,
+        "sound_ids": [cand.sound.id],
+        "backend": backend,
+        "license": _license_summary(cand.sound.license),
+        **_generated_facts(cand, use),
+    }
+
+
+def foley_edit(
+    sound_id: str,
+    op: str,
+    prompt: str = "",
+    *,
+    backend: Optional[str] = None,
+    commercial_ok: bool = DEFAULT_INTENDED_USE.commercial,
+    session: str = "default",
+    territory: Optional[str] = None,
+    strength: Optional[float] = None,
+    inpaint_start_s: Optional[float] = None,
+    inpaint_end_s: Optional[float] = None,
+    extend_before_s: Optional[float] = None,
+    extend_after_s: Optional[float] = None,
+) -> dict:
+    """Edit a library sound into a new one (paid): audio-to-audio, inpaint or extend.
+
+    ``op``: ``audio_to_audio`` (regenerate the whole clip; ``strength`` 0..1, how far
+    from the source), ``inpaint`` (regenerate ``inpaint_start_s``..``inpaint_end_s``,
+    keep the rest) or ``extend`` (``extend_before_s`` and/or ``extend_after_s`` seconds
+    of new sound). ``prompt``: what the result should sound like (default: the
+    source's caption). ``backend``: an edit backend doing ``op`` (default: the op's,
+    which runs only once the host opted in to paid generation).
+
+    The new sound is stored in the library and cached in the session (pick it like any
+    candidate); its licence is the backend's narrowed to the source's, and credits
+    the source. Refused before anything is paid for when the source's rights do not
+    allow an edit, or the edit could not serve this call's intent (``commercial_ok``,
+    ``territory``): an edit of a non-commercial sound is non-commercial.
+    """
+    from .. import GenerationError, edit
+    from ..cost import spend_scope
+
+    use, invalid = _intent(commercial_ok, territory)
+    if invalid:
+        return invalid
+    params = dict(
+        strength=strength,
+        inpaint_start_s=inpaint_start_s,
+        inpaint_end_s=inpaint_end_s,
+        extend_before_s=extend_before_s,
+        extend_after_s=extend_after_s,
+    )
+    try:
+        with spend_scope(_server_budget()):
+            cand = edit(
+                sound_id,
+                op,
+                prompt,
+                backend=backend,
+                library=_lib(),
+                intended_use=use,
+                **{k: v for k, v in params.items() if v is not None},
+            )
+    except (*_refused_before_billing(), GenerationError) as exc:
+        return _failed_generation(exc, backend=backend)
+    except (LookupError, ValueError) as exc:  # an unknown op or sound, a bad window
+        return _invalid(exc)
+    _session(session).cache_candidates([cand])
+    return {
+        "ok": True,
+        **_candidate_row(cand),
+        "backend": cand.sound.license.source or backend,
+        **_generated_facts(cand, use),
+    }
+
+
+def _refused_before_billing() -> tuple:
+    """The exceptions a generation or an edit raises before any billed call."""
+    from ..cost import BudgetExceeded
+    from ..runtime import EgressBlocked
+    from ..sources._dispatch import UnsupportedParameter
+    from ..sources.base import SourceConfigurationError
+    from ..sources.generate import EditRefusal
+
+    return (
         EgressBlocked,
         BudgetExceeded,
         SourceConfigurationError,
         UnsupportedParameter,
-    ) as exc:
-        # Refused before a billed call (an earlier backend in the order may have been
-        # refused by its provider, unbilled): say why, as JSON.
+        EditRefusal,
+    )
+
+
+def _failed_generation(exc: Exception, *, backend) -> dict:
+    """The JSON row of a generation or an edit that stored no sound.
+
+    ``refused`` when nothing was billed (an earlier backend in an order may have been
+    refused by its provider, unbilled); else the generation's status, and where its
+    paid bytes are kept (``cache_key``: ``foley.generations.get(cache_key)``, #107).
+    """
+    if isinstance(exc, _refused_before_billing()):
         return {
             "ok": False,
             "status": "refused",
@@ -507,24 +600,22 @@ def foley_generate(
             "backend": backend,
             "skipped_backends": getattr(exc, "skipped_backends", None),
         }
-    except GenerationError as exc:
-        return {
-            "ok": False,
-            "status": getattr(exc, "status", None),
-            "error": str(exc),
-            "backend": backend,
-            # The paid bytes, when kept: foley.generations.get(cache_key) (#107).
-            "cache_key": getattr(exc, "cache_key", None),
-        }
+    return {
+        "ok": False,
+        "status": getattr(exc, "status", None),
+        "error": str(exc),
+        "backend": backend,
+        "cache_key": getattr(exc, "cache_key", None),
+    }
+
+
+def _generated_facts(cand, use) -> dict:
+    """What a generated (or edited) candidate's row adds: whether its licence serves
+    this call's intent, its notes, its cost and the server's spend so far."""
     from ..licensing import keep
 
-    usable = keep(cand.sound.license, use)
     return {
-        "ok": True,
-        "sound_ids": [cand.sound.id],
-        "backend": backend,
-        "license_ok": usable,  # under this call's intent (commercial_ok, territory)
-        "license": _license_summary(cand.sound.license),
+        "license_ok": keep(cand.sound.license, use),
         "notes": list(cand.notes),
         "cost_estimate_usd": cand.cost_estimate_usd,
         "cost_actual_usd": cand.cost_actual_usd,
@@ -787,7 +878,8 @@ THE LOOP (each tool is JSON-in/JSON-out; audio is referenced by store key, never
   2. REVIEW + EDIT the timeline (all return a new timeline; nothing is destructive):
        foley_swap_clip / foley_set_gain / foley_nudge / foley_toggle / foley_set_master.
   3. foley_weave(narration, timeline) → the mastered mix (by store key) + SDH captions + credits.
-  4. foley_generate(prompt) ONLY when nothing fits — it adds the clip to the library (re-searchable).
+  4. foley_generate(prompt) ONLY when nothing fits — it adds the clip to the library (re-searchable);
+     foley_edit(sound_id, op) when one ALMOST fits: audio_to_audio / inpaint / extend it (paid).
 
 TASTE HEURISTICS:
   - Layers: `sfx_fg` = spot effects on a word; `ambience` = a bed under a sentence/scene (loops);
@@ -799,7 +891,7 @@ TASTE HEURISTICS:
     non-commercial project. Each row's `license` carries full TASL + every rights flag.
     Some licences exclude territories (HunyuanVideo-Foley: EU, GB, KR): every tool that
     finds sounds, plans or renders the mix (foley_find, foley_search, foley_similar_to,
-    foley_refine, foley_score, foley_generate, foley_plan, foley_weave) refuses them
+    foley_refine, foley_score, foley_generate, foley_edit, foley_plan, foley_weave) refuses them
     unless territory= names where the sound is used (an ISO code like "US"; "WORLD" for
     online publishing, which they refuse). foley_plan / foley_weave re-check every
     placed sound (and a library narration) under their own intent, so pass the same
@@ -925,6 +1017,7 @@ VERBS = (
     Verb(foley_reject),
     Verb(foley_list_picks),
     Verb(foley_generate),
+    Verb(foley_edit),
     Verb(foley_plan),
     Verb(foley_weave),
     Verb(foley_swap_clip),

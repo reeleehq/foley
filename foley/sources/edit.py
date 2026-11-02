@@ -20,8 +20,12 @@ watermark, ingest, QC). What is particular to an edit lives here:
   to ``transformations``, which the credits (:func:`foley.provenance.credits.derived_sources`)
   and the content credential (a ``parentOf`` ingredient) read.
 * :func:`resolve_edit` — what :func:`foley.edit` adds on top: the source sound from
-  the library (its bytes, which must be sendable), the op and the backend (named, or
-  the op's default from the registry configs' ``edit_op``).
+  the library (its bytes, which must be sendable), the op and the backend
+  (:func:`edit_backend`: named, or the op's default from the registry configs'
+  ``edit_op``), and, given an intended use, whether the edit could serve it
+  (:func:`edit_use_refusal`).
+* :func:`estimate_edit` — what an edit would cost, priced by its op and backend
+  through the same path as the call (:func:`foley.estimate` ``('edit', ...)``).
 """
 
 from __future__ import annotations
@@ -224,8 +228,10 @@ def resolve_edit(
 
     The op's parameters and the source's rights are checked by the generation's edit
     mode itself (:func:`foley.sources._dispatch.translate_affordances`,
-    :func:`edit_lineage`), before anything is paid for. Checked here is only what must
-    be known before the source's bytes are read from the library.
+    :func:`edit_lineage`), before anything is paid for. Checked here is what must be
+    known before the source's bytes are read from the library, and, when
+    ``affordances`` carry an ``intended_use``, whether the edit could serve it
+    (:func:`edit_use_refusal`).
 
     Args:
         source: The library id of the sound to edit.
@@ -245,17 +251,12 @@ def resolve_edit(
             that does another op.
         KeyError: If ``source`` is not in ``library``, or ``backend`` is unknown.
         EditRefusal: If the source's bytes may not be sent on
-            (:func:`foley.licensing.upload_refusal`: a by-reference Freesound sound).
+            (:func:`foley.licensing.upload_refusal`: a by-reference Freesound sound),
+            or the edit could not serve the ``intended_use`` given.
         SourceConfigurationError: For an unnamed paid backend without the opt-in.
     """
     from ..licensing import upload_refusal
-    from .generate import (
-        backend_is_paid,
-        default_edit_backend,
-        edit_backends,
-        paid_generation_opted_in,
-    )
-    from .registry import get_source
+    from .generate import backend_is_paid, paid_generation_opted_in
 
     taken = sorted({"audio", "derived_from"} & set(affordances or ()))
     if taken:
@@ -265,8 +266,7 @@ def resolve_edit(
             "that is not in the library: foley.generate(prompt, backend=<an edit "
             "backend>, audio=<the clip>, derived_from=<its LicenseRecord>))"
         )
-    if op not in EDIT_OPS:
-        raise ValueError(f"unknown edit op {op!r}; expected one of {sorted(EDIT_OPS)}")
+    _check_op(op)
     try:
         record = library[source]
     except KeyError:
@@ -278,26 +278,144 @@ def resolve_edit(
             source_id=source,
             reason=why,
         )
-    injected = getattr(adapter, "config", None) or {}
+    injected = getattr(adapter, "config", None)
+    named = edit_backend(op, backend, injected=injected)
+    unnamed = not (backend or (injected or {}).get("name"))
+    if unnamed and backend_is_paid(named) and not paid_generation_opted_in(mode="edit"):
+        raise SourceConfigurationError(
+            f"the {op} edit's default backend {named!r} is paid, and paid "
+            "generation is not opted in: set $FOLEY_GENERATE_PAID=1, or name "
+            f"backend={named!r}; nothing was generated"
+        )
+    call = EditCall(backend=named, prompt=prompt or record.caption or "", source=record)
+    use = (affordances or {}).get("intended_use")
+    why = edit_use_refusal(call, use) if use is not None else None
+    if why is not None:
+        raise EditRefusal(
+            f"cannot edit {source!r} for this use: {why}; nothing was generated",
+            source_id=source,
+            reason=why,
+        )
+    return call
+
+
+def edit_backend(op: str, backend: Optional[str] = None, *, injected=None) -> str:
+    """The backend that runs an edit of ``op``: ``backend``, else the ``injected``
+    adapter config's name, else the op's default
+    (:func:`foley.sources.generate.default_edit_backend`).
+
+    Read from the configs only: no adapter is built and no key is needed, so an
+    estimate resolves the backend exactly as the call does.
+
+    Raises:
+        ValueError: For an unknown op, or a named backend that does another op.
+        KeyError: For an unknown backend.
+    """
+    from .generate import default_edit_backend, edit_backends
+
+    _check_op(op)
+    injected = injected or {}
     named = backend or injected.get("name")
     if named is None:
-        named = default_edit_backend(op)
-        if backend_is_paid(named) and not paid_generation_opted_in(mode="edit"):
-            raise SourceConfigurationError(
-                f"the {op} edit's default backend {named!r} is paid, and paid "
-                "generation is not opted in: set $FOLEY_GENERATE_PAID=1, or name "
-                f"backend={named!r}; nothing was generated"
-            )
-    else:
-        config = (
-            injected if injected.get("name") == named else get_source(named)["config"]
+        return default_edit_backend(op)
+    config = injected if injected.get("name") == named else _registered_config(named)
+    if not _does(config, op):
+        raise ValueError(
+            f"{named!r} does not do the {op} edit; the backends that do: "
+            f"{list(edit_backends(op))}"
         )
-        if not _does(config, op):
-            raise ValueError(
-                f"{named!r} does not do the {op} edit; the backends that do: "
-                f"{list(edit_backends(op))}"
-            )
-    return EditCall(backend=named, prompt=prompt or record.caption or "", source=record)
+    return named
+
+
+def edit_use_refusal(call: EditCall, intended_use) -> Optional[str]:
+    """Why the edit ``call`` could not serve ``intended_use``, or ``None`` if it can.
+
+    The edit's rights are its backend's narrowed to its source's
+    (:meth:`EditLineage.apply`), so the use is refused when either refuses it: an edit
+    of a non-commercial sound under a commercial use is money spent on a clip nobody
+    may place. Decided before anything is paid for.
+    """
+    from ..licensing import refusal_reason
+    from .generate import generation_rights_refusal
+
+    why = refusal_reason(call.source.license, intended_use)
+    if why is not None:
+        return f"its source's licence does not allow it ({why})"
+    return generation_rights_refusal(call.backend, intended_use)
+
+
+#: What an edit priced without its source clip is given in the clip's place: bytes
+#: that cannot be read, so the clip's length is unknown (as a URL's), a window is not
+#: checked against its end, and a price by the clip's length is unknown (``None``).
+_UNREAD_CLIP = b""
+
+
+def estimate_edit(
+    op: str,
+    *,
+    source: Optional[str] = None,
+    backend: Optional[str] = None,
+    library=None,
+    adapter=None,
+    **kwargs,
+) -> Optional[float]:
+    """What :func:`foley.edit` of ``op`` would cost in USD, or ``None`` if unknown.
+
+    Priced by the backend the call would use (:func:`edit_backend`: named, or the op's
+    default, whether or not paid generation is opted in: the price is what opting in
+    would spend) through the call's own pricing
+    (:func:`foley.sources._dispatch.estimate_generation`: same translation, same
+    parameter checks, same input cover). Given ``source``, the clip is read from
+    ``library`` (default: the process-wide one), so a window past its end raises as
+    the call would, and a price by the clip's length is known.
+
+    Args:
+        op: The edit op (:data:`foley.base.EDIT_OPS`).
+        source: The library id of the sound to edit (optional).
+        backend: An edit source doing ``op``; ``None``: the op's default.
+        library: The library holding ``source``.
+        adapter: An injected adapter (its config names the backend), as the call's.
+        **kwargs: The op's parameters and the call's other keywords (the ones that
+            are not generation affordances, ``prompt=`` included, are ignored).
+
+    Raises:
+        ValueError: For an unknown op, a backend that does another op, or the op's
+            parameters missing or out of range.
+        KeyError: For an unknown backend, or a ``source`` not in the library.
+    """
+    from ._dispatch import estimate_generation
+    from .generate import priced_affordances
+
+    name = edit_backend(op, backend, injected=getattr(adapter, "config", None))
+    if source is None:
+        audio = _UNREAD_CLIP
+    else:
+        if library is None:
+            from ..index.library import default_library
+
+            library = default_library()
+        audio = library.audio(source)
+    return estimate_generation(name, audio=audio, **priced_affordances(kwargs))
+
+
+def _check_op(op: str) -> None:
+    """Raise ``ValueError`` for an op not in :data:`foley.base.EDIT_OPS`."""
+    if op not in EDIT_OPS:
+        raise ValueError(f"unknown edit op {op!r}; expected one of {sorted(EDIT_OPS)}")
+
+
+def _registered_config(name: str) -> dict:
+    """The registered config of source ``name`` (no adapter is built).
+
+    Raises:
+        KeyError: For an unknown source (:func:`foley.sources.registry.get_source`'s).
+    """
+    from .registry import SOURCE_REGISTRY, discover_sources, get_source
+
+    discover_sources()
+    if name not in SOURCE_REGISTRY:
+        get_source(name)  # raises the informative KeyError
+    return SOURCE_REGISTRY[name]["config"]
 
 
 def _does(config: dict, op: str) -> bool:

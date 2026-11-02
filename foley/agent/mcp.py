@@ -34,6 +34,7 @@ from .verbs import (
     foley_reject,
     foley_list_picks,
     foley_generate,
+    foley_edit,
     foley_plan,
     foley_weave,
     foley_swap_clip,
