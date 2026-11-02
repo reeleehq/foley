@@ -26,25 +26,16 @@ from foley.licensing import (  # noqa: E402
     consumer_license_code,
     narrow_to_source,
 )
-from foley.provenance import sound_rights  # noqa: E402
+from foley.provenance import (  # noqa: E402
+    ASSET_SOURCE_EXTRAS,
+    PROVENANCE_FIELDS,
+    RIGHTS_FIELDS,
+    sound_rights,
+)
 from foley.sources.base import generated_license  # noqa: E402
 from foley.stores import content_key  # noqa: E402
 
 SR = 48_000
-
-#: ``lacing.Rights``' fields (lacing#34, pinned to ``an``'s ``AssetSource``).
-RIGHTS_FIELDS = {
-    "provider",
-    "id",
-    "title",
-    "license",
-    "license_url",
-    "attribution",
-    "source_page_url",
-    "author",
-    "author_url",
-    "cacheable",
-}
 
 
 def _flac(freq: float, *, dur: float = 0.25) -> bytes:
@@ -162,7 +153,7 @@ def test_by_reference_sound_is_refused(library):
 @pytest.mark.parametrize("sound_id", THREE)
 def test_rights_use_exactly_the_rights_field_names(library, sound_id):
     _data, rights, _prov = foley.export_sound(sound_id, library=library)
-    assert set(rights) == RIGHTS_FIELDS
+    assert set(rights) == set(RIGHTS_FIELDS)
     assert rights["cacheable"] is True
     assert all(v is None or v != "" for v in rights.values())
 
@@ -214,11 +205,22 @@ def test_unverified_rights_export_as_unknown(library):
 # ---------------------------------------------------------------------------
 
 
+def test_the_provenance_field_names_are_lacings_and_ans():
+    """foley's one copy of the downstream records' field names (PROVENANCE_FIELDS,
+    which a titles file may not name) is pinned to each model that is installed."""
+    lacing = pytest.importorskip("lacing")
+    assert set(lacing.Rights.model_fields) == set(RIGHTS_FIELDS)
+    assets = pytest.importorskip("an.ir.assets")
+    fields = set(assets.AssetSource.model_fields)
+    assert fields - set(RIGHTS_FIELDS) == set(ASSET_SOURCE_EXTRAS)
+    assert set(PROVENANCE_FIELDS) == fields | set(RIGHTS_FIELDS)
+
+
 @pytest.mark.parametrize("sound_id", THREE)
 def test_rights_validate_as_lacing_rights(library, sound_id):
     lacing = pytest.importorskip("lacing")
     _data, rights, _prov = foley.export_sound(sound_id, library=library)
-    assert set(lacing.Rights.model_fields) == RIGHTS_FIELDS
+    assert set(lacing.Rights.model_fields) == set(RIGHTS_FIELDS)
     assert lacing.Rights(**rights).model_dump() == rights
 
 
@@ -397,7 +399,7 @@ def _rights_for(license_id: str) -> dict:
 @pytest.mark.parametrize("license_id", sorted(LICENSE_FLAGS))
 def test_every_licence_gives_a_rights_shaped_dict(license_id):
     rights = _rights_for(license_id)
-    assert set(rights) == RIGHTS_FIELDS
+    assert set(rights) == set(RIGHTS_FIELDS)
     assert isinstance(rights["provider"], str) and rights["provider"]
     assert isinstance(rights["cacheable"], bool)
     assert all(

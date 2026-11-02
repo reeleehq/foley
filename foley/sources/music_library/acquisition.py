@@ -44,9 +44,11 @@ import csv
 import hashlib
 import io
 import json
+import math
 import re
 import time
 import unicodedata
+import warnings
 from collections.abc import (
     Callable,
     Iterable,
@@ -61,6 +63,7 @@ from typing import Any, Optional, Union
 
 from ...base import IntendedUse, LicenseRecord, SerializableMixin
 from ...licensing import DEFAULT_INTENDED_USE, LicenseFlags, refusal_reason
+from ...provenance.rights import PROVENANCE_FIELDS
 from ..http import Transport
 from ..resilience import RetryAfterTooLong, SourceUnavailable
 from .fetch import Fetch, library_fetch, music_library_config
@@ -77,6 +80,8 @@ ACQUIRED, KEPT, FAILED, REFUSED, WISHLIST = (
     "refused",
     "wishlist",
 )
+#: Every status a row may have.
+STATUSES: tuple[str, ...] = (ACQUIRED, KEPT, FAILED, REFUSED, WISHLIST)
 #: The statuses whose file is in ``out`` (what a rerun may keep, what is credited).
 HELD: tuple[str, ...] = (ACQUIRED, KEPT)
 #: The tracks table's columns, in order (a row's other metadata, a catalogue's
@@ -102,25 +107,15 @@ TRACK_COLUMNS: tuple[str, ...] = (
 )
 #: The metadata keys a titles file may set that are columns (the rest the library states).
 METADATA_COLUMNS: tuple[str, ...] = ("credited_by",)
-#: The provenance fields a downstream record makes of a row (``lacing.Rights`` and
-#: ``an``'s ``AssetSource``, which name theirs alike): a titles file's metadata may not
-#: name them either, so a ``cacheable`` or ``cost_usd`` column never reaches a record
-#: that would read it as a claim.
-PROVENANCE_FIELDS: tuple[str, ...] = (
-    "provider",
-    "id",
-    "title",
-    "url",
+#: The columns :meth:`AcquiredTrack.row` reads off the licence: what the library
+#: states, which :meth:`AcquiredTrack.from_row` checks a row's cells against.
+LICENSE_COLUMNS: tuple[str, ...] = (
     "license",
     "license_url",
-    "attribution",
-    "source_page_url",
+    "rights_verified",
+    "commercial_ok",
     "author",
-    "author_url",
-    "cacheable",
-    "sha256",
-    "cost_usd",
-    "extra",
+    "attribution",
 )
 #: How a list is joined in one cell of the tracks table (``credited_by``).
 LIST_SEPARATOR: str = "; "
@@ -177,23 +172,27 @@ class AcquiredTrack(SerializableMixin):
     error: Optional[str] = None
 
     def __post_init__(self):
+        if self.status not in STATUSES:
+            raise MusicLibraryError(
+                f"track {self.title!r}: status {self.status!r} is not one of {STATUSES}"
+            )
         credited = self.credited_by
         credited = (credited,) if isinstance(credited, str) else credited or ()
         object.__setattr__(self, "credited_by", tuple(map(str, credited)))
+        if self.duration_s is not None:  # rounded once, as the table writes it
+            duration = round(self.duration_s, DURATION_DECIMALS)
+            object.__setattr__(self, "duration_s", duration)
 
     def row(self) -> dict[str, Any]:
         """The row as the tracks table writes it: flat and JSON-safe (a list joined
         by ``; ``, a mapping as JSON)."""
         lic = self.license
-        duration = self.duration_s
         out = {
             "title": self.title,
             "library": self.library,
             "status": self.status,
             "file": self.file,
-            "duration_s": None
-            if duration is None
-            else round(duration, DURATION_DECIMALS),
+            "duration_s": self.duration_s,
             "sha256": self.sha256,
             "license": lic.license_id,
             "license_url": lic.license_url,
@@ -223,28 +222,36 @@ class AcquiredTrack(SerializableMixin):
         table (:func:`read_tracks_table`: every cell text, an empty one nothing). Its
         ``library`` is looked up in ``libraries`` (default
         :data:`~foley.sources.music_library.libraries.MUSIC_LIBRARIES`) and its licence
-        rebuilt from it (:func:`track_license`), never read from the row: the licence
-        columns (``license``, ``commercial_ok``, ``attribution``, ...) are what the
-        library states, and a cell someone edited cannot grant rights. A column outside
-        :data:`TRACK_COLUMNS` is metadata, as the table wrote it (a list or mapping a
-        titles file gave comes back as its cell's text).
+        rebuilt from it (:func:`track_license`), never read from the row. The row's
+        licence cells (:data:`LICENSE_COLUMNS`) must still say what the library states
+        now: a cell someone edited, or a library re-registered under other terms since
+        the table was written, is refused rather than silently widened or narrowed.
+
+        A column outside :data:`TRACK_COLUMNS` is metadata, as the table wrote it (a
+        list or mapping a titles file gave comes back as its cell's text). A column a
+        titles file may not set (a downstream provenance field such as ``cost_usd``
+        or ``cacheable``, a licence flag) is dropped with a
+        :class:`DroppedColumnsWarning`: it never sets anything.
 
         Raises:
-            MusicLibraryError: For a row without a title, library or status, a library
-                that is not registered, a ``duration_s`` that is not a number, or a
-                column a titles file may not set (:data:`PROVENANCE_FIELDS`, a licence
-                flag, ...).
+            MusicLibraryError: For a row with a key that is not text, a blank title,
+                no library or status, a status not in :data:`STATUSES`, a library that
+                is not registered, a ``duration_s`` that is not a finite number, or
+                licence cells that differ from the library's (naming them).
         """
+        if not all(isinstance(k, str) for k in row):
+            raise MusicLibraryError(f"a tracks-table row's keys are text: {dict(row)}")
         cell = {k: v for k, v in row.items() if v is not None and v != ""}
-        missing = [k for k in ("title", "library", "status") if k not in cell]
+        title = _checked_title(cell.get("title"))
+        missing = [k for k in ("library", "status") if k not in cell]
         if missing:
-            raise MusicLibraryError(f"a tracks-table row needs {missing}: {dict(row)}")
-        title = cell["title"]
+            raise MusicLibraryError(f"track {title!r}: the row has no {missing}")
         lib = music_library(cell["library"], libraries=libraries)
-        metadata = {k: v for k, v in cell.items() if k not in TRACK_COLUMNS}
-        _refuse_reserved(title, metadata, hint="drop those columns from the table")
+        metadata = _without_reserved(
+            title, {k: v for k, v in cell.items() if k not in TRACK_COLUMNS}
+        )
         page_url, sha256 = cell.get("source_page_url"), cell.get("sha256")
-        return cls(
+        track = cls(
             title=title,
             library=lib.name,
             status=cell["status"],
@@ -259,18 +266,67 @@ class AcquiredTrack(SerializableMixin):
             metadata=metadata,
             error=cell.get("error"),
         )
+        _check_license_cells(track, row)
+        return track
+
+
+class DroppedColumnsWarning(UserWarning):
+    """A tracks-table row named columns that set nothing, and :meth:`AcquiredTrack.from_row`
+    dropped them."""
+
+
+def _without_reserved(title: str, metadata: Mapping[str, Any]) -> dict[str, Any]:
+    """``metadata`` without the keys a titles file may not set, warning about them."""
+    dropped = sorted(set(metadata) & _RESERVED)
+    if dropped:
+        warnings.warn(
+            f"track {title!r}: dropped the columns {dropped}, which the library, the "
+            "table or a downstream provenance record states (they set nothing)",
+            DroppedColumnsWarning,
+            stacklevel=3,
+        )
+    return {k: v for k, v in metadata.items() if k not in _RESERVED}
+
+
+def _check_license_cells(track: AcquiredTrack, row: Mapping[str, Any]) -> None:
+    """Refuse a ``row`` whose licence cells differ from ``track``'s licence (the
+    library's, now). A column the row lacks states nothing and is not compared."""
+    stated = track.row()
+    differ = [
+        f"{k} {row[k]!r} (the library states {stated[k]!r})"
+        for k in LICENSE_COLUMNS
+        if k in row and _cell_text(row[k]) != _cell_text(stated[k])
+    ]
+    if differ:
+        raise MusicLibraryError(
+            f"track {track.title!r}: the row's licence cells differ from what library "
+            f"{track.library!r} states: {'; '.join(differ)}. The cells were edited, "
+            "or the library was re-registered under other terms; acquire it again"
+        )
+
+
+def _cell_text(value: Any) -> str:
+    """A cell as the CSV holds it, whitespace and a boolean's case evened out."""
+    text = "" if value is None else " ".join(str(value).split())
+    return text.casefold() if text.casefold() in ("true", "false") else text
 
 
 def _seconds(value: Any, *, title: str) -> Optional[float]:
-    """A ``duration_s`` cell as seconds (``None``: none recorded)."""
+    """A ``duration_s`` cell as seconds (``None``: none recorded): a finite real
+    number, or its text."""
     if value is None:
         return None
     try:
-        return float(value)
+        if isinstance(value, bool):
+            raise TypeError("a boolean is not a duration")
+        seconds = float(value)
     except (TypeError, ValueError) as e:
         raise MusicLibraryError(
             f"track {title!r}: duration_s {value!r} is not a number"
         ) from e
+    if not math.isfinite(seconds):
+        raise MusicLibraryError(f"track {title!r}: duration_s {value!r} is not finite")
+    return seconds
 
 
 def _listed(value: Any) -> Any:
@@ -299,14 +355,11 @@ _RESERVED: frozenset = frozenset(
 )
 
 
-def _refuse_reserved(title: str, metadata: Mapping[str, Any], *, hint: str) -> None:
-    """Refuse ``metadata`` that sets a :data:`_RESERVED` key, naming them and ``hint``."""
-    clash = sorted(set(metadata) & _RESERVED)
-    if clash:
-        raise MusicLibraryError(
-            f"{title!r}: its metadata sets {clash}, which the library, the table or "
-            f"a downstream provenance record states; {hint}"
-        )
+def _checked_title(title: Any) -> str:
+    """``title``, refused unless it is a non-blank string."""
+    if not isinstance(title, str) or not title.strip():
+        raise MusicLibraryError(f"a title must be a non-empty string, got {title!r}")
+    return title
 
 
 #: ``kept``'s values: a file's recorded sha256, or ``{"sha256", "url", "mirror"}``
@@ -594,13 +647,14 @@ def _titles_meta(titles: Any, lib: MusicLibrary) -> dict[str, dict[str, Any]]:
     else:
         meta = {t: {} for t in titles}
     for title, extra in meta.items():
-        if not isinstance(title, str) or not title.strip():
+        _checked_title(title)
+        clash = sorted(set(extra) & _RESERVED)
+        if clash:
             raise MusicLibraryError(
-                f"a title must be a non-empty string, got {title!r}"
+                f"{title!r}: its metadata sets {clash}, which the library, the table "
+                f"or a downstream provenance record states ({lib.name}); drop them "
+                "from the titles file"
             )
-        _refuse_reserved(
-            title, extra, hint=f"drop them from the titles file ({lib.name})"
-        )
     return meta
 
 
@@ -651,8 +705,25 @@ def read_tracks_table(text: str) -> list[dict[str, str]]:
 
     >>> read_tracks_table("\ufefftitle,library\r\nA,incompetech\r\n")
     [{'title': 'A', 'library': 'incompetech'}]
+
+    Raises:
+        MusicLibraryError: For a header that names a column twice, or a line with
+            more cells than the header has columns (naming its line).
     """
-    return list(csv.DictReader(io.StringIO(text.removeprefix(BYTE_ORDER_MARK))))
+    reader = csv.DictReader(io.StringIO(text.removeprefix(BYTE_ORDER_MARK)))
+    header = reader.fieldnames or []
+    twice = sorted({k for k in header if header.count(k) > 1})
+    if twice:
+        raise MusicLibraryError(f"the tracks table names the columns {twice} twice")
+    rows = []
+    for row in reader:
+        if None in row:  # DictReader's key for the cells past the header
+            raise MusicLibraryError(
+                f"line {reader.line_num} of the tracks table has more cells than "
+                f"its header has columns: {row[None]}"
+            )
+        rows.append(row)
+    return rows
 
 
 def held_rows(table: Table) -> Iterator[Mapping[str, Any]]:

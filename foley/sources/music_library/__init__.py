@@ -29,10 +29,12 @@ collect the attribution lines the licence asks for. :func:`acquire` is that scri
   :func:`tracks_table` writes them as CSV, :func:`read_tracks_table` reads it back
   (an editor's byte-order mark dropped) and ``AcquiredTrack.from_row`` turns a row
   into its track again, the licence rebuilt from the registry, never the row's
-  cells. :func:`held_rows` are those whose file is held, and :func:`kept_digests` (or
+  cells (which must agree with it; a column that sets nothing is dropped with a
+  :class:`DroppedColumnsWarning`). :func:`held_rows` are those whose file is held, and :func:`kept_digests` (or
   :func:`kept_sources`, with each file's URL) what a rerun keeps, so it fetches only
   what it lacks. A titles file's metadata may not name a row's column, a licence
-  flag, or a downstream provenance field (:data:`PROVENANCE_FIELDS`).
+  flag, or a downstream provenance field
+  (:data:`foley.provenance.rights.PROVENANCE_FIELDS`).
 
 - **Each free library is also a live retrieve source** of its own name (#212):
   ``foley.add_from("incompetech", query="Sneaky Snitch")`` (a title, a list of
@@ -61,11 +63,12 @@ from .acquisition import (
     FAILED,
     HELD,
     KEPT,
-    PROVENANCE_FIELDS,
+    LIST_SEPARATOR,
     REFUSED,
     TRACK_COLUMNS,
     WISHLIST,
     AcquiredTrack,
+    DroppedColumnsWarning,
     acquire,
     attribution_text,
     files_store,
@@ -108,12 +111,13 @@ __all__ = [
     "KEPT",
     "MUSIC_LIBRARIES",
     "MUSIC_LIBRARY_HTTP",
-    "PROVENANCE_FIELDS",
+    "LIST_SEPARATOR",
     "REFUSED",
     "TRACK_COLUMNS",
     "WAYBACK_RAW",
     "WISHLIST",
     "AcquiredTrack",
+    "DroppedColumnsWarning",
     "MusicLibrary",
     "MusicLibraryError",
     "MusicToolMissing",

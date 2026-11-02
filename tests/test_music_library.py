@@ -5,6 +5,7 @@ clock)."""
 from __future__ import annotations
 
 import csv
+import dataclasses
 import functools
 import hashlib
 import io
@@ -18,7 +19,12 @@ import pytest
 
 import foley.licensing
 from foley.base import IntendedUse, LicenseRecord
+from foley.provenance.rights import PROVENANCE_FIELDS
 from foley.sources import video
+from foley.sources.music_library.acquisition import (
+    DURATION_DECIMALS,
+    LICENSE_COLUMNS,
+)
 from foley.sources.music_library import (
     ACQUIRED,
     FAILED,
@@ -28,11 +34,11 @@ from foley.sources.music_library import (
     TRACK_COLUMNS,
     WISHLIST,
     AcquiredTrack,
+    DroppedColumnsWarning,
     MusicLibrary,
     MusicLibraryError,
     MusicToolMissing,
     acquire,
-    PROVENANCE_FIELDS,
     attribution_text,
     held_rows,
     kept_digests,
@@ -1062,13 +1068,25 @@ def test_every_other_retrieve_source_still_searches_cc0_by_default():
 # ---------------------------------------------------------------------------
 
 
+#: A probe's length, finer than the table writes (:data:`DURATION_DECIMALS`).
+_PROBED_S = 123.456789
+
+
 def _every_status():
-    """One row of each status: acquired, kept, failed, refused, wishlist."""
-    meta = {"credited_by": ["vid1", "vid2"], "feel": "Bright"}
+    """One row of each status (acquired, kept, failed, refused, wishlist), the held
+    ones probed at :data:`_PROBED_S`; and the libraries that name them."""
+    clock = Clock()
     store = {"K.mp3": b"kk"}
     kept = {"K.mp3": hashlib.sha256(b"kk").hexdigest()}
-    fetch = Fetcher({_url("A"): b"aa"})
-    rows = _acquire({"A": meta, "K": {}, "F": {}}, fetch, out=store, kept=kept)
+    titles = {
+        "A": {"credited_by": ["vid1", "vid2"], "feel": "Bright"},
+        "K": {},
+        "F": {},
+    }
+    rows = acquire(
+        "incompetech", titles, out=store, kept=kept, verify=lambda data: _PROBED_S,
+        fetch=Fetcher({_url("A"): b"aa"}), clock=clock, sleep=clock.sleep,
+    )  # fmt: skip
     nc = MusicLibrary("nc_lib", "N", license_url=_NC_URL, track_url=_rule)
     refused = acquire(nc, ["R"], out={}, fetch=Fetcher({}), verify=_ok)
     wish = acquire("artlist", {"W": {"feel": "Warm"}}, out={})
@@ -1078,6 +1096,7 @@ def _every_status():
 def test_every_status_round_trips_through_its_row_and_the_csv():
     tracks, libraries = _every_status()
     assert [t.status for t in tracks] == [ACQUIRED, KEPT, FAILED, REFUSED, WISHLIST]
+    assert tracks[0].duration_s == round(_PROBED_S, DURATION_DECIMALS), "rounded once"
     for t in tracks:
         assert AcquiredTrack.from_row(t.row(), libraries=libraries) == t
     back = [
@@ -1087,27 +1106,60 @@ def test_every_status_round_trips_through_its_row_and_the_csv():
     assert back == tracks, "the CSV's text cells come back as the same tracks"
 
 
-def test_from_row_takes_the_licence_from_the_registry_not_the_cells():
+def test_a_row_without_licence_columns_takes_the_registrys_licence():
     (track,) = _acquire(["A"], Fetcher({_url("A"): b"aa"}))
-    forged = {**track.row(), "license": "CC0-1.0", "commercial_ok": "True",
-              "attribution": "", "license_url": "https://example.com"}  # fmt: skip
-    assert AcquiredTrack.from_row(forged).license == track.license
+    bare = {k: v for k, v in track.row().items() if k not in LICENSE_COLUMNS}
+    assert AcquiredTrack.from_row(bare) == track
+
+
+def test_edited_licence_cells_are_refused_naming_them():
+    (track,) = _acquire(["A"], Fetcher({_url("A"): b"aa"}))
+    forged = {**track.row(), "license": "CC0-1.0", "commercial_ok": "True"}
+    with pytest.raises(MusicLibraryError, match="license 'CC0-1.0'") as e:
+        AcquiredTrack.from_row(forged)
+    assert "commercial_ok" not in str(e.value), "an unchanged cell is not named"
+
+
+def test_a_library_re_registered_under_other_terms_is_refused():
+    (track,) = _acquire(["A"], Fetcher({_url("A"): b"aa"}))
+    lib = MUSIC_LIBRARIES["incompetech"]
+    narrowed = dataclasses.replace(lib, license_url=_NC_URL)
+    with pytest.raises(MusicLibraryError, match="re-registered") as e:
+        AcquiredTrack.from_row(track.row(), libraries={"incompetech": narrowed})
+    assert "license 'CC-BY-4.0'" in str(e.value)
+    assert "commercial_ok True" in str(e.value)
 
 
 @pytest.mark.parametrize(
     "edit, match",
     [
         ({"library": "nope"}, "no music library"),
-        ({"status": ""}, "needs"),
+        ({"status": ""}, "no \\['status'\\]"),
+        ({"status": "stolen"}, "not one of"),
+        ({"title": "  "}, "non-empty string"),
+        ({"title": 7}, "non-empty string"),
         ({"duration_s": "long"}, "not a number"),
-        ({"cacheable": "True"}, "drop those columns"),
-        ({"cache_bytes_ok": "True"}, "drop those columns"),
+        ({"duration_s": True}, "not a number"),
+        ({"duration_s": "nan"}, "not finite"),
+        ({"duration_s": float("inf")}, "not finite"),
+        ({1: "x"}, "keys are text"),
     ],
 )
-def test_from_row_refuses_a_row_it_cannot_trust(edit, match):
+def test_from_row_refuses_a_row_it_cannot_read(edit, match):
     (track,) = _acquire(["A"], Fetcher({_url("A"): b"aa"}))
     with pytest.raises(MusicLibraryError, match=match):
         AcquiredTrack.from_row({**track.row(), **edit})
+
+
+def test_columns_that_set_nothing_are_dropped_with_a_warning():
+    """A downstream field or a licence flag in an older table never sets anything;
+    the row still reads (an's ``track_from_row`` contract, an#623)."""
+    (track,) = _acquire(["A"], Fetcher({_url("A"): b"aa"}))
+    row = {**track.row(), "cost_usd": "0", "cacheable": "False", "id": "spoofed",
+           "cache_bytes_ok": "True", "feel": "sneaky"}  # fmt: skip
+    with pytest.warns(DroppedColumnsWarning, match="cache_bytes_ok.*cost_usd.*id"):
+        back = AcquiredTrack.from_row(row)
+    assert back.metadata == {"feel": "sneaky"} and back.license == track.license
 
 
 def test_a_table_saved_by_excel_still_reads_back():
@@ -1118,16 +1170,25 @@ def test_a_table_saved_by_excel_still_reads_back():
     assert kept_sources(table)["A.mp3"]["sha256"] == track.sha256
 
 
+@pytest.mark.parametrize(
+    "text, match",
+    [
+        ("title,library,title\r\nA,incompetech,B\r\n", "twice"),
+        ("title,library\r\nA,incompetech,extra\r\n", "line 2 .*more cells"),
+    ],
+)
+def test_a_malformed_tracks_table_is_refused(text, match):
+    with pytest.raises(MusicLibraryError, match=match):
+        read_tracks_table(text)
+
+
 def test_held_rows_are_the_acquired_and_kept_ones():
     tracks, _ = _every_status()
     for table in (tracks, tracks_table(tracks), [t.row() for t in tracks]):
         assert [r["status"] for r in held_rows(table)] == [ACQUIRED, KEPT]
 
 
-@pytest.mark.parametrize(
-    "name", ["id", "provider", "cacheable", "cost_usd", "extra", "author_url"]
-)
+@pytest.mark.parametrize("name", PROVENANCE_FIELDS)
 def test_a_titles_file_may_not_name_a_downstream_provenance_field(name):
-    assert name in PROVENANCE_FIELDS
     with pytest.raises(MusicLibraryError, match="downstream provenance"):
         _acquire({"A": {name: "x"}}, Fetcher({}))

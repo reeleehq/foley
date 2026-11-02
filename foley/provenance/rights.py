@@ -59,6 +59,26 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 
 #: The format an export is encoded in when none is named.
 DEFAULT_EXPORT_FORMAT = "wav"
+#: ``lacing.Rights``' field names, the keys of :func:`sound_rights` (lacing#34; a test
+#: pins them to lacing's model when lacing is installed).
+RIGHTS_FIELDS: tuple[str, ...] = (
+    "provider",
+    "id",
+    "title",
+    "license",
+    "license_url",
+    "attribution",
+    "source_page_url",
+    "author",
+    "author_url",
+    "cacheable",
+)
+#: ``an``'s ``AssetSource`` fields that ``lacing.Rights`` has no name for (a test pins
+#: them to an's model when an is installed).
+ASSET_SOURCE_EXTRAS: tuple[str, ...] = ("url", "sha256", "cost_usd", "extra")
+#: Every provenance field name a downstream record gives an asset: a foley row's own
+#: metadata must not use one, or it would read as that record's claim.
+PROVENANCE_FIELDS: tuple[str, ...] = (*RIGHTS_FIELDS, *ASSET_SOURCE_EXTRAS)
 
 
 def _text(value: Optional[str]) -> Optional[str]:

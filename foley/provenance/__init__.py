@@ -30,9 +30,19 @@ from .credits import (
     credits_manifest,
     render_credits_md,
 )
-from .rights import export_sound, sound_provenance, sound_rights
+from .rights import (
+    ASSET_SOURCE_EXTRAS,
+    PROVENANCE_FIELDS,
+    RIGHTS_FIELDS,
+    export_sound,
+    sound_provenance,
+    sound_rights,
+)
 
 __all__ = [
+    "ASSET_SOURCE_EXTRAS",
+    "PROVENANCE_FIELDS",
+    "RIGHTS_FIELDS",
     "CreditEntry",
     "Credits",
     "attribution_line",
