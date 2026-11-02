@@ -96,6 +96,7 @@ __all__ = [
     "run_generation",
     "draws_seed",
     "BatchPlan",
+    "TakeRun",
     "plan_batch",
     "run_batch",
     "plan_search",
@@ -597,9 +598,20 @@ def _planned(
         config = getattr(adapter, "config", None) or SOURCE_REGISTRY.get(
             backend, {}
         ).get("config", {})
+    seeded_note = None
+    if variation and affordances.get("seed") is not None:
+        # Variation i of a request seeded s IS the request seeded s + i (#210): one
+        # key and one seed for it, however it is asked for (alone or in a batch).
+        affordances = {**affordances, "seed": _take_seed(config, affordances, variation)}
+        seeded_note = (
+            f"variation {variation} of a seeded request: seed {affordances['seed']}"
+        )
+        variation = 0
     kept, notes = translate_affordances(
         config, affordances, on_unsupported=on_unsupported
     )
+    if seeded_note is not None:
+        notes.append(seeded_note)
     if config.get("presets"):  # a preset source with nothing to play refuses here (#76)
         kept["preset"], matched = resolve_preset(config, prompt, kept.get("preset"))
         notes += [matched] if matched else []
@@ -693,24 +705,102 @@ def _looked_up(
     return plan
 
 
+def _take_seed(config: dict, affordances: dict, index: int) -> int:
+    """The seed of take ``index`` of a request seeded ``affordances['seed']``: the seed
+    plus ``index``, in the backend's range (:func:`~foley.sources.base.derived_seed`)."""
+    from .base import derived_seed, seed_limit
+
+    return derived_seed(affordances["seed"], index, limit=seed_limit(config))
+
+
+def _take_plan(first: GenerationPlan, index: int) -> GenerationPlan:
+    """Take ``index`` of the request ``first`` plans (its take 0), keyed as asking for
+    it alone would key it (#210): a seeded request's take ``i`` is the request seeded
+    ``s + i``; an unseeded one's is variation ``first.variation + i``."""
+    from dataclasses import replace
+
+    if first.affordances.get("seed") is None:
+        return _keyed_take(first, first.variation + index)
+    seed = _take_seed(first.config, first.affordances, index)
+    return _keyed_take(
+        replace(first, affordances={**first.affordances, "seed": seed}), 0
+    )
+
+
+@dataclass
+class TakeRun:
+    """Consecutive takes of a batch made by one call, reserved at ``estimate_usd``."""
+
+    takes: list
+    estimate_usd: Optional[float] = None
+
+
 @dataclass
 class BatchPlan:
-    """Several takes of one request, made by one call to a backend's batch knob (#210).
+    """Several takes of one request, made through a backend's batch knob (#210).
 
-    ``takes`` are the per-take plans, in order (take ``i`` is keyed ``(request,
-    variation + i)``); those not served from the cache are made by one call, priced
-    and reserved at ``estimate_usd`` (:func:`foley.cost.estimate_call` for that many
-    samples) before it is sent, and settled once after.
+    ``takes`` are the per-take plans, in order, each keyed as asking for that take
+    alone would key it. Those the generations cache did not serve are grouped into
+    ``runs`` of consecutive takes, one call each, each priced
+    (:func:`foley.cost.estimate_call` for that many samples) and reserved before
+    anything is sent, and settled once after its call.
     """
 
     backend: str
     takes: list
-    estimate_usd: Optional[float] = None
+    runs: list = field(default_factory=list)
 
     @property
     def to_make(self) -> list:
-        """The takes the call makes (those the generations cache did not serve)."""
+        """The takes the calls make (those the generations cache did not serve)."""
         return [p for p in self.takes if p.cached is None]
+
+    @property
+    def estimate_usd(self) -> Optional[float]:
+        """What the calls are reserved at in all (``None``: unknown)."""
+        prices = [run.estimate_usd for run in self.runs]
+        return None if any(p is None for p in prices) else round(math.fsum(prices), 10)
+
+
+def _runs(takes: list, first: GenerationPlan) -> list:
+    """``takes``' uncached ones as runs of consecutive takes, each priced."""
+    from ..cost import for_samples, split_cost
+
+    runs, current = [], []
+    for take in takes:
+        if take.cached is None:
+            current.append(take)
+        elif current:
+            runs.append(current)
+            current = []
+    if current:
+        runs.append(current)
+    priced = [
+        TakeRun(run, for_samples(first.config, first.estimate_usd, len(run)))
+        for run in runs
+    ]
+    for run in priced:
+        for take in run.takes:
+            take.estimate_usd = split_cost(run.estimate_usd, len(run.takes))
+    return priced
+
+
+def _affordable(takes: list, first: GenerationPlan) -> list:
+    """The longest prefix of ``takes`` whose calls every budget in force can afford,
+    holding at least one uncached take (a budget that affords none refuses at
+    :func:`foley.cost.authorize`). So a budget that fits part of a batch still gets
+    those takes, as one call per take would (#210)."""
+    from ..cost import BudgetExceeded, check
+
+    ends = [i + 1 for i, take in enumerate(takes) if take.cached is None]
+    for end in reversed(ends[1:]):
+        batch = BatchPlan(first.backend, takes[:end], _runs(takes[:end], first))
+        try:
+            check(batch.estimate_usd, what=f"generate via {first.backend!r}")
+        except BudgetExceeded:
+            continue
+        return takes[:end]
+    return takes[: ends[0]] if ends else takes
 
 
 def plan_batch(
@@ -728,17 +818,21 @@ def plan_batch(
     lineage: Optional[dict] = None,
     **affordances,
 ) -> BatchPlan:
-    """Decide ``n`` takes of one request (variations ``variation .. variation+n-1``),
-    made by one call (#210): :func:`plan_generation` for the batch.
+    """Decide up to ``n`` takes of one request, made through the backend's batch knob
+    (#210): :func:`plan_generation` for a batch.
 
-    Translated, priced and keyed once; each take is looked up in the generations cache
-    under its own ``(request, index)`` key, and the takes left to make are reserved
-    together, before anything is sent, at the price of that many samples.
+    Translated and priced once. Take ``i`` is keyed as asking for it alone would key
+    it: a seeded request's take ``i`` is ``generate(seed=s + i)``, an unseeded one's is
+    variation ``variation + i`` (#209). Each is looked up in the generations cache;
+    the rest are made in runs of consecutive takes (one call each, its first take's
+    seed sent), reserved before anything is sent. A paid batch is cut to the takes
+    the run's budget affords (at least one; the caller asks again for the rest), so
+    the budget refuses only a take it cannot afford.
 
     Raises:
         As :func:`plan_generation`.
     """
-    from ..cost import authorize, for_samples, split_cost
+    from ..cost import authorize, release
     from .registry import require_source_egress
 
     n = require_count("n", n, minimum=1)
@@ -755,27 +849,33 @@ def plan_batch(
     )
     takes = [
         _looked_up(
-            _keyed_take(first, variation + i) if i else first,
+            _take_plan(first, i) if i else first,
             adapter=adapter,
             cache=cache,
             reuse_cached=reuse_cached,
         )
         for i in range(n)
     ]
-    batch = BatchPlan(backend=backend, takes=takes)
-    to_make = batch.to_make
-    if not to_make:
+    paid = _is_paid(first.config)
+    if paid:
+        takes = _affordable(takes, first)
+    batch = BatchPlan(backend=backend, takes=takes, runs=_runs(takes, first))
+    if not batch.runs:
         return batch
     require_source_egress(backend, first.config)
-    # The one pricing path (_priced_call -> estimate_call), scaled to the samples asked.
-    batch.estimate_usd = for_samples(first.config, first.estimate_usd, len(to_make))
-    for take in to_make:
-        take.estimate_usd = split_cost(batch.estimate_usd, len(to_make))
-    if _is_paid(first.config):
-        authorize(
-            batch.estimate_usd,
-            what=f"generate {len(to_make)} take(s) in one call via {backend!r}",
-        )
+    if paid:
+        reserved = []
+        try:
+            for run in batch.runs:
+                authorize(
+                    run.estimate_usd,
+                    what=f"generate {len(run.takes)} take(s) in one call via {backend!r}",
+                )
+                reserved.append(run)
+        except Exception:
+            for run in reserved:  # never leave a half-reserved batch behind
+                release(run.estimate_usd)
+            raise
     return batch
 
 
@@ -911,25 +1011,6 @@ def _sent_affordances(plan: GenerationPlan) -> dict:
     return affordances
 
 
-def _batch_affordances(first: GenerationPlan) -> dict:
-    """:func:`_sent_affordances` for a batch whose first take is ``first`` (#210).
-
-    The ``seed`` sent is the first take's. A seeded request's take ``i`` is seed
-    ``s + i`` (:func:`~foley.sources.base.derived_seed`, in the backend's range), so a
-    batch that starts at a later take (the takes before it served from the cache, or
-    made by an earlier call) starts at that take's seed.
-    """
-    from .base import derived_seed, seed_limit
-
-    affordances = _sent_affordances(first)
-    if first.affordances.get("seed") is not None and first.variation:
-        limit = seed_limit(first.config)
-        affordances["seed"] = derived_seed(
-            first.affordances["seed"], first.variation, limit=limit
-        )
-    return affordances
-
-
 @contextlib.contextmanager
 def _sending(plan: GenerationPlan, released: Callable[[], None]):
     """Around an adapter call: release the reservation of a call nothing was billed for.
@@ -963,32 +1044,45 @@ def _sending(plan: GenerationPlan, released: Callable[[], None]):
 
 def run_batch(batch: BatchPlan, adapter, *, cache=None) -> list:
     """Run a :class:`BatchPlan`: the cache serves the takes it holds, and one call to
-    the adapter's ``generate_takes`` makes the rest (#210).
+    the adapter's ``generate_takes`` per run makes the rest (#210).
 
-    The call is settled once, at the sum of its takes' actual costs. Each paid take is
-    kept in the generations cache under its own ``(request, index)`` key before it is
-    returned (so before QC / ingest), as :func:`run_generation` keeps one.
+    Each call is settled once, at the sum of its takes' actual costs; a run never sent
+    (an earlier one raised) has its reservation released, and the takes already made
+    are in the generations cache, so a retry replays them. Each paid take is kept
+    there under its own key before it is returned (so before QC / ingest), as
+    :func:`run_generation` keeps one.
 
     Returns:
         One :class:`~foley.sources.base.GeneratedClip` per take, in order; ``None`` for
         a take the backend did not answer (it answered fewer samples than asked).
     """
-    to_make = batch.to_make
-    made = _make_takes(batch, to_make, adapter, cache=cache) if to_make else []
-    clips = dict(zip(map(id, to_make), made))
+    from ..cost import release
+
+    made: dict = {}
+    pending = list(batch.runs)
+    try:
+        while pending:
+            run = pending[0]
+            clips = _make_run(run, adapter, cache=cache)
+            pending.pop(0)
+            made.update(zip(map(id, run.takes), clips))
+    except BaseException:
+        if batch.takes and _is_paid(batch.takes[0].config):
+            for run in pending[1:]:  # the failed run's own reservation is _sending's
+                release(run.estimate_usd)
+        raise
     return [
-        _replayed(p) if p.cached is not None else clips.get(id(p))
-        for p in batch.takes
+        _replayed(p) if p.cached is not None else made.get(id(p)) for p in batch.takes
     ]
 
 
-def _make_takes(batch: BatchPlan, to_make: list, adapter, *, cache=None) -> list:
-    """The clips of the one call that makes ``to_make`` (see :func:`run_batch`)."""
+def _make_run(run: TakeRun, adapter, *, cache=None) -> list:
+    """The clips of the one call that makes ``run``'s takes (see :func:`run_batch`)."""
     from ..cost import release, settle
 
-    first = to_make[0]
+    first = run.takes[0]
     paid = first.request_key is not None
-    reserved = batch.estimate_usd if paid else None
+    reserved = run.estimate_usd if paid else None
 
     def released() -> None:
         if paid:
@@ -997,9 +1091,12 @@ def _make_takes(batch: BatchPlan, to_make: list, adapter, *, cache=None) -> list
     with _sending(first, released):
         clips = list(
             adapter.generate_takes(
-                first.prompt, len(to_make), **_batch_affordances(first), **_extra(first)
+                first.prompt,
+                len(run.takes),
+                **_sent_affordances(first),
+                **_extra(first),
             )
-        )[: len(to_make)]
+        )[: len(run.takes)]
     actuals = [c.candidate.cost_actual_usd for c in clips]
     total = (
         None
@@ -1008,17 +1105,30 @@ def _make_takes(batch: BatchPlan, to_make: list, adapter, *, cache=None) -> list
     )
     if paid:
         settle(reserved, _billed_amount(first.config, reserved, total))
-    if len(clips) < len(to_make):
-        missing = f"{len(clips)} of the {len(to_make)} takes asked"
+    if len(clips) < len(run.takes):
+        missing = f"{len(clips)} of the {len(run.takes)} takes asked"
         for clip in clips:
             clip.notes.append(f"{first.backend} answered {missing}")
     cache = cache if (cache is not None or not paid) else _default_cache()
-    for plan, clip in zip(to_make, clips):
+    for plan, clip in zip(run.takes, clips):
+        _check_take_seed(plan, clip)
         clip.notes = [*plan.notes, *clip.notes]
         clip.candidate.cost_estimate_usd = plan.estimate_usd
         if paid:
             _keep_take(cache, plan, clip)
     return clips
+
+
+def _check_take_seed(plan: GenerationPlan, clip) -> None:
+    """Note a take whose recorded seed is not the one it is keyed under (a backend that
+    numbers a batch's seeds otherwise than ``s, s + 1, ...``)."""
+    asked = plan.affordances.get("seed")
+    got = clip.candidate.sound.license.generation_seed
+    if asked is not None and got is not None and int(got) != int(asked):
+        clip.notes.append(
+            f"seed: this take is the request seeded {int(asked)}, but {plan.backend} "
+            f"reports seed {int(got)} for it (recorded as reported)"
+        )
 
 
 def _keep_take(cache, plan: GenerationPlan, clip) -> None:

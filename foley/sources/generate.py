@@ -716,7 +716,8 @@ def _generate(
 def _batch_takes(backend: str, adapter, takes: int) -> int:
     """How many of ``takes`` one call to ``backend`` makes (#210): up to its batch
     knob's maximum (:func:`~foley.sources.base.batch_limit`) when the adapter has
-    ``generate_takes``, else ``1`` (a backend without the knob: one call per take).
+    ``generate_takes``, else ``1`` (a backend without the knob, or one that answers
+    with a video: one call per take).
     """
     from .base import batch_limit, require_count
     from .registry import SOURCE_REGISTRY
@@ -727,6 +728,8 @@ def _batch_takes(backend: str, adapter, takes: int) -> int:
     config = getattr(adapter, "config", None) or SOURCE_REGISTRY.get(backend, {}).get(
         "config", {}
     )
+    if (config.get("output") or {}).get("container") == "video":
+        return 1  # a batch of muxed videos has no demux-failure path: one per call
     return min(takes, batch_limit(config))
 
 

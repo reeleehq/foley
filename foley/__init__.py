@@ -846,7 +846,9 @@ def generate(
         variation: Which variation of the same request this is (#161): ``0``
             (default) is the request itself; a later one is a different paid request
             in the generations cache, so it is a new sound even from a backend that
-            takes no seed. :func:`variations` sets it; most callers never do.
+            takes no seed. With a ``seed``, variation ``i`` is the request seeded
+            ``seed + i`` (#210: that seed is sent, and keyed). :func:`variations`
+            sets it; most callers never do.
         derived_from: For an edit (an edit backend given ``audio=``), the source
             clip's :class:`SoundRecord` or :class:`LicenseRecord`: **required** — an
             edit without it is refused (:class:`EditRefusal`), as one whose rights
@@ -1070,7 +1072,9 @@ def variations(
     sound: keyed ``(request, i)`` in the generations cache (so a re-run replays every
     take), with its own provenance (its own seed where the backend reports or derives
     one per sample; a note where it does not), QC'd and stored on its own. Take ``i``
-    of a seeded request is seed ``seed + i``.
+    of a seeded request is ``generate(seed=seed + i)``: the same cache entry, however
+    it was made. A budget that affords only part of a batch gets those takes, then
+    refuses the next as one call per take would.
 
     Any other backend makes one call per take. Where it records its seed, take ``i``
     is ``generate(..., seed=derived_seed(first_seed, i))``

@@ -521,6 +521,7 @@ class FalAdapter:
                 response=response,
                 cost=split_cost(call_cost, len(medias)),
                 notes=[*notes, *_take_notes(self.name, i, len(medias), seed, args)],
+                sample_index=i if len(medias) > 1 else None,
             )
             for i, (media, seed) in enumerate(zip(medias, seeds))
         ]
@@ -566,8 +567,15 @@ class FalAdapter:
         response,
         cost: Optional[float],
         notes: list,
+        sample_index: Optional[int] = None,
     ) -> GeneratedClip:
-        """One answered sample as a :class:`~foley.sources.base.GeneratedClip`."""
+        """One answered sample as a :class:`~foley.sources.base.GeneratedClip`.
+
+        A take of a batch records the request as sent (its first sample's seed, the
+        sample count) and its ``sample_index`` in ``generation_params`` (the recipe
+        that made it: that request, then that sample), and its own reported seed as
+        ``generation_seed``.
+        """
         nd = self.config.get("native_defaults") or {}
         endpoint = self.config["api"]["endpoint_id"]
         lic_cfg = self.config["license"]
@@ -583,7 +591,11 @@ class FalAdapter:
             else None,
             generation_seed=seed,
             generation_params=recorded_params(
-                {**self._recordable(args, affordances), "fal_endpoint": endpoint},
+                {
+                    **self._recordable(args, affordances),
+                    "fal_endpoint": endpoint,
+                    **({} if sample_index is None else {"sample_index": sample_index}),
+                },
                 provider_params,
             ),
             source_url=self.config.get("website"),

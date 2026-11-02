@@ -268,7 +268,9 @@ class StableAudioAdapter:
                 generator_version=nd["generator_version"],
                 generation_prompt=prompt,
                 generation_seed=take_seed,  # the seed this take's generator was given
-                generation_params=resolved,
+                generation_params=(
+                    {**resolved, "sample_index": i} if takes > 1 else resolved
+                ),
             )
             record = SoundRecord(
                 id=f"{self.name}:pending",  # discarded placeholder (façade ingests sound_id=None)

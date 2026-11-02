@@ -498,7 +498,8 @@ SOURCE_CONFIGS = (
             "duration_max_s": 600.0,
             # One clip per call (billed per sample), and no separated speech track;
             # foley.variations asks for several through the batch knob (#210). The
-            # response reports no seeds: only the first take records the one sent.
+            # response reports no seeds: a single take records the seed sent, a
+            # batch's takes record none (and say so).
             "fixed_arguments": {"num_samples": 1, "return_speech": False},
             "batch": {"native_name": "num_samples", "max": 4},
             # The schema takes up to 2**64 - 1; the narrower int64 range of the

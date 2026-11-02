@@ -43,17 +43,22 @@ def _wav(freq, *, silent=False):
 
 
 class BatchRunner:
-    """A fake fal transport answering ``num_samples`` distinct takes, seeds ``1000 + i``
-    (or ``seeds=False``: none reported). ``answered`` caps the samples it returns;
-    ``silent`` lists the take indexes it answers with silence."""
+    """A fake fal transport answering ``num_samples`` distinct takes.
+
+    It reports per-sample seeds of its own making (``seeds=False``: none), never
+    derived from the seed sent, so a test checks that foley records what the backend
+    reports and sends what foley decided (``calls``), not what the fake assumes.
+    ``reported`` holds each call's reported seeds. ``answered`` caps the samples it
+    returns; ``silent`` lists the take indexes it answers with silence.
+    """
 
     def __init__(self, *, seeds=True, answered=None, silent=()):
         self.calls, self.seeds, self.answered, self.silent = [], seeds, answered, silent
+        self.reported = []
 
     def __call__(self, endpoint_id, arguments, *, api_key, audio_field="audio", all_audio=False):
         self.calls.append(dict(arguments, all_audio=all_audio))
         n = arguments.get("num_samples", 1)
-        start = arguments.get("seed") or 1000 + 10 * len(self.calls)
         k = min(n, self.answered or n)
         audios = [
             _wav(200 + 50 * len(self.calls) + 13 * i, silent=i in self.silent)
@@ -61,7 +66,8 @@ class BatchRunner:
         ]
         response = {"audio": [{"url": f"u{i}"} for i in range(k)], "model": "sfx2.0"}
         if self.seeds:
-            response["seeds"] = [start + i for i in range(k)]
+            response["seeds"] = [90_000 + 1_000 * len(self.calls) + 7 * i for i in range(k)]
+            self.reported.append(response["seeds"])
         return (audios if all_audio else audios[0]), response
 
 
@@ -113,21 +119,35 @@ def test_n_takes_come_from_one_call_each_with_its_own_seed_and_share(library):
     (call,) = runner.calls
     assert call["num_samples"] == 3 and call["all_audio"] is True
     assert len({c.sound.id for c in takes}) == 3
-    first = runner.calls[0].get("seed") or 1010
-    assert [c.sound.license.generation_seed for c in takes] == [first, first + 1, first + 2]
-    assert all(c.sound.license.generation_reproducible for c in takes)
+    # each take records the seed the backend reports for it, and its sample index
+    assert [c.sound.license.generation_seed for c in takes] == runner.reported[0]
+    params = [c.sound.license.generation_params for c in takes]
+    assert [p["sample_index"] for p in params] == [0, 1, 2]
+    assert {p["num_samples"] for p in params} == {3}
     # each take is billed one sample, and its estimate is what it was charged
     assert [c.cost_actual_usd for c in takes] == [pytest.approx(MIRELO_PER_S)] * 3
     assert [c.cost_estimate_usd for c in takes] == [c.cost_actual_usd for c in takes]
 
 
-def test_the_whole_batch_is_reserved_before_the_call(library):
+def test_a_budget_for_no_take_refuses_before_any_call(library):
     runner = BatchRunner()
     with pytest.raises(BudgetExceeded) as info:
         _variations(
-            _mirelo(runner), 3, library, budget=foley.Budget(max_usd=2.5 * MIRELO_PER_S)
+            _mirelo(runner), 3, library, budget=foley.Budget(max_usd=0.5 * MIRELO_PER_S)
         )
     assert runner.calls == [] and info.value.variations == []
+
+
+def test_a_budget_for_part_of_a_batch_gets_those_takes(library):
+    """The batch is cut to what the budget affords, reserved before the call: the
+    budget then refuses the take it cannot afford, as one call per take did."""
+    runner = BatchRunner()
+    budget = foley.Budget(max_usd=2.5 * MIRELO_PER_S)
+    with pytest.raises(BudgetExceeded) as info:
+        _variations(_mirelo(runner), 3, library, budget=budget)
+    assert [c["num_samples"] for c in runner.calls] == [2]
+    assert len(info.value.variations) == 2
+    assert budget.spent_usd == pytest.approx(2 * MIRELO_PER_S)
 
 
 def test_the_batch_settles_at_its_actual_cost(library):
@@ -176,13 +196,66 @@ def test_more_takes_than_the_knob_allows_take_several_calls(library):
     assert [c["num_samples"] for c in runner.calls] == [4, 2]
 
 
-def test_a_seeded_batch_gives_take_i_the_seed_plus_i(library):
+def test_a_seeded_batch_sends_each_calls_first_take_seed(library):
     runner = BatchRunner()
-    takes = _variations(_mirelo(runner), 6, library, seed=2**31 - 1)
+    _variations(_mirelo(runner), 6, library, seed=2**31 - 1)
     # the second call starts at take 4's seed, in Mirelo's 64-bit range (no wrap at 2**31)
     assert [c["seed"] for c in runner.calls] == [2**31 - 1, 2**31 + 3]
-    seeds = [c.sound.license.generation_seed for c in takes]
-    assert seeds == [derived_seed(2**31 - 1, i, limit=2**63) for i in range(6)]
+    assert derived_seed(2**31 - 1, 4, limit=2**63) == 2**31 + 3
+
+
+def test_a_seeded_take_is_the_request_for_its_seed(library):
+    """Take i of seed s is generate(seed=s + i): one key, batch or not (#210)."""
+    runner = BatchRunner()
+    takes = _variations(_mirelo(runner), 2, library, seed=5)
+    one = foley.generate(
+        "a sabre swing", backend="fal_mirelo", adapter=_mirelo(runner),
+        library=library, duration_s=1, seed=6,
+    )
+    assert len(runner.calls) == 1 and one.sound.id == takes[1].sound.id
+
+
+def test_a_reported_seed_other_than_the_keyed_one_is_noted(library):
+    takes = _variations(_mirelo(BatchRunner()), 2, library, seed=5)
+    assert any("reports seed" in n for n in takes[1].notes)
+
+
+def test_a_standalone_seeded_variation_sends_the_derived_seed(library):
+    runner = BatchRunner()
+    one = foley.generate(
+        "a sabre swing", backend="fal_mirelo", adapter=_mirelo(runner),
+        library=library, duration_s=1, seed=5, variation=1,
+    )
+    assert runner.calls[-1]["seed"] == 6
+    takes = _variations(_mirelo(runner), 2, library, seed=5)
+    assert [c["seed"] for c in runner.calls] == [6, 5]  # take 0 made, take 1 replayed
+    assert takes[1].sound.id == one.sound.id
+
+
+def test_a_hole_in_the_cache_splits_the_batch_into_runs(library):
+    runner = BatchRunner()
+    foley.generate(
+        "a sabre swing", backend="fal_mirelo", adapter=_mirelo(runner),
+        library=library, duration_s=1, seed=5, variation=2,
+    )
+    takes = _variations(_mirelo(runner), 4, library, seed=5)
+    calls = [(c["seed"], c["num_samples"]) for c in runner.calls]
+    assert calls == [(7, 1), (5, 2), (8, 1)]  # take 2 was cached: runs [0, 1] and [3]
+    assert len({c.sound.id for c in takes}) == 4
+
+
+def test_a_backend_answering_with_a_video_is_never_batched():
+    from foley.sources.generate import _batch_takes
+
+    cfg = {**CONFIGS["fal_mmaudio_v2a"]}
+    cfg["native_defaults"] = {**cfg["native_defaults"], "batch": {"native_name": "n", "max": 4}}
+    assert _batch_takes("x", FalAdapter(cfg, api_key="k"), 3) == 1
+    assert _batch_takes("x", _mirelo(BatchRunner()), 3) == 3
+
+
+def test_a_compute_second_price_is_the_whole_calls_run_time():
+    gpu = {"pricing": {"unit": "per_compute_second", "amount_usd": 0.001, "per_sample": True}}
+    assert actual_call_cost(gpu, compute_s=10.0, samples=3) == pytest.approx(0.01)
 
 
 def test_a_take_qc_refuses_fails_like_a_single_take_and_keeps_the_others(library):
@@ -246,6 +319,7 @@ def test_stable_audio_renders_the_takes_in_one_call_one_generator_each(library):
     assert call["num_waveforms_per_prompt"] == 3
     assert [g.seed for g in call["generator"]] == [7, 8, 9]
     assert [c.sound.license.generation_seed for c in takes] == [7, 8, 9]
+    assert [c.sound.license.generation_params["sample_index"] for c in takes] == [0, 1, 2]
     assert len({c.sound.id for c in takes}) == 3
 
 

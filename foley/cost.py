@@ -231,7 +231,8 @@ def actual_call_cost(
 ) -> Optional[float]:
     """What a call just made costs at the declared price, for the duration actually sent.
 
-    ``samples``: the takes the call made (see :func:`for_samples`).
+    ``samples``: the takes the call made (see :func:`for_samples`); not applied to a
+    per-compute-second price, whose reported run time is the whole call's.
 
     The same pricing rule as :func:`estimate_call`, so the estimate and the actual
     cannot disagree on it; ``None`` (unknown) when a per-second source was left to
@@ -259,7 +260,8 @@ def actual_call_cost(
         amount = pricing.get("amount_usd")
         if amount is None or not _finite_non_negative(compute_s):
             return None
-        return for_samples(config, round(float(amount) * float(compute_s), 10), samples)
+        # The run time reported is the whole call's, all its samples included.
+        return round(float(amount) * float(compute_s), 10)
     if duration_s is None and pricing.get("unit") == "per_second":
         return None
     # A source billed by its video's length bills the seconds it actually produced.
