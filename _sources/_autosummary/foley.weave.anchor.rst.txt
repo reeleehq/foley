@@ -9,6 +9,8 @@ foley.weave.anchor
    .. autosummary::
    
       SEGMENT_GAP_S
+      PREFIX_MIN_CHARS
+      FUZZY_MIN_RATIO
    
    .. rubric:: Functions
 

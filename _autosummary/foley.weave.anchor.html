@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=5e4a978b"></script>
+    <script src="../_static/documentation_options.js?v=95c30746"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.123" />
+  <meta name="docsearch:version" content="0.0.124" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -528,6 +528,12 @@ SSOT bridge from SELECT’s sparse <code class="docutils literal notranslate"><s
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.anchor.SEGMENT_GAP_S" title="foley.weave.anchor.SEGMENT_GAP_S"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SEGMENT_GAP_S</span></code></a></p></td>
 <td><p>Inter-word gap (seconds) that ends a sentence segment (report 06 §2.4 uses <code class="docutils literal notranslate"><span class="pre">&gt;</span> <span class="pre">~350</span> <span class="pre">ms</span></code> as a lightweight sentence segmenter over the aligned transcript).</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.anchor.PREFIX_MIN_CHARS" title="foley.weave.anchor.PREFIX_MIN_CHARS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PREFIX_MIN_CHARS</span></code></a></p></td>
+<td><p>A stem match needs at least this many letters; a cue shorter than the spoken word must also hold this share of it (<code class="docutils literal notranslate"><span class="pre">slam</span></code> → <code class="docutils literal notranslate"><span class="pre">slammed</span></code>), so <code class="docutils literal notranslate"><span class="pre">a</span></code> never claims <code class="docutils literal notranslate"><span class="pre">apple</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.anchor.FUZZY_MIN_RATIO" title="foley.weave.anchor.FUZZY_MIN_RATIO"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FUZZY_MIN_RATIO</span></code></a></p></td>
+<td><p>A fuzzy match needs at least this <code class="docutils literal notranslate"><span class="pre">difflib</span></code> ratio, and a candidate at least this share of the cue's length: <code class="docutils literal notranslate"><span class="pre">the</span></code> scores 0.6 against <code class="docutils literal notranslate"><span class="pre">thunder</span></code> but is not it (#257).</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -535,7 +541,7 @@ SSOT bridge from SELECT’s sparse <code class="docutils literal notranslate"><s
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.anchor.nearest_word" title="foley.weave.anchor.nearest_word"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nearest_word</span></code></a>(ref, word_timeline)</p></td>
-<td><p>Return the <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code> entry best matching <code class="docutils literal notranslate"><span class="pre">ref</span></code> (fuzzy/lemmatised, earliest wins).</p></td>
+<td><p>Return the <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code> entry best matching <code class="docutils literal notranslate"><span class="pre">ref</span></code> (earliest wins).</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.anchor.parse_symbolic_anchor" title="foley.weave.anchor.parse_symbolic_anchor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_symbolic_anchor</span></code></a>(onset, *[, layer, loop])</p></td>
 <td><p>Parse SELECT's sparse symbolic <code class="docutils literal notranslate"><span class="pre">onset</span></code> string into a resolved-later <code class="xref py py-class docutils literal notranslate"><span class="pre">Placement</span></code>.</p></td>
@@ -547,6 +553,20 @@ SSOT bridge from SELECT’s sparse <code class="docutils literal notranslate"><s
 </table>
 </div>
 <dl class="py data">
+<dt class="sig sig-object py" id="foley.weave.anchor.FUZZY_MIN_RATIO">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.anchor.</span></span><span class="sig-name descname"><span class="pre">FUZZY_MIN_RATIO</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.6</span></span><a class="headerlink" href="#foley.weave.anchor.FUZZY_MIN_RATIO" title="Link to this definition">#</a></dt>
+<dd><p>A fuzzy match needs at least this <code class="docutils literal notranslate"><span class="pre">difflib</span></code> ratio, and a candidate at least this
+share of the cue’s length: <code class="docutils literal notranslate"><span class="pre">the</span></code> scores 0.6 against <code class="docutils literal notranslate"><span class="pre">thunder</span></code> but is not it (#257).</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.weave.anchor.PREFIX_MIN_CHARS">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.anchor.</span></span><span class="sig-name descname"><span class="pre">PREFIX_MIN_CHARS</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></span><a class="headerlink" href="#foley.weave.anchor.PREFIX_MIN_CHARS" title="Link to this definition">#</a></dt>
+<dd><p>A stem match needs at least this many letters; a cue shorter than the spoken word
+must also hold this share of it (<code class="docutils literal notranslate"><span class="pre">slam</span></code> → <code class="docutils literal notranslate"><span class="pre">slammed</span></code>), so <code class="docutils literal notranslate"><span class="pre">a</span></code> never claims <code class="docutils literal notranslate"><span class="pre">apple</span></code>.</p>
+</dd></dl>
+
+<dl class="py data">
 <dt class="sig sig-object py" id="foley.weave.anchor.SEGMENT_GAP_S">
 <span class="sig-prename descclassname"><span class="pre">foley.weave.anchor.</span></span><span class="sig-name descname"><span class="pre">SEGMENT_GAP_S</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.35</span></span><a class="headerlink" href="#foley.weave.anchor.SEGMENT_GAP_S" title="Link to this definition">#</a></dt>
 <dd><p>Inter-word gap (seconds) that ends a sentence segment (report 06 §2.4 uses
@@ -556,10 +576,11 @@ SSOT bridge from SELECT’s sparse <code class="docutils literal notranslate"><s
 <dl class="py function">
 <dt class="sig sig-object py" id="foley.weave.anchor.nearest_word">
 <span class="sig-prename descclassname"><span class="pre">foley.weave.anchor.</span></span><span class="sig-name descname"><span class="pre">nearest_word</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">word_timeline</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/anchor.html#nearest_word"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.anchor.nearest_word" title="Link to this definition">#</a></dt>
-<dd><p>Return the <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code> entry best matching <code class="docutils literal notranslate"><span class="pre">ref</span></code> (fuzzy/lemmatised, earliest wins).</p>
-<p>Matches the phrase’s first token exactly if present, else the closest word by
-lexical (<code class="docutils literal notranslate"><span class="pre">difflib</span></code>) ratio over any token; <code class="docutils literal notranslate"><span class="pre">None</span></code> when nothing is close or
-<code class="docutils literal notranslate"><span class="pre">ref</span></code> is empty.</p>
+<dd><p>Return the <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code> entry best matching <code class="docutils literal notranslate"><span class="pre">ref</span></code> (earliest wins).</p>
+<p>Matches the phrase’s first token exactly if present, else a word sharing its stem
+(<code class="xref py py-func docutils literal notranslate"><span class="pre">_is_stem_match()</span></code>), else the closest word by lexical (<code class="docutils literal notranslate"><span class="pre">difflib</span></code>) ratio over
+any token among words at least <code class="xref py py-data docutils literal notranslate"><span class="pre">FUZZY_MIN_LENGTH_SHARE</span></code> of its length;
+<code class="docutils literal notranslate"><span class="pre">None</span></code> when nothing is close or <code class="docutils literal notranslate"><span class="pre">ref</span></code> is empty.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
@@ -671,6 +692,8 @@ for a span anchor whose <code class="docutils literal notranslate"><span class="
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.anchor.FUZZY_MIN_RATIO"><code class="docutils literal notranslate"><span class="pre">FUZZY_MIN_RATIO</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.anchor.PREFIX_MIN_CHARS"><code class="docutils literal notranslate"><span class="pre">PREFIX_MIN_CHARS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.anchor.SEGMENT_GAP_S"><code class="docutils literal notranslate"><span class="pre">SEGMENT_GAP_S</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.anchor.nearest_word"><code class="docutils literal notranslate"><span class="pre">nearest_word()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.anchor.parse_symbolic_anchor"><code class="docutils literal notranslate"><span class="pre">parse_symbolic_anchor()</span></code></a></li>

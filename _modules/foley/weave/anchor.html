@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=5e4a978b"></script>
+    <script src="../../../_static/documentation_options.js?v=95c30746"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.123" />
+  <meta name="docsearch:version" content="0.0.124" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -750,6 +750,16 @@ window.runMermaid = runMermaid;</script>
 <span class="c1">#: ``&gt; ~350 ms`` as a lightweight sentence segmenter over the aligned transcript).</span>
 <span class="n">SEGMENT_GAP_S</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.35</span>
 
+<span class="c1">#: A stem match needs at least this many letters; a cue shorter than the spoken word</span>
+<span class="c1">#: must also hold this share of it (``slam`` → ``slammed``), so ``a`` never claims ``apple``.</span>
+<span class="n">PREFIX_MIN_CHARS</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">PREFIX_MIN_SHARE</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span>
+
+<span class="c1">#: A fuzzy match needs at least this ``difflib`` ratio, and a candidate at least this</span>
+<span class="c1">#: share of the cue's length: ``the`` scores 0.6 against ``thunder`` but is not it (#257).</span>
+<span class="n">FUZZY_MIN_RATIO</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.6</span>
+<span class="n">FUZZY_MIN_LENGTH_SHARE</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.6</span>
+
 <span class="c1">#: Trailing punctuation that also ends a sentence segment.</span>
 <span class="n">_SENTENCE_END</span> <span class="o">=</span> <span class="s2">".!?"</span>
 
@@ -818,11 +828,12 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="nearest_word">
 <a class="viewcode-back" href="../../../_autosummary/foley.weave.anchor.html#foley.weave.nearest_word">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">nearest_word</span><span class="p">(</span><span class="n">ref</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">word_timeline</span><span class="p">:</span> <span class="s2">"list[dict]"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""Return the ``word_timeline`` entry best matching ``ref`` (fuzzy/lemmatised, earliest wins).</span>
+<span class="w">    </span><span class="sd">"""Return the ``word_timeline`` entry best matching ``ref`` (earliest wins).</span>
 
-<span class="sd">    Matches the phrase's first token exactly if present, else the closest word by</span>
-<span class="sd">    lexical (``difflib``) ratio over any token; ``None`` when nothing is close or</span>
-<span class="sd">    ``ref`` is empty.</span>
+<span class="sd">    Matches the phrase's first token exactly if present, else a word sharing its stem</span>
+<span class="sd">    (:func:`_is_stem_match`), else the closest word by lexical (``difflib``) ratio over</span>
+<span class="sd">    any token among words at least :data:`FUZZY_MIN_LENGTH_SHARE` of its length;</span>
+<span class="sd">    ``None`` when nothing is close or ``ref`` is empty.</span>
 <span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">ref</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">word_timeline</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
@@ -835,21 +846,46 @@ window.runMermaid = runMermaid;</script>
     <span class="k">for</span> <span class="n">nw</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">normed</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">nw</span> <span class="o">==</span> <span class="n">head</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">w</span>
-    <span class="c1"># 2) prefix / substring on the head.</span>
+    <span class="c1"># 2) a stem: an inflection (slam / slammed) or the spoken part of a compound cue</span>
+    <span class="c1">#    (gunshot / gun, footsteps / steps), never a short stub (a / apple).</span>
     <span class="k">for</span> <span class="n">nw</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">normed</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">nw</span> <span class="ow">and</span> <span class="p">(</span><span class="n">nw</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">head</span><span class="p">)</span> <span class="ow">or</span> <span class="n">head</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">nw</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">nw</span> <span class="ow">and</span> <span class="n">_is_stem_match</span><span class="p">(</span><span class="n">head</span><span class="p">,</span> <span class="n">nw</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">w</span>
     <span class="c1"># 3) closest lexical match over the full phrase, earliest of the best.</span>
     <span class="n">best</span><span class="p">,</span> <span class="n">best_ratio</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="mf">0.0</span>
     <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">nw</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">normed</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">nw</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">nw</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">nw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">FUZZY_MIN_LENGTH_SHARE</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">token</span><span class="p">):</span>
                 <span class="k">continue</span>
             <span class="n">ratio</span> <span class="o">=</span> <span class="n">difflib</span><span class="o">.</span><span class="n">SequenceMatcher</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">token</span><span class="p">,</span> <span class="n">nw</span><span class="p">)</span><span class="o">.</span><span class="n">ratio</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">ratio</span> <span class="o">&gt;</span> <span class="n">best_ratio</span><span class="p">:</span>
                 <span class="n">best</span><span class="p">,</span> <span class="n">best_ratio</span> <span class="o">=</span> <span class="n">w</span><span class="p">,</span> <span class="n">ratio</span>
-    <span class="k">return</span> <span class="n">best</span> <span class="k">if</span> <span class="n">best_ratio</span> <span class="o">&gt;=</span> <span class="mf">0.6</span> <span class="k">else</span> <span class="kc">None</span></div>
+    <span class="k">return</span> <span class="n">best</span> <span class="k">if</span> <span class="n">best_ratio</span> <span class="o">&gt;=</span> <span class="n">FUZZY_MIN_RATIO</span> <span class="k">else</span> <span class="kc">None</span></div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_stem_match</span><span class="p">(</span><span class="n">cue</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">word</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether the spoken ``word`` and the ``cue`` share a stem long enough to mean it.</span>
+
+<span class="sd">    The spoken word may be the cue's stem at either end (``gun`` for ``gunshot``,</span>
+<span class="sd">    ``steps`` for ``footsteps``) once it has :data:`PREFIX_MIN_CHARS` letters. A cue</span>
+<span class="sd">    shorter than the word must start it and hold :data:`PREFIX_MIN_SHARE` of it (an</span>
+<span class="sd">    inflection, ``slam`` for ``slammed``), so a short cue never claims a longer word.</span>
+
+<span class="sd">    &gt;&gt;&gt; _is_stem_match("slam", "slammed"), _is_stem_match("gunshot", "gun")</span>
+<span class="sd">    (True, True)</span>
+<span class="sd">    &gt;&gt;&gt; _is_stem_match("footsteps", "steps"), _is_stem_match("apple", "a"), _is_stem_match("car", "carpets")</span>
+<span class="sd">    (True, False, False)</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cue</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">PREFIX_MIN_CHARS</span> <span class="ow">and</span> <span class="p">(</span>
+            <span class="n">cue</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="ow">or</span> <span class="n">cue</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">word</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">cue</span><span class="p">)</span>
+        <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">cue</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">PREFIX_MIN_CHARS</span>
+        <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">cue</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">PREFIX_MIN_SHARE</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+    <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_segment_sentences</span><span class="p">(</span>

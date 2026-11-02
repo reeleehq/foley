@@ -1,4 +1,4 @@
-> built 2026-11-02 06:03 UTC from 28ec390 (main) · foley 0.0.123. Details: build_info.json
+> built 2026-11-02 06:11 UTC from 1d92b1a (main) · foley 0.0.124. Details: build_info.json
 
 # index.html.md
 
@@ -17799,7 +17799,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'netflix intro', 'ta-dum', 'ta dum', 'netflix chime', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm roar', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel bong', 'intel chime', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chime', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'netflix chime', 'ta-dum', 'netflix sound', 'tudum', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm roar', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel chime', 'intel inside', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -27190,15 +27190,27 @@ SSOT bridge from SELECT’s sparse `TimelineItem.onset` string to a
 
 ### Module Attributes
 
-| [`SEGMENT_GAP_S`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.SEGMENT_GAP_S)   | Inter-word gap (seconds) that ends a sentence segment (report 06 §2.4 uses `> ~350 ms` as a lightweight sentence segmenter over the aligned transcript).   |
-|------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`SEGMENT_GAP_S`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.SEGMENT_GAP_S)    | Inter-word gap (seconds) that ends a sentence segment (report 06 §2.4 uses `> ~350 ms` as a lightweight sentence segmenter over the aligned transcript).             |
+|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`PREFIX_MIN_CHARS`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.PREFIX_MIN_CHARS) | A stem match needs at least this many letters; a cue shorter than the spoken word must also hold this share of it (`slam` → `slammed`), so `a` never claims `apple`. |
+| [`FUZZY_MIN_RATIO`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.FUZZY_MIN_RATIO)  | A fuzzy match needs at least this `difflib` ratio, and a candidate at least this share of the cue's length: `the` scores 0.6 against `thunder` but is not it (#257). |
 
 ### Functions
 
-| [`nearest_word`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.nearest_word)(ref, word_timeline)                | Return the `word_timeline` entry best matching `ref` (fuzzy/lemmatised, earliest wins).   |
-|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
-| [`parse_symbolic_anchor`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.parse_symbolic_anchor)(onset, \*[, layer, loop]) | Parse SELECT's sparse symbolic `onset` string into a resolved-later `Placement`.          |
-| [`resolve_anchor`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.resolve_anchor)(placement, word_timeline, \*)    | Resolve a `Placement` to a concrete `(onset_seconds, duration_seconds)`.                  |
+| [`nearest_word`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.nearest_word)(ref, word_timeline)                | Return the `word_timeline` entry best matching `ref` (earliest wins).            |
+|--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| [`parse_symbolic_anchor`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.parse_symbolic_anchor)(onset, \*[, layer, loop]) | Parse SELECT's sparse symbolic `onset` string into a resolved-later `Placement`. |
+| [`resolve_anchor`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.resolve_anchor)(placement, word_timeline, \*)    | Resolve a `Placement` to a concrete `(onset_seconds, duration_seconds)`.         |
+
+### foley.weave.anchor.FUZZY_MIN_RATIO *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.6*
+
+A fuzzy match needs at least this `difflib` ratio, and a candidate at least this
+share of the cue’s length: `the` scores 0.6 against `thunder` but is not it (#257).
+
+### foley.weave.anchor.PREFIX_MIN_CHARS *: [int](https://docs.python.org/3/builtins/functions.html#int)* *= 3*
+
+A stem match needs at least this many letters; a cue shorter than the spoken word
+must also hold this share of it (`slam` → `slammed`), so `a` never claims `apple`.
 
 ### foley.weave.anchor.SEGMENT_GAP_S *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.35*
 
@@ -27207,11 +27219,12 @@ Inter-word gap (seconds) that ends a sentence segment (report 06 §2.4 uses
 
 ### foley.weave.anchor.nearest_word(ref, word_timeline)
 
-Return the `word_timeline` entry best matching `ref` (fuzzy/lemmatised, earliest wins).
+Return the `word_timeline` entry best matching `ref` (earliest wins).
 
-Matches the phrase’s first token exactly if present, else the closest word by
-lexical (`difflib`) ratio over any token; `None` when nothing is close or
-`ref` is empty.
+Matches the phrase’s first token exactly if present, else a word sharing its stem
+(`_is_stem_match()`), else the closest word by lexical (`difflib`) ratio over
+any token among words at least `FUZZY_MIN_LENGTH_SHARE` of its length;
+`None` when nothing is close or `ref` is empty.
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
@@ -29538,18 +29551,16 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 06:03 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/28ec390cb82f908cd5ab0e77cd738b7a7c81b6c0"><code>28ec390</code></a> on branch <code>main</code>, for **foley 0.0.123** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 06:11 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/1d92b1a25bb585d0a09f161cc8c16801fad61167"><code>1d92b1a</code></a> on branch <code>main</code>, for **foley 0.0.124** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.123) is behind the latest release on PyPI (0.0.124): `pip install foley` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/28ec390cb82f908cd5ab0e77cd738b7a7c81b6c0"><code>28ec390cb82f908cd5ab0e77cd738b7a7c81b6c0</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/1d92b1a25bb585d0a09f161cc8c16801fad61167"><code>1d92b1a25bb585d0a09f161cc8c16801fad61167</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -29560,9 +29571,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41397270600">41397270600</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41397969745">41397969745</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>f7b43237382a8043b6a7cf4a5bb4bf73e429b973</code> (in the history of the built commit) |
+| Event commit | <code>1d92b1a25bb585d0a09f161cc8c16801fad61167</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -29587,13 +29598,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.124/">0.0.124</a>, newer than the documented version (0.0.123).
+Latest release: <a href="https://pypi.org/project/foley/0.0.124/">0.0.124</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 28ec390cb82f908cd5ab0e77cd738b7a7c81b6c0
+git checkout 1d92b1a25bb585d0a09f161cc8c16801fad61167
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

@@ -21,15 +21,27 @@ SSOT bridge from SELECT’s sparse `TimelineItem.onset` string to a
 
 ### Module Attributes
 
-| [`SEGMENT_GAP_S`](#foley.weave.anchor.SEGMENT_GAP_S)   | Inter-word gap (seconds) that ends a sentence segment (report 06 §2.4 uses `> ~350 ms` as a lightweight sentence segmenter over the aligned transcript).   |
-|------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`SEGMENT_GAP_S`](#foley.weave.anchor.SEGMENT_GAP_S)    | Inter-word gap (seconds) that ends a sentence segment (report 06 §2.4 uses `> ~350 ms` as a lightweight sentence segmenter over the aligned transcript).             |
+|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`PREFIX_MIN_CHARS`](#foley.weave.anchor.PREFIX_MIN_CHARS) | A stem match needs at least this many letters; a cue shorter than the spoken word must also hold this share of it (`slam` → `slammed`), so `a` never claims `apple`. |
+| [`FUZZY_MIN_RATIO`](#foley.weave.anchor.FUZZY_MIN_RATIO)  | A fuzzy match needs at least this `difflib` ratio, and a candidate at least this share of the cue's length: `the` scores 0.6 against `thunder` but is not it (#257). |
 
 ### Functions
 
-| [`nearest_word`](#foley.weave.anchor.nearest_word)(ref, word_timeline)                | Return the `word_timeline` entry best matching `ref` (fuzzy/lemmatised, earliest wins).   |
-|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
-| [`parse_symbolic_anchor`](#foley.weave.anchor.parse_symbolic_anchor)(onset, \*[, layer, loop]) | Parse SELECT's sparse symbolic `onset` string into a resolved-later `Placement`.          |
-| [`resolve_anchor`](#foley.weave.anchor.resolve_anchor)(placement, word_timeline, \*)    | Resolve a `Placement` to a concrete `(onset_seconds, duration_seconds)`.                  |
+| [`nearest_word`](#foley.weave.anchor.nearest_word)(ref, word_timeline)                | Return the `word_timeline` entry best matching `ref` (earliest wins).            |
+|--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| [`parse_symbolic_anchor`](#foley.weave.anchor.parse_symbolic_anchor)(onset, \*[, layer, loop]) | Parse SELECT's sparse symbolic `onset` string into a resolved-later `Placement`. |
+| [`resolve_anchor`](#foley.weave.anchor.resolve_anchor)(placement, word_timeline, \*)    | Resolve a `Placement` to a concrete `(onset_seconds, duration_seconds)`.         |
+
+### foley.weave.anchor.FUZZY_MIN_RATIO *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.6*
+
+A fuzzy match needs at least this `difflib` ratio, and a candidate at least this
+share of the cue’s length: `the` scores 0.6 against `thunder` but is not it (#257).
+
+### foley.weave.anchor.PREFIX_MIN_CHARS *: [int](https://docs.python.org/3/builtins/functions.html#int)* *= 3*
+
+A stem match needs at least this many letters; a cue shorter than the spoken word
+must also hold this share of it (`slam` → `slammed`), so `a` never claims `apple`.
 
 ### foley.weave.anchor.SEGMENT_GAP_S *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.35*
 
@@ -38,11 +50,12 @@ Inter-word gap (seconds) that ends a sentence segment (report 06 §2.4 uses
 
 ### foley.weave.anchor.nearest_word(ref, word_timeline)
 
-Return the `word_timeline` entry best matching `ref` (fuzzy/lemmatised, earliest wins).
+Return the `word_timeline` entry best matching `ref` (earliest wins).
 
-Matches the phrase’s first token exactly if present, else the closest word by
-lexical (`difflib`) ratio over any token; `None` when nothing is close or
-`ref` is empty.
+Matches the phrase’s first token exactly if present, else a word sharing its stem
+(`_is_stem_match()`), else the closest word by lexical (`difflib`) ratio over
+any token among words at least `FUZZY_MIN_LENGTH_SHARE` of its length;
+`None` when nothing is close or `ref` is empty.
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
