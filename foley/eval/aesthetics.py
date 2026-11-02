@@ -34,7 +34,6 @@ from __future__ import annotations
 
 import tempfile
 import math
-import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Iterable, Mapping, Optional
@@ -93,10 +92,6 @@ AES_TIMEOUT_S = 300.0
 
 #: The longest ``reason`` an ``unchecked`` verdict records (it is stored on the record).
 AES_REASON_MAX_CHARS = 200
-
-#: An absolute path in an error message (POSIX or a Windows drive); a ``~/`` path, a
-#: URL and a relative path are left alone. Scrubbed from a stored ``reason``.
-_ABSOLUTE_PATH = re.compile(r"(?<![\w~.:/\\])(?:/|[A-Za-z]:\\)[^\s'\",)\]]+")
 
 #: :func:`aesthetics_verdict` statuses: scored with no floors, at or above every floor,
 #: below one, or not scored (with the reason).
@@ -254,20 +249,24 @@ def resolve_aesthetics(aesthetics):
     return scorer
 
 
-def _reason(exc: BaseException) -> str:
+def _reason(exc: BaseException, *, prefixes: "Iterable[str]" = ()) -> str:
     """``exc`` as a short, publishable reason: its type, first and last line, no absolute path.
 
     A failed run's message carries the program's output tail and local paths, and the
     reason is stored on the record, so only its first line (what failed) and last line
-    (the program's error, or foley's hint about it) are kept, scrubbed and cut.
+    (the program's error, or foley's hint about it) are kept, cut, and scrubbed of
+    paths by :func:`foley.obs.redact.redact_paths` (``prefixes``: the interpreter and
+    its venv, replaced whole first).
     """
     import subprocess
+
+    from ..obs.redact import redact_paths
 
     if isinstance(exc, subprocess.TimeoutExpired):  # its message quotes the command
         return f"TimeoutExpired: no answer within {exc.timeout:g} s"
     lines = [line.strip() for line in str(exc).strip().splitlines() if line.strip()]
     said = " ... ".join(dict.fromkeys(lines[:1] + lines[-1:]))  # one if they are equal
-    text = _ABSOLUTE_PATH.sub("<path>", f"{type(exc).__name__}: {said}")
+    text = redact_paths(f"{type(exc).__name__}: {said}", prefixes=prefixes)
     return text[:AES_REASON_MAX_CHARS]
 
 
@@ -324,7 +323,8 @@ def aesthetics_verdict(audio_bytes: bytes, *, scorer) -> dict:
             raise ValueError(f"the scorer returned {len(scores)} scores for 1 clip")
         return _scored(scores[0], floors)
     except Exception as exc:  # noqa: BLE001 - a score that cannot be had is "unchecked"
-        return {"status": UNCHECKED, "reason": _reason(exc)}
+        prefixes = scorer.local_paths() if isinstance(scorer, ExternalToolkit) else ()
+        return {"status": UNCHECKED, "reason": _reason(exc, prefixes=prefixes)}
 
 
 #: The note of a duplicate generation whose stored twin already has a verdict.

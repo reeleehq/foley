@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Iterable, Mapping, Optional
@@ -127,6 +128,20 @@ class ExternalToolkit:
                 f"Install: {self.install}"
             )
         return resolve_program(python, what=type(self).__name__, install=self.install)
+
+    def local_paths(self) -> "list[str]":
+        """The interpreter as given and resolved, and its venv root: paths to keep out of
+        anything published (:func:`foley.obs.redact.redact_paths`). Never raises."""
+        python = self.python or os.environ.get(self.python_env)
+        if not python:
+            return []
+        given = Path(os.path.expanduser(python))
+        found = shutil.which(str(given))
+        paths = {python, str(given), *([found] if found else [])}
+        for path in list(paths):
+            real = Path(os.path.realpath(path))
+            paths |= {str(real), str(Path(path).parent.parent), str(real.parent.parent)}
+        return sorted(p for p in paths if os.path.isabs(p) and len(p) > 1)
 
     def _explain(self, err: RuntimeError, python: str) -> RuntimeError:
         hints = {
