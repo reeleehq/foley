@@ -564,8 +564,8 @@ def _generated_bed(prompt, *, library, generate, generate_options, sample_rate):
     return load_clip_mono(lib, record.id, sr=sample_rate), record, list(cand.notes)
 
 
-def _named_backend_refusal(backend) -> Optional[str]:
-    """:func:`mix_refusal` of a named generate backend's licence row, before any call.
+def _named_backend_rights(backend) -> Optional[LicenseRecord]:
+    """A named generate backend's licence row as a record, known before any call.
 
     ``None`` when no single backend is named (an unnamed order is gated on the clip it
     returns) or its licence depends on the account (no fixed row).
@@ -582,9 +582,13 @@ def _named_backend_refusal(backend) -> Optional[str]:
     license_id = lic_cfg.get("default_license_id")
     if license_id is None:
         return None
-    return mix_refusal(
-        apply_license_flags(LicenseRecord(source=backend, license_id=license_id))
-    )
+    return apply_license_flags(LicenseRecord(source=backend, license_id=license_id))
+
+
+def _named_backend_refusal(backend) -> Optional[str]:
+    """:func:`mix_refusal` of a named generate backend's licence row, before any call."""
+    rights = _named_backend_rights(backend)
+    return None if rights is None else mix_refusal(rights)
 
 
 def _default_library():
@@ -829,6 +833,64 @@ def store_refusal(
     return None
 
 
+def _check_storable(
+    rights: LicenseRecord, library, *, accept_ai_restricted: bool, what: str
+) -> None:
+    """Raise :class:`BroadcastRefusal` when :func:`store_refusal` refuses ``rights``.
+
+    The mix's licence is narrowed from each source's, so a source refused on its own
+    (``what``: the speech, the bed's backend) refuses the mix: it is asked before the
+    bed is generated.
+    """
+    why = store_refusal(rights, library, accept_ai_restricted=accept_ai_restricted)
+    if why:
+        raise BroadcastRefusal(f"cannot store the broadcast bed ({what}): {why}")
+
+
+def _twin_refusal(twin: LicenseRecord, made: LicenseRecord) -> Optional[str]:
+    """Why a byte-identical stored sound (rights ``twin``) is not this broadcast, or ``None``.
+
+    It is when it carries the same licence, credits the same people (its attribution
+    line and this broadcast's lineage entry, which names the speech's credit and the
+    bed's id) and is no wider (:func:`~foley.licensing.wider_rights`). Otherwise its
+    record would credit others or license it differently, so it is not handed back.
+    """
+    import json
+
+    from ..licensing import wider_rights
+    from ..provenance.credits import attribution_line
+
+    def canonical(value) -> str:
+        return json.dumps(value, sort_keys=True, default=str)
+
+    mine = canonical(made.transformations[-1])
+    differs = [
+        what
+        for what, same in (
+            ("licence", twin.license_id == made.license_id),
+            (
+                "credit",
+                attribution_line(twin, fmt="plain")
+                == attribution_line(made, fmt="plain"),
+            ),
+            (
+                "lineage",
+                any(canonical(t) == mine for t in twin.transformations or ()),
+            ),
+        )
+        if not same
+    ]
+    wider = wider_rights(twin, made)
+    if wider:
+        differs.append(f"wider rights ({', '.join(wider)})")
+    if not differs:
+        return None
+    return (
+        "not stored: a byte-identical sound is already stored with another "
+        f"{', '.join(differs)}, so it is not handed back as this broadcast"
+    )
+
+
 def _caption(bed_source, *, bed_prompt: Optional[str], treatment: str) -> str:
     """The stored broadcast's caption: the device and what the bed is."""
     bed_text = bed_prompt or getattr(bed_source, "caption", None) or "a bed"
@@ -850,13 +912,13 @@ def _store(
 
     Through the shared :func:`~foley.index.ingest.ingest_one` (QC, embedding, tags,
     storage), with ``accept_ai_restricted`` as its consent. A byte-identical sound
-    already stored is handed back only when it is no wider than ``rights``
-    (:func:`~foley.licensing.wider_rights`).
+    already stored is handed back only when it is this broadcast (:func:`_twin_refusal`:
+    the same licence, credits and lineage, no wider); else the id is ``None``, with a
+    note.
     """
     from ..audio import encode
     from ..bootstrap import MetadataCaptioner
     from ..index.ingest import CONSENT_NOTE, embedding_permitted, ingest_one
-    from ..licensing import wider_rights
 
     options = {
         "captioner": MetadataCaptioner(caption),
@@ -876,14 +938,10 @@ def _store(
     if res.status in ("pass", "warn"):
         return res.id, notes + ([CONSENT_NOTE] if consented else [])
     if res.status == "skipped_dup":
-        wider = wider_rights(library[res.id].license, rights)
-        if not wider:
-            return res.id, notes
-        notes.append(
-            f"not stored: the identical sound {res.id!r} is already stored with wider "
-            f"rights ({', '.join(wider)}), so it is not handed back as this broadcast"
+        why = _twin_refusal(library[res.id].license, rights)
+        return (
+            (res.id, notes) if why is None else (None, [*notes, f"{why} ({res.id!r})"])
         )
-        return None, notes
     return None, notes + [f"not stored ({res.status})"]
 
 
@@ -1005,7 +1063,8 @@ def broadcast_bed(
         store: Also ingest the result into ``library`` by value, under its licence
             (both sources' lineage recorded), so :func:`foley.export_sound` and the
             credits work on it; its id is the result's ``sound_id``. Checked before
-            anything is spent (:func:`store_refusal`).
+            anything is spent (:func:`store_refusal`): for a prompted bed, the
+            speech's rights and a named backend's licence row before generating.
         accept_ai_restricted: Consent to embed (index) the result when a source's
             licence does not allow AI use (an AI-generated bed's, a non-commercial
             speech's). Without it such a ``store=True`` is refused, fail-closed. The
@@ -1036,12 +1095,25 @@ def broadcast_bed(
         bed, bed_prompt, bed_license=bed_license, generate_options=generate_options
     )
     _check_ingest_options(ingest_options, store=store)
+    if store:
+        library = library if library is not None else _default_library()
     if bed is not None:
         bed_audio, bed_source, notes = _given_bed(
             bed, bed_license=bed_license, library=library, sample_rate=sr
         )
     else:
         _gate_sources(None, speech_license)  # before the bed is paid for
+        if store:  # what refuses a source refuses the mix: ask before paying
+            pre = [("the speech", speech_license or _unknown_rights("speech"))]
+            backend = _named_backend_rights((generate_options or {}).get("backend"))
+            pre += [("the bed's backend", backend)] if backend is not None else []
+            for what, source_rights in pre:
+                _check_storable(
+                    source_rights,
+                    library,
+                    accept_ai_restricted=accept_ai_restricted,
+                    what=what,
+                )
         bed_audio, bed_source, notes = _generated_bed(
             bed_prompt,
             library=library,
@@ -1052,10 +1124,9 @@ def broadcast_bed(
     name = _treatment_name(treatment)
     rights = broadcast_license(bed_source, speech_license, treatment=name)
     if store:
-        library = library if library is not None else _default_library()
-        why = store_refusal(rights, library, accept_ai_restricted=accept_ai_restricted)
-        if why:
-            raise BroadcastRefusal(f"cannot store the broadcast bed: {why}")
+        _check_storable(
+            rights, library, accept_ai_restricted=accept_ai_restricted, what="the mix"
+        )
     clips = _speak(lines, sr, tts)
     program, mix_notes = mix_program(
         join_lines(clips, sr, gap_s=gap_s),

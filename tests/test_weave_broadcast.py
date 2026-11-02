@@ -731,11 +731,87 @@ def test_store_without_ai_consent_is_refused_before_speaking(sound_library, bed_
     assert not sound_library[r.sound_id].license.ai_training_ok  # consent != training
 
 
-def test_store_of_bytes_that_may_not_be_kept_is_refused(sound_library):
-    bed = _rights("CC0-1.0")
-    bed.cache_bytes_ok = False  # a Freesound API pull: by reference only
+@pytest.mark.parametrize("side", ["bed", "speech"])
+def test_store_of_bytes_that_may_not_be_kept_is_refused(sound_library, side):
+    kept, by_reference = _rights("CC0-1.0"), _by_reference(_rights("CC0-1.0"))
+    bed, speech = (by_reference, kept) if side == "bed" else (kept, by_reference)
+    calls = []
     with pytest.raises(foley.BroadcastRefusal, match="cache_bytes_ok"):
-        _store(sound_library, bed_license=bed, speech=_rights("CC0-1.0"))
+        _store(sound_library, bed_license=bed, speech=speech, lines=["Goal!"],
+               tts=_counting_tts(calls))  # fmt: skip
+    assert calls == [] and len(sound_library) == 0
+
+
+def _counting_generate(calls, license_id="CC0-1.0"):
+    def generate(prompt, **kw):
+        calls.append(prompt)
+        cand = Candidate(
+            sound=SoundRecord(id="g1", caption="crowd", license=_rights(license_id)),
+            origin=CandidateOrigin.generated,
+        )
+        cand.audio_bytes = foley.audio.encode(_crowd(), SR)
+        return cand
+
+    return generate
+
+
+def _by_reference(lic):
+    lic.cache_bytes_ok = False  # a Freesound API pull: by reference only
+    return lic
+
+
+@pytest.mark.parametrize(
+    "speech, generate_options, match",
+    [
+        (_rights("CC-BY-NC-4.0"), None, "the speech"),  # no AI use, no consent
+        (_by_reference(_rights("CC0-1.0")), None, "the speech"),
+        (_rights("CC0-1.0"), {"backend": "fal_stable_audio_3"}, "backend"),  # its row
+    ],
+    ids=["nc_speech", "by_reference_speech", "named_backend"],
+)
+def test_store_refusal_comes_before_the_bed_is_generated(
+    sound_library, speech, generate_options, match
+):
+    calls = []
+    with pytest.raises(foley.BroadcastRefusal, match=match):
+        foley.broadcast_bed(
+            [_line()], bed_prompt="crowd", generate=_counting_generate(calls),
+            generate_options=generate_options, speech_license=speech,
+            library=sound_library, store=True, ingest_options=_QUIET_INGEST, sr=SR,
+        )  # fmt: skip
+    assert calls == []
+
+
+def test_a_stored_twin_crediting_others_is_not_handed_back(sound_library):
+    by = "CC-BY-4.0"
+    first = _store(
+        sound_library,
+        bed_license=_rights(by, creator_name="Ann"),
+        speech=_rights(by, creator_name="Bob"),
+    )
+    again = _store(  # the same bytes, credited to other people
+        sound_library,
+        bed_license=_rights(by, creator_name="Carol"),
+        speech=_rights(by, creator_name="Dave"),
+    )
+    assert first.sound_id and again.sound_id is None
+    assert any("credit" in n for n in again.notes)
+    _d, rights, _p = foley.export_sound(first.sound_id, library=sound_library)
+    assert "Ann" in rights["attribution"] and "Carol" not in rights["attribution"]
+
+
+def test_a_stored_share_alike_twin_is_not_handed_back_as_a_cc0_broadcast(
+    sound_library,
+):
+    sa = "CC-BY-SA-4.0"
+    first = _store(
+        sound_library, bed_license=_rights(sa), speech=_rights(sa),
+        accept_ai_restricted=True,
+    )  # fmt: skip
+    again = _store(sound_library, bed_license=_rights("CC0-1.0"), speech=_rights("CC0-1.0"))
+    assert first.sound_id and again.sound_id is None
+    assert again.license.license_id == "CC0-1.0"
+    assert any("licence" in n for n in again.notes)
 
 
 @pytest.mark.parametrize(
