@@ -98,3 +98,16 @@ def test_snap_to_pause_moves_onset_into_gap():
     assert abs(snapped - 1.6) < 1e-9
     # no pause within radius -> unchanged
     assert _snap_to_pause(0.35, WT, radius_s=0.01) == 0.35
+
+
+def test_a_short_unrelated_word_never_claims_a_cue():
+    """#257: 'thunder' is not 'The' (difflib 0.6), and 'a' is not 'apple'."""
+    from foley.weave.anchor import nearest_word
+
+    wt = [{"word": w, "start": i * 0.5, "end": (i + 1) * 0.5}
+          for i, w in enumerate("The heavy door slammed. A rain fell.".split())]  # fmt: skip
+    assert nearest_word("thunder", wt) is None
+    assert nearest_word("apple", wt) is None
+    assert nearest_word("slam", wt)["word"] == "slammed."  # an inflection still matches
+    assert nearest_word("doors", wt)["word"] == "door"
+    assert nearest_word("rainy", wt)["word"] == "rain"  # fuzzy, long enough

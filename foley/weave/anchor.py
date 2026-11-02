@@ -30,6 +30,16 @@ from ..base import Anchor, Layer, Placement
 #: ``> ~350 ms`` as a lightweight sentence segmenter over the aligned transcript).
 SEGMENT_GAP_S: float = 0.35
 
+#: A prefix match (``slam`` → ``slammed``) needs the shorter word to have at least this
+#: many characters and this share of the longer one, so ``a`` never claims ``apple``.
+PREFIX_MIN_CHARS: int = 3
+PREFIX_MIN_SHARE: float = 0.5
+
+#: A fuzzy match needs at least this ``difflib`` ratio, and a candidate at least this
+#: share of the cue's length: ``the`` scores 0.6 against ``thunder`` but is not it (#257).
+FUZZY_MIN_RATIO: float = 0.6
+FUZZY_MIN_LENGTH_SHARE: float = 0.6
+
 #: Trailing punctuation that also ends a sentence segment.
 _SENTENCE_END = ".!?"
 
@@ -110,20 +120,34 @@ def nearest_word(ref: Optional[str], word_timeline: "list[dict]") -> Optional[di
     for nw, w in normed:
         if nw == head:
             return w
-    # 2) prefix / substring on the head.
+    # 2) prefix on the head (an inflection: slam / slammed), not a short stub.
     for nw, w in normed:
-        if nw and (nw.startswith(head) or head.startswith(nw)):
+        if nw and _is_prefix_match(head, nw):
             return w
     # 3) closest lexical match over the full phrase, earliest of the best.
     best, best_ratio = None, 0.0
     for token in tokens:
         for nw, w in normed:
-            if not nw:
+            if not nw or len(nw) < FUZZY_MIN_LENGTH_SHARE * len(token):
                 continue
             ratio = difflib.SequenceMatcher(None, token, nw).ratio()
             if ratio > best_ratio:
                 best, best_ratio = w, ratio
-    return best if best_ratio >= 0.6 else None
+    return best if best_ratio >= FUZZY_MIN_RATIO else None
+
+
+def _is_prefix_match(a: str, b: str) -> bool:
+    """Whether one of ``a``, ``b`` starts the other and is long enough to mean it.
+
+    >>> _is_prefix_match("slam", "slammed"), _is_prefix_match("apple", "a")
+    (True, False)
+    """
+    short, long_ = sorted((a, b), key=len)
+    return (
+        long_.startswith(short)
+        and len(short) >= PREFIX_MIN_CHARS
+        and len(short) >= PREFIX_MIN_SHARE * len(long_)
+    )
 
 
 def _segment_sentences(
