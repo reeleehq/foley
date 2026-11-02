@@ -71,8 +71,7 @@ def parse_symbolic_anchor(
     (``loop`` / ``ambience`` / ``music``) span a **sentence**, stingers land on a
     **scene** boundary, and everything else is a **word** anchor; the ``ref`` is the
     quoted phrase the sound lands on. A ``None`` onset means "no cue": beds span from
-    the start, one-shots sit at ``absolute`` 0; so does a bed's unquoted span phrase
-    (``"under the whole line"``), which names no word to land on. A bare number (defensive — SELECT is
+    the start, one-shots sit at ``absolute`` 0. A bare number (defensive — SELECT is
     told never to emit one) is read as an absolute offset in seconds.
 
     Args:
@@ -91,13 +90,12 @@ def parse_symbolic_anchor(
     quoted = _QUOTED.search(text)
     if quoted is None:
         # No quoted phrase. A pure number (no alphabetic chars) is an absolute offset;
-        # a bed's phrase describes its span ("under the whole line"), not a word to
-        # match; otherwise treat the (connective-stripped) remainder as the word ref.
+        # otherwise treat the (connective-stripped) remainder as the word ref.
         stripped = _LEADING_CONNECTIVE.sub("", text).strip(" '\"")
         number = _NUMBER.search(text)
         if number is not None and not any(c.isalpha() for c in stripped):
             return Placement(anchor=Anchor.absolute, onset=float(number.group()))
-        ref = None if is_bed else (stripped or None)
+        ref = stripped or None
     else:
         ref = quoted.group(1).strip() or None
     if is_bed:

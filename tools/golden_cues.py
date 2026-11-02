@@ -5,8 +5,9 @@
 resolution. This script replaces each placeholder with a real cue, deterministically
 (no LLM):
 
-* a **bed** (``ambience`` / ``music`` layer) spans its line: :data:`SPAN_HINT`, an
-  unquoted phrase that names no word, so it resolves as an ``absolute`` span;
+* a **bed** (``ambience`` / ``music`` layer) spans its line: :data:`SPAN_HINT`,
+  ``None`` (JSON ``null``), which means "no cue" and resolves as an ``absolute`` span;
+  the one older span phrase (``"under the whole line"``) is normalised to it too;
 * any other sound gets ``on '<word>'``, the trigger word exactly as written in the
   item's ``context``. :func:`propose_cue` picks it from the event's ``query``: the
   context word sharing a stem with a query word, preferring an inflected verb
@@ -35,7 +36,9 @@ SEED = (
     Path(__file__).resolve().parent.parent / "foley" / "data" / "golden" / "seed.json"
 )
 PLACEHOLDER = "on cue"
-SPAN_HINT = "under the whole line"
+SPAN_HINT = None
+#: Older span phrases in the seed that mean "the whole line": normalised to SPAN_HINT.
+LEGACY_SPAN_HINTS = ("under the whole line",)
 BED_LAYERS = ("ambience", "music")
 
 #: Shared leading letters for a query word and a context word to count as one stem.
@@ -106,7 +109,7 @@ def _shares_stem(a: str, b: str, *, min_chars: int = STEM_MIN_CHARS) -> bool:
     return n >= min(min_chars, len(a), len(b)) and n >= 3
 
 
-def propose_cue(context: str, event: dict) -> str:
+def propose_cue(context: str, event: dict) -> "str | None":
     """The proposed ``onset_hint`` for one golden event (before the review's overrides)."""
     if event.get("layer") in BED_LAYERS:
         return SPAN_HINT
@@ -117,7 +120,7 @@ def propose_cue(context: str, event: dict) -> str:
     return f"on '{word}'" if word else PLACEHOLDER
 
 
-def cue_for(item: dict, event: dict) -> str:
+def cue_for(item: dict, event: dict) -> "str | None":
     """The final hint for a placeholder event: the override if reviewed, else the proposal."""
     override = OVERRIDES.get(item["id"])
     if override is None:
@@ -125,9 +128,9 @@ def cue_for(item: dict, event: dict) -> str:
     return override if override == SPAN_HINT else f"on '{override}'"
 
 
-def _check(item: dict, hint: str) -> None:
+def _check(item: dict, hint: "str | None") -> None:
     """Fail unless a word cue's word occurs, as written, in the item's context."""
-    quoted = re.fullmatch(r"on '([^']+)'", hint)
+    quoted = re.fullmatch(r"on '([^']+)'", hint) if hint else None
     if quoted and quoted.group(1).split()[0] not in _words(item["context"]):
         raise ValueError(f"{item['id']}: {hint!r} is not a word of {item['context']!r}")
 
@@ -137,12 +140,16 @@ def apply_cues(items: "list[dict]") -> "list[tuple[str, str, str]]":
     changes = []
     for item in items:
         for event in item["expected_events"]:
-            if event.get("onset_hint") != PLACEHOLDER:
+            old = event.get("onset_hint")
+            if old in LEGACY_SPAN_HINTS:
+                hint = SPAN_HINT
+            elif old == PLACEHOLDER:
+                hint = cue_for(item, event)
+                _check(item, hint)
+            else:
                 continue
-            hint = cue_for(item, event)
-            _check(item, hint)
             event["onset_hint"] = hint
-            changes.append((item["id"], PLACEHOLDER, hint))
+            changes.append((item["id"], old, hint))
     return changes
 
 
@@ -177,7 +184,7 @@ def main(argv=None) -> int:
         return 0
     by_id = {it["id"]: it for it in items}
     for id_, _, new in apply_cues(items):
-        print(f"{id_}  {new:24}  {by_id[id_]['context']}")
+        print(f"{id_}  {json.dumps(new):24}  {by_id[id_]['context']}")
     if args.write:
         SEED.write_text(json.dumps(items, indent=2) + "\n", encoding="utf-8")
     return 0
