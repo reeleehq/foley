@@ -15,9 +15,10 @@ loader merges the in-code seed with an optional full-table JSON drop under
 from __future__ import annotations
 
 import json
+import re
 from functools import lru_cache
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 from .model import UcsName, UcsRow, UcsTable
 from .seed import SEED_UCS_TABLE
@@ -68,18 +69,40 @@ def default_ucs_table() -> UcsTable:
     return load_ucs_table()
 
 
+#: The block separator of a UCS filename, and the one that attaches the optional
+#: UserCategory to the CatID and VendorCategory to the FXName.
+BLOCK_SEP = "_"
+ATTACH_SEP = "-"
+
+#: A filename extension: a short alphanumeric suffix (``.wav``, ``.flac``). A dot
+#: anywhere else (``Creak 5.1_JD``) belongs to the name.
+_EXTENSION = re.compile(r"\.[A-Za-z0-9]{1,5}$")
+
+
+def looks_like_vendor_tag(prefix: str) -> bool:
+    """Whether the text before an FXName's first hyphen reads as a VendorCategory.
+
+    UCS lets a vendor prefix the FXName (``BOOM-Creak Open``), but hyphens are common
+    inside FX names (``Hand-Held Creak``, ``Sci-Fi Door``). So only an upper-case
+    tag with no spaces counts.
+
+    >>> looks_like_vendor_tag("BOOM"), looks_like_vendor_tag("Sci"), looks_like_vendor_tag("SFX 2")
+    (True, False, False)
+    """
+    return prefix.isupper() and prefix.isalnum()
+
+
 def _ucs_blocks(filename) -> "list[str]":
-    """The underscore-delimited blocks of a filename's stem (``[]`` without a ``_``)."""
-    stem = Path(str(filename)).stem.strip()
-    return [b.strip() for b in stem.split("_")] if "_" in stem else []
+    """The stripped blocks of a filename (directory and extension dropped; ``[]`` without a separator)."""
+    stem = _EXTENSION.sub("", Path(str(filename)).name).strip()
+    return [b.strip() for b in stem.split(BLOCK_SEP)] if BLOCK_SEP in stem else []
 
 
-def _split_hyphen(block: str, *, head: bool) -> "tuple[str, Optional[str]]":
-    """``block`` split on its first hyphen: ``(main, extra)``, ``extra`` the head or tail."""
-    left, sep, right = block.partition("-")
-    if not sep or not left or not right:
-        return block, None
-    return (right, left) if head else (left, right)
+def _split_attached(block: str) -> "tuple[str, Optional[str]]":
+    """``(left, right)`` of ``block`` at its first :data:`ATTACH_SEP`; ``(block, None)`` if none."""
+    left, sep, right = block.partition(ATTACH_SEP)
+    left, right = left.strip(), right.strip()
+    return (left, right) if sep and left and right else (block, None)
 
 
 def parse_catid_token(filename) -> Optional[str]:
@@ -92,48 +115,62 @@ def parse_catid_token(filename) -> Optional[str]:
     'DOORWood'
     """
     blocks = _ucs_blocks(filename)
-    return (_split_hyphen(blocks[0], head=False)[0] or None) if blocks else None
+    return (_split_attached(blocks[0])[0] or None) if blocks else None
 
 
-def parse_ucs_name(filename, *, table: Optional[UcsTable] = None) -> Optional[UcsName]:
+def parse_ucs_name(
+    filename,
+    *,
+    table: Optional[UcsTable] = None,
+    is_vendor_tag: Callable[[str], bool] = looks_like_vendor_tag,
+) -> Optional[UcsName]:
     """Every block of a UCS filename as a :class:`~.model.UcsName`, else ``None``.
 
     Fail-quiet like :func:`parse_ucs_filename`: ``None`` when the name has no ``_`` or
     its CatID is not in the table. Blocks past SourceID are the UserData (rejoined
-    with ``_``); a block the name lacks is ``None``. A hyphen in the FXName block is
-    read as the VendorCategory separator, as UCS defines it.
+    with ``_``); a block the name lacks is ``None``. The FXName block's head before a
+    hyphen is the VendorCategory only when ``is_vendor_tag`` accepts it
+    (:func:`looks_like_vendor_tag`), so ``Sci-Fi Door`` stays whole.
 
     >>> n = parse_ucs_name("DOORWood-Gate_SCIFI-Creak Open_JD_NYC_take 2.wav")
     >>> (n.catid, n.category, n.subcategory, n.user_category)
     ('DOORWood', 'DOORS', 'Wood', 'Gate')
     >>> (n.vendor_category, n.fx_name, n.creator_id, n.source_id, n.user_data)
     ('SCIFI', 'Creak Open', 'JD', 'NYC', 'take 2')
+    >>> m = parse_ucs_name("DOORWood_Sci-Fi Slam 5.1_JD_NYC")
+    >>> (m.vendor_category, m.fx_name, m.creator_id, m.source_id, m.user_data)
+    (None, 'Sci-Fi Slam 5.1', 'JD', 'NYC', None)
     >>> parse_ucs_name("DOORWood_Slam.wav").creator_id is None
     True
-    >>> parse_ucs_name("NOTACAT_x_y_z.wav") is None
-    True
+    >>> parse_ucs_name("NOTACAT_x_y_z.wav") is None, parse_ucs_name("plain.wav") is None
+    (True, True)
     """
     blocks = _ucs_blocks(filename)
     if not blocks:
         return None
-    catid, user_category = _split_hyphen(blocks[0], head=False)
+    catid, user_category = _split_attached(blocks[0])
     row = (table or default_ucs_table()).get(catid)
     if row is None:
         return None
-    fx_name = vendor = None
-    if len(blocks) > 1 and blocks[1]:
-        fx_name, vendor = _split_hyphen(blocks[1], head=True)
-    at = lambda i: (blocks[i] or None) if len(blocks) > i else None  # noqa: E731
+
+    def block(i: int) -> Optional[str]:
+        return (blocks[i] or None) if len(blocks) > i else None
+
+    fx_name, vendor = block(1), None
+    if fx_name:
+        head, tail = _split_attached(fx_name)
+        if tail is not None and is_vendor_tag(head):
+            vendor, fx_name = head, tail
     return UcsName(
         catid=row.catid,
         category=row.category,
         subcategory=row.subcategory,
         fx_name=fx_name,
-        creator_id=at(2),
-        source_id=at(3),
+        creator_id=block(2),
+        source_id=block(3),
         user_category=user_category,
         vendor_category=vendor,
-        user_data="_".join(blocks[4:]) or None,
+        user_data=BLOCK_SEP.join(blocks[4:]) or None,
     )
 
 

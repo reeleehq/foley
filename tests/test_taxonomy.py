@@ -64,6 +64,18 @@ def test_parse_ucs_name_reads_every_block():
     plain = parse_ucs_name("WEATHRain_Heavy_AB_Field.flac")
     assert (plain.fx_name, plain.vendor_category, plain.user_category) == ("Heavy", None, None)
     assert parse_ucs_name("DOORWood_.wav").fx_name is None  # empty block: absent
+    # a hyphen inside an FX name is not a vendor separator; spaces are stripped
+    for fx in ("Hand-Held Creak", "Sci-Fi Door", "Door Open - Slow"):
+        n = parse_ucs_name(f"DOORWood_{fx}_JD_NYC.wav")
+        assert (n.vendor_category, n.fx_name) == (None, fx)
+    n = parse_ucs_name("DOORWood_BOOM - Creak_JD_NYC.wav")
+    assert (n.vendor_category, n.fx_name) == ("BOOM", "Creak")
+    # a dot that is not an extension stays in the name; only the extension goes
+    n = parse_ucs_name("DOORWood_Creak 5.1_JD_NYC")
+    assert (n.fx_name, n.creator_id, n.source_id) == ("Creak 5.1", "JD", "NYC")
+    # a caller with its own vendor convention injects the predicate
+    n = parse_ucs_name("DOORWood_Sci-Fi Door_JD_NYC.wav", is_vendor_tag=lambda p: True)
+    assert (n.vendor_category, n.fx_name) == ("Sci", "Fi Door")
     assert parse_ucs_name("just-a-name.wav") is None
     # the category pair still comes out of a CatID with a UserCategory attached
     assert parse_ucs_filename("DOORWood-Gate_Creak_JD_NYC.wav") == ("DOORS", "Wood")
