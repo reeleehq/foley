@@ -5,9 +5,9 @@ accepted (report 05 §3). Three rungs, cheapest first:
 
 * ``clap`` — :class:`ClapJudge`, the zero-config gate on the retrieval cosine (no ML).
 * ``listen`` — an audio-LM "does this contain {event}?" check; **#7 ships the
-  deterministic :class:`StringOverlapJudge`** here (caption/tag overlap). The real
-  Qwen2-Audio impl is a future :class:`~foley.agent.protocols.Judge` behind this same
-  ``VerifyLevel`` seam — no orchestrator change.
+  deterministic :class:`StringOverlapJudge`** here (caption/tag overlap); the real
+  Qwen2-Audio :class:`AudioLMJudge` (``foley[fit]``) is a
+  :class:`~foley.agent.protocols.Judge` behind this same ``VerifyLevel`` seam.
 * ``judge`` — :class:`AnthropicJudge`, an LLM arbiter (ties + scene consistency),
   ``foley[agent]``; ``anthropic`` imported lazily.
 
@@ -238,14 +238,84 @@ def _aqa_yes_probability(pipeline, wav, sr, query: str) -> "tuple[float, object]
     return (1.0 if text.startswith("yes") else 0.0), out
 
 
+#: The answer words AQAScore reads P(yes) from (first token of each, as the model spells it).
+AQA_ANSWER_WORDS = ("Yes", "No")
+
+#: ``from_pretrained`` options for the audio-LM: the checkpoint's own dtype (bf16 for
+#: Qwen2-Audio, ~15 GB) placed by ``accelerate`` across what devices there are.
+AUDIOLM_LOAD_KWARGS = {"dtype": "auto", "device_map": "auto"}
+
+
+def _load_qwen2_audio(model_id: str, **load_kwargs):
+    """``(processor, model)`` for a Qwen2-Audio checkpoint (lazy ``transformers``; downloads it)."""
+    from transformers import AutoProcessor, Qwen2AudioForConditionalGeneration
+
+    processor = AutoProcessor.from_pretrained(model_id)
+    model = Qwen2AudioForConditionalGeneration.from_pretrained(model_id, **load_kwargs)
+    model.eval()
+    return processor, model
+
+
+def qwen2_audio_pipeline(processor, model, *, answers=AQA_ANSWER_WORDS):
+    """The ``(prompt, wav, sr) -> {'p_yes', 'p_no'}`` pipeline over a loaded Qwen2-Audio.
+
+    One forward pass, no generation: the clip (mono, resampled to the processor's
+    rate) and the question go through the chat template with the assistant turn
+    opened, and P(yes) is the softmax of the next-token logits restricted to the
+    first tokens of ``answers`` (the AQAScore read-out, report 08 §2.1).
+    """
+    import numpy as np
+    import torch
+
+    from ..audio import resample, to_mono
+
+    target_sr = processor.feature_extractor.sampling_rate
+    ids = [processor.tokenizer.encode(w, add_special_tokens=False)[0] for w in answers]
+
+    def pipeline(prompt: str, wav, sr: int) -> dict:
+        audio = resample(
+            to_mono(np.asarray(wav, dtype=np.float32)), sr, target_sr=target_sr
+        )
+        conversation = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "audio", "audio_url": "candidate"},
+                    {"type": "text", "text": prompt},
+                ],
+            }
+        ]
+        text = processor.apply_chat_template(
+            conversation, add_generation_prompt=True, tokenize=False
+        )
+        inputs = processor(
+            text=text, audio=[audio], sampling_rate=target_sr, return_tensors="pt"
+        ).to(model.device)
+        with torch.inference_mode():
+            logits = model(**inputs).logits[0, -1]
+        p_yes, p_no = torch.softmax(logits[ids].float(), dim=-1).tolist()
+        return {"p_yes": p_yes, "p_no": p_no}
+
+    return pipeline
+
+
 class AudioLMJudge:
     """The audio-LM ``listen`` rung (``foley[fit]``): Qwen2-Audio "does this contain {event}?".
 
-    ``transformers``/``torch`` are imported lazily inside :meth:`judge`; an injected
-    ``pipeline`` (the test seam, mirroring the Stable-Audio fake-pipeline seam) drives the
-    whole byte-decode → prompt → P(yes) → :class:`Verdict` path with no torch. Stashes
-    ``self.model`` + ``self.last_response`` so ``verify_match``'s GenAI span stays
-    informative (same getattr contract :class:`AnthropicJudge` uses).
+    With no ``pipeline``, the first :meth:`judge` loads ``model`` (``transformers``,
+    ``torch``, imported lazily; the 7B weights download on first use) and reads
+    P(yes) from one forward pass (:func:`qwen2_audio_pipeline`); later calls reuse it.
+    An injected ``pipeline`` (the test seam, mirroring the Stable-Audio fake-pipeline
+    seam) drives the whole byte-decode → prompt → P(yes) → :class:`Verdict` path with
+    no torch. Stashes ``self.model`` + ``self.last_response`` so ``verify_match``'s
+    GenAI span stays informative (same getattr contract :class:`AnthropicJudge` uses).
+
+    Args:
+        pipeline: ``(prompt, wav, sr) -> {'p_yes': float}`` or yes/no text.
+        model: The Hugging Face checkpoint to load when no pipeline is given.
+        max_tokens: Kept for the GenAI span contract (the read-out generates none).
+        tau: The P(yes) threshold for a match.
+        load_kwargs: ``from_pretrained`` options (default :data:`AUDIOLM_LOAD_KWARGS`).
     """
 
     def __init__(
@@ -255,11 +325,15 @@ class AudioLMJudge:
         model: str = "Qwen/Qwen2-Audio-7B-Instruct",
         max_tokens: int = 300,
         tau: float = 0.5,
+        load_kwargs: Optional[dict] = None,
     ):
         self._pipeline = pipeline
         self.model = model
         self.max_tokens = max_tokens
         self.tau = tau
+        self.load_kwargs = dict(
+            AUDIOLM_LOAD_KWARGS if load_kwargs is None else load_kwargs
+        )
         self.last_response = None
 
     def judge(
@@ -271,10 +345,9 @@ class AudioLMJudge:
     ) -> Verdict:
         """Listen to the clip and return the AQAScore :class:`Verdict` (``P(yes) ≥ tau``)."""
         wav, sr = _load_candidate_audio(candidate)
-        pipeline = (
-            self._pipeline if self._pipeline is not None else self._build_pipeline()
-        )
-        p_yes, raw = _aqa_yes_probability(pipeline, wav, sr, event.query)
+        if self._pipeline is None:
+            self._pipeline = self._build_pipeline()
+        p_yes, raw = _aqa_yes_probability(self._pipeline, wav, sr, event.query)
         self.last_response = raw
         return Verdict(
             match=p_yes >= self.tau,
@@ -283,14 +356,15 @@ class AudioLMJudge:
             level=VerifyLevel(level),
         )
 
-    def _build_pipeline(
-        self,
-    ):  # pragma: no cover - the real Qwen2-Audio path (foley[fit])
-        """Lazily build the real Qwen2-Audio pipeline wrapper (heavy; behind ``foley[fit]``)."""
-        raise NotImplementedError(
-            "AudioLMJudge needs an injected pipeline or foley[fit] (transformers+torch); "
-            "the real Qwen2-Audio wrapper is a deferred #10b follow-up."
-        )
+    def _build_pipeline(self):
+        """Load ``self.model`` and wrap it as the P(yes) pipeline (``foley[fit]``)."""
+        if not _audiolm_available():
+            raise ImportError(
+                "AudioLMJudge needs an injected pipeline or foley[fit] "
+                "(pip install 'foley[fit]': transformers, torch, accelerate)"
+            )
+        processor, model = _load_qwen2_audio(self.model, **self.load_kwargs)
+        return qwen2_audio_pipeline(processor, model)
 
 
 def _default_fit_judge(level: "str | VerifyLevel", llm: "str | None" = None) -> Judge:
@@ -301,10 +375,10 @@ def _default_fit_judge(level: "str | VerifyLevel", llm: "str | None" = None) -> 
     :class:`StringOverlapJudge`, so ``foley.evaluate_fit()`` is hermetic and free out of
     the box whatever keys are set.
 
-    :class:`AudioLMJudge` (the audio-LM ``listen`` rung) is **injection-only** in this
-    slice: its real Qwen2-Audio pipeline is a deferred #10b follow-up, so the resolver
-    does not auto-select it (it would need ``foley[fit]`` *and* a built pipeline). Pass
-    ``fit_judge=AudioLMJudge(pipeline=...)`` explicitly to use it. Tests inject explicitly.
+    :class:`AudioLMJudge` (the audio-LM ``listen`` rung) is **injection-only**: the
+    resolver never auto-selects it, because it means a ~15 GB Qwen2-Audio download and
+    ``foley[fit]``. Pass ``fit_judge=AudioLMJudge()`` (or ``AudioLMJudge(pipeline=...)``)
+    explicitly to use it.
     """
     from .llm import make_rung
 

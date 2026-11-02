@@ -28,6 +28,7 @@ from .baseline import (
 )
 from . import bradley_terry, panel
 from .panel_page import render_panel_html
+from .fadtk import FadtkFidelity
 from .fidelity import (
     FidelityResult,
     FidelityStamp,
@@ -122,5 +123,6 @@ __all__ = [
     "kernel_audio_distance",
     "generation_fidelity",
     "FidelityStamp",
+    "FadtkFidelity",
     "FidelityResult",
 ]
