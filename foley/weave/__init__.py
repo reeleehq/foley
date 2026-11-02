@@ -417,7 +417,8 @@ def weave(
             timeline already carries a ``word_timeline``).
         language: The narration's language code (``"fr"``, …), passed to the aligner
             (MFA and aeneas pick their models by it; #225). ``None`` (default): the
-            aligner's own default, English for the built-ins.
+            aligner's own default, English for the built-ins. Like ``transcript``, it is
+            unused when the timeline already carries a ``word_timeline`` (a note says so).
         aligner: The forced-alignment seam (default: WhisperX if installed, else fake).
         apply_strategy: The per-item placement seam (default :class:`FullRender`).
         sr: Working/render sample rate in Hz.
@@ -466,6 +467,11 @@ def weave(
         )
         rendered = result.timeline
         notes = _alignment_notes(result.alignment, rendered)
+        if language is not None and result.alignment == "cached":
+            notes.append(
+                f"language={language!r} was not used: the timeline already carried word "
+                "timings, so nothing was re-aligned (clear its word_timeline to re-align)"
+            )
         run_id = getattr(getattr(run, "manifest", None), "run_id", None)
         _emit_weave_steps(run, result)
         run.set_plan_ref(
@@ -474,6 +480,7 @@ def weave(
                 "n_items": len(rendered.items),
                 "master": rendered.master.to_dict(),
                 "aligner": result.alignment,
+                "language": language,
                 "run_manifest_ref": run_id,
             }
         )

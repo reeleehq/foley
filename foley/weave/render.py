@@ -241,7 +241,8 @@ def render(
             is empty (else alignment is skipped — the cached timeline is the seed).
         language: The narration's language code (``"fr"``, …), passed to the aligner,
             which picks its models by it. ``None`` (default) sends none: the aligner's own
-            default (English for the built-ins) applies.
+            default (English for the built-ins) applies. Unused when the timeline already
+            carries a ``word_timeline``.
         aligner: The :class:`~foley.weave.protocols.Aligner` (default: WhisperX if
             ``foley[align]`` installed, else the deterministic fake).
         apply_strategy: The per-item :class:`~foley.weave.protocols.ApplyStrategy`

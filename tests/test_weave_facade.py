@@ -232,8 +232,19 @@ class _RecordingAligner(FakeAligner):
 
 @pytest.mark.parametrize("language", [None, "fr"])
 def test_weave_passes_the_language_to_the_aligner(language):
-    """#225: weave (and score, which forwards its weave kwargs) reaches the aligner's models."""
+    """#225: weave passes ``language`` to the aligner (score forwards it with its weave kwargs)."""
     aligner = _RecordingAligner()
     kw = {} if language is None else {"language": language}
     _weave(library=_Lib(), transcript="the door opened", aligner=aligner, **kw)
     assert aligner.languages == [language or "en"]
+
+
+def test_a_language_with_cached_word_timings_says_it_was_not_used():
+    first = _weave(library=_Lib(), transcript="the door opened")
+    aligner = _RecordingAligner()
+    with foley.obs.run("session") as run:
+        r = foley.weave(_voice(), first.timeline, library=_Lib(), transcript="the door opened",
+                        language="de", aligner=aligner)  # fmt: skip
+        assert run.manifest.plan_ref.get("language") == "de"
+    assert aligner.languages == []  # cached timings: nothing re-aligned
+    assert any("language='de' was not used" in n for n in r.notes)
