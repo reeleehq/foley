@@ -28,6 +28,7 @@ from .indexes import (
     lancedb_available,
     sqlite_vec_loadable,
 )
+from ..embedded_metadata import read_embedded_metadata
 from .license_sidecar import SidecarError, find_sidecar, sidecar_license
 from .ingest import (
     IngestReport,
@@ -75,6 +76,7 @@ __all__ = [
     "ingest_one",
     "ingest_folder",
     "sidecar_license",
+    "read_embedded_metadata",
     "find_sidecar",
     "SidecarError",
     "resolve_ingest_license",
