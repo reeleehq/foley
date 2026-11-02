@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=4a212eee"></script>
+    <script src="../../_static/documentation_options.js?v=ee59aaf7"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.128" />
+  <meta name="docsearch:version" content="0.0.129" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -912,6 +912,33 @@ window.runMermaid = runMermaid;</script>
     <span class="p">}</span>
 <span class="p">)</span>
 
+<span class="c1">#: ``(family id prefix, URL path segment, display label)`` of the CC share-alike</span>
+<span class="c1">#: families foley can name (#253).</span>
+<span class="n">_CC_SHARE_ALIKE</span><span class="p">:</span> <span class="s2">"tuple[tuple[str, str, str], ...]"</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="p">(</span><span class="s2">"CC-BY-SA"</span><span class="p">,</span> <span class="s2">"by-sa"</span><span class="p">,</span> <span class="s2">"CC BY-SA"</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">"CC-BY-NC-SA"</span><span class="p">,</span> <span class="s2">"by-nc-sa"</span><span class="p">,</span> <span class="s2">"CC BY-NC-SA"</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1">#: What foley grants itself under a share-alike licence: it may keep the bytes, and</span>
+<span class="c1">#: must credit them; nothing else. Every other use foley makes (publishing in a</span>
+<span class="c1">#: derivative, an edit, training) makes an adaptation that must carry the licence,</span>
+<span class="c1">#: which foley's gates cannot express, so :func:`keep` and the edit gate refuse it.</span>
+<span class="c1">#: The licence itself travels as the record's ``license_id`` (an export's consumer</span>
+<span class="c1">#: code). The one work foley does make from it is a mix of sources all under the</span>
+<span class="c1">#: identical licence (:func:`shared_share_alike`), released under that licence.</span>
+<span class="n">SHARE_ALIKE_LICENSE_FLAGS</span> <span class="o">=</span> <span class="n">LicenseFlags</span><span class="p">(</span><span class="n">cache_bytes_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">requires_attribution</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1">#: The share-alike licence ids foley can name -&gt; :data:`SHARE_ALIKE_LICENSE_FLAGS`.</span>
+<span class="c1">#: Deliberately not :data:`LICENSE_FLAGS` rows: they are never assertable on ingest,</span>
+<span class="c1">#: and every gate that needs a licence row (an edit, a mix) still refuses them, except</span>
+<span class="c1">#: the identical-licence mix. :func:`derive_license_flags` reads them after</span>
+<span class="c1">#: :data:`LICENSE_FLAGS`, so a record under one is bounded by this row (and credited).</span>
+<span class="n">SHARE_ALIKE_FLAGS</span><span class="p">:</span> <span class="s2">"dict[str, LicenseFlags]"</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">"</span><span class="p">:</span> <span class="n">SHARE_ALIKE_LICENSE_FLAGS</span>
+    <span class="k">for</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">_seg</span><span class="p">,</span> <span class="n">_label</span> <span class="ow">in</span> <span class="n">_CC_SHARE_ALIKE</span>
+    <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">CC_VERSIONS</span>
+<span class="p">}</span>
+
 <span class="c1">#: Licence ids that can never be *asserted* as verified (on ingest, restamp or in a</span>
 <span class="c1">#: folder sidecar): ``unknown`` by definition, ``PDM-1.0`` (a claim about the work, not</span>
 <span class="c1">#: a grant — verify it by building the ``LicenseRecord`` yourself), and the legacy</span>
@@ -1255,7 +1282,10 @@ window.runMermaid = runMermaid;</script>
         <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">"</span><span class="p">:</span> <span class="n">LicenseMeta</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"https://creativecommons.org/licenses/</span><span class="si">{</span><span class="n">seg</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">/"</span>
         <span class="p">)</span>
-        <span class="k">for</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">seg</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">_flags</span> <span class="ow">in</span> <span class="n">_CC_VERSIONED</span>
+        <span class="k">for</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">seg</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="o">*</span><span class="p">((</span><span class="n">p</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">lab</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">lab</span><span class="p">,</span> <span class="n">_flags</span> <span class="ow">in</span> <span class="n">_CC_VERSIONED</span><span class="p">),</span>
+            <span class="o">*</span><span class="n">_CC_SHARE_ALIKE</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">CC_VERSIONS</span>
     <span class="p">}</span>
 <span class="p">)</span>
@@ -1291,14 +1321,17 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            ``cache_bytes_ok=False`` on CC0. Keys must be ``LicenseFlags`` fields.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        The resolved :class:`LicenseFlags` (fallback = all-False</span>
-<span class="sd">        ``UNKNOWN_LICENSE_FLAGS`` for unrecognized ids).</span>
+<span class="sd">        The resolved :class:`LicenseFlags`: the :data:`LICENSE_FLAGS` row, else the</span>
+<span class="sd">        :data:`SHARE_ALIKE_FLAGS` one, else the all-False</span>
+<span class="sd">        ``UNKNOWN_LICENSE_FLAGS`` (fail closed).</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If ``overrides`` contains a key that is not a</span>
 <span class="sd">            :class:`LicenseFlags` field.</span>
 <span class="sd">    """</span>
-    <span class="n">flags</span> <span class="o">=</span> <span class="n">LICENSE_FLAGS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">license_id</span><span class="p">,</span> <span class="n">UNKNOWN_LICENSE_FLAGS</span><span class="p">)</span>
+    <span class="n">flags</span> <span class="o">=</span> <span class="n">LICENSE_FLAGS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="n">license_id</span><span class="p">,</span> <span class="n">SHARE_ALIKE_FLAGS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">license_id</span><span class="p">,</span> <span class="n">UNKNOWN_LICENSE_FLAGS</span><span class="p">)</span>
+    <span class="p">)</span>
     <span class="k">if</span> <span class="n">overrides</span><span class="p">:</span>
         <span class="n">allowed</span> <span class="o">=</span> <span class="p">{</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">LicenseFlags</span><span class="o">.</span><span class="n">__dataclass_fields__</span><span class="p">}</span>
         <span class="n">bad</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">overrides</span><span class="p">)</span> <span class="o">-</span> <span class="n">allowed</span>
@@ -1340,6 +1373,55 @@ window.runMermaid = runMermaid;</script>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"kind"</span><span class="p">)</span> <span class="o">==</span> <span class="n">EDIT_TRANSFORMATION</span><span class="p">:</span>
             <span class="n">ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"source_license_id"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"unknown"</span><span class="p">)</span>  <span class="c1"># fail closed</span>
     <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">ids</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="carries_share_alike">
+<a class="viewcode-back" href="../../_autosummary/foley.licensing.html#foley.carries_share_alike">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">carries_share_alike</span><span class="p">(</span><span class="n">record</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">,</span> <span class="n">license_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether a work made from ``record`` may be released under the share-alike ``license_id``.</span>
+
+<span class="sd">    It may when ``license_id`` is a share-alike licence foley can name</span>
+<span class="sd">    (:data:`SHARE_ALIKE_FLAGS`), ``record`` is under it, and every licence ``record``</span>
+<span class="sd">    derives from (:func:`derived_license_ids`) is that same one: its obligations are</span>
+<span class="sd">    then exactly the licence's. Another version, another family (BY-NC-SA is not</span>
+<span class="sd">    BY-SA) or anything else in the lineage fails closed.</span>
+
+<span class="sd">    &gt;&gt;&gt; sa = LicenseRecord(source="s", license_id="CC-BY-SA-4.0")</span>
+<span class="sd">    &gt;&gt;&gt; carries_share_alike(sa, "CC-BY-SA-4.0"), carries_share_alike(sa, "CC-BY-SA-3.0")</span>
+<span class="sd">    (True, False)</span>
+<span class="sd">    &gt;&gt;&gt; carries_share_alike(LicenseRecord(source="s", license_id="CC-BY-SA-4.0",</span>
+<span class="sd">    ...     derived_from_license_ids=["CC0-1.0"]), "CC-BY-SA-4.0")</span>
+<span class="sd">    False</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">license_id</span> <span class="ow">in</span> <span class="n">SHARE_ALIKE_FLAGS</span>
+        <span class="ow">and</span> <span class="n">record</span><span class="o">.</span><span class="n">license_id</span> <span class="o">==</span> <span class="n">license_id</span>
+        <span class="ow">and</span> <span class="nb">set</span><span class="p">(</span><span class="n">derived_license_ids</span><span class="p">(</span><span class="n">record</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="p">{</span><span class="n">license_id</span><span class="p">}</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="shared_share_alike">
+<a class="viewcode-back" href="../../_autosummary/foley.licensing.html#foley.shared_share_alike">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">shared_share_alike</span><span class="p">(</span><span class="o">*</span><span class="n">records</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LicenseRecord</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The share-alike licence a work made of ``records`` may be released under, or ``None``.</span>
+
+<span class="sd">    Every record must carry the same one (:func:`carries_share_alike`); a missing</span>
+<span class="sd">    record (``None``: rights unknown), a source under another licence, or one that is</span>
+<span class="sd">    not share-alike at all gives ``None``, and the work cannot carry the licence.</span>
+
+<span class="sd">    &gt;&gt;&gt; sa = LicenseRecord(source="s", license_id="CC-BY-SA-4.0")</span>
+<span class="sd">    &gt;&gt;&gt; shared_share_alike(sa, sa), shared_share_alike(sa, None)</span>
+<span class="sd">    ('CC-BY-SA-4.0', None)</span>
+<span class="sd">    &gt;&gt;&gt; shared_share_alike(sa, LicenseRecord(source="s", license_id="CC-BY-NC-SA-4.0"))</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">records</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span><span class="n">r</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">records</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">license_id</span> <span class="o">=</span> <span class="n">records</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">license_id</span>
+    <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">carries_share_alike</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">license_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">records</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">license_id</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
 
 
 

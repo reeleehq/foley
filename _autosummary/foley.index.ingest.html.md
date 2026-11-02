@@ -34,6 +34,7 @@ module costs only the stdlib.
 
 | [`content_id`](#foley.index.ingest.content_id)(src)                                    | Return the reproducible content-hash id foley assigns to `src`.                                                   |
 |-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
+| [`embedding_permitted`](#foley.index.ingest.embedding_permitted)(lic, lib[, commercial])        | Whether `lib`'s embedder may use a sound under `lic` (the ingest rights gate).                                    |
 | [`has_license_url`](#foley.index.ingest.has_license_url)(lic)                               | Whether `lic` kept the licence string its source served (re-derivable).                                           |
 | [`ingest_folder`](#foley.index.ingest.ingest_folder)(path, \*[, library, recursive, ...]) | Ingest every audio file under `path` and return an [`IngestReport`](#foley.index.ingest.IngestReport). |
 | [`ingest_one`](#foley.index.ingest.ingest_one)(src, \*[, library, sound_id, ...])      | Ingest one clip into `library` and return an [`IngestResult`](#foley.index.ingest.IngestResult).       |
@@ -203,6 +204,17 @@ sets `license.c2pa_manifest_ref` in the same pass — see
 
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.index.ingest.embedding_permitted(lic, lib, commercial=None)
+
+Whether `lib`’s embedder may use a sound under `lic` (the ingest rights gate).
+
+The check [`ingest_one()`](#foley.index.ingest.ingest_one) makes before it embeds anything; a caller that will
+ingest later (a paid render first) asks it up front. Without consent
+(`allow_ai_training_forbidden`) a `False` here is `'rights_blocked'`.
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
 ### foley.index.ingest.has_license_url(lic)
 

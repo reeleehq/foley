@@ -12,6 +12,8 @@ foley.licensing
       UNKNOWN_LICENSE_FLAGS
       LICENSE_FLAGS
       CC_VERSIONS
+      SHARE_ALIKE_LICENSE_FLAGS
+      SHARE_ALIKE_FLAGS
       UNASSERTABLE_LICENSE_IDS
       ASSERTABLE_LICENSE_IDS
       DEFAULT_CC_VERSION
@@ -40,6 +42,7 @@ foley.licensing
       ai_use_permitted
       apply_license_flags
       carries_own_restriction
+      carries_share_alike
       carry_lineage
       cc_refused_terms
       check_placed
@@ -64,6 +67,7 @@ foley.licensing
       refusals
       restamped_license
       rights_license_id
+      shared_share_alike
       stamp_source_terms
       territory_excluded
       upload_refusal

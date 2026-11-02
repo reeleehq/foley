@@ -128,7 +128,7 @@ overlay (fast preview / DSP-free fallback). `item` is already anchor-resolved
 its output should expose them as a `cache_key` string: the [`RenderCache`](#foley.weave.RenderCache)
 keys on it (default: the class name).
 
-### *class* foley.weave.BroadcastBed(audio, sr, license, sources, treatment, notes=list())
+### *class* foley.weave.BroadcastBed(audio, sr, license, sources, treatment, notes=list(), sound_id=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -177,10 +177,17 @@ The device’s name (`'dry'` for none).
 #### notes
 
 What the caller should know (unmeasurable levels, missing rights, the
-bed generation’s own notes).
+bed generation’s own notes, the ingest’s).
 
 * **Type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
+
+#### sound_id
+
+The library id it was stored under (`store=True`), else `None`.
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 #### *property* credits
 
@@ -499,7 +506,7 @@ Force-align `audio` to its transcript, returning word-level timestamps.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
-### foley.weave.broadcast_bed(lines, , bed=None, bed_prompt=None, treatment='am_radio', gap_s=0.6, duration=None, bed_under_speech_db=-12.0, duck_db=-10.0, duck_attack_s=0.02, duck_release_s=0.3, loop_speech=True, crossfade_s=0.05, ceiling_db=-1.0, speech_license=None, bed_license=None, tts=None, library=None, generate=None, generate_options=None, sr=None)
+### foley.weave.broadcast_bed(lines, , bed=None, bed_prompt=None, treatment='am_radio', gap_s=0.6, duration=None, bed_under_speech_db=-12.0, duck_db=-10.0, duck_attack_s=0.02, duck_release_s=0.3, loop_speech=True, crossfade_s=0.05, ceiling_db=-1.0, speech_license=None, bed_license=None, tts=None, library=None, generate=None, generate_options=None, store=False, accept_ai_restricted=False, ingest_options=None, sr=None)
 
 Speech lines heard through a radio/TV/PA/phone over a bed, looped for a scene (#108).
 
@@ -546,14 +553,28 @@ then is the text spoken.
   * **generate** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)]) – The bed generator (default [`foley.generate()`](foley.html.md#foley.generate); a test seam).
   * **generate_options** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Keyword arguments for it (`backend`, `budget`,
     `duration_s`, `store`, …; not `library`).
+  * **store** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Also ingest the result into `library` by value, under its licence
+    (both sources’ lineage recorded), so [`foley.export_sound()`](foley.html.md#foley.export_sound) and the
+    credits work on it; its id is the result’s `sound_id`. Checked before
+    anything is spent (`store_refusal()`): for a prompted bed, the
+    speech’s rights and a named backend’s licence row before generating.
+  * **accept_ai_restricted** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Consent to embed (index) the result when a source’s
+    licence does not allow AI use (an AI-generated bed’s, a non-commercial
+    speech’s). Without it such a `store=True` is refused, fail-closed. The
+    consent is to embed and store only: the stored licence still forbids
+    training.
+  * **ingest_options** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – More keywords for [`foley.index.ingest.ingest_one()`](foley.index.ingest.html.md#foley.index.ingest.ingest_one)
+    (`tagger`, `do_supervised`, `thresholds`, …) with `store=True`.
   * **sr** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Working sample rate (default `foley.audio.WORKING_SAMPLE_RATE`).
 * **Return type:**
   [`BroadcastBed`](foley.weave.broadcast.html.md#foley.weave.broadcast.BroadcastBed)
 * **Returns:**
   A [`BroadcastBed`](#foley.weave.BroadcastBed).
 * **Raises:**
-  * [**BroadcastRefusal**](#foley.weave.BroadcastRefusal) – A source’s rights do not allow it in (`mix_refusal()`).
-  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – Unusable lines, treatment or bed form (before anything is spent).
+  * [**BroadcastRefusal**](#foley.weave.BroadcastRefusal) – A source’s rights do not allow it in (`mix_refusal()`),
+        or `store=True` cannot store the result (`store_refusal()`).
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – Unusable lines, treatment, bed form or ingest options (before
+        anything is spent).
   * [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – A bed id that is neither a file nor in the library.
 
 ### foley.weave.check_requirements(, names=None, verbose=False)

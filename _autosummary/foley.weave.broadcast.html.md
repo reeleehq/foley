@@ -37,13 +37,21 @@ The pipeline is small pure stages, each its own function:
    [`TREATMENTS`](#foley.weave.broadcast.TREATMENTS) (band-pass -> RMS compressor -> lookahead peak limiter), or any
    > `(samples, sr) -> samples` callable.
 
-Rights are checked first ([`mix_refusal()`](#foley.weave.broadcast.mix_refusal): no share-alike, no-derivatives,
-territory-limited or unmodifiable source on either side), then the bed is resolved or
-generated, and only then is any text spoken. A named generate backend’s licence row
+Rights are checked first ([`mix_refusal()`](#foley.weave.broadcast.mix_refusal): no no-derivatives, territory-limited
+or unmodifiable source on either side, and share-alike only when both sides are under
+the identical share-alike licence, which the result is then released under), then the
+bed is resolved or generated, and only then is any text spoken. A named generate backend’s licence row
 is checked before it is called; a bed from an unnamed generation order can only be
 gated on the clip it returns, so that refusal comes after the bed was paid for (never
 after the speech). The result always ends in the peak limiter, whatever the
 treatment.
+
+**Into the library.** `store=True` ingests the result by value through the shared
+[`ingest_one()`](foley.index.ingest.html.md#foley.index.ingest.ingest_one), under its narrowed licence (the speech’s
+lineage and the bed’s id recorded), so [`foley.export_sound()`](foley.html.md#foley.export_sound) and the credits work
+on it; the result’s `sound_id` names it. Whether it may be stored is checked before
+anything is spent ([`store_refusal()`](#foley.weave.broadcast.store_refusal)): its bytes must be keepable, and when a
+source’s licence does not allow AI use, embedding it needs `accept_ai_restricted=True`.
 
 **The treatment is a seam.** It is an audio “look” with no foley-specific knowledge, so
 its eventual home is the fleet’s audio package (`mixing`, beside
@@ -89,6 +97,7 @@ dol-only.
 | [`DETECTOR_FLOOR_DB`](#foley.weave.broadcast.DETECTOR_FLOOR_DB)           | Floor of the compressor's level detector, so silence has a finite level (dBFS).                                                                                                                                  |
 | [`BROADCAST_OP`](#foley.weave.broadcast.BROADCAST_OP)                | The `transformations` op recorded on the result's licence.                                                                                                                                                       |
 | [`UNKNOWN_LICENSE_ID`](#foley.weave.broadcast.UNKNOWN_LICENSE_ID)          | The licence id of rights that were not given (fail-closed, never refused).                                                                                                                                       |
+| [`STORE_OWNED_INGEST_KWARGS`](#foley.weave.broadcast.STORE_OWNED_INGEST_KWARGS)   | The `ingest_one` keywords `store=True` sets itself (not `ingest_options`).                                                                                                                                       |
 | [`TREATMENTS`](#foley.weave.broadcast.TREATMENTS)                  | `am_radio` is the #108 starter's chain (highpass 450, lowpass 3200); `phone` is the narrowband telephone channel (300-3400 Hz, ITU-T G.712); `tv` a small TV speaker; `pa` a horn loudspeaker, squashed hardest. |
 | [`Treatment`](#foley.weave.broadcast.Treatment)                   | a [`TREATMENTS`](#foley.weave.broadcast.TREATMENTS) name, a [`TreatmentPreset`](#foley.weave.broadcast.TreatmentPreset), any `(samples, sr) -> samples` callable, or `None` (dry, no device).     |
 | [`ClipLike`](#foley.weave.broadcast.ClipLike)                    | an array at `sr`, `(samples, its_sr)`, encoded bytes, or a file path.                                                                                                                                            |
@@ -104,9 +113,10 @@ dol-only.
 | [`duck_envelope`](#foley.weave.broadcast.duck_envelope)(activity, sample_rate, \*[, ...])  | The bed's linear gain: `1` while speech is active, up to `-duck_db` dB above between.                                 |
 | [`join_lines`](#foley.weave.broadcast.join_lines)(clips, sample_rate, \*[, gap_s])      | Concatenate mono `clips` with `gap_s` of silence after each one.                                                      |
 | [`mix_program`](#foley.weave.broadcast.mix_program)(speech, bed, sample_rate, \*[, ...]) | Speech over the bed, both fitted to `duration` (default: the speech's length).                                        |
-| [`mix_refusal`](#foley.weave.broadcast.mix_refusal)(source)                              | Why a sound with rights `source` may not be treated and mixed in, or `None`.                                          |
+| [`mix_refusal`](#foley.weave.broadcast.mix_refusal)(source, \*[, share_alike])           | Why a sound with rights `source` may not be treated and mixed in, or `None`.                                          |
 | [`resolve_treatment`](#foley.weave.broadcast.resolve_treatment)(treatment)                     | `treatment=` as a `(samples, sr) -> samples` callable (`None`: dry).                                                  |
 | [`speech_activity`](#foley.weave.broadcast.speech_activity)(clips, sample_rate, \*[, gap_s]) | Where [`join_lines()`](#foley.weave.broadcast.join_lines) puts speech: `1` over each clip, `0` in the gaps. |
+| [`store_refusal`](#foley.weave.broadcast.store_refusal)(rights, library, \*[, ...])        | Why a broadcast with `rights` may not go into `library`, or `None`.                                                   |
 
 ### Classes
 
@@ -138,7 +148,7 @@ How far the bed dips under each line, relative to its level between lines (dB).
 
 The `transformations` op recorded on the result’s licence.
 
-### *class* foley.weave.broadcast.BroadcastBed(audio, sr, license, sources, treatment, notes=list())
+### *class* foley.weave.broadcast.BroadcastBed(audio, sr, license, sources, treatment, notes=list(), sound_id=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -187,10 +197,17 @@ The device’s name (`'dry'` for none).
 #### notes
 
 What the caller should know (unmeasurable levels, missing rights, the
-bed generation’s own notes).
+bed generation’s own notes, the ingest’s).
 
 * **Type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
+
+#### sound_id
+
+The library id it was stored under (`store=True`), else `None`.
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 #### *property* credits
 
@@ -245,6 +262,10 @@ Equal-power crossfade at each loop seam of the speech and the bed (s).
 ### foley.weave.broadcast.MAX_CUTOFF_NYQUIST_FRACTION *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.95*
 
 The band-pass’s upper edge is held under this fraction of Nyquist (a low `sr`).
+
+### foley.weave.broadcast.STORE_OWNED_INGEST_KWARGS *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= frozenset({'allow_ai_training_forbidden', 'library', 'license', 'sound_id', 'store'})*
+
+The `ingest_one` keywords `store=True` sets itself (not `ingest_options`).
 
 ### foley.weave.broadcast.TREATMENTS *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [TreatmentPreset](#foley.weave.broadcast.TreatmentPreset)]* *= {'am_radio': TreatmentPreset(name='am_radio', highpass_hz=450.0, lowpass_hz=3200.0, threshold_db=-24.0, ratio=4.0, makeup_db=6.0, filter_order=4, detector_s=0.02, ceiling_db=-1.0), 'pa': TreatmentPreset(name='pa', highpass_hz=400.0, lowpass_hz=4000.0, threshold_db=-26.0, ratio=6.0, makeup_db=8.0, filter_order=4, detector_s=0.02, ceiling_db=-1.0), 'phone': TreatmentPreset(name='phone', highpass_hz=300.0, lowpass_hz=3400.0, threshold_db=-22.0, ratio=4.0, makeup_db=6.0, filter_order=4, detector_s=0.02, ceiling_db=-1.0), 'tv': TreatmentPreset(name='tv', highpass_hz=150.0, lowpass_hz=7000.0, threshold_db=-20.0, ratio=3.0, makeup_db=4.0, filter_order=4, detector_s=0.02, ceiling_db=-1.0)}*
 
@@ -379,7 +400,7 @@ capped at `mixing.loudness.MAX_GAIN_DB`.
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
-### foley.weave.broadcast.broadcast_bed(lines, , bed=None, bed_prompt=None, treatment='am_radio', gap_s=0.6, duration=None, bed_under_speech_db=-12.0, duck_db=-10.0, duck_attack_s=0.02, duck_release_s=0.3, loop_speech=True, crossfade_s=0.05, ceiling_db=-1.0, speech_license=None, bed_license=None, tts=None, library=None, generate=None, generate_options=None, sr=None)
+### foley.weave.broadcast.broadcast_bed(lines, , bed=None, bed_prompt=None, treatment='am_radio', gap_s=0.6, duration=None, bed_under_speech_db=-12.0, duck_db=-10.0, duck_attack_s=0.02, duck_release_s=0.3, loop_speech=True, crossfade_s=0.05, ceiling_db=-1.0, speech_license=None, bed_license=None, tts=None, library=None, generate=None, generate_options=None, store=False, accept_ai_restricted=False, ingest_options=None, sr=None)
 
 Speech lines heard through a radio/TV/PA/phone over a bed, looped for a scene (#108).
 
@@ -426,14 +447,28 @@ then is the text spoken.
   * **generate** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)]) – The bed generator (default [`foley.generate()`](foley.html.md#foley.generate); a test seam).
   * **generate_options** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Keyword arguments for it (`backend`, `budget`,
     `duration_s`, `store`, …; not `library`).
+  * **store** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Also ingest the result into `library` by value, under its licence
+    (both sources’ lineage recorded), so [`foley.export_sound()`](foley.html.md#foley.export_sound) and the
+    credits work on it; its id is the result’s `sound_id`. Checked before
+    anything is spent ([`store_refusal()`](#foley.weave.broadcast.store_refusal)): for a prompted bed, the
+    speech’s rights and a named backend’s licence row before generating.
+  * **accept_ai_restricted** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Consent to embed (index) the result when a source’s
+    licence does not allow AI use (an AI-generated bed’s, a non-commercial
+    speech’s). Without it such a `store=True` is refused, fail-closed. The
+    consent is to embed and store only: the stored licence still forbids
+    training.
+  * **ingest_options** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – More keywords for [`foley.index.ingest.ingest_one()`](foley.index.ingest.html.md#foley.index.ingest.ingest_one)
+    (`tagger`, `do_supervised`, `thresholds`, …) with `store=True`.
   * **sr** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Working sample rate (default `foley.audio.WORKING_SAMPLE_RATE`).
 * **Return type:**
   [`BroadcastBed`](#foley.weave.broadcast.BroadcastBed)
 * **Returns:**
   A [`BroadcastBed`](#foley.weave.broadcast.BroadcastBed).
 * **Raises:**
-  * [**BroadcastRefusal**](#foley.weave.broadcast.BroadcastRefusal) – A source’s rights do not allow it in ([`mix_refusal()`](#foley.weave.broadcast.mix_refusal)).
-  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – Unusable lines, treatment or bed form (before anything is spent).
+  * [**BroadcastRefusal**](#foley.weave.broadcast.BroadcastRefusal) – A source’s rights do not allow it in ([`mix_refusal()`](#foley.weave.broadcast.mix_refusal)),
+        or `store=True` cannot store the result ([`store_refusal()`](#foley.weave.broadcast.store_refusal)).
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – Unusable lines, treatment, bed form or ingest options (before
+        anything is spent).
   * [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – A bed id that is neither a file nor in the library.
 
 ### foley.weave.broadcast.broadcast_license(bed, speech, , treatment)
@@ -450,6 +485,11 @@ both allow it, and its rights are verified only if both are. The bed’s own
 watermark and content-credential reference are dropped: they described the bed’s
 bytes, not the mix. `speech=None` narrows to unknown rights. Raises
 [`BroadcastRefusal`](#foley.weave.broadcast.BroadcastRefusal) for a source [`mix_refusal()`](#foley.weave.broadcast.mix_refusal) refuses.
+
+When both are under the identical share-alike licence (#253), so is the result:
+the bed’s licence id is kept, and the narrowing bounds its flags by that licence’s
+row ([`SHARE_ALIKE_FLAGS`](foley.licensing.html.md#foley.licensing.SHARE_ALIKE_FLAGS): credit it, keep its bytes, and
+nothing foley could use it for in a work of its own).
 
 * **Return type:**
   [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)
@@ -498,24 +538,33 @@ the speech is spoken, as from [`speech_activity()`](#foley.weave.broadcast.speec
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[`ndarray`, [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
-### foley.weave.broadcast.mix_refusal(source)
+### foley.weave.broadcast.mix_refusal(source, , share_alike=None)
 
 Why a sound with rights `source` may not be treated and mixed in, or `None`.
 
-The broadcast’s licence is the bed’s narrowed to the speech’s, so it cannot carry a
-share-alike obligation, and the device modifies both sources. Refused: a
-share-alike licence (on the record or in its lineage), a territory exclusion, a
-licence with no [`LICENSE_FLAGS`](foley.licensing.html.md#foley.licensing.LICENSE_FLAGS) row (an `ND` one among
-them), or one that forbids modification. Unknown rights (`'unknown'`) are not
-refused: the result fails closed instead.
+The broadcast’s licence is the bed’s narrowed to the speech’s, and the device
+modifies both sources. Refused: a share-alike licence (on the record or in its
+lineage) the broadcast cannot carry, a territory exclusion, a licence with no
+[`LICENSE_FLAGS`](foley.licensing.html.md#foley.licensing.LICENSE_FLAGS) row (an `ND` one among them), or one that
+forbids modification. Unknown rights (`'unknown'`) are not refused: the result
+fails closed instead.
+
+The broadcast can carry a share-alike licence only when every source is under
+that identical licence ([`shared_share_alike()`](foley.licensing.html.md#foley.licensing.shared_share_alike)): the mix is
+then released under it. `share_alike` is that licence, and a source that carries
+it ([`carries_share_alike()`](foley.licensing.html.md#foley.licensing.carries_share_alike)) is allowed: the licence grants
+adaptation, so neither its missing flag row nor its flags refuse it.
 
 ```pycon
 >>> from foley.licensing import apply_license_flags
 >>> ok = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-4.0"))
 >>> mix_refusal(ok) is None
 True
->>> mix_refusal(LicenseRecord(source="s", license_id="CC-BY-SA-4.0"))[:40]
+>>> sa = LicenseRecord(source="s", license_id="CC-BY-SA-4.0")
+>>> mix_refusal(sa)[:40]
 'its licence (CC-BY-SA-4.0) is share-alik'
+>>> mix_refusal(sa, share_alike="CC-BY-SA-4.0") is None
+True
 ```
 
 * **Return type:**
@@ -547,3 +596,17 @@ Where [`join_lines()`](#foley.weave.broadcast.join_lines) puts speech: `1` over 
 
 * **Return type:**
   `ndarray`
+
+### foley.weave.broadcast.store_refusal(rights, library, , accept_ai_restricted=False)
+
+Why a broadcast with `rights` may not go into `library`, or `None`.
+
+Asked before anything is spent. The bytes are stored by value (a mix has no
+source to point at), so both sources must allow keeping them
+(`cache_bytes_ok`). Indexing embeds the clip, which is AI use
+([`foley.index.ingest.embedding_permitted()`](foley.index.ingest.html.md#foley.index.ingest.embedding_permitted)): when a source’s licence does
+not allow it (an AI-generated bed’s, a non-commercial speech’s), it needs the
+caller’s explicit consent, `accept_ai_restricted`, as every ingest does.
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]

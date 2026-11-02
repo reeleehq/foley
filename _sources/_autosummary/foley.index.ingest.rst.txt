@@ -19,6 +19,7 @@ foley.index.ingest
    .. autosummary::
    
       content_id
+      embedding_permitted
       has_license_url
       ingest_folder
       ingest_one

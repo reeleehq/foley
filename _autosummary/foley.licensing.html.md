@@ -24,6 +24,8 @@ item is redistributable but stored by-reference.
 | [`UNKNOWN_LICENSE_FLAGS`](#foley.licensing.UNKNOWN_LICENSE_FLAGS)        | Fail-closed fallback for unknown / `Proprietary-*` license ids (all False, cap None).                                                                                                                                                                                                |
 | [`LICENSE_FLAGS`](#foley.licensing.LICENSE_FLAGS)                | `license_id` -> default flag set (report 07 §8.1 seed table).                                                                                                                                                                                                                        |
 | [`CC_VERSIONS`](#foley.licensing.CC_VERSIONS)                  | The CC versions foley has rows for (Freesound, FSD50K, Clotho and Wikimedia use these).                                                                                                                                                                                              |
+| [`SHARE_ALIKE_LICENSE_FLAGS`](#foley.licensing.SHARE_ALIKE_LICENSE_FLAGS)    | it may keep the bytes, and must credit them; nothing else.                                                                                                                                                                                                                           |
+| [`SHARE_ALIKE_FLAGS`](#foley.licensing.SHARE_ALIKE_FLAGS)            | The share-alike licence ids foley can name -> [`SHARE_ALIKE_LICENSE_FLAGS`](#foley.licensing.SHARE_ALIKE_LICENSE_FLAGS).                                                                                                                                                            |
 | [`UNASSERTABLE_LICENSE_IDS`](#foley.licensing.UNASSERTABLE_LICENSE_IDS)     | Licence ids that can never be *asserted* as verified (on ingest, restamp or in a folder sidecar): `unknown` by definition, `PDM-1.0` (a claim about the work, not a grant — verify it by building the `LicenseRecord` yourself), and the legacy `ElevenLabs-SFX` row (say the plan). |
 | [`ASSERTABLE_LICENSE_IDS`](#foley.licensing.ASSERTABLE_LICENSE_IDS)       | The ids a user may assert (`foley ingest --license`, a `foley-license.toml`).                                                                                                                                                                                                        |
 | [`DEFAULT_CC_VERSION`](#foley.licensing.DEFAULT_CC_VERSION)           | The version assumed when a source gives a CC family with no version at all (Freesound's search labels: `"Attribution"`).                                                                                                                                                             |
@@ -51,6 +53,7 @@ item is redistributable but stored by-reference.
 | [`ai_use_permitted`](#foley.licensing.ai_use_permitted)(record, \*, ...)                 | Whether AI use of the sound (CLAP-embedding it counts) is allowed here.                                                                                                                                                                                                        |
 | [`apply_license_flags`](#foley.licensing.apply_license_flags)(record, \*[, overrides])      | Populate `record`'s eight derived flags from its `license_id` (+ overrides), in place, and return it.                                                                                                                                                                          |
 | [`carries_own_restriction`](#foley.licensing.carries_own_restriction)(license_id)               | Whether `license_id` restricts beyond what its class says, so that no other licence's code can stand in for it: a revenue cap, or a provider's own terms ([`LICENSE_TERMS_PROVIDER`](#foley.licensing.LICENSE_TERMS_PROVIDER), which a consumer attaches restrictions to). |
+| [`carries_share_alike`](#foley.licensing.carries_share_alike)(record, license_id)           | Whether a work made from `record` may be released under the share-alike `license_id`.                                                                                                                                                                                          |
 | [`carry_lineage`](#foley.licensing.carry_lineage)(new, old)                           | Copy `old`'s lineage onto `new`, in place, and return `new`.                                                                                                                                                                                                                   |
 | [`cc_refused_terms`](#foley.licensing.cc_refused_terms)(url)                             | The NoDerivatives / ShareAlike terms of a CC licence URL or label.                                                                                                                                                                                                             |
 | [`check_placed`](#foley.licensing.check_placed)(records, intended_use, \*, what)     | The one rights gate for placed sounds (a plan's, a weave's): raise, warn, or pass.                                                                                                                                                                                             |
@@ -75,6 +78,7 @@ item is redistributable but stored by-reference.
 | [`refusals`](#foley.licensing.refusals)(sound_records, intended_use)             | `{sound id: reason}` for each sound record [`keep()`](#foley.licensing.keep) refuses for `intended_use`.                                                                                                                                                 |
 | [`restamped_license`](#foley.licensing.restamped_license)(stored, fresh, \*[, widen])     | What a stored sound's licence becomes when its source now states `fresh`.                                                                                                                                                                                                      |
 | [`rights_license_id`](#foley.licensing.rights_license_id)(record)                         | The licence id a consumer should read `record` under, or `None` (UNKNOWN).                                                                                                                                                                                                     |
+| [`shared_share_alike`](#foley.licensing.shared_share_alike)(\*records)                     | The share-alike licence a work made of `records` may be released under, or `None`.                                                                                                                                                                                             |
 | [`stamp_source_terms`](#foley.licensing.stamp_source_terms)(record, stated)                | Write what a source `stated` about its terms onto `record`, in place, and return it.                                                                                                                                                                                           |
 | [`territory_excluded`](#foley.licensing.territory_excluded)(excluded, territory)           | Whether `territory` is in `excluded` (`"EU"` covers its member states).                                                                                                                                                                                                        |
 | [`upload_refusal`](#foley.licensing.upload_refusal)(source)                            | Why the bytes of a sound with rights `source` may not be sent to an edit backend, or `None`.                                                                                                                                                                                   |
@@ -177,7 +181,7 @@ ai_training, requires_attribution, revenue_cap_usd
 * **Type:**
   SSOT
 
-### foley.licensing.LICENSE_META *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [LicenseMeta](#foley.licensing.LicenseMeta)]* *= {'CC-BY-2.0': LicenseMeta(display_name='CC BY 2.0', url='https://creativecommons.org/licenses/by/2.0/'), 'CC-BY-2.5': LicenseMeta(display_name='CC BY 2.5', url='https://creativecommons.org/licenses/by/2.5/'), 'CC-BY-3.0': LicenseMeta(display_name='CC BY 3.0', url='https://creativecommons.org/licenses/by/3.0/'), 'CC-BY-4.0': LicenseMeta(display_name='CC BY 4.0', url='https://creativecommons.org/licenses/by/4.0/'), 'CC-BY-NC-2.0': LicenseMeta(display_name='CC BY-NC 2.0', url='https://creativecommons.org/licenses/by-nc/2.0/'), 'CC-BY-NC-2.5': LicenseMeta(display_name='CC BY-NC 2.5', url='https://creativecommons.org/licenses/by-nc/2.5/'), 'CC-BY-NC-3.0': LicenseMeta(display_name='CC BY-NC 3.0', url='https://creativecommons.org/licenses/by-nc/3.0/'), 'CC-BY-NC-4.0': LicenseMeta(display_name='CC BY-NC 4.0', url='https://creativecommons.org/licenses/by-nc/4.0/'), 'CC-Sampling+-1.0': LicenseMeta(display_name='CC Sampling+ 1.0', url='https://creativecommons.org/licenses/sampling+/1.0/'), 'CC0-1.0': LicenseMeta(display_name='CC0 1.0 Universal (Public Domain Dedication)', url='https://creativecommons.org/publicdomain/zero/1.0/'), 'ElevenLabs-SFX': LicenseMeta(display_name='ElevenLabs Sound Effects Terms (legacy: paid plan assumed)', url='https://elevenlabs.io/terms-of-use'), 'MIT': LicenseMeta(display_name='MIT License', url='https://opensource.org/license/mit'), 'PDM-1.0': LicenseMeta(display_name='Public Domain Mark 1.0 (unverified claim)', url='https://creativecommons.org/publicdomain/mark/1.0/'), 'Pixabay-Content': LicenseMeta(display_name='Pixabay Content License', url='https://pixabay.com/service/license-summary/'), 'RemArc': LicenseMeta(display_name='BBC RemArc Licence', url='https://sound-effects.bbcrewind.co.uk/licensing'), 'Sonniss-GDC': LicenseMeta(display_name='Sonniss GDC Game Audio Bundle License', url='https://sonniss.com/gdc-bundle-license'), 'Stability-Community': LicenseMeta(display_name='Stability AI Community License', url='https://stability.ai/community-license-agreement'), 'Tencent-Hunyuan-Community': LicenseMeta(display_name='Tencent Hunyuan Community License (not valid in the EU, the UK or South Korea)', url='https://huggingface.co/tencent/HunyuanVideo-Foley/blob/main/LICENSE'), 'elevenlabs-free-plan': LicenseMeta(display_name='ElevenLabs Terms (free plan: non-commercial, attribution required)', url='https://elevenlabs.io/terms-of-use'), 'elevenlabs-paid-plan': LicenseMeta(display_name='ElevenLabs Terms (paid plan)', url='https://elevenlabs.io/terms-of-use'), 'fal-partner-unverified': LicenseMeta(display_name='fal.ai partner model (vendor terms for fal-routed calls unverified: treated as non-commercial)', url='https://fal.ai/legal/terms-of-service'), 'owned-pack': LicenseMeta(display_name='Purchased sound-effects library (its EULA: use in productions, no redistribution of the raw files)', url=None), 'procedural-free': LicenseMeta(display_name='Procedural synthesis output (no licence attaches)', url=None), 'research-only': LicenseMeta(display_name='Research use only (no commercial or public use)', url=None), 'unknown': LicenseMeta(display_name='Unknown / unverified license', url=None), 'user-owned': LicenseMeta(display_name='User-owned / original work', url=None)}*
+### foley.licensing.LICENSE_META *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [LicenseMeta](#foley.licensing.LicenseMeta)]* *= {'CC-BY-2.0': LicenseMeta(display_name='CC BY 2.0', url='https://creativecommons.org/licenses/by/2.0/'), 'CC-BY-2.5': LicenseMeta(display_name='CC BY 2.5', url='https://creativecommons.org/licenses/by/2.5/'), 'CC-BY-3.0': LicenseMeta(display_name='CC BY 3.0', url='https://creativecommons.org/licenses/by/3.0/'), 'CC-BY-4.0': LicenseMeta(display_name='CC BY 4.0', url='https://creativecommons.org/licenses/by/4.0/'), 'CC-BY-NC-2.0': LicenseMeta(display_name='CC BY-NC 2.0', url='https://creativecommons.org/licenses/by-nc/2.0/'), 'CC-BY-NC-2.5': LicenseMeta(display_name='CC BY-NC 2.5', url='https://creativecommons.org/licenses/by-nc/2.5/'), 'CC-BY-NC-3.0': LicenseMeta(display_name='CC BY-NC 3.0', url='https://creativecommons.org/licenses/by-nc/3.0/'), 'CC-BY-NC-4.0': LicenseMeta(display_name='CC BY-NC 4.0', url='https://creativecommons.org/licenses/by-nc/4.0/'), 'CC-BY-NC-SA-2.0': LicenseMeta(display_name='CC BY-NC-SA 2.0', url='https://creativecommons.org/licenses/by-nc-sa/2.0/'), 'CC-BY-NC-SA-2.5': LicenseMeta(display_name='CC BY-NC-SA 2.5', url='https://creativecommons.org/licenses/by-nc-sa/2.5/'), 'CC-BY-NC-SA-3.0': LicenseMeta(display_name='CC BY-NC-SA 3.0', url='https://creativecommons.org/licenses/by-nc-sa/3.0/'), 'CC-BY-NC-SA-4.0': LicenseMeta(display_name='CC BY-NC-SA 4.0', url='https://creativecommons.org/licenses/by-nc-sa/4.0/'), 'CC-BY-SA-2.0': LicenseMeta(display_name='CC BY-SA 2.0', url='https://creativecommons.org/licenses/by-sa/2.0/'), 'CC-BY-SA-2.5': LicenseMeta(display_name='CC BY-SA 2.5', url='https://creativecommons.org/licenses/by-sa/2.5/'), 'CC-BY-SA-3.0': LicenseMeta(display_name='CC BY-SA 3.0', url='https://creativecommons.org/licenses/by-sa/3.0/'), 'CC-BY-SA-4.0': LicenseMeta(display_name='CC BY-SA 4.0', url='https://creativecommons.org/licenses/by-sa/4.0/'), 'CC-Sampling+-1.0': LicenseMeta(display_name='CC Sampling+ 1.0', url='https://creativecommons.org/licenses/sampling+/1.0/'), 'CC0-1.0': LicenseMeta(display_name='CC0 1.0 Universal (Public Domain Dedication)', url='https://creativecommons.org/publicdomain/zero/1.0/'), 'ElevenLabs-SFX': LicenseMeta(display_name='ElevenLabs Sound Effects Terms (legacy: paid plan assumed)', url='https://elevenlabs.io/terms-of-use'), 'MIT': LicenseMeta(display_name='MIT License', url='https://opensource.org/license/mit'), 'PDM-1.0': LicenseMeta(display_name='Public Domain Mark 1.0 (unverified claim)', url='https://creativecommons.org/publicdomain/mark/1.0/'), 'Pixabay-Content': LicenseMeta(display_name='Pixabay Content License', url='https://pixabay.com/service/license-summary/'), 'RemArc': LicenseMeta(display_name='BBC RemArc Licence', url='https://sound-effects.bbcrewind.co.uk/licensing'), 'Sonniss-GDC': LicenseMeta(display_name='Sonniss GDC Game Audio Bundle License', url='https://sonniss.com/gdc-bundle-license'), 'Stability-Community': LicenseMeta(display_name='Stability AI Community License', url='https://stability.ai/community-license-agreement'), 'Tencent-Hunyuan-Community': LicenseMeta(display_name='Tencent Hunyuan Community License (not valid in the EU, the UK or South Korea)', url='https://huggingface.co/tencent/HunyuanVideo-Foley/blob/main/LICENSE'), 'elevenlabs-free-plan': LicenseMeta(display_name='ElevenLabs Terms (free plan: non-commercial, attribution required)', url='https://elevenlabs.io/terms-of-use'), 'elevenlabs-paid-plan': LicenseMeta(display_name='ElevenLabs Terms (paid plan)', url='https://elevenlabs.io/terms-of-use'), 'fal-partner-unverified': LicenseMeta(display_name='fal.ai partner model (vendor terms for fal-routed calls unverified: treated as non-commercial)', url='https://fal.ai/legal/terms-of-service'), 'owned-pack': LicenseMeta(display_name='Purchased sound-effects library (its EULA: use in productions, no redistribution of the raw files)', url=None), 'procedural-free': LicenseMeta(display_name='Procedural synthesis output (no licence attaches)', url=None), 'research-only': LicenseMeta(display_name='Research use only (no commercial or public use)', url=None), 'unknown': LicenseMeta(display_name='Unknown / unverified license', url=None), 'user-owned': LicenseMeta(display_name='User-owned / original work', url=None)}*
 
 `license_id` -> display name + canonical URL (one row per
 [`LICENSE_FLAGS`](#foley.licensing.LICENSE_FLAGS) key). Used only for human-readable credits; never for
@@ -249,6 +253,27 @@ is left out until consumers agree it owes a credit (foley’s row says it does;
 
 The fields that say a stored licence and a fresh one differ besides their rights
 ([`wider_rights()`](#foley.licensing.wider_rights), either way); `verified_at` does not.
+
+### foley.licensing.SHARE_ALIKE_FLAGS *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [LicenseFlags](#foley.licensing.LicenseFlags)]* *= {'CC-BY-NC-SA-2.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=False, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=False, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-SA-2.5': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=False, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=False, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-SA-3.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=False, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=False, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-SA-4.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=False, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=False, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-SA-2.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=False, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=False, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-SA-2.5': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=False, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=False, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-SA-3.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=False, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=False, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-SA-4.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=False, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=False, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None)}*
+
+The share-alike licence ids foley can name -> [`SHARE_ALIKE_LICENSE_FLAGS`](#foley.licensing.SHARE_ALIKE_LICENSE_FLAGS).
+Deliberately not [`LICENSE_FLAGS`](#foley.licensing.LICENSE_FLAGS) rows: they are never assertable on ingest,
+and every gate that needs a licence row (an edit, a mix) still refuses them, except
+the identical-licence mix. [`derive_license_flags()`](#foley.licensing.derive_license_flags) reads them after
+[`LICENSE_FLAGS`](#foley.licensing.LICENSE_FLAGS), so a record under one is bounded by this row (and credited).
+
+### foley.licensing.SHARE_ALIKE_LICENSE_FLAGS *= LicenseFlags(commercial_ok=False, embed_in_derivative_ok=False, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=False, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None)*
+
+it may keep the bytes, and
+must credit them; nothing else. Every other use foley makes (publishing in a
+derivative, an edit, training) makes an adaptation that must carry the licence,
+which foley’s gates cannot express, so [`keep()`](#foley.licensing.keep) and the edit gate refuse it.
+The licence itself travels as the record’s `license_id` (an export’s consumer
+code). The one work foley does make from it is a mix of sources all under the
+identical licence ([`shared_share_alike()`](#foley.licensing.shared_share_alike)), released under that licence.
+
+* **Type:**
+  What foley grants itself under a share-alike licence
 
 ### foley.licensing.SOURCE_STATED_FIELDS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('license_basis', 'license_basis_confidence', 'vendor_trains_on_output', 'terms_notes', 'vendor_watermark')*
 
@@ -340,6 +365,28 @@ licence’s code can stand in for it: a revenue cap, or a provider’s own terms
 ```pycon
 >>> carries_own_restriction("Stability-Community"), carries_own_restriction("CC-BY-4.0")
 (True, False)
+```
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+### foley.licensing.carries_share_alike(record, license_id)
+
+Whether a work made from `record` may be released under the share-alike `license_id`.
+
+It may when `license_id` is a share-alike licence foley can name
+([`SHARE_ALIKE_FLAGS`](#foley.licensing.SHARE_ALIKE_FLAGS)), `record` is under it, and every licence `record`
+derives from ([`derived_license_ids()`](#foley.licensing.derived_license_ids)) is that same one: its obligations are
+then exactly the licence’s. Another version, another family (BY-NC-SA is not
+BY-SA) or anything else in the lineage fails closed.
+
+```pycon
+>>> sa = LicenseRecord(source="s", license_id="CC-BY-SA-4.0")
+>>> carries_share_alike(sa, "CC-BY-SA-4.0"), carries_share_alike(sa, "CC-BY-SA-3.0")
+(True, False)
+>>> carries_share_alike(LicenseRecord(source="s", license_id="CC-BY-SA-4.0",
+...     derived_from_license_ids=["CC0-1.0"]), "CC-BY-SA-4.0")
+False
 ```
 
 * **Return type:**
@@ -509,11 +556,12 @@ apply per-source overrides.
   * **license_id** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The normalized license id (SPDX or foley-specific token).
   * **overrides** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Optional per-source flag overrides — e.g. Freesound forces
     `cache_bytes_ok=False` on CC0. Keys must be `LicenseFlags` fields.
+* **Returns:**
+  the [`LICENSE_FLAGS`](#foley.licensing.LICENSE_FLAGS) row, else the
+  [`SHARE_ALIKE_FLAGS`](#foley.licensing.SHARE_ALIKE_FLAGS) one, else the all-False
+  `UNKNOWN_LICENSE_FLAGS` (fail closed).
 * **Return type:**
   [`LicenseFlags`](#foley.licensing.LicenseFlags)
-* **Returns:**
-  The resolved [`LicenseFlags`](#foley.licensing.LicenseFlags) (fallback = all-False
-  `UNKNOWN_LICENSE_FLAGS` for unrecognized ids).
 * **Raises:**
   [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `overrides` contains a key that is not a
       [`LicenseFlags`](#foley.licensing.LicenseFlags) field.
@@ -859,6 +907,24 @@ True
 >>> rights_license_id(LicenseRecord(source="g", license_id="Stability-Community",
 ...     rights_verified=True, derived_from_license_ids=["Tencent-Hunyuan-Community"])) is None
 True
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.licensing.shared_share_alike(\*records)
+
+The share-alike licence a work made of `records` may be released under, or `None`.
+
+Every record must carry the same one ([`carries_share_alike()`](#foley.licensing.carries_share_alike)); a missing
+record (`None`: rights unknown), a source under another licence, or one that is
+not share-alike at all gives `None`, and the work cannot carry the licence.
+
+```pycon
+>>> sa = LicenseRecord(source="s", license_id="CC-BY-SA-4.0")
+>>> shared_share_alike(sa, sa), shared_share_alike(sa, None)
+('CC-BY-SA-4.0', None)
+>>> shared_share_alike(sa, LicenseRecord(source="s", license_id="CC-BY-NC-SA-4.0"))
 ```
 
 * **Return type:**
