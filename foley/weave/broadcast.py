@@ -29,6 +29,12 @@ The pipeline is small pure stages, each its own function:
    :data:`TREATMENTS` (band-pass -> RMS compressor -> lookahead peak limiter), or any
    ``(samples, sr) -> samples`` callable.
 
+Rights are checked first (:func:`mix_refusal`: no share-alike, no-derivatives,
+territory-limited or unmodifiable source on either side), then the bed is resolved or
+generated, and only then is any text spoken, so a refusal never follows a paid call
+it could have preceded. The result always ends in the peak limiter, whatever the
+treatment.
+
 **The treatment is a seam.** It is an audio "look" with no foley-specific knowledge, so
 its eventual home is the fleet's audio package (``mixing``, beside
 :mod:`mixing.loudness`), not foley; until it lands there, foley's in-house preset chain
@@ -89,6 +95,8 @@ TREATMENT_CEILING_DB: float = -1.0
 DETECTOR_FLOOR_DB: float = -120.0
 #: The ``transformations`` op recorded on the result's licence.
 BROADCAST_OP: str = "broadcast_bed"
+#: The licence id of rights that were not given (fail-closed, never refused).
+UNKNOWN_LICENSE_ID: str = "unknown"
 
 
 # --- treatment: the device the broadcast is heard through ---------------------------
@@ -122,6 +130,23 @@ class TreatmentPreset:
     filter_order: int = FILTER_ORDER
     detector_s: float = COMPRESSOR_DETECTOR_S
     ceiling_db: float = TREATMENT_CEILING_DB
+
+    def __post_init__(self):
+        problems = [
+            why
+            for bad, why in (
+                (
+                    not 0 < self.highpass_hz < self.lowpass_hz,
+                    "0 < highpass_hz < lowpass_hz",
+                ),
+                (not self.ratio >= 1, "ratio >= 1"),
+                (not self.filter_order >= 1, "filter_order >= 1"),
+                (not self.detector_s > 0, "detector_s > 0"),
+            )
+            if bad
+        ]
+        if problems:
+            raise ValueError(f"treatment {self.name!r} needs {', '.join(problems)}")
 
     def __call__(self, samples: "ndarray", sample_rate: int) -> "ndarray":
         return apply_treatment(samples, sample_rate, self)
@@ -258,21 +283,44 @@ def _treatment_name(treatment: Treatment) -> str:
 ClipLike = Union["ndarray", tuple, bytes, str, os.PathLike]
 
 
+def _as_float(samples) -> "ndarray":
+    """``samples`` as floats at full scale 1.0: integer PCM is scaled by its range.
+
+    >>> import numpy as np
+    >>> _as_float(np.array([-32768, 16384], dtype="int16")).tolist()
+    [-1.0, 0.5]
+    >>> _as_float(np.array([0, 128], dtype="uint8")).tolist()
+    [-1.0, 0.0]
+    """
+    import numpy as np
+
+    x = np.asarray(samples)
+    if np.issubdtype(x.dtype, np.signedinteger):
+        return x / float(-np.iinfo(x.dtype).min)
+    if np.issubdtype(x.dtype, np.unsignedinteger):
+        mid = float(np.iinfo(x.dtype).max // 2 + 1)
+        return (x - mid) / mid
+    return x
+
+
 def as_clip(item: ClipLike, sample_rate: int) -> "ndarray":
     """``item`` as a mono ``float32`` working array at ``sample_rate``.
 
     A bare array is taken to be at ``sample_rate`` already; ``(samples, sr)`` is
-    resampled; bytes and paths are decoded with :func:`foley.audio.load`.
+    resampled; bytes and paths are decoded with :func:`foley.audio.load`. Integer PCM
+    is scaled to full scale 1.0.
     """
     from ..audio import load, to_working
 
+    if item is None:
+        raise ValueError("no audio (got None)")
     if isinstance(item, tuple) and len(item) == 2:
         samples, orig = item
     elif isinstance(item, (bytes, bytearray, str, os.PathLike)):
         samples, orig = load(bytes(item) if isinstance(item, bytearray) else item)
     else:
         samples, orig = item, sample_rate
-    return to_working(samples, orig, mono=True, target_sr=sample_rate)
+    return to_working(_as_float(samples), orig, mono=True, target_sr=sample_rate)
 
 
 def join_lines(
@@ -291,55 +339,125 @@ def join_lines(
     return np.concatenate(parts) if parts else gap[:0]
 
 
+def _is_text(line) -> bool:
+    """A line to be spoken: a ``str`` that is not an existing audio file."""
+    return isinstance(line, str) and not os.path.exists(line)
+
+
+def _check_lines(lines, tts) -> None:
+    """Refuse, before anything is spent, lines that cannot become audio."""
+    if not lines:
+        raise ValueError("no speech lines given")
+    if tts is None:
+        for i, line in enumerate(lines):
+            if _is_text(line):
+                raise ValueError(
+                    f"line {i} is text, not audio ({line[:40]!r}): pass tts= (a text "
+                    "-> audio callable) or the spoken audio"
+                )
+
+
 def _speak(lines, sample_rate: int, tts) -> "list[ndarray]":
-    """Each line as a clip: through ``tts`` when given, else as audio (never as text)."""
+    """Each line as a clip: text through ``tts``, audio as is (never through ``tts``)."""
     clips = []
     for i, line in enumerate(lines):
-        if tts is not None:
+        if _is_text(line):
             line = tts(line)
-        elif isinstance(line, str) and not os.path.exists(line):
-            raise ValueError(
-                f"line {i} is text, not audio ({line[:40]!r}): pass tts= (a text -> "
-                "audio callable) or the spoken audio"
-            )
+            if line is None:
+                raise ValueError(f"tts returned no audio for line {i}")
         clips.append(as_clip(line, sample_rate))
     return clips
 
 
-# --- bed -----------------------------------------------------------------------------
+# --- rights gate ---------------------------------------------------------------------
 
+
+class BroadcastRefusal(ValueError):
+    """A source whose rights do not allow it into a broadcast bed (refused, fail-closed)."""
+
+
+def mix_refusal(source: LicenseRecord) -> Optional[str]:
+    """Why a sound with rights ``source`` may not be treated and mixed in, or ``None``.
+
+    The broadcast's licence is the bed's narrowed to the speech's, so it cannot carry a
+    share-alike obligation, and the device modifies both sources. Refused: a
+    share-alike licence (on the record or in its lineage), a territory exclusion, a
+    licence with no :data:`~foley.licensing.LICENSE_FLAGS` row (an ``ND`` one among
+    them), or one that forbids modification. Unknown rights (``'unknown'``) are not
+    refused: the result fails closed instead.
+
+    >>> from foley.licensing import apply_license_flags
+    >>> ok = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-4.0"))
+    >>> mix_refusal(ok) is None
+    True
+    >>> mix_refusal(LicenseRecord(source="s", license_id="CC-BY-SA-4.0"))[:40]
+    'its licence (CC-BY-SA-4.0) is share-alik'
+    """
+    from ..licensing import (
+        LICENSE_FLAGS,
+        derived_license_ids,
+        excluded_territories,
+        is_share_alike,
+    )
+
+    lid = source.license_id
+    shared = [i for i in (lid, *derived_license_ids(source)) if is_share_alike(i)]
+    if shared:
+        return (
+            f"its licence ({shared[0]}) is share-alike, which the broadcast's licence "
+            "cannot carry"
+        )
+    if excluded_territories(source):
+        return "its licence excludes territories, which the broadcast cannot carry"
+    if lid == UNKNOWN_LICENSE_ID:
+        return None
+    if lid not in LICENSE_FLAGS:
+        return f"foley has no licence row for {lid!r}, so the mix's rights cannot be derived"
+    if not source.modification_ok:
+        return "its licence does not allow modification (the device filters it)"
+    return None
+
+
+def _gate(source: "SoundRecord | LicenseRecord | None", role: str) -> None:
+    """Raise :class:`BroadcastRefusal` for a source :func:`mix_refusal` refuses."""
+    if source is None:
+        return
+    why = mix_refusal(_license_of(source))
+    if why:
+        raise BroadcastRefusal(f"cannot use the {role} in a broadcast bed: {why}")
+
+
+# --- bed -----------------------------------------------------------------------------
 
 def _unknown_rights(source: str) -> LicenseRecord:
     """A fail-closed licence for a source whose rights were not given."""
     from ..licensing import apply_license_flags
 
-    return apply_license_flags(LicenseRecord(source=source, license_id="unknown"))
+    return apply_license_flags(
+        LicenseRecord(source=source, license_id=UNKNOWN_LICENSE_ID)
+    )
 
 
-def _resolve_bed(
-    bed, bed_prompt, *, bed_license, library, generate, generate_options, sample_rate
-):
-    """``(samples, provenance, notes)`` for the bed, from exactly one of its three forms."""
-    from .render import load_clip_mono
-
+def _check_bed_form(bed, bed_prompt, *, bed_license, generate_options) -> None:
+    """Refuse, before anything is spent, a bed given in no form, two, or inconsistently."""
     if (bed is None) == (bed_prompt is None):
         raise ValueError(
             "give exactly one of bed= (a sound id or audio) and bed_prompt="
         )
-    if bed_prompt is not None:
-        if generate is None:
-            from .. import generate
-        cand = generate(bed_prompt, library=library, **(generate_options or {}))
-        record = cand.sound
-        if getattr(cand, "audio_bytes", None):  # a store=False preview holds its bytes
-            return as_clip(cand.audio_bytes, sample_rate), record, list(cand.notes)
-        lib = library if library is not None else _default_library()
-        return load_clip_mono(lib, record.id, sr=sample_rate), record, list(cand.notes)
-    if isinstance(bed, str) and not os.path.exists(bed):  # a sound id, not a file
-        if bed_license is not None:
-            raise ValueError(
-                "bed_license= is for raw bed audio; a library sound carries its own licence"
-            )
+    if bed_license is not None and (bed_prompt is not None or _is_text(bed)):
+        raise ValueError(
+            "bed_license= is for raw bed audio; a library or generated sound carries "
+            "its own licence"
+        )
+    if "library" in (generate_options or {}):
+        raise ValueError("pass library= to broadcast_bed, not in generate_options")
+
+
+def _given_bed(bed, *, bed_license, library, sample_rate):
+    """``(samples, provenance, notes)`` for ``bed=``: a library sound id or raw audio."""
+    from .render import load_clip_mono
+
+    if _is_text(bed):  # a sound id, not a file
         lib = library if library is not None else _default_library()
         if bed not in lib:
             raise KeyError(f"bed {bed!r} is neither a file nor a sound in the library")
@@ -351,6 +469,20 @@ def _resolve_bed(
             "bed rights not given (bed_license=): treated as unknown, fail-closed"
         )
     return as_clip(bed, sample_rate), bed_license, notes
+
+
+def _generated_bed(prompt, *, library, generate, generate_options, sample_rate):
+    """``(samples, record, notes)`` for ``bed_prompt=``, through :func:`foley.generate`."""
+    from .render import load_clip_mono
+
+    if generate is None:
+        from .. import generate
+    cand = generate(prompt, library=library, **(generate_options or {}))
+    record = cand.sound
+    if getattr(cand, "audio_bytes", None):  # a store=False preview holds its bytes
+        return as_clip(cand.audio_bytes, sample_rate), record, list(cand.notes)
+    lib = library if library is not None else _default_library()
+    return load_clip_mono(lib, record.id, sr=sample_rate), record, list(cand.notes)
 
 
 def _default_library():
@@ -423,24 +555,18 @@ def mix_program(
         else max(0, int(round(duration * sample_rate)))
     )
     span = n / sample_rate
-    speech_track = _exact(
-        fit_duration(
-            speech,
-            sample_rate,
-            duration=span,
-            loop=loop_speech,
-            crossfade_s=crossfade_s,
-        ),
-        n,
-    )
-    bed_track = _exact(
-        fit_duration(
-            bed, sample_rate, duration=span, loop=True, crossfade_s=crossfade_s
-        ),
-        n,
-    )
+
+    def fit(clip, loop):
+        return _exact(
+            fit_duration(
+                clip, sample_rate, duration=span, loop=loop, crossfade_s=crossfade_s
+            ),
+            n,
+        )
+
     gain, note = bed_gain_db(speech, bed, sample_rate, under_db=bed_under_speech_db)
-    return speech_track + bed_track * db_to_lin(gain), [note] if note else []
+    program = fit(speech, loop_speech) + fit(bed, True) * db_to_lin(gain)
+    return program, [note] if note else []
 
 
 # --- provenance ----------------------------------------------------------------------
@@ -462,15 +588,23 @@ def broadcast_license(
     edit records (:class:`foley.sources.edit.EditLineage`: the permissions both hold,
     either's attribution and notice, the stricter AI-use scope, and a ``transformations``
     entry the credits and content credential read as "derived from" the speech). It is
-    AI-generated if either source is, its bytes may be stored only if both allow it, and
-    its rights are verified only if both are. ``speech=None`` narrows to unknown rights.
+    AI-generated, and its AI disclosure recommended, if either source's is; the
+    generator named is the bed's, else the speech's. Its bytes may be stored only if
+    both allow it, and its rights are verified only if both are. The bed's own
+    watermark and content-credential reference are dropped: they described the bed's
+    bytes, not the mix. ``speech=None`` narrows to unknown rights. Raises
+    :class:`BroadcastRefusal` for a source :func:`mix_refusal` refuses.
     """
     from ..provenance.credits import attribution_line
     from ..sources.edit import EditLineage
 
+    _gate(bed, "bed")
+    _gate(speech, "speech")
     speech = speech if speech is not None else _unknown_rights("speech")
     out = copy.deepcopy(_license_of(bed))
     out.content_sha256 = None  # these bytes are the mix, not the bed
+    out.watermark = None
+    out.c2pa_manifest_ref = None
     EditLineage(
         op=BROADCAST_OP,
         source_id=speech.source_id,
@@ -479,6 +613,12 @@ def broadcast_license(
         params={"treatment": treatment, "role": "speech"},
     ).apply(out)
     out.is_ai_generated = out.is_ai_generated or speech.is_ai_generated
+    out.disclosure_recommended = (
+        out.disclosure_recommended or speech.disclosure_recommended
+    )
+    if not out.generator_model:
+        out.generator_model = speech.generator_model
+        out.generator_version = speech.generator_version
     out.cache_bytes_ok = out.cache_bytes_ok and speech.cache_bytes_ok
     out.rights_verified = out.rights_verified and speech.rights_verified
     return out
@@ -537,6 +677,7 @@ def broadcast_bed(
     bed_under_speech_db: float = BED_UNDER_SPEECH_DB,
     loop_speech: bool = True,
     crossfade_s: float = LOOP_CROSSFADE_S,
+    ceiling_db: float = TREATMENT_CEILING_DB,
     speech_license: Optional[LicenseRecord] = None,
     bed_license: Optional[LicenseRecord] = None,
     tts: Optional[Callable[[str], ClipLike]] = None,
@@ -547,9 +688,15 @@ def broadcast_bed(
 ) -> BroadcastBed:
     """Speech lines heard through a radio/TV/PA/phone over a bed, looped for a scene (#108).
 
+    Everything that can be checked is checked before anything is paid for: the lines,
+    the treatment, the bed's form, and the rights of the speech and of a given bed
+    (:func:`mix_refusal`). Then the bed is generated (if prompted) and gated, and only
+    then is the text spoken.
+
     Args:
         lines: The spoken lines, in order: each an array at ``sr``, ``(samples, sr)``,
-            encoded bytes or a path; or, with ``tts=``, text.
+            encoded bytes or a path; or text (a ``str`` that is not a file), which goes
+            through ``tts=``. Audio lines never go through ``tts``.
         bed: The bed: a library sound id, or its audio (any ``lines`` form).
         bed_prompt: Instead of ``bed``: a prompt for :func:`foley.generate` (its budget,
             paid-generation consent and licence gate apply unchanged).
@@ -559,9 +706,13 @@ def broadcast_bed(
             it), or ``None`` for dry. Applied to the whole program, crowd included.
         gap_s: Silence after each line (s).
         duration: Length of the result (s); ``None``: the lines once, with their gaps.
-        bed_under_speech_db: The bed's level under the speech (LU, integrated loudness).
+        bed_under_speech_db: The bed's level under the speech (LU, integrated
+            loudness), set **before** the treatment: the device's compressor then
+            narrows the gap a little, as a real one would.
         loop_speech: Repeat the lines to fill ``duration`` (else they play once).
         crossfade_s: Equal-power crossfade at each loop seam (s).
+        ceiling_db: The result's peak ceiling (dBFS), held whatever the treatment
+            (:func:`mixing.loudness.limit_peaks`).
         speech_license: The speech's rights, as given (e.g. the TTS vendor's terms).
             ``None``: unknown, so the result's rights fail closed.
         bed_license: The rights of raw bed audio given as ``bed`` (a library or
@@ -572,29 +723,41 @@ def broadcast_bed(
             the process-wide library).
         generate: The bed generator (default :func:`foley.generate`; a test seam).
         generate_options: Keyword arguments for it (``backend``, ``budget``,
-            ``duration_s``, ``store``, ...).
+            ``duration_s``, ``store``, ...; not ``library``).
         sr: Working sample rate (default :data:`foley.audio.WORKING_SAMPLE_RATE`).
 
     Returns:
         A :class:`BroadcastBed`.
+
+    Raises:
+        BroadcastRefusal: A source's rights do not allow it in (:func:`mix_refusal`).
+        ValueError: Unusable lines, treatment or bed form (before anything is spent).
+        KeyError: A bed id that is neither a file nor in the library.
     """
     from ..audio import WORKING_SAMPLE_RATE
     from .mix import declick
 
     sr = WORKING_SAMPLE_RATE if sr is None else sr
-    device = resolve_treatment(treatment)  # fail fast on a bad name, before any spend
-    if not lines:
-        raise ValueError("no speech lines given")
-    speech = join_lines(_speak(lines, sr, tts), sr, gap_s=gap_s)
-    bed_audio, bed_source, notes = _resolve_bed(
-        bed,
-        bed_prompt,
-        bed_license=bed_license,
-        library=library,
-        generate=generate,
-        generate_options=generate_options,
-        sample_rate=sr,
+    device = resolve_treatment(treatment)
+    _check_lines(lines, tts)
+    _check_bed_form(
+        bed, bed_prompt, bed_license=bed_license, generate_options=generate_options
     )
+    _gate(speech_license, "speech")
+    if bed is not None:
+        bed_audio, bed_source, notes = _given_bed(
+            bed, bed_license=bed_license, library=library, sample_rate=sr
+        )
+    else:
+        bed_audio, bed_source, notes = _generated_bed(
+            bed_prompt,
+            library=library,
+            generate=generate,
+            generate_options=generate_options,
+            sample_rate=sr,
+        )
+    _gate(bed_source, "bed")
+    speech = join_lines(_speak(lines, sr, tts), sr, gap_s=gap_s)
     program, mix_notes = mix_program(
         speech,
         bed_audio,
@@ -609,7 +772,8 @@ def broadcast_bed(
             "speech rights not given (speech_license=): treated as unknown, fail-closed"
         )
     name = _treatment_name(treatment)
-    audio = declick(device(program, sr), sr).astype("float32", copy=False)
+    coloured = declick(device(program, sr), sr)
+    audio = _limit(coloured, sr, ceiling_db).astype("float32", copy=False)
     return BroadcastBed(
         audio=audio,
         sr=sr,

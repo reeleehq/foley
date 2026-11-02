@@ -263,7 +263,7 @@ from .agent import (
 # ``foley.weave(narration, timeline)`` runs the façade while ``foley.weave.<submodule>``
 # (``foley.weave.render`` etc.) stays fully importable.
 from . import weave
-from .weave import BroadcastBed, WeaveResult, broadcast_bed
+from .weave import BroadcastBed, BroadcastRefusal, WeaveResult, broadcast_bed
 
 # --- score: the one-call AI-first entry — narration text → tasteful woven sound design ---
 # (composes find → plan → weave; numpy/torch stay lazy inside them, so this stays dol-only.)
@@ -467,6 +467,7 @@ __all__ = [
     "WeaveResult",
     "broadcast_bed",
     "BroadcastBed",
+    "BroadcastRefusal",
     # --- score: the one-call AI-first entry (narration → woven sound design) --
     "score",
     "ScoreResult",

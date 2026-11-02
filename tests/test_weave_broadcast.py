@@ -110,27 +110,148 @@ def test_bed_gain_sets_the_bed_under_the_speech():
     assert level == pytest.approx(BED_UNDER_SPEECH_DB, abs=0.1)
 
 
-def test_broadcast_bed_loops_to_duration_and_text_goes_through_tts():
+def _tone_level(x, hz=900.0):
+    """Magnitude of ``x``'s spectrum at ``hz`` (the synthetic speech's carrier)."""
+    spec = np.abs(np.fft.rfft(x))
+    return spec[np.argmin(np.abs(np.fft.rfftfreq(x.shape[0], 1 / SR) - hz))]
+
+
+def test_broadcast_bed_loops_the_speech_and_text_goes_through_tts():
     spoken = []
 
     def tts(text):
         spoken.append(text)
         return (_line(1.0), SR)
 
+    def render(loop_speech):
+        return foley.broadcast_bed(
+            ["Gol!", "Que golazo"],
+            bed=_crowd(2.0),
+            bed_license=_rights("CC0-1.0"),
+            speech_license=_rights("CC-BY-4.0", creator_name="Bob"),
+            tts=tts,
+            duration=9.0,
+            loop_speech=loop_speech,
+            sr=SR,
+        )
+
+    looped, once = render(True), render(False)
+    assert spoken == ["Gol!", "Que golazo"] * 2
+    assert looped.audio.shape == (9 * SR,) and looped.audio.dtype == np.float32
+    assert looped.treatment == "am_radio" and looped.sr == SR and looped.notes == []
+    tail = slice(-4 * SR, None)  # past the lines' 3.2 s: only a loop puts speech here
+    assert _tone_level(looped.audio[tail]) > 10 * _tone_level(once.audio[tail])
+    assert np.abs(once.audio[tail]).max() > 0.001  # the bed carries on alone
+
+
+def test_audio_lines_never_go_through_tts():
+    calls = []
     r = foley.broadcast_bed(
-        ["Gol!", "Que golazo"],
-        bed=_crowd(2.0),
+        [_line(1.0), "hola"],
+        bed=_crowd(),
         bed_license=_rights("CC0-1.0"),
-        speech_license=_rights("CC-BY-4.0", creator_name="Bob"),
-        tts=tts,
-        duration=9.0,
+        speech_license=_rights("CC0-1.0"),
+        tts=lambda t: calls.append(t) or (_line(0.5), SR),
         sr=SR,
     )
-    assert spoken == ["Gol!", "Que golazo"]
-    assert r.audio.shape == (9 * SR,) and r.audio.dtype == np.float32
-    assert r.treatment == "am_radio" and r.sr == SR
-    assert np.abs(r.audio[-4 * SR :]).max() > 0.01  # the loop fills the tail
-    assert r.notes == []
+    assert calls == ["hola"] and r.audio.shape[0] > int(1.5 * SR)
+
+
+def test_tts_returning_nothing_is_a_clear_error():
+    with pytest.raises(ValueError, match="tts returned no audio for line 0"):
+        foley.broadcast_bed(
+            ["hola"],
+            bed=_crowd(),
+            bed_license=_rights("CC0-1.0"),
+            tts=lambda t: None,
+            sr=SR,
+        )
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        dict(),  # no bed
+        dict(bed="no_such_sound", library="LIB"),  # an id the library lacks
+        dict(bed=_crowd(), bed_prompt="crowd"),  # two bed forms
+        dict(bed="crowd1", library="LIB", bed_license=_rights("CC0-1.0")),
+        dict(bed_prompt="crowd", generate_options={"library": None}),
+        dict(bed=_crowd(), speech_license=_rights("CC-BY-SA-4.0")),  # refused rights
+    ],
+)
+def test_nothing_is_spoken_before_the_inputs_are_checked(bad):
+    calls = []
+    lib = _Library({"crowd1": SoundRecord(id="crowd1")}, {"crowd1": _crowd()})
+    kw = {k: (lib if isinstance(v, str) and v == "LIB" else v) for k, v in bad.items()}
+    with pytest.raises((ValueError, KeyError)):
+        foley.broadcast_bed(
+            ["hola"],
+            tts=lambda t: calls.append(t) or (_line(), SR),
+            generate=lambda *a, **k: pytest.fail("generated"),
+            sr=SR,
+            **kw,
+        )
+    assert calls == []
+
+
+def test_integer_pcm_is_scaled_to_full_scale():
+    pcm = (_line(2.0) * 32767).astype("int16")
+    common = dict(
+        bed=_crowd(),
+        bed_license=_rights("CC0-1.0"),
+        speech_license=_rights("CC0-1.0"),
+        treatment=None,
+        sr=SR,
+    )
+    as_int = foley.broadcast_bed([pcm], **common).audio
+    as_float = foley.broadcast_bed([_line(2.0)], **common).audio
+    assert np.allclose(as_int, as_float, atol=1e-3)
+
+
+@pytest.mark.parametrize("treatment", [None, lambda x, sr: x * 4.0])
+def test_the_ceiling_holds_whatever_the_treatment(treatment):
+    r = foley.broadcast_bed(
+        [_line(1.0, amp=0.95)],
+        bed=_crowd(amp=0.9),
+        bed_license=_rights("CC0-1.0"),
+        treatment=treatment,
+        sr=SR,
+    )
+    assert np.abs(r.audio).max() <= 10 ** (-1.0 / 20) + 1e-4
+
+
+@pytest.mark.parametrize("rate", [8_000, 22_050, 48_000])
+@pytest.mark.parametrize("name", sorted(TREATMENTS))
+def test_every_preset_at_common_rates(rate, name):
+    t = np.arange(2 * rate) / rate
+    line = (0.3 * np.sin(2 * np.pi * 700 * t)).astype("float32")
+    bed = (0.2 * np.random.default_rng(0).standard_normal(3 * rate)).astype("float32")
+    r = foley.broadcast_bed(
+        [line],
+        bed=bed,
+        bed_license=_rights("CC0-1.0"),
+        speech_license=_rights("CC0-1.0"),
+        treatment=name,
+        duration=4.0,
+        sr=rate,
+    )
+    a = r.audio
+    assert a.shape == (4 * rate,) and np.isfinite(a).all()
+    assert 0.01 < np.abs(a).max() <= 10 ** (-1.0 / 20) + 1e-4
+
+
+@pytest.mark.parametrize(
+    "kw",
+    [
+        dict(highpass_hz=3000.0, lowpass_hz=300.0),
+        dict(ratio=0.0),
+        dict(detector_s=0.0),
+    ],
+)
+def test_preset_validates_its_values(kw):
+    base = dict(highpass_hz=300.0, lowpass_hz=3000.0, threshold_db=-20.0, ratio=2.0)
+    with pytest.raises(ValueError, match="needs"):
+        TreatmentPreset("bad", **{**base, **kw})
 
 
 def test_default_duration_is_the_lines_once_and_dry_is_allowed():
@@ -255,3 +376,64 @@ def test_credits_name_both_sources():
     )
     md = r.credits.markdown
     assert "Ann" in md and "derived from" in md and "Bob" in md
+
+
+def test_bed_from_a_prompt_stored_in_the_library():
+    rec = SoundRecord(id="gen2", license=_rights("CC0-1.0"))
+    lib = _Library({"gen2": rec}, {"gen2": _crowd()})
+
+    def fake_generate(prompt, *, library=None, **kw):
+        assert library is lib
+        return Candidate(sound=rec, origin=CandidateOrigin.generated)
+
+    r = foley.broadcast_bed(
+        [_line()],
+        bed_prompt="crowd",
+        library=lib,
+        generate=fake_generate,
+        speech_license=_rights("CC0-1.0"),
+        sr=SR,
+    )
+    assert r.sources[0] is rec and r.duration_s > 0
+
+
+@pytest.mark.parametrize("side", ["speech", "bed"])
+@pytest.mark.parametrize(
+    "lic",
+    [
+        dict(license_id="CC-BY-SA-4.0"),  # share-alike
+        dict(license_id="CC-BY-ND-4.0"),  # no row: no derivatives
+        dict(license_id="research-only"),  # no modification
+        dict(
+            license_id="CC0-1.0", derived_from_license_ids=["Tencent-Hunyuan-Community"]
+        ),
+    ],
+    ids=["share_alike", "no_derivatives", "no_modification", "territories"],
+)
+def test_sources_the_mix_cannot_carry_are_refused(side, lic):
+    bad = _rights(**lic)
+    kw = (
+        dict(speech_license=bad, bed_license=_rights("CC0-1.0"))
+        if side == "speech"
+        else dict(speech_license=_rights("CC0-1.0"), bed_license=bad)
+    )
+    with pytest.raises(foley.BroadcastRefusal, match=f"the {side}"):
+        foley.broadcast_bed([_line()], bed=_crowd(), sr=SR, **kw)
+    with pytest.raises(foley.BroadcastRefusal):
+        if side == "speech":
+            broadcast_license(_rights("CC0-1.0"), bad, treatment="x")
+        else:
+            broadcast_license(bad, _rights("CC0-1.0"), treatment="x")
+
+
+def test_ai_disclosure_comes_from_either_source():
+    speech = _rights("CC0-1.0", ai=True)
+    speech.disclosure_recommended = True
+    speech.generator_model = "eleven_v3"
+    out = broadcast_license(_rights("CC0-1.0"), speech, treatment="x")
+    assert out.is_ai_generated and out.disclosure_recommended
+    assert out.generator_model == "eleven_v3"
+    bed = _rights("CC0-1.0", ai=True)
+    bed.disclosure_recommended, bed.watermark = True, {"present": True}
+    out = broadcast_license(bed, _rights("CC0-1.0"), treatment="x")
+    assert out.disclosure_recommended and out.watermark is None

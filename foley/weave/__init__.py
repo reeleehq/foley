@@ -31,6 +31,7 @@ from .align import FakeAligner, WhisperXAligner, _default_aligner
 from .broadcast import (
     TREATMENTS,
     BroadcastBed,
+    BroadcastRefusal,
     TreatmentPreset,
     broadcast_bed,
 )
@@ -602,6 +603,7 @@ __all__ = [
     "NARRATION_REF",
     "broadcast_bed",
     "BroadcastBed",
+    "BroadcastRefusal",
     "TreatmentPreset",
     "TREATMENTS",
 ]
