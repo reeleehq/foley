@@ -1,32 +1,32 @@
 {
   "schema_version": 1,
-  "built_at": "2026-11-02T01:29:37Z",
+  "built_at": "2026-11-02T01:31:32Z",
   "package": {
     "name": "foley",
-    "version": "0.0.106",
+    "version": "0.0.107",
     "display_name": "foley",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "5a65fe9237441d0c1bdf6c3abe0be2a216e6770a",
-    "short_commit": "5a65fe9",
+    "commit": "45b933700e1c3969a7b5e60fca283ac0810cacda",
+    "short_commit": "45b9337",
     "branch": "main",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/reeleehq/foley",
-    "commit_url": "https://github.com/reeleehq/foley/commit/5a65fe9237441d0c1bdf6c3abe0be2a216e6770a",
+    "commit_url": "https://github.com/reeleehq/foley/commit/45b933700e1c3969a7b5e60fca283ac0810cacda",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "reeleehq/foley",
-    "sha": "7be811afa531e2cbf946c77a44ea79af08a1fcdf",
+    "sha": "5a65fe9237441d0c1bdf6c3abe0be2a216e6770a",
     "sha_in_history": true,
     "ref": "refs/heads/main",
     "ref_name": "main",
-    "run_id": "41372540840",
-    "run_url": "https://github.com/reeleehq/foley/actions/runs/41372540840",
+    "run_id": "41372716595",
+    "run_url": "https://github.com/reeleehq/foley/actions/runs/41372716595",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -61,15 +61,13 @@
   "pypi": {
     "checked": true,
     "latest": "0.0.107",
-    "relation": "behind",
+    "relation": "same",
     "error": null
   },
-  "reproduce": "git clone https://github.com/reeleehq/foley && cd foley\ngit checkout 5a65fe9237441d0c1bdf6c3abe0be2a216e6770a\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/reeleehq/foley && cd foley\ngit checkout 45b933700e1c3969a7b5e60fca283ac0810cacda\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
-    "aligned": false,
-    "notes": [
-      "The documented version (0.0.106) is behind the latest release on PyPI (0.0.107): `pip install foley` gives newer code than these docs describe."
-    ]
+    "aligned": true,
+    "notes": []
   }
 }
