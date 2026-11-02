@@ -10,11 +10,12 @@ faceting and browse”, the CLAP vector does the heavy retrieval).
 
 ### Classes
 
-| [`AudioSetUcsMap`](#foley.index.taxonomy.model.AudioSetUcsMap)([by_name, by_mid])           | AudioSet-label -> UCS-CatID overlap map (report 04 §5.3).                |
-|----------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
-| [`CatIdResolution`](#foley.index.taxonomy.model.CatIdResolution)([catid, category, ...])     | The result of resolving free tags/caption/labels to a UCS CatID.         |
-| [`UcsRow`](#foley.index.taxonomy.model.UcsRow)(catid, category, subcategory[, ...]) | One Universal Category System entry.                                     |
-| [`UcsTable`](#foley.index.taxonomy.model.UcsTable)([by_catid, order, \_ci_index])     | A loaded UCS lookup: by CatID (exact + case-insensitive) and by synonym. |
+| [`AudioSetUcsMap`](#foley.index.taxonomy.model.AudioSetUcsMap)([by_name, by_mid])            | AudioSet-label -> UCS-CatID overlap map (report 04 §5.3).                  |
+|-----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| [`CatIdResolution`](#foley.index.taxonomy.model.CatIdResolution)([catid, category, ...])      | The result of resolving free tags/caption/labels to a UCS CatID.           |
+| [`UcsName`](#foley.index.taxonomy.model.UcsName)(catid, category, subcategory[, ...]) | Every field of a UCS filename (`foley.index.taxonomy.ucs.parse_ucs_name`). |
+| [`UcsRow`](#foley.index.taxonomy.model.UcsRow)(catid, category, subcategory[, ...])  | One Universal Category System entry.                                       |
+| [`UcsTable`](#foley.index.taxonomy.model.UcsTable)([by_catid, order, \_ci_index])      | A loaded UCS lookup: by CatID (exact + case-insensitive) and by synonym.   |
 
 ### *class* foley.index.taxonomy.model.AudioSetUcsMap(by_name=dict(), by_mid=dict())
 
@@ -42,6 +43,18 @@ The result of resolving free tags/caption/labels to a UCS CatID.
 `catid` feeds `ucs_category` and
 `subcategory` feeds `ucs_subcategory` on
 ingest, and `ucs_catid` on the query side.
+
+### *class* foley.index.taxonomy.model.UcsName(catid, category, subcategory, fx_name=None, creator_id=None, source_id=None, user_category=None, vendor_category=None, user_data=None)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Every field of a UCS filename (`foley.index.taxonomy.ucs.parse_ucs_name`).
+
+`CatID[-UserCategory]_[VendorCategory-]FXName_CreatorID_SourceID[_UserData].ext`:
+underscores separate the blocks; a hyphen attaches the optional UserCategory to
+the CatID and the optional VendorCategory to the FXName. `category` and
+`subcategory` come from the table row of `catid`; a block the name does not
+have is `None`.
 
 ### *class* foley.index.taxonomy.model.UcsRow(catid, category, subcategory, synonyms=(), confident=False)
 

@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=33adb31a"></script>
+    <script src="../../../../_static/documentation_options.js?v=97d53703"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.102" />
+  <meta name="docsearch:version" content="0.0.103" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -737,7 +737,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.audioset</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_audioset_ucs_map</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">AudioSetUcsMap</span><span class="p">,</span> <span class="n">CatIdResolution</span><span class="p">,</span> <span class="n">UcsTable</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.ucs</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_ucs_table</span><span class="p">,</span> <span class="n">parse_catid_token</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.ucs</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_ucs_table</span><span class="p">,</span> <span class="n">parse_ucs_name</span>
 
 <span class="c1"># Coarse per-stage confidence bands.</span>
 <span class="n">_CONF_FILENAME</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
@@ -874,18 +874,16 @@ window.runMermaid = runMermaid;</script>
     <span class="n">audioset_map</span> <span class="o">=</span> <span class="n">audioset_map</span> <span class="ow">or</span> <span class="n">default_audioset_ucs_map</span><span class="p">()</span>
 
     <span class="k">if</span> <span class="n">filename</span><span class="p">:</span>
-        <span class="n">token</span> <span class="o">=</span> <span class="n">parse_catid_token</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">token</span><span class="p">:</span>
-            <span class="n">row</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">CatIdResolution</span><span class="p">(</span>
-                    <span class="n">catid</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">catid</span><span class="p">,</span>
-                    <span class="n">category</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">category</span><span class="p">,</span>
-                    <span class="n">subcategory</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">subcategory</span><span class="p">,</span>
-                    <span class="n">source</span><span class="o">=</span><span class="s2">"filename"</span><span class="p">,</span>
-                    <span class="n">confidence</span><span class="o">=</span><span class="n">_CONF_FILENAME</span><span class="p">,</span>
-                    <span class="n">matched_terms</span><span class="o">=</span><span class="p">[</span><span class="n">token</span><span class="p">],</span>
-                <span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">parse_ucs_name</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="n">table</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">CatIdResolution</span><span class="p">(</span>
+                <span class="n">catid</span><span class="o">=</span><span class="n">name</span><span class="o">.</span><span class="n">catid</span><span class="p">,</span>
+                <span class="n">category</span><span class="o">=</span><span class="n">name</span><span class="o">.</span><span class="n">category</span><span class="p">,</span>
+                <span class="n">subcategory</span><span class="o">=</span><span class="n">name</span><span class="o">.</span><span class="n">subcategory</span><span class="p">,</span>
+                <span class="n">source</span><span class="o">=</span><span class="s2">"filename"</span><span class="p">,</span>
+                <span class="n">confidence</span><span class="o">=</span><span class="n">_CONF_FILENAME</span><span class="p">,</span>
+                <span class="n">matched_terms</span><span class="o">=</span><span class="p">[</span><span class="n">name</span><span class="o">.</span><span class="n">catid</span><span class="p">],</span>
+            <span class="p">)</span>
 
     <span class="n">kw</span> <span class="o">=</span> <span class="n">_keyword_stage</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="n">caption</span><span class="p">,</span> <span class="n">table</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">kw</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>

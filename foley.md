@@ -1,4 +1,4 @@
-> built 2026-11-02 00:26 UTC from 8117475 (main) · foley 0.0.102. Details: build_info.json
+> built 2026-11-02 00:45 UTC from 1e992cd (main) · foley 0.0.103. Details: build_info.json
 
 # index.html.md
 
@@ -12506,19 +12506,21 @@ EnvSound-UCS mapping drop in later as JSON under `data/` with no logic change.
 
 ### Functions
 
-| [`load_ucs_table`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.load_ucs_table)(\*[, data_dir, include_seed])      | Build the UCS lookup: the seed rows, overridden/extended by a JSON drop.   |
-|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
-| [`default_ucs_table`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_ucs_table)()                               | The process-wide default UCS table (seed + any JSON drop), built once.     |
-| [`parse_ucs_filename`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_ucs_filename)(filename, \*[, table])         | Parse a UCS-conformant filename to `(ucs_category, ucs_subcategory)`.      |
-| [`parse_catid_token`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_catid_token)(filename)                       | Return token 0 (the CatID candidate) of a UCS-style filename, else `None`. |
-| [`load_audioset_ucs_map`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.load_audioset_ucs_map)(\*[, data_dir, table, ...]) | Build the AudioSet(name|MID) -> UCS-CatID map.                             |
-| [`default_audioset_ucs_map`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_audioset_ucs_map)()                        | The process-wide default AudioSet->UCS map (seed + any JSON drop).         |
-| [`resolve_catid`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.resolve_catid)(\*[, tags, caption, ...])           | Resolve inputs to a best UCS CatID by the staged precedence.               |
+| [`load_ucs_table`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.load_ucs_table)(\*[, data_dir, include_seed])      | Build the UCS lookup: the seed rows, overridden/extended by a JSON drop.                                                                     |
+|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| [`default_ucs_table`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_ucs_table)()                               | The process-wide default UCS table (seed + any JSON drop), built once.                                                                       |
+| [`parse_ucs_filename`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_ucs_filename)(filename, \*[, table])         | Parse a UCS-conformant filename to `(ucs_category, ucs_subcategory)`.                                                                        |
+| [`parse_ucs_name`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_ucs_name)(filename, \*[, table, ...])        | Every block of a UCS filename as a [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName), else `None`. |
+| [`parse_catid_token`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_catid_token)(filename)                       | Return the CatID candidate of a UCS-style filename, else `None`.                                                                             |
+| [`load_audioset_ucs_map`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.load_audioset_ucs_map)(\*[, data_dir, table, ...]) | Build the AudioSet(name|MID) -> UCS-CatID map.                                                                                               |
+| [`default_audioset_ucs_map`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_audioset_ucs_map)()                        | The process-wide default AudioSet->UCS map (seed + any JSON drop).                                                                           |
+| [`resolve_catid`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.resolve_catid)(\*[, tags, caption, ...])           | Resolve inputs to a best UCS CatID by the staged precedence.                                                                                 |
 
 ### Classes
 
 | [`UcsRow`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.UcsRow)(catid, category, subcategory[, ...])   | One Universal Category System entry.                                                                          |
 |------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| [`UcsName`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.UcsName)(catid, category, subcategory[, ...])  | Every field of a UCS filename (`foley.index.taxonomy.ucs.parse_ucs_name`).                                    |
 | [`UcsTable`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.UcsTable)([by_catid, order, \_ci_index])       | A loaded UCS lookup: by CatID (exact + case-insensitive) and by synonym.                                      |
 | [`AudioSetUcsMap`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.AudioSetUcsMap)([by_name, by_mid])             | AudioSet-label -> UCS-CatID overlap map (report 04 §5.3).                                                     |
 | [`CatIdResolution`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.CatIdResolution)([catid, category, ...])       | The result of resolving free tags/caption/labels to a UCS CatID.                                              |
@@ -12580,6 +12582,18 @@ Return the CatID resolution for `record`.
 
 * **Return type:**
   [`CatIdResolution`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.CatIdResolution)
+
+### *class* foley.index.taxonomy.UcsName(catid, category, subcategory, fx_name=None, creator_id=None, source_id=None, user_category=None, vendor_category=None, user_data=None)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Every field of a UCS filename (`foley.index.taxonomy.ucs.parse_ucs_name`).
+
+`CatID[-UserCategory]_[VendorCategory-]FXName_CreatorID_SourceID[_UserData].ext`:
+underscores separate the blocks; a hyphen attaches the optional UserCategory to
+the CatID and the optional VendorCategory to the FXName. `category` and
+`subcategory` come from the table row of `catid`; a block the name does not
+have is `None`.
 
 ### *class* foley.index.taxonomy.UcsRow(catid, category, subcategory, synonyms=(), confident=False)
 
@@ -12668,10 +12682,15 @@ Build the UCS lookup: the seed rows, overridden/extended by a JSON drop.
 
 ### foley.index.taxonomy.parse_catid_token(filename)
 
-Return token 0 (the CatID candidate) of a UCS-style filename, else `None`.
+Return the CatID candidate of a UCS-style filename, else `None`.
 
-Strips directory and extension; requires at least one `_` (the field
-delimiter). Does not validate the token against the table.
+Strips directory, extension and an attached `-UserCategory`; requires at least
+one `_` (the field delimiter). Does not validate the token against the table.
+
+```pycon
+>>> parse_catid_token("DOORWood-Gate_Creak_JD_NYC.wav")
+'DOORWood'
+```
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
@@ -12689,6 +12708,34 @@ its CatID token is unknown (so a wrong subcategory is never emitted).
     [`default_ucs_table()`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_ucs_table)).
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
+
+### foley.index.taxonomy.parse_ucs_name(filename, \*, table=None, is_vendor_tag=<function looks_like_vendor_tag>)
+
+Every block of a UCS filename as a [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName), else `None`.
+
+Fail-quiet like [`parse_ucs_filename()`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_ucs_filename): `None` when the name has no `_` or
+its CatID is not in the table. Blocks past SourceID are the UserData (rejoined
+with `_`); a block the name lacks is `None`. The FXName block’s head before a
+hyphen is the VendorCategory only when `is_vendor_tag` accepts it
+(`looks_like_vendor_tag()`), so `Sci-Fi Door` stays whole.
+
+```pycon
+>>> n = parse_ucs_name("DOORWood-Gate_SCIFI-Creak Open_JD_NYC_take 2.wav")
+>>> (n.catid, n.category, n.subcategory, n.user_category)
+('DOORWood', 'DOORS', 'Wood', 'Gate')
+>>> (n.vendor_category, n.fx_name, n.creator_id, n.source_id, n.user_data)
+('SCIFI', 'Creak Open', 'JD', 'NYC', 'take 2')
+>>> m = parse_ucs_name("DOORWood_Sci-Fi Slam 5.1_JD_NYC")
+>>> (m.vendor_category, m.fx_name, m.creator_id, m.source_id, m.user_data)
+(None, 'Sci-Fi Slam 5.1', 'JD', 'NYC', None)
+>>> parse_ucs_name("DOORWood_Slam.wav").creator_id is None
+True
+>>> parse_ucs_name("NOTACAT_x_y_z.wav") is None, parse_ucs_name("plain.wav") is None
+(True, True)
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName)]
 
 ### foley.index.taxonomy.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, table=None, audioset_map=None)
 
@@ -12733,11 +12780,12 @@ faceting and browse”, the CLAP vector does the heavy retrieval).
 
 ### Classes
 
-| [`AudioSetUcsMap`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.AudioSetUcsMap)([by_name, by_mid])           | AudioSet-label -> UCS-CatID overlap map (report 04 §5.3).                |
-|----------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
-| [`CatIdResolution`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.CatIdResolution)([catid, category, ...])     | The result of resolving free tags/caption/labels to a UCS CatID.         |
-| [`UcsRow`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsRow)(catid, category, subcategory[, ...]) | One Universal Category System entry.                                     |
-| [`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)([by_catid, order, \_ci_index])     | A loaded UCS lookup: by CatID (exact + case-insensitive) and by synonym. |
+| [`AudioSetUcsMap`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.AudioSetUcsMap)([by_name, by_mid])            | AudioSet-label -> UCS-CatID overlap map (report 04 §5.3).                  |
+|-----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| [`CatIdResolution`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.CatIdResolution)([catid, category, ...])      | The result of resolving free tags/caption/labels to a UCS CatID.           |
+| [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName)(catid, category, subcategory[, ...]) | Every field of a UCS filename (`foley.index.taxonomy.ucs.parse_ucs_name`). |
+| [`UcsRow`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsRow)(catid, category, subcategory[, ...])  | One Universal Category System entry.                                       |
+| [`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)([by_catid, order, \_ci_index])      | A loaded UCS lookup: by CatID (exact + case-insensitive) and by synonym.   |
 
 ### *class* foley.index.taxonomy.model.AudioSetUcsMap(by_name=dict(), by_mid=dict())
 
@@ -12765,6 +12813,18 @@ The result of resolving free tags/caption/labels to a UCS CatID.
 `catid` feeds `ucs_category` and
 `subcategory` feeds `ucs_subcategory` on
 ingest, and `ucs_catid` on the query side.
+
+### *class* foley.index.taxonomy.model.UcsName(catid, category, subcategory, fx_name=None, creator_id=None, source_id=None, user_category=None, vendor_category=None, user_data=None)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Every field of a UCS filename (`foley.index.taxonomy.ucs.parse_ucs_name`).
+
+`CatID[-UserCategory]_[VendorCategory-]FXName_CreatorID_SourceID[_UserData].ext`:
+underscores separate the blocks; a hyphen attaches the optional UserCategory to
+the CatID and the optional VendorCategory to the FXName. `category` and
+`subcategory` come from the table row of `catid`; a block the name does not
+have is `None`.
 
 ### *class* foley.index.taxonomy.model.UcsRow(catid, category, subcategory, synonyms=(), confident=False)
 
@@ -12932,21 +12992,35 @@ UCS table loading + the UCS-filename CatID parse (report 04 §5.2, §6.4).
 A UCS filename is underscore-delimited with the **CatID first**:
 
 ```default
-CatID_FXName_CreatorID_SourceID[_UserCategory_UserData].ext
+CatID[-UserCategory]_[VendorCategory-]FXName_CreatorID_SourceID[_UserData].ext
 ```
 
-Only token 0 (the CatID) carries the controlled taxonomy; it is looked up in the
-table (never string-split, since the category prefix is variable-length). The
+Only the CatID carries the controlled taxonomy; it is looked up in the table (never
+string-split, since the category prefix is variable-length).
+[`parse_ucs_name()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_name) returns every block ([`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName));
+[`parse_ucs_filename()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_filename) just the category pair. The
 loader merges the in-code seed with an optional full-table JSON drop under
 `taxonomy/data/ucs_full.json` (JSON wins on CatID collision) — open/closed.
 
+### Module Attributes
+
+| [`BLOCK_SEP`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.BLOCK_SEP)   | The block separator of a UCS filename, and the one that attaches the optional UserCategory to the CatID and VendorCategory to the FXName.   |
+|--------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+
 ### Functions
 
-| [`default_ucs_table`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.default_ucs_table)()                          | The process-wide default UCS table (seed + any JSON drop), built once.     |
-|-----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
-| [`load_ucs_table`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.load_ucs_table)(\*[, data_dir, include_seed]) | Build the UCS lookup: the seed rows, overridden/extended by a JSON drop.   |
-| [`parse_catid_token`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_catid_token)(filename)                  | Return token 0 (the CatID candidate) of a UCS-style filename, else `None`. |
-| [`parse_ucs_filename`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_filename)(filename, \*[, table])    | Parse a UCS-conformant filename to `(ucs_category, ucs_subcategory)`.      |
+| [`default_ucs_table`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.default_ucs_table)()                          | The process-wide default UCS table (seed + any JSON drop), built once.                                                                       |
+|-----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| [`load_ucs_table`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.load_ucs_table)(\*[, data_dir, include_seed]) | Build the UCS lookup: the seed rows, overridden/extended by a JSON drop.                                                                     |
+| [`looks_like_vendor_tag`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.looks_like_vendor_tag)(prefix)                | Whether the text before an FXName's first hyphen reads as a VendorCategory.                                                                  |
+| [`parse_catid_token`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_catid_token)(filename)                  | Return the CatID candidate of a UCS-style filename, else `None`.                                                                             |
+| [`parse_ucs_filename`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_filename)(filename, \*[, table])    | Parse a UCS-conformant filename to `(ucs_category, ucs_subcategory)`.                                                                        |
+| [`parse_ucs_name`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_name)(filename, \*[, table, ...])   | Every block of a UCS filename as a [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName), else `None`. |
+
+### foley.index.taxonomy.ucs.BLOCK_SEP *= '_'*
+
+The block separator of a UCS filename, and the one that attaches the optional
+UserCategory to the CatID and VendorCategory to the FXName.
 
 ### foley.index.taxonomy.ucs.default_ucs_table()
 
@@ -12969,12 +13043,33 @@ Build the UCS lookup: the seed rows, overridden/extended by a JSON drop.
 * **Returns:**
   A ready [`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable).
 
+### foley.index.taxonomy.ucs.looks_like_vendor_tag(prefix)
+
+Whether the text before an FXName’s first hyphen reads as a VendorCategory.
+
+UCS lets a vendor prefix the FXName (`BOOM-Creak Open`), but hyphens are common
+inside FX names (`Hand-Held Creak`, `Sci-Fi Door`). So only an upper-case
+tag with no spaces counts.
+
+```pycon
+>>> looks_like_vendor_tag("BOOM"), looks_like_vendor_tag("Sci"), looks_like_vendor_tag("SFX 2")
+(True, False, False)
+```
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
 ### foley.index.taxonomy.ucs.parse_catid_token(filename)
 
-Return token 0 (the CatID candidate) of a UCS-style filename, else `None`.
+Return the CatID candidate of a UCS-style filename, else `None`.
 
-Strips directory and extension; requires at least one `_` (the field
-delimiter). Does not validate the token against the table.
+Strips directory, extension and an attached `-UserCategory`; requires at least
+one `_` (the field delimiter). Does not validate the token against the table.
+
+```pycon
+>>> parse_catid_token("DOORWood-Gate_Creak_JD_NYC.wav")
+'DOORWood'
+```
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
@@ -12992,6 +13087,34 @@ its CatID token is unknown (so a wrong subcategory is never emitted).
     [`default_ucs_table()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.default_ucs_table)).
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
+
+### foley.index.taxonomy.ucs.parse_ucs_name(filename, \*, table=None, is_vendor_tag=<function looks_like_vendor_tag>)
+
+Every block of a UCS filename as a [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName), else `None`.
+
+Fail-quiet like [`parse_ucs_filename()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_filename): `None` when the name has no `_` or
+its CatID is not in the table. Blocks past SourceID are the UserData (rejoined
+with `_`); a block the name lacks is `None`. The FXName block’s head before a
+hyphen is the VendorCategory only when `is_vendor_tag` accepts it
+([`looks_like_vendor_tag()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.looks_like_vendor_tag)), so `Sci-Fi Door` stays whole.
+
+```pycon
+>>> n = parse_ucs_name("DOORWood-Gate_SCIFI-Creak Open_JD_NYC_take 2.wav")
+>>> (n.catid, n.category, n.subcategory, n.user_category)
+('DOORWood', 'DOORS', 'Wood', 'Gate')
+>>> (n.vendor_category, n.fx_name, n.creator_id, n.source_id, n.user_data)
+('SCIFI', 'Creak Open', 'JD', 'NYC', 'take 2')
+>>> m = parse_ucs_name("DOORWood_Sci-Fi Slam 5.1_JD_NYC")
+>>> (m.vendor_category, m.fx_name, m.creator_id, m.source_id, m.user_data)
+(None, 'Sci-Fi Slam 5.1', 'JD', 'NYC', None)
+>>> parse_ucs_name("DOORWood_Slam.wav").creator_id is None
+True
+>>> parse_ucs_name("NOTACAT_x_y_z.wav") is None, parse_ucs_name("plain.wav") is None
+(True, True)
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName)]
 
 
 # _autosummary/foley.level.html.md
@@ -15164,7 +15287,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta-dum', 'netflix intro', 'ta dum', 'netflix sound', 'netflix chime', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel bong', 'intel inside', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chime', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'ta dum', 'netflix sound', 'netflix chime', 'ta-dum', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel chime', 'intel inside', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -25064,16 +25187,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 00:26 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/811747595420dada4d9418fd12e06de01fa9ecf6"><code>8117475</code></a> on branch <code>main</code>, for **foley 0.0.102** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 00:45 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/1e992cdd12324027d7f05fed91fb7f25aac44a18"><code>1e992cd</code></a> on branch <code>main</code>, for **foley 0.0.103** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.103) is behind the latest release on PyPI (0.0.104): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/811747595420dada4d9418fd12e06de01fa9ecf6"><code>811747595420dada4d9418fd12e06de01fa9ecf6</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/1e992cdd12324027d7f05fed91fb7f25aac44a18"><code>1e992cdd12324027d7f05fed91fb7f25aac44a18</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -25084,9 +25209,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41366885804">41366885804</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41368566829">41368566829</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>811747595420dada4d9418fd12e06de01fa9ecf6</code> (in the history of the built commit) |
+| Event commit | <code>1e992cdd12324027d7f05fed91fb7f25aac44a18</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -25111,13 +25236,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.102/">0.0.102</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.104/">0.0.104</a>, newer than the documented version (0.0.103).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 811747595420dada4d9418fd12e06de01fa9ecf6
+git checkout 1e992cdd12324027d7f05fed91fb7f25aac44a18
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

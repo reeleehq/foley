@@ -4,12 +4,20 @@ foley.index.taxonomy.ucs
 .. automodule:: foley.index.taxonomy.ucs
 
    
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      BLOCK_SEP
+   
    .. rubric:: Functions
 
    .. autosummary::
    
       default_ucs_table
       load_ucs_table
+      looks_like_vendor_tag
       parse_catid_token
       parse_ucs_filename
+      parse_ucs_name
    

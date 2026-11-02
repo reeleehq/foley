@@ -11,6 +11,7 @@ foley.index.taxonomy
       load_ucs_table
       default_ucs_table
       parse_ucs_filename
+      parse_ucs_name
       parse_catid_token
       load_audioset_ucs_map
       default_audioset_ucs_map
@@ -21,6 +22,7 @@ foley.index.taxonomy
    .. autosummary::
    
       UcsRow
+      UcsName
       UcsTable
       AudioSetUcsMap
       CatIdResolution

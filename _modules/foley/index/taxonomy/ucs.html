@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=33adb31a"></script>
+    <script src="../../../../_static/documentation_options.js?v=97d53703"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.102" />
+  <meta name="docsearch:version" content="0.0.103" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -719,10 +719,12 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">A UCS filename is underscore-delimited with the **CatID first**::</span>
 
-<span class="sd">    CatID_FXName_CreatorID_SourceID[_UserCategory_UserData].ext</span>
+<span class="sd">    CatID[-UserCategory]_[VendorCategory-]FXName_CreatorID_SourceID[_UserData].ext</span>
 
-<span class="sd">Only token 0 (the CatID) carries the controlled taxonomy; it is looked up in the</span>
-<span class="sd">table (never string-split, since the category prefix is variable-length). The</span>
+<span class="sd">Only the CatID carries the controlled taxonomy; it is looked up in the table (never</span>
+<span class="sd">string-split, since the category prefix is variable-length).</span>
+<span class="sd">:func:`parse_ucs_name` returns every block (:class:`~.model.UcsName`);</span>
+<span class="sd">:func:`parse_ucs_filename` just the category pair. The</span>
 <span class="sd">loader merges the in-code seed with an optional full-table JSON drop under</span>
 <span class="sd">``taxonomy/data/ucs_full.json`` (JSON wins on CatID collision) — open/closed.</span>
 <span class="sd">"""</span>
@@ -730,11 +732,12 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">lru_cache</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">UcsRow</span><span class="p">,</span> <span class="n">UcsTable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">UcsName</span><span class="p">,</span> <span class="n">UcsRow</span><span class="p">,</span> <span class="n">UcsTable</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.seed</span><span class="w"> </span><span class="kn">import</span> <span class="n">SEED_UCS_TABLE</span>
 
 <span class="n">_DATA_DIR</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">"data"</span>
@@ -789,19 +792,117 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<span class="c1">#: The block separator of a UCS filename, and the one that attaches the optional</span>
+<span class="c1">#: UserCategory to the CatID and VendorCategory to the FXName.</span>
+<span class="n">BLOCK_SEP</span> <span class="o">=</span> <span class="s2">"_"</span>
+<span class="n">ATTACH_SEP</span> <span class="o">=</span> <span class="s2">"-"</span>
+
+<span class="c1">#: A filename extension: a short alphanumeric suffix (``.wav``, ``.flac``). A dot</span>
+<span class="c1">#: anywhere else (``Creak 5.1_JD``) belongs to the name.</span>
+<span class="n">_EXTENSION</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"\.[A-Za-z][A-Za-z0-9]{0,4}$"</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="looks_like_vendor_tag">
+<a class="viewcode-back" href="../../../../_autosummary/foley.index.taxonomy.ucs.html#foley.looks_like_vendor_tag">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">looks_like_vendor_tag</span><span class="p">(</span><span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether the text before an FXName's first hyphen reads as a VendorCategory.</span>
+
+<span class="sd">    UCS lets a vendor prefix the FXName (``BOOM-Creak Open``), but hyphens are common</span>
+<span class="sd">    inside FX names (``Hand-Held Creak``, ``Sci-Fi Door``). So only an upper-case</span>
+<span class="sd">    tag with no spaces counts.</span>
+
+<span class="sd">    &gt;&gt;&gt; looks_like_vendor_tag("BOOM"), looks_like_vendor_tag("Sci"), looks_like_vendor_tag("SFX 2")</span>
+<span class="sd">    (True, False, False)</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">prefix</span><span class="o">.</span><span class="n">isupper</span><span class="p">()</span> <span class="ow">and</span> <span class="n">prefix</span><span class="o">.</span><span class="n">isalnum</span><span class="p">()</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_ucs_blocks</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[str]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The stripped blocks of a filename (directory and extension dropped; ``[]`` without a separator)."""</span>
+    <span class="n">stem</span> <span class="o">=</span> <span class="n">_EXTENSION</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">""</span><span class="p">,</span> <span class="n">Path</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span><span class="o">.</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">b</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">stem</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">BLOCK_SEP</span><span class="p">)]</span> <span class="k">if</span> <span class="n">BLOCK_SEP</span> <span class="ow">in</span> <span class="n">stem</span> <span class="k">else</span> <span class="p">[]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_split_attached</span><span class="p">(</span><span class="n">block</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[str, Optional[str]]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``(left, right)`` of ``block`` at its first :data:`ATTACH_SEP`; ``(block, None)`` if none."""</span>
+    <span class="n">left</span><span class="p">,</span> <span class="n">sep</span><span class="p">,</span> <span class="n">right</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="n">ATTACH_SEP</span><span class="p">)</span>
+    <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="o">=</span> <span class="n">left</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span> <span class="n">right</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span> <span class="k">if</span> <span class="n">sep</span> <span class="ow">and</span> <span class="n">left</span> <span class="ow">and</span> <span class="n">right</span> <span class="k">else</span> <span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+
 <div class="viewcode-block" id="parse_catid_token">
 <a class="viewcode-back" href="../../../../_autosummary/foley.index.taxonomy.ucs.html#foley.parse_catid_token">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">parse_catid_token</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""Return token 0 (the CatID candidate) of a UCS-style filename, else ``None``.</span>
+<span class="w">    </span><span class="sd">"""Return the CatID candidate of a UCS-style filename, else ``None``.</span>
 
-<span class="sd">    Strips directory and extension; requires at least one ``_`` (the field</span>
-<span class="sd">    delimiter). Does not validate the token against the table.</span>
+<span class="sd">    Strips directory, extension and an attached ``-UserCategory``; requires at least</span>
+<span class="sd">    one ``_`` (the field delimiter). Does not validate the token against the table.</span>
+
+<span class="sd">    &gt;&gt;&gt; parse_catid_token("DOORWood-Gate_Creak_JD_NYC.wav")</span>
+<span class="sd">    'DOORWood'</span>
 <span class="sd">    """</span>
-    <span class="n">stem</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span><span class="o">.</span><span class="n">stem</span>
-    <span class="n">stem</span> <span class="o">=</span> <span class="n">stem</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-    <span class="k">if</span> <span class="s2">"_"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stem</span><span class="p">:</span>
+    <span class="n">blocks</span> <span class="o">=</span> <span class="n">_ucs_blocks</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">_split_attached</span><span class="p">(</span><span class="n">blocks</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">)</span> <span class="k">if</span> <span class="n">blocks</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="parse_ucs_name">
+<a class="viewcode-back" href="../../../../_autosummary/foley.index.taxonomy.ucs.html#foley.parse_ucs_name">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_ucs_name</span><span class="p">(</span>
+    <span class="n">filename</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">table</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UcsTable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">is_vendor_tag</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">looks_like_vendor_tag</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UcsName</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Every block of a UCS filename as a :class:`~.model.UcsName`, else ``None``.</span>
+
+<span class="sd">    Fail-quiet like :func:`parse_ucs_filename`: ``None`` when the name has no ``_`` or</span>
+<span class="sd">    its CatID is not in the table. Blocks past SourceID are the UserData (rejoined</span>
+<span class="sd">    with ``_``); a block the name lacks is ``None``. The FXName block's head before a</span>
+<span class="sd">    hyphen is the VendorCategory only when ``is_vendor_tag`` accepts it</span>
+<span class="sd">    (:func:`looks_like_vendor_tag`), so ``Sci-Fi Door`` stays whole.</span>
+
+<span class="sd">    &gt;&gt;&gt; n = parse_ucs_name("DOORWood-Gate_SCIFI-Creak Open_JD_NYC_take 2.wav")</span>
+<span class="sd">    &gt;&gt;&gt; (n.catid, n.category, n.subcategory, n.user_category)</span>
+<span class="sd">    ('DOORWood', 'DOORS', 'Wood', 'Gate')</span>
+<span class="sd">    &gt;&gt;&gt; (n.vendor_category, n.fx_name, n.creator_id, n.source_id, n.user_data)</span>
+<span class="sd">    ('SCIFI', 'Creak Open', 'JD', 'NYC', 'take 2')</span>
+<span class="sd">    &gt;&gt;&gt; m = parse_ucs_name("DOORWood_Sci-Fi Slam 5.1_JD_NYC")</span>
+<span class="sd">    &gt;&gt;&gt; (m.vendor_category, m.fx_name, m.creator_id, m.source_id, m.user_data)</span>
+<span class="sd">    (None, 'Sci-Fi Slam 5.1', 'JD', 'NYC', None)</span>
+<span class="sd">    &gt;&gt;&gt; parse_ucs_name("DOORWood_Slam.wav").creator_id is None</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; parse_ucs_name("NOTACAT_x_y_z.wav") is None, parse_ucs_name("plain.wav") is None</span>
+<span class="sd">    (True, True)</span>
+<span class="sd">    """</span>
+    <span class="n">blocks</span> <span class="o">=</span> <span class="n">_ucs_blocks</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">blocks</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
-    <span class="k">return</span> <span class="n">stem</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"_"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">or</span> <span class="kc">None</span></div>
+    <span class="n">catid</span><span class="p">,</span> <span class="n">user_category</span> <span class="o">=</span> <span class="n">_split_attached</span><span class="p">(</span><span class="n">blocks</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="p">(</span><span class="n">table</span> <span class="ow">or</span> <span class="n">default_ucs_table</span><span class="p">())</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">catid</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">block</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">blocks</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">blocks</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">i</span> <span class="k">else</span> <span class="kc">None</span>
+
+    <span class="n">fx_name</span><span class="p">,</span> <span class="n">vendor</span> <span class="o">=</span> <span class="n">block</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">fx_name</span><span class="p">:</span>
+        <span class="n">head</span><span class="p">,</span> <span class="n">tail</span> <span class="o">=</span> <span class="n">_split_attached</span><span class="p">(</span><span class="n">fx_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">tail</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">is_vendor_tag</span><span class="p">(</span><span class="n">head</span><span class="p">):</span>
+            <span class="n">vendor</span><span class="p">,</span> <span class="n">fx_name</span> <span class="o">=</span> <span class="n">head</span><span class="p">,</span> <span class="n">tail</span>
+    <span class="k">return</span> <span class="n">UcsName</span><span class="p">(</span>
+        <span class="n">catid</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">catid</span><span class="p">,</span>
+        <span class="n">category</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">category</span><span class="p">,</span>
+        <span class="n">subcategory</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">subcategory</span><span class="p">,</span>
+        <span class="n">fx_name</span><span class="o">=</span><span class="n">fx_name</span><span class="p">,</span>
+        <span class="n">creator_id</span><span class="o">=</span><span class="n">block</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+        <span class="n">source_id</span><span class="o">=</span><span class="n">block</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
+        <span class="n">user_category</span><span class="o">=</span><span class="n">user_category</span><span class="p">,</span>
+        <span class="n">vendor_category</span><span class="o">=</span><span class="n">vendor</span><span class="p">,</span>
+        <span class="n">user_data</span><span class="o">=</span><span class="n">BLOCK_SEP</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">blocks</span><span class="p">[</span><span class="mi">4</span><span class="p">:])</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span></div>
 
 
 
@@ -820,14 +921,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        table: The UCS table to resolve against (defaults to</span>
 <span class="sd">            :func:`default_ucs_table`).</span>
 <span class="sd">    """</span>
-    <span class="n">table</span> <span class="o">=</span> <span class="n">table</span> <span class="ow">or</span> <span class="n">default_ucs_table</span><span class="p">()</span>
-    <span class="n">token</span> <span class="o">=</span> <span class="n">parse_catid_token</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">token</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-    <span class="n">row</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">category</span><span class="p">,</span> <span class="n">row</span><span class="o">.</span><span class="n">subcategory</span><span class="p">)</span></div>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">parse_ucs_name</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="n">table</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">category</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">subcategory</span><span class="p">)</span> <span class="k">if</span> <span class="n">name</span> <span class="k">else</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
 
 </pre></div>
 
