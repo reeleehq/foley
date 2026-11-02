@@ -4,10 +4,17 @@ foley.agent.mcp
 .. automodule:: foley.agent.mcp
 
    
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      MIN_TOKEN_CHARS
+   
    .. rubric:: Functions
 
    .. autosummary::
    
+      accepted_tokens
       build_mcp_server
       make_http_app
       serve

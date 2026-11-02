@@ -14,13 +14,44 @@ so `mcp.foley_find` and `mcp.TOOLS` keep working.
 `py2mcp` / `fastmcp` are imported LAZILY inside [`build_mcp_server()`](#foley.agent.mcp.build_mcp_server) only, so
 `import foley` and `import foley.agent` stay dol-only.
 
+### Module Attributes
+
+| [`MIN_TOKEN_CHARS`](#foley.agent.mcp.MIN_TOKEN_CHARS)   | The shortest bearer token [`make_http_app()`](#foley.agent.mcp.make_http_app) accepts.   |
+|--------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+
 ### Functions
 
-| [`build_mcp_server`](#foley.agent.mcp.build_mcp_server)(\*[, library, session, ...])   | Build the foley MCP server (lazy `py2mcp`); registers the JSON-safe tool surface.    |
-|--------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
-| [`make_http_app`](#foley.agent.mcp.make_http_app)(\*, auth[, path, ...])            | Build a bearer-auth-gated ASGI app serving the foley MCP tools over streamable HTTP. |
-| [`serve`](#foley.agent.mcp.serve)(\*[, name, runtime])                      | Build and run the foley MCP server over stdio (blocks); enforces an offline posture. |
-| [`serve_http`](#foley.agent.mcp.serve_http)(\*[, host, port, path])              | Build and serve the foley MCP tools over authenticated streamable HTTP (blocks).     |
+| [`accepted_tokens`](#foley.agent.mcp.accepted_tokens)(tokens, \*[, min_chars])       | `tokens` as the set a bearer gate accepts, or a `ValueError` (fail-closed).          |
+|-------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| [`build_mcp_server`](#foley.agent.mcp.build_mcp_server)(\*[, library, session, ...])  | Build the foley MCP server (lazy `py2mcp`); registers the JSON-safe tool surface.    |
+| [`make_http_app`](#foley.agent.mcp.make_http_app)(\*, auth[, path, json_response]) | Build a bearer-auth-gated ASGI app serving the foley MCP tools over streamable HTTP. |
+| [`serve`](#foley.agent.mcp.serve)(\*[, name, runtime])                     | Build and run the foley MCP server over stdio (blocks); enforces an offline posture. |
+| [`serve_http`](#foley.agent.mcp.serve_http)(\*[, host, port, path])             | Build and serve the foley MCP tools over authenticated streamable HTTP (blocks).     |
+
+### foley.agent.mcp.MIN_TOKEN_CHARS *= 16*
+
+The shortest bearer token [`make_http_app()`](#foley.agent.mcp.make_http_app) accepts. A short token is guessable,
+and the floor also refuses a passphrase that `$FOLEY_MCP_TOKEN` would split into words.
+
+### foley.agent.mcp.accepted_tokens(tokens, , min_chars=16)
+
+`tokens` as the set a bearer gate accepts, or a `ValueError` (fail-closed).
+
+An empty or blank token is refused, never dropped: a request with no
+`Authorization` header reads as the empty token, so accepting one would open the
+server, and a `--token "$UNSET"` should stop it rather than start it open.
+
+```pycon
+>>> sorted(accepted_tokens(["a" * 16, "b" * 20]))
+['aaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbbbbbb']
+>>> accepted_tokens([""])
+Traceback (most recent call last):
+...
+ValueError: a bearer token is blank or shorter than 16 characters (token #1); use e.g. `openssl rand -hex 32`
+```
+
+* **Return type:**
+  [`frozenset`](https://docs.python.org/3/builtins/stdtypes.html#frozenset)
 
 ### foley.agent.mcp.build_mcp_server(, library=None, session='default', runtime=None, byte_store=None, include=None, name='foley', max_usd=None)
 
@@ -43,26 +74,27 @@ injectable library / runtime / byte-store, and hands the resolved tool functions
 * **Returns:**
   A `fastmcp.FastMCP` server.
 
-### foley.agent.mcp.make_http_app(, auth, path='/mcp', json_response=False, library=None, runtime=None, byte_store=None, include=None, name='foley')
+### foley.agent.mcp.make_http_app(, auth, path='/mcp', json_response=False, \*\*server_kwargs)
 
 Build a bearer-auth-gated ASGI app serving the foley MCP tools over streamable HTTP.
 
 HTTP exposes the tool surface to the network, so `auth` is \*\*required and
-fail-closed\*\*: pass `auth={'bearer_tokens': [...]}` (a non-empty iterable of accepted
-tokens) — a request without a matching `Authorization: Bearer <token>` header gets a
-`401`. The returned app (a Starlette/ASGI callable) mounts in any ASGI host (uvicorn,
+fail-closed\*\*: pass `auth={'bearer_tokens': [...]}` (accepted tokens, each at least
+[`MIN_TOKEN_CHARS`](#foley.agent.mcp.MIN_TOKEN_CHARS) long, see [`accepted_tokens()`](#foley.agent.mcp.accepted_tokens)) — a request without a
+matching `Authorization: Bearer <token>` header gets a `401`. The returned app (a Starlette/ASGI callable) mounts in any ASGI host (uvicorn,
 gunicorn, a parent FastAPI). `py2mcp` / `fastmcp` are imported lazily inside
 [`build_mcp_server()`](#foley.agent.mcp.build_mcp_server), so `import foley` stays dol-only.
 
 * **Parameters:**
-  * **auth** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – `{'bearer_tokens': [...]}` — required; empty/missing raises (fail-closed).
+  * **auth** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – `{'bearer_tokens': [...]}` — required; no token, or a blank or short
+    one, raises (fail-closed).
   * **path** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The MCP HTTP mount path.
   * **json_response** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Return a single JSON response instead of an SSE stream (simple clients).
-  * **name** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – As [`build_mcp_server()`](#foley.agent.mcp.build_mcp_server).
+  * **\*\*server_kwargs** – Passed to [`build_mcp_server()`](#foley.agent.mcp.build_mcp_server).
 * **Returns:**
   An ASGI application (the bearer-gated MCP HTTP app).
 * **Raises:**
-  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `auth` carries no bearer tokens (no anonymous HTTP access).
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `auth` carries no usable bearer token (no anonymous HTTP access).
 
 ### foley.agent.mcp.serve(, name='foley', runtime=None, \*\*kwargs)
 
@@ -75,7 +107,8 @@ Build and run the foley MCP server over stdio (blocks); enforces an offline post
 
 Build and serve the foley MCP tools over authenticated streamable HTTP (blocks).
 
-Wraps [`make_http_app()`](#foley.agent.mcp.make_http_app) and runs it with uvicorn. `auth` is required (fail-closed).
+Wraps [`make_http_app()`](#foley.agent.mcp.make_http_app) and runs it with uvicorn, under the `runtime`
+posture (`_posture()`), as [`serve()`](#foley.agent.mcp.serve) does. `auth` is required (fail-closed).
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)

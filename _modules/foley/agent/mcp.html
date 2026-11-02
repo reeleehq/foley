@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=a02dbd69"></script>
+    <script src="../../../_static/documentation_options.js?v=04553970"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.100" />
+  <meta name="docsearch:version" content="0.0.101" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -732,6 +732,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">contextmanager</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">verbs</span> <span class="k">as</span> <span class="n">_verbs</span>
@@ -861,22 +862,32 @@ window.runMermaid = runMermaid;</script>
 
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_run_server</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="n">runtime</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Run ``server`` under the runtime's obs posture (offline → telemetry hard-off).</span>
+<span class="nd">@contextmanager</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_posture</span><span class="p">(</span><span class="n">runtime</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Hold the runtime's obs posture for the ``with`` block (offline → telemetry hard-off).</span>
 
-<span class="sd">    Factored out of :func:`serve` so the offline-posture enforcement is unit-testable</span>
-<span class="sd">    without a blocking stdio loop: when ``runtime`` is a telemetry-off (offline) posture,</span>
-<span class="sd">    the whole serve loop runs inside :func:`foley.runtime.offline_scope`, so the</span>
-<span class="sd">    ``--offline`` promise of "no telemetry" is actually enforced for the server's</span>
-<span class="sd">    lifetime (with :func:`foley.obs.recorder.run` now honoring ``force_disabled``, this</span>
-<span class="sd">    silences the ``find`` / ``weave`` paths too, not only the ``facade_run`` ones).</span>
+<span class="sd">    When ``runtime`` is a telemetry-off (offline) posture, the block runs inside</span>
+<span class="sd">    :func:`foley.runtime.offline_scope`, so the ``--offline`` promise of "no telemetry"</span>
+<span class="sd">    is enforced for a server's whole lifetime, over stdio and HTTP alike (with</span>
+<span class="sd">    :func:`foley.obs.recorder.run` honoring ``force_disabled``, this silences the</span>
+<span class="sd">    ``find`` / ``weave`` paths too, not only the ``facade_run`` ones).</span>
 <span class="sd">    """</span>
     <span class="k">if</span> <span class="n">runtime</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="n">runtime</span><span class="o">.</span><span class="n">offline</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">runtime</span><span class="o">.</span><span class="n">telemetry</span><span class="p">):</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">..runtime</span><span class="w"> </span><span class="kn">import</span> <span class="n">offline_scope</span>
 
         <span class="k">with</span> <span class="n">offline_scope</span><span class="p">(</span><span class="n">runtime</span><span class="p">):</span>
-            <span class="n">server</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+            <span class="k">yield</span>
     <span class="k">else</span><span class="p">:</span>
+        <span class="k">yield</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_run_server</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="n">runtime</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Run ``server`` under the runtime's obs posture (:func:`_posture`).</span>
+
+<span class="sd">    Factored out of :func:`serve` so the posture is unit-testable without a blocking</span>
+<span class="sd">    stdio loop.</span>
+<span class="sd">    """</span>
+    <span class="k">with</span> <span class="n">_posture</span><span class="p">(</span><span class="n">runtime</span><span class="p">):</span>
         <span class="n">server</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 
 
@@ -933,6 +944,44 @@ window.runMermaid = runMermaid;</script>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_app</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">receive</span><span class="p">,</span> <span class="n">send</span><span class="p">)</span>
 
 
+<span class="c1">#: The shortest bearer token :func:`make_http_app` accepts. A short token is guessable,</span>
+<span class="c1">#: and the floor also refuses a passphrase that ``$FOLEY_MCP_TOKEN`` would split into words.</span>
+<span class="n">MIN_TOKEN_CHARS</span> <span class="o">=</span> <span class="mi">16</span>
+
+
+<div class="viewcode-block" id="accepted_tokens">
+<a class="viewcode-back" href="../../../_autosummary/foley.agent.mcp.html#foley.accepted_tokens">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">accepted_tokens</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">min_chars</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">MIN_TOKEN_CHARS</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">frozenset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``tokens`` as the set a bearer gate accepts, or a ``ValueError`` (fail-closed).</span>
+
+<span class="sd">    An empty or blank token is refused, never dropped: a request with no</span>
+<span class="sd">    ``Authorization`` header reads as the empty token, so accepting one would open the</span>
+<span class="sd">    server, and a ``--token "$UNSET"`` should stop it rather than start it open.</span>
+
+<span class="sd">    &gt;&gt;&gt; sorted(accepted_tokens(["a" * 16, "b" * 20]))</span>
+<span class="sd">    ['aaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbbbbbb']</span>
+<span class="sd">    &gt;&gt;&gt; accepted_tokens([""])</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">    ...</span>
+<span class="sd">    ValueError: a bearer token is blank or shorter than 16 characters (token #1); use e.g. `openssl rand -hex 32`</span>
+<span class="sd">    """</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">token</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">tokens</span> <span class="ow">or</span> <span class="p">(),</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">token</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">&lt;</span> <span class="nb">max</span><span class="p">(</span><span class="n">min_chars</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"a bearer token is blank or shorter than </span><span class="si">{</span><span class="n">min_chars</span><span class="si">}</span><span class="s2"> characters "</span>
+                <span class="sa">f</span><span class="s2">"(token #</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">); use e.g. `openssl rand -hex 32`"</span>
+            <span class="p">)</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">token</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">out</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"make_http_app/serve_http requires auth={'bearer_tokens': [...]} — HTTP exposes "</span>
+            <span class="s2">"the tools to the network, so it is fail-closed (no anonymous access)."</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">out</span><span class="p">)</span></div>
+
+
+
 <div class="viewcode-block" id="make_http_app">
 <a class="viewcode-back" href="../../../_autosummary/foley.agent.mcp.html#foley.make_http_app">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">make_http_app</span><span class="p">(</span>
@@ -940,46 +989,32 @@ window.runMermaid = runMermaid;</script>
     <span class="n">auth</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
     <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"/mcp"</span><span class="p">,</span>
     <span class="n">json_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">library</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">runtime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">byte_store</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">include</span><span class="p">:</span> <span class="s2">"Optional[list[str]]"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"foley"</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">server_kwargs</span><span class="p">,</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Build a bearer-auth-gated ASGI app serving the foley MCP tools over streamable HTTP.</span>
 
 <span class="sd">    HTTP exposes the tool surface to the network, so ``auth`` is **required and</span>
-<span class="sd">    fail-closed**: pass ``auth={'bearer_tokens': [...]}`` (a non-empty iterable of accepted</span>
-<span class="sd">    tokens) — a request without a matching ``Authorization: Bearer &lt;token&gt;`` header gets a</span>
-<span class="sd">    ``401``. The returned app (a Starlette/ASGI callable) mounts in any ASGI host (uvicorn,</span>
+<span class="sd">    fail-closed**: pass ``auth={'bearer_tokens': [...]}`` (accepted tokens, each at least</span>
+<span class="sd">    :data:`MIN_TOKEN_CHARS` long, see :func:`accepted_tokens`) — a request without a</span>
+<span class="sd">    matching ``Authorization: Bearer &lt;token&gt;`` header gets a ``401``. The returned app (a Starlette/ASGI callable) mounts in any ASGI host (uvicorn,</span>
 <span class="sd">    gunicorn, a parent FastAPI). ``py2mcp`` / ``fastmcp`` are imported lazily inside</span>
 <span class="sd">    :func:`build_mcp_server`, so ``import foley`` stays dol-only.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        auth: ``{'bearer_tokens': [...]}`` — required; empty/missing raises (fail-closed).</span>
+<span class="sd">        auth: ``{'bearer_tokens': [...]}`` — required; no token, or a blank or short</span>
+<span class="sd">            one, raises (fail-closed).</span>
 <span class="sd">        path: The MCP HTTP mount path.</span>
 <span class="sd">        json_response: Return a single JSON response instead of an SSE stream (simple clients).</span>
-<span class="sd">        library / runtime / byte_store / include / name: As :func:`build_mcp_server`.</span>
+<span class="sd">        **server_kwargs: Passed to :func:`build_mcp_server`.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        An ASGI application (the bearer-gated MCP HTTP app).</span>
 
 <span class="sd">    Raises:</span>
-<span class="sd">        ValueError: If ``auth`` carries no bearer tokens (no anonymous HTTP access).</span>
+<span class="sd">        ValueError: If ``auth`` carries no usable bearer token (no anonymous HTTP access).</span>
 <span class="sd">    """</span>
-    <span class="n">tokens</span> <span class="o">=</span> <span class="nb">set</span><span class="p">((</span><span class="n">auth</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"bearer_tokens"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[])</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">tokens</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">"make_http_app/serve_http requires auth={'bearer_tokens': [...]} — HTTP exposes "</span>
-            <span class="s2">"the tools to the network, so it is fail-closed (no anonymous access)."</span>
-        <span class="p">)</span>
-    <span class="n">server</span> <span class="o">=</span> <span class="n">build_mcp_server</span><span class="p">(</span>
-        <span class="n">library</span><span class="o">=</span><span class="n">library</span><span class="p">,</span>
-        <span class="n">runtime</span><span class="o">=</span><span class="n">runtime</span><span class="p">,</span>
-        <span class="n">byte_store</span><span class="o">=</span><span class="n">byte_store</span><span class="p">,</span>
-        <span class="n">include</span><span class="o">=</span><span class="n">include</span><span class="p">,</span>
-        <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
-    <span class="p">)</span>
+    <span class="n">tokens</span> <span class="o">=</span> <span class="n">accepted_tokens</span><span class="p">((</span><span class="n">auth</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"bearer_tokens"</span><span class="p">))</span>
+    <span class="n">server</span> <span class="o">=</span> <span class="n">build_mcp_server</span><span class="p">(</span><span class="o">**</span><span class="n">server_kwargs</span><span class="p">)</span>
     <span class="n">app</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">http_app</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">transport</span><span class="o">=</span><span class="s2">"http"</span><span class="p">,</span> <span class="n">json_response</span><span class="o">=</span><span class="n">json_response</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">_BearerAuthASGI</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">tokens</span><span class="p">)</span></div>
 
@@ -994,19 +1029,22 @@ window.runMermaid = runMermaid;</script>
     <span class="n">auth</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
     <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"/mcp"</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># pragma: no cover - blocking I/O</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Build and serve the foley MCP tools over authenticated streamable HTTP (blocks).</span>
 
-<span class="sd">    Wraps :func:`make_http_app` and runs it with uvicorn. ``auth`` is required (fail-closed).</span>
+<span class="sd">    Wraps :func:`make_http_app` and runs it with uvicorn, under the ``runtime``</span>
+<span class="sd">    posture (:func:`_posture`), as :func:`serve` does. ``auth`` is required (fail-closed).</span>
 <span class="sd">    """</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
 
-    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">make_http_app</span><span class="p">(</span><span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">)</span></div>
+    <span class="n">app</span> <span class="o">=</span> <span class="n">make_http_app</span><span class="p">(</span><span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">_posture</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"runtime"</span><span class="p">)):</span>
+        <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">)</span></div>
 
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_cli</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s2">"Optional[list[str]]"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>  <span class="c1"># pragma: no cover - entry point</span>
-<span class="w">    </span><span class="sd">"""``foley-mcp`` console entry: serve foley over MCP (stdio)."""</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_cli</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s2">"Optional[list[str]]"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``foley-mcp`` console entry: serve foley over MCP (stdio, or HTTP with ``--http``)."""</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
 
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
@@ -1030,8 +1068,9 @@ window.runMermaid = runMermaid;</script>
         <span class="s2">"--token"</span><span class="p">,</span>
         <span class="n">action</span><span class="o">=</span><span class="s2">"append"</span><span class="p">,</span>
         <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">"accepted bearer token (repeatable); required with --http. Falls back to "</span>
-        <span class="s2">"$FOLEY_MCP_TOKEN."</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"accepted bearer token (repeatable, at least 16 characters); required with "</span>
+        <span class="s2">"--http. Also read from $FOLEY_MCP_TOKEN (whitespace-separated, so a rotation can "</span>
+        <span class="s2">"accept two)."</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--path"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">"/mcp"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"HTTP mount path"</span><span class="p">)</span>
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="n">argv</span><span class="p">)</span>
@@ -1043,14 +1082,15 @@ window.runMermaid = runMermaid;</script>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">http</span><span class="p">:</span>
         <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
-        <span class="n">tokens</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">token</span> <span class="ow">or</span> <span class="p">[])</span>
-        <span class="n">env_token</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"FOLEY_MCP_TOKEN"</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">env_token</span><span class="p">:</span>
-            <span class="n">tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">env_token</span><span class="p">)</span>
+        <span class="n">tokens</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">token</span> <span class="ow">or</span> <span class="p">[])</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"FOLEY_MCP_TOKEN"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">tokens</span><span class="p">:</span>
             <span class="n">parser</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
                 <span class="s2">"--http requires --token TOKEN (or $FOLEY_MCP_TOKEN) — fail-closed"</span>
             <span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">accepted_tokens</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">err</span><span class="p">))</span>
         <span class="n">serve_http</span><span class="p">(</span>
             <span class="n">host</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">host</span><span class="p">,</span>
             <span class="n">port</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">port</span><span class="p">,</span>

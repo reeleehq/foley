@@ -138,7 +138,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`install_agent_kit`](#foley.install_agent_kit)([dest, overwrite])                | Copy the shipped skill + slash command + subagent into `dest` (a `.claude` dir).                                                                                               |
 | [`mcp_server`](#foley.mcp_server)(\*[, library, session, runtime, ...])    | Build the foley MCP server (lazy `py2mcp`); registers the JSON-safe tool surface.                                                                                              |
 | [`build_mcp_server`](#foley.build_mcp_server)(\*[, library, session, ...])       | Build the foley MCP server (lazy `py2mcp`); registers the JSON-safe tool surface.                                                                                              |
-| [`make_http_app`](#foley.make_http_app)(\*, auth[, path, ...])                | Build a bearer-auth-gated ASGI app serving the foley MCP tools over streamable HTTP.                                                                                           |
+| [`make_http_app`](#foley.make_http_app)(\*, auth[, path, json_response])      | Build a bearer-auth-gated ASGI app serving the foley MCP tools over streamable HTTP.                                                                                           |
 | [`serve_http`](#foley.serve_http)(\*[, host, port, path])                  | Build and serve the foley MCP tools over authenticated streamable HTTP (blocks).                                                                                               |
 | [`preview`](#foley.preview)(candidate_or_id, \*[, seconds, ...])        | Produce a short audition of a sound; set its `preview_uri` to a store key.                                                                                                     |
 | [`similar_to`](#foley.similar_to)(clip_or_candidate, \*[, k, library])     | "More like this" — neighbours of a sound id / candidate, or of a raw clip.                                                                                                     |
@@ -3207,26 +3207,27 @@ Build the paid-generations cache (local files by default; any `dol` pair works).
 * **Returns:**
   A [`GenerationsCache`](#foley.GenerationsCache).
 
-### foley.make_http_app(, auth, path='/mcp', json_response=False, library=None, runtime=None, byte_store=None, include=None, name='foley')
+### foley.make_http_app(, auth, path='/mcp', json_response=False, \*\*server_kwargs)
 
 Build a bearer-auth-gated ASGI app serving the foley MCP tools over streamable HTTP.
 
 HTTP exposes the tool surface to the network, so `auth` is \*\*required and
-fail-closed\*\*: pass `auth={'bearer_tokens': [...]}` (a non-empty iterable of accepted
-tokens) — a request without a matching `Authorization: Bearer <token>` header gets a
-`401`. The returned app (a Starlette/ASGI callable) mounts in any ASGI host (uvicorn,
+fail-closed\*\*: pass `auth={'bearer_tokens': [...]}` (accepted tokens, each at least
+`MIN_TOKEN_CHARS` long, see `accepted_tokens()`) — a request without a
+matching `Authorization: Bearer <token>` header gets a `401`. The returned app (a Starlette/ASGI callable) mounts in any ASGI host (uvicorn,
 gunicorn, a parent FastAPI). `py2mcp` / `fastmcp` are imported lazily inside
 [`build_mcp_server()`](#foley.build_mcp_server), so `import foley` stays dol-only.
 
 * **Parameters:**
-  * **auth** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – `{'bearer_tokens': [...]}` — required; empty/missing raises (fail-closed).
+  * **auth** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – `{'bearer_tokens': [...]}` — required; no token, or a blank or short
+    one, raises (fail-closed).
   * **path** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The MCP HTTP mount path.
   * **json_response** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Return a single JSON response instead of an SSE stream (simple clients).
-  * **name** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – As [`build_mcp_server()`](#foley.build_mcp_server).
+  * **\*\*server_kwargs** – Passed to [`build_mcp_server()`](#foley.build_mcp_server).
 * **Returns:**
   An ASGI application (the bearer-gated MCP HTTP app).
 * **Raises:**
-  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `auth` carries no bearer tokens (no anonymous HTTP access).
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `auth` carries no usable bearer token (no anonymous HTTP access).
 
 ### foley.make_meta_store(rootdir=PosixPath('/home/runner/.local/share/foley/meta'))
 
@@ -3664,7 +3665,8 @@ usable, verified sounds come back; pass `commercial_ok=False` to include the res
 
 Build and serve the foley MCP tools over authenticated streamable HTTP (blocks).
 
-Wraps [`make_http_app()`](#foley.make_http_app) and runs it with uvicorn. `auth` is required (fail-closed).
+Wraps [`make_http_app()`](#foley.make_http_app) and runs it with uvicorn, under the `runtime`
+posture (`_posture()`), as `serve()` does. `auth` is required (fail-closed).
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)

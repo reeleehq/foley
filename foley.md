@@ -1,4 +1,4 @@
-> built 2026-11-01 23:38 UTC from 5f371da (main) · foley 0.0.100. Details: build_info.json
+> built 2026-11-02 00:02 UTC from bac3ca4 (main) · foley 0.0.101. Details: build_info.json
 
 # index.html.md
 
@@ -157,7 +157,8 @@ result.weave.credits  # attribution    result.timeline             # still edita
 `foley.score(...)` is the stable contract `braidio`/`nw` call. The same surface is available as
 **MCP tools** (`foley_score`, `foley_guide`, `foley_search`, `foley_preview`, `foley_weave`, …) —
 serve them over stdio (`foley-mcp`) or authenticated HTTP (`foley-mcp --http --token …`) — and as
-**CLI commands** generated from the same verb table (`foley.agent.verbs.VERBS`), JSON in and out:
+**CLI commands** generated from the same verb table (`foley.agent.verbs.VERBS`), JSON in and out.
+To stand the HTTP server up for remote agents (Docker image, compose file, TLS, token rotation), see [Deploy the MCP server]().
 
 ```default
 foley score "Rain on the roof, then thunder." --territory US
@@ -1173,13 +1174,44 @@ so `mcp.foley_find` and `mcp.TOOLS` keep working.
 `py2mcp` / `fastmcp` are imported LAZILY inside [`build_mcp_server()`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.build_mcp_server) only, so
 `import foley` and `import foley.agent` stay dol-only.
 
+### Module Attributes
+
+| [`MIN_TOKEN_CHARS`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.MIN_TOKEN_CHARS)   | The shortest bearer token [`make_http_app()`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.make_http_app) accepts.   |
+|--------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+
 ### Functions
 
-| [`build_mcp_server`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.build_mcp_server)(\*[, library, session, ...])   | Build the foley MCP server (lazy `py2mcp`); registers the JSON-safe tool surface.    |
-|--------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
-| [`make_http_app`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.make_http_app)(\*, auth[, path, ...])            | Build a bearer-auth-gated ASGI app serving the foley MCP tools over streamable HTTP. |
-| [`serve`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.serve)(\*[, name, runtime])                      | Build and run the foley MCP server over stdio (blocks); enforces an offline posture. |
-| [`serve_http`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.serve_http)(\*[, host, port, path])              | Build and serve the foley MCP tools over authenticated streamable HTTP (blocks).     |
+| [`accepted_tokens`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.accepted_tokens)(tokens, \*[, min_chars])       | `tokens` as the set a bearer gate accepts, or a `ValueError` (fail-closed).          |
+|-------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| [`build_mcp_server`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.build_mcp_server)(\*[, library, session, ...])  | Build the foley MCP server (lazy `py2mcp`); registers the JSON-safe tool surface.    |
+| [`make_http_app`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.make_http_app)(\*, auth[, path, json_response]) | Build a bearer-auth-gated ASGI app serving the foley MCP tools over streamable HTTP. |
+| [`serve`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.serve)(\*[, name, runtime])                     | Build and run the foley MCP server over stdio (blocks); enforces an offline posture. |
+| [`serve_http`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.serve_http)(\*[, host, port, path])             | Build and serve the foley MCP tools over authenticated streamable HTTP (blocks).     |
+
+### foley.agent.mcp.MIN_TOKEN_CHARS *= 16*
+
+The shortest bearer token [`make_http_app()`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.make_http_app) accepts. A short token is guessable,
+and the floor also refuses a passphrase that `$FOLEY_MCP_TOKEN` would split into words.
+
+### foley.agent.mcp.accepted_tokens(tokens, , min_chars=16)
+
+`tokens` as the set a bearer gate accepts, or a `ValueError` (fail-closed).
+
+An empty or blank token is refused, never dropped: a request with no
+`Authorization` header reads as the empty token, so accepting one would open the
+server, and a `--token "$UNSET"` should stop it rather than start it open.
+
+```pycon
+>>> sorted(accepted_tokens(["a" * 16, "b" * 20]))
+['aaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbbbbbb']
+>>> accepted_tokens([""])
+Traceback (most recent call last):
+...
+ValueError: a bearer token is blank or shorter than 16 characters (token #1); use e.g. `openssl rand -hex 32`
+```
+
+* **Return type:**
+  [`frozenset`](https://docs.python.org/3/builtins/stdtypes.html#frozenset)
 
 ### foley.agent.mcp.build_mcp_server(, library=None, session='default', runtime=None, byte_store=None, include=None, name='foley', max_usd=None)
 
@@ -1202,26 +1234,27 @@ injectable library / runtime / byte-store, and hands the resolved tool functions
 * **Returns:**
   A `fastmcp.FastMCP` server.
 
-### foley.agent.mcp.make_http_app(, auth, path='/mcp', json_response=False, library=None, runtime=None, byte_store=None, include=None, name='foley')
+### foley.agent.mcp.make_http_app(, auth, path='/mcp', json_response=False, \*\*server_kwargs)
 
 Build a bearer-auth-gated ASGI app serving the foley MCP tools over streamable HTTP.
 
 HTTP exposes the tool surface to the network, so `auth` is \*\*required and
-fail-closed\*\*: pass `auth={'bearer_tokens': [...]}` (a non-empty iterable of accepted
-tokens) — a request without a matching `Authorization: Bearer <token>` header gets a
-`401`. The returned app (a Starlette/ASGI callable) mounts in any ASGI host (uvicorn,
+fail-closed\*\*: pass `auth={'bearer_tokens': [...]}` (accepted tokens, each at least
+[`MIN_TOKEN_CHARS`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.MIN_TOKEN_CHARS) long, see [`accepted_tokens()`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.accepted_tokens)) — a request without a
+matching `Authorization: Bearer <token>` header gets a `401`. The returned app (a Starlette/ASGI callable) mounts in any ASGI host (uvicorn,
 gunicorn, a parent FastAPI). `py2mcp` / `fastmcp` are imported lazily inside
 [`build_mcp_server()`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.build_mcp_server), so `import foley` stays dol-only.
 
 * **Parameters:**
-  * **auth** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – `{'bearer_tokens': [...]}` — required; empty/missing raises (fail-closed).
+  * **auth** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – `{'bearer_tokens': [...]}` — required; no token, or a blank or short
+    one, raises (fail-closed).
   * **path** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The MCP HTTP mount path.
   * **json_response** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Return a single JSON response instead of an SSE stream (simple clients).
-  * **name** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – As [`build_mcp_server()`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.build_mcp_server).
+  * **\*\*server_kwargs** – Passed to [`build_mcp_server()`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.build_mcp_server).
 * **Returns:**
   An ASGI application (the bearer-gated MCP HTTP app).
 * **Raises:**
-  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `auth` carries no bearer tokens (no anonymous HTTP access).
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `auth` carries no usable bearer token (no anonymous HTTP access).
 
 ### foley.agent.mcp.serve(, name='foley', runtime=None, \*\*kwargs)
 
@@ -1234,7 +1267,8 @@ Build and run the foley MCP server over stdio (blocks); enforces an offline post
 
 Build and serve the foley MCP tools over authenticated streamable HTTP (blocks).
 
-Wraps [`make_http_app()`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.make_http_app) and runs it with uvicorn. `auth` is required (fail-closed).
+Wraps [`make_http_app()`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.make_http_app) and runs it with uvicorn, under the `runtime`
+posture (`_posture()`), as [`serve()`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.serve) does. `auth` is required (fail-closed).
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
@@ -5737,7 +5771,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`install_agent_kit`](_autosummary/foley.html.md#foley.install_agent_kit)([dest, overwrite])                | Copy the shipped skill + slash command + subagent into `dest` (a `.claude` dir).                                                                                               |
 | [`mcp_server`](_autosummary/foley.html.md#foley.mcp_server)(\*[, library, session, runtime, ...])    | Build the foley MCP server (lazy `py2mcp`); registers the JSON-safe tool surface.                                                                                              |
 | [`build_mcp_server`](_autosummary/foley.html.md#foley.build_mcp_server)(\*[, library, session, ...])       | Build the foley MCP server (lazy `py2mcp`); registers the JSON-safe tool surface.                                                                                              |
-| [`make_http_app`](_autosummary/foley.html.md#foley.make_http_app)(\*, auth[, path, ...])                | Build a bearer-auth-gated ASGI app serving the foley MCP tools over streamable HTTP.                                                                                           |
+| [`make_http_app`](_autosummary/foley.html.md#foley.make_http_app)(\*, auth[, path, json_response])      | Build a bearer-auth-gated ASGI app serving the foley MCP tools over streamable HTTP.                                                                                           |
 | [`serve_http`](_autosummary/foley.html.md#foley.serve_http)(\*[, host, port, path])                  | Build and serve the foley MCP tools over authenticated streamable HTTP (blocks).                                                                                               |
 | [`preview`](_autosummary/foley.html.md#foley.preview)(candidate_or_id, \*[, seconds, ...])        | Produce a short audition of a sound; set its `preview_uri` to a store key.                                                                                                     |
 | [`similar_to`](_autosummary/foley.html.md#foley.similar_to)(clip_or_candidate, \*[, k, library])     | "More like this" — neighbours of a sound id / candidate, or of a raw clip.                                                                                                     |
@@ -8806,26 +8840,27 @@ Build the paid-generations cache (local files by default; any `dol` pair works).
 * **Returns:**
   A [`GenerationsCache`](_autosummary/foley.html.md#foley.GenerationsCache).
 
-### foley.make_http_app(, auth, path='/mcp', json_response=False, library=None, runtime=None, byte_store=None, include=None, name='foley')
+### foley.make_http_app(, auth, path='/mcp', json_response=False, \*\*server_kwargs)
 
 Build a bearer-auth-gated ASGI app serving the foley MCP tools over streamable HTTP.
 
 HTTP exposes the tool surface to the network, so `auth` is \*\*required and
-fail-closed\*\*: pass `auth={'bearer_tokens': [...]}` (a non-empty iterable of accepted
-tokens) — a request without a matching `Authorization: Bearer <token>` header gets a
-`401`. The returned app (a Starlette/ASGI callable) mounts in any ASGI host (uvicorn,
+fail-closed\*\*: pass `auth={'bearer_tokens': [...]}` (accepted tokens, each at least
+`MIN_TOKEN_CHARS` long, see `accepted_tokens()`) — a request without a
+matching `Authorization: Bearer <token>` header gets a `401`. The returned app (a Starlette/ASGI callable) mounts in any ASGI host (uvicorn,
 gunicorn, a parent FastAPI). `py2mcp` / `fastmcp` are imported lazily inside
 [`build_mcp_server()`](_autosummary/foley.html.md#foley.build_mcp_server), so `import foley` stays dol-only.
 
 * **Parameters:**
-  * **auth** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – `{'bearer_tokens': [...]}` — required; empty/missing raises (fail-closed).
+  * **auth** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – `{'bearer_tokens': [...]}` — required; no token, or a blank or short
+    one, raises (fail-closed).
   * **path** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The MCP HTTP mount path.
   * **json_response** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Return a single JSON response instead of an SSE stream (simple clients).
-  * **name** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – As [`build_mcp_server()`](_autosummary/foley.html.md#foley.build_mcp_server).
+  * **\*\*server_kwargs** – Passed to [`build_mcp_server()`](_autosummary/foley.html.md#foley.build_mcp_server).
 * **Returns:**
   An ASGI application (the bearer-gated MCP HTTP app).
 * **Raises:**
-  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `auth` carries no bearer tokens (no anonymous HTTP access).
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `auth` carries no usable bearer token (no anonymous HTTP access).
 
 ### foley.make_meta_store(rootdir=PosixPath('/home/runner/.local/share/foley/meta'))
 
@@ -9263,7 +9298,8 @@ usable, verified sounds come back; pass `commercial_ok=False` to include the res
 
 Build and serve the foley MCP tools over authenticated streamable HTTP (blocks).
 
-Wraps [`make_http_app()`](_autosummary/foley.html.md#foley.make_http_app) and runs it with uvicorn. `auth` is required (fail-closed).
+Wraps [`make_http_app()`](_autosummary/foley.html.md#foley.make_http_app) and runs it with uvicorn, under the `runtime`
+posture (`_posture()`), as `serve()` does. `auth` is required (fail-closed).
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
@@ -15128,7 +15164,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'netflix chime', 'ta-dum', 'netflix sound', 'netflix intro', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel inside', 'intel bong', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', 'homer doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc three-note', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'netflix chime', 'ta dum', 'tudum', 'ta-dum', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel chime', 'intel inside', 'intel bong', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer doh', 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -24754,7 +24790,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-01 23:38 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/5f371da3db1cb97d079128fe643f4da9ae911f15"><code>5f371da</code></a> on branch <code>main</code>, for **foley 0.0.100** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 00:02 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/bac3ca4a966b050173d60991669b4c4cc2af6c07"><code>bac3ca4</code></a> on branch <code>main</code>, for **foley 0.0.101** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -24763,7 +24799,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/5f371da3db1cb97d079128fe643f4da9ae911f15"><code>5f371da3db1cb97d079128fe643f4da9ae911f15</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/bac3ca4a966b050173d60991669b4c4cc2af6c07"><code>bac3ca4a966b050173d60991669b4c4cc2af6c07</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -24774,9 +24810,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41362871645">41362871645</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41364757099">41364757099</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>5f371da3db1cb97d079128fe643f4da9ae911f15</code> (in the history of the built commit) |
+| Event commit | <code>bac3ca4a966b050173d60991669b4c4cc2af6c07</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -24801,13 +24837,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.100/">0.0.100</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.101/">0.0.101</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 5f371da3db1cb97d079128fe643f4da9ae911f15
+git checkout bac3ca4a966b050173d60991669b4c4cc2af6c07
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
