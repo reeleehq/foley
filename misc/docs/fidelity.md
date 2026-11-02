@@ -9,6 +9,7 @@ Tier-2 evaluation backends that need more than foley's own environment: referenc
 | `foley.eval.KadtkFidelity` | KAD with kadtk's own models, loading and kernel, comparable with published kadtk numbers | the same driver in a kadtk virtualenv | its own venv (below) | about 90 MB for the default `encodec-emb` |
 | `foley.eval.AudioboxAesthetics` | per clip: content enjoyment (CE), content usefulness (CU), production complexity (PC), production quality (PQ), about 1 to 10 | the same driver in an `audiobox_aesthetics` virtualenv | its own venv (below) | about 415 MB (`facebook/audiobox-aesthetics`) |
 | `foley.agent.AudioLMJudge` | P(yes) that a clip contains the wanted event (AQAScore) | in process | `pip install 'foley[fit]'` | about 15 GB (Qwen2-Audio-7B-Instruct, bf16) on first use |
+| `foley.eval.Pam` | per clip, no reference: PAM, the probability that a clip is "clear and clean" rather than "noisy and with artifacts" (0 to 1) | `python -I pam_driver.py` in an `msclap` virtualenv | its own venv (below) | 690 MB (`microsoft/msclap` `CLAP_weights_2023.pth`) plus 3 MB of GPT-2 tokenizer files |
 
 ## Reference FAD with fadtk
 
@@ -118,3 +119,34 @@ report = run_fit_eval(fit_judge=AudioLMJudge(), level="listen")
 ```
 
 The first judgement loads `Qwen/Qwen2-Audio-7B-Instruct` with `dtype="auto"` and `device_map="auto"` (change with `load_kwargs=`, or another checkpoint with `model=`). Each clip is resampled to the model's 16 kHz, put through the chat template with the question "Does this audio contain {event}? Answer strictly yes or no.", and P(yes) is read from one forward pass: the softmax mass of the next token on "Yes" and "yes", over "Yes", "yes", "No" and "no" (each must be a single token for the tokenizer, or it raises; change the spellings with `qwen2_audio_pipeline(..., answers=)`). `load_kwargs` other than the model-only ones (`dtype`, `device_map`, ...) also go to the processor, so a `revision=` pins both. Whisper's feature extractor hears only the first 30 s of a clip, so a longer clip warns. A match is P(yes) at or above `tau` (default 0.5). It is never picked by default: pass it as `fit_judge=`. For tests, or another audio-LM, pass `pipeline=` a function `(prompt, wav, sr) -> {"p_yes": float}`.
+
+## Per-clip quality with PAM
+
+[PAM](https://github.com/soham97/PAM) (Deshmukh et al., "PAM: Prompting Audio-Language Models for Audio Quality Assessment", Interspeech 2024, [arXiv:2402.00282](https://arxiv.org/abs/2402.00282)) scores one clip with no reference set and no task-specific model. It asks Microsoft's CLAP 2023 audio-language model which of two antonym prompts fits the clip better, and the score is the softmax probability of the first: "the sound is clear and clean." against "the sound is noisy and with artifacts." (`PAM_PROMPTS`). It runs from 0 to 1, higher is cleaner.
+
+PAM itself is a research repository (pinned 2023 requirements, no package). Its model and config are the ones the [`msclap`](https://pypi.org/project/msclap/) package ships, so foley installs `msclap` in its own virtualenv (it pins `numpy<2` and brings its own torch, about 1 GB installed) and runs PAM's scoring there, in `foley/eval/pam_driver.py`:
+
+```bash
+uv venv ~/venvs/pam --python 3.11
+uv pip install --python ~/venvs/pam/bin/python msclap
+```
+
+```python
+from foley.eval import Pam
+
+pam = Pam(python="~/venvs/pam/bin/python")  # or set FOLEY_PAM_PYTHON
+tone, noise, silence = pam([tone_wav, noise_wav, silence_wav], sr=48000)
+tone.score      # 0.68
+tone.segments   # (0.68,): one score per 7 s window
+tone.to_dict()  # {'pam': 0.68, 'segments': [...], 'model': 'microsoft/msclap:CLAP_weights_2023.pth', 'toolkit': 'msclap', 'version': '1.3.4'}
+```
+
+Real scores (msclap 1.3.4, CPU, clips at 48 kHz): a 3 s 440 Hz sine at 0.5 scored 0.680, and the same sine as a stereo pair the same; a 10 s sine 0.733 (two windows, 0.733 and 0.733); the 3 s sine plus white noise at 0.03 RMS 0.416; white noise at 0.3 RMS 0.043; clicks four times a second 0.071; digital silence 0.354. Like Audiobox Aesthetics, PAM rates how a clip sounds and is not a fault detector (silence lands in the middle), so Tier-0 QC (`foley.qc`) stays the gate for silent or broken audio.
+
+How it scores, as the reference does: each clip is mixed to mono, resampled to 44.1 kHz with the same torchaudio resampler, and cut into the model's 7 s windows. A clip shorter than 7 s is tiled to one window; a longer one keeps its whole windows plus the last 7 s when a part is left over. Each window is scored, and the clip's score is the mean (`segments` keeps them). On the three 3 s clips above, the driver and the reference `PAM.evaluate` agreed to 1e-6. An empty clip, a NaN or infinite sample, or a channel-first array raises `ValueError` before anything runs; a very short clip is scored, but its number describes the tiling. Loading the model takes about 20 s, once per call, so score many clips in one call; `batch_size=` (default 10) is windows a forward pass, `device=` where the model runs.
+
+One deviation from msclap that does not change the numbers: msclap builds its GPT-2 text encoder with `AutoModel.from_pretrained("gpt2")`, a 548 MB download, then overwrites every one of those weights from the CLAP checkpoint, which carries all of them (`caption_encoder.base.*`, 137M parameters). The driver builds GPT-2 from its config instead and refuses to run if the checkpoint leaves any parameter unset. The first call downloads the checkpoint (690 MB) and GPT-2's tokenizer files (3 MB) into the interpreter's `HF_HOME` (pass `env={"HF_HOME": ...}` to choose where), or `checkpoint=` names a local `CLAP_weights_2023.pth`. `prompts=` takes another pair (the clean one first), which gives a PAM-style score, not PAM's.
+
+`Pam` is an eval-side scorer for any set of clips; it is not wired into `foley.generate`. Recording it on generated clips, the way `generate(aesthetics=)` records Audiobox Aesthetics, is a follow-up once that hook lands, and `Pam` can then share the `ExternalToolkit` base it mirrors (same attribute names and interpreter guards).
+
+Licences: PAM's code and msclap's are MIT. The CLAP weights are tagged MS-PL (Microsoft Public License) on their Hugging Face repository, `microsoft/msclap`; the GPT-2 tokenizer files are MIT. The scores are metadata about a clip, not part of it, so they do not change the clip's own licence.
