@@ -515,7 +515,7 @@ applies the by-reference storage gate from the sound’s own license.
         `ucs_category` naming two different top levels.
   * [**SourceConfigurationError**](foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – A missing key or optional dependency.
 
-### foley.sources.api_license(, source, license_id, rights_verified, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None)
+### foley.sources.api_license(, source, license_id, rights_verified, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None, terms=None)
 
 Build an API-acquisition [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived.
 
@@ -543,6 +543,7 @@ caching the bytes even for CC0. `redistribute_standalone_ok` (copyright) and
   * **license_url** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The license URL/label exactly as the source served it.
   * **creator_name** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The uploader/creator (required for CC-BY attribution).
   * **attribution_text** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A ready-made attribution string, if supplied.
+  * **terms** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)]) – What the source states about its terms (`source_stated_terms()`).
 * **Return type:**
   [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)
 * **Returns:**
@@ -751,7 +752,7 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
         not allow it (before anything is paid for).
   * [**WatermarkUnavailable**](foley.provenance.disclosure.html.md#foley.provenance.disclosure.WatermarkUnavailable) – If `watermark=True` but `foley[provenance]` is absent.
 
-### foley.sources.generated_license(, source, license_id, generator_model, generation_prompt, rights_verified=True, generator_version=None, generation_seed=None, generation_params=None, generation_prompt_used=None, disclosure_recommended=True, watermark=None, c2pa_manifest_ref=None, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None, ai_generated=True)
+### foley.sources.generated_license(, source, license_id, generator_model, generation_prompt, rights_verified=True, generator_version=None, generation_seed=None, generation_params=None, generation_prompt_used=None, disclosure_recommended=True, watermark=None, c2pa_manifest_ref=None, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None, ai_generated=True, terms=None)
 
 Build a generated [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped.
 
@@ -804,6 +805,9 @@ but never flips the flag, so [`foley.keep()`](foley.html.md#foley.keep) still re
     procedural synthesis (a `'procedural'` source, #76): the record then
     has `is_ai_generated=False` and `disclosure_recommended=False`
     (whatever was passed), and still carries the generation-provenance block.
+  * **terms** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)]) – What the source states about its terms (`source_stated_terms()`:
+    the licence basis, whether the vendor reuses its output, API obligations,
+    the vendor’s watermark statement).
 * **Return type:**
   [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)
 * **Returns:**

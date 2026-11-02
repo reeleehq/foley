@@ -31,6 +31,10 @@ item is redistributable but stored by-reference.
 | [`LICENSE_META`](#foley.licensing.LICENSE_META)                 | `license_id` -> display name + canonical URL (one row per [`LICENSE_FLAGS`](#foley.licensing.LICENSE_FLAGS) key).                                                                                                                                                       |
 | [`AI_TRAINING_SCOPES`](#foley.licensing.AI_TRAINING_SCOPES)           | The `ai_training_scope` values (`None` = no narrowing beyond `ai_training_ok`).                                                                                                                                                                                                      |
 | [`GEN_AI_PREFERENCE_SCOPES`](#foley.licensing.GEN_AI_PREFERENCE_SCOPES)     | Freesound `gen_ai_preference` -> `(ai_training_ok override, ai_training_scope)`.                                                                                                                                                                                                     |
+| [`LICENSE_BASES`](#foley.licensing.LICENSE_BASES)                | the model's own licence (its weights), the vendor's terms of service, or a label an aggregator put on it (fal's `commercial`, an Openverse row), which is a claim about another party's licence and never that licence itself.                                                       |
+| [`LICENSE_BASIS_CONFIDENCES`](#foley.licensing.LICENSE_BASIS_CONFIDENCES)    | How sure foley is that the basis applies to the route the sound came by.                                                                                                                                                                                                             |
+| [`VENDOR_WATERMARK_REPORTERS`](#foley.licensing.VENDOR_WATERMARK_REPORTERS)   | Who stated a vendor's watermark (`LicenseRecord.vendor_watermark['reported_by']`): the source's config (its terms), or the vendor's response for this clip.                                                                                                                          |
+| [`SOURCE_STATED_FIELDS`](#foley.licensing.SOURCE_STATED_FIELDS)         | The [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord) fields a source *states* (in its config's `license` block, or per clip): none is derived from a `license_id` row and none is a permission, so stamping them never widens a record.       |
 | [`EU_MEMBER_STATES`](#foley.licensing.EU_MEMBER_STATES)             | The EU's member states (ISO 3166-1 alpha-2), for a licence that excludes "EU", with the EU territories that carry their own codes: France's outermost regions (Réunion, French Guiana, Guadeloupe, Martinique, Mayotte, Saint-Martin) and Finland's Åland.                           |
 | [`LICENSE_EXCLUDED_TERRITORIES`](#foley.licensing.LICENSE_EXCLUDED_TERRITORIES) | `license_id` -> the territories where it grants nothing (ISO 3166-1 alpha-2 codes, plus `"EU"` for every member state).                                                                                                                                                              |
 | [`LICENSE_TERMS_PROVIDER`](#foley.licensing.LICENSE_TERMS_PROVIDER)       | Whose terms a provider-terms `license_id` is, under the provider names a consumer classifies them by (`an`'s `PROVIDER_TERMS`: a code counts only on a source whose provider is that provider).                                                                                      |
@@ -56,6 +60,7 @@ item is redistributable but stored by-reference.
 | [`derivative_refusal`](#foley.licensing.derivative_refusal)(source)                        | Why a sound with rights `source` may not be edited into a new sound, or `None`.                                                                                                                                                                                                |
 | [`derive_license_flags`](#foley.licensing.derive_license_flags)(license_id, \*[, overrides]) | Look up the flag set for a `license_id` (fail-closed fallback), then apply per-source overrides.                                                                                                                                                                               |
 | [`derived_license_ids`](#foley.licensing.derived_license_ids)(record)                       | The licence ids of every sound `record` derives from (`[]`: not derived).                                                                                                                                                                                                      |
+| [`excluded_territories`](#foley.licensing.excluded_territories)(record)                      | Where `record`'s licence, or any licence it derives from, grants nothing.                                                                                                                                                                                                      |
 | [`export_refusal`](#foley.licensing.export_refusal)(source)                            | Why the bytes of a sound with rights `source` may not be exported, or `None`.                                                                                                                                                                                                  |
 | [`intended_use_for`](#foley.licensing.intended_use_for)([intended_use, ...])             | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                                                                                                                                                                           |
 | [`is_cc_license_token`](#foley.licensing.is_cc_license_token)(token)                        | Whether `token` is a search constraint a CC-reading source understands.                                                                                                                                                                                                        |
@@ -70,6 +75,7 @@ item is redistributable but stored by-reference.
 | [`refusals`](#foley.licensing.refusals)(sound_records, intended_use)             | `{sound id: reason}` for each sound record [`keep()`](#foley.licensing.keep) refuses for `intended_use`.                                                                                                                                                 |
 | [`restamped_license`](#foley.licensing.restamped_license)(stored, fresh, \*[, widen])     | What a stored sound's licence becomes when its source now states `fresh`.                                                                                                                                                                                                      |
 | [`rights_license_id`](#foley.licensing.rights_license_id)(record)                         | The licence id a consumer should read `record` under, or `None` (UNKNOWN).                                                                                                                                                                                                     |
+| [`stamp_source_terms`](#foley.licensing.stamp_source_terms)(record, stated)                | Write what a source `stated` about its terms onto `record`, in place, and return it.                                                                                                                                                                                           |
 | [`territory_excluded`](#foley.licensing.territory_excluded)(excluded, territory)           | Whether `territory` is in `excluded` (`"EU"` covers its member states).                                                                                                                                                                                                        |
 | [`upload_refusal`](#foley.licensing.upload_refusal)(source)                            | Why the bytes of a sound with rights `source` may not be sent to an edit backend, or `None`.                                                                                                                                                                                   |
 | [`wanted_license_ids`](#foley.licensing.wanted_license_ids)(config, license)               | The licence ids a `license=` request keeps, or `None` for every accepted one.                                                                                                                                                                                                  |
@@ -135,6 +141,20 @@ Finland’s Åland. (The Canaries, Azores, Madeira, Ceuta and Melilla have none.
 Freesound `gen_ai_preference` -> `(ai_training_ok override, ai_training_scope)`.
 `None` as the override leaves the CC row’s flag alone. An unlisted value fails
 closed (see [`ai_scope_from_gen_ai_preference()`](#foley.licensing.ai_scope_from_gen_ai_preference)).
+
+### foley.licensing.LICENSE_BASES *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('model-licence', 'vendor-tos', 'aggregator-label')*
+
+the model’s own
+licence (its weights), the vendor’s terms of service, or a label an aggregator put
+on it (fal’s `commercial`, an Openverse row), which is a claim about another
+party’s licence and never that licence itself.
+
+* **Type:**
+  What a record’s rights rest on (`LicenseRecord.license_basis`)
+
+### foley.licensing.LICENSE_BASIS_CONFIDENCES *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('confirmed', 'unverified')*
+
+How sure foley is that the basis applies to the route the sound came by.
 
 ### foley.licensing.LICENSE_EXCLUDED_TERRITORIES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)]* *= {'Tencent-Hunyuan-Community': frozenset({'EU', 'GB', 'GG', 'GI', 'IM', 'JE', 'KR'})}*
 
@@ -229,6 +249,12 @@ is left out until consumers agree it owes a credit (foley’s row says it does;
 The fields that say a stored licence and a fresh one differ besides their rights
 ([`wider_rights()`](#foley.licensing.wider_rights), either way); `verified_at` does not.
 
+### foley.licensing.SOURCE_STATED_FIELDS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('license_basis', 'license_basis_confidence', 'vendor_trains_on_output', 'terms_notes', 'vendor_watermark')*
+
+The [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord) fields a source *states* (in its config’s
+`license` block, or per clip): none is derived from a `license_id` row and none
+is a permission, so stamping them never widens a record.
+
 ### foley.licensing.UNASSERTABLE_LICENSE_IDS *= frozenset({'ElevenLabs-SFX', 'PDM-1.0', 'unknown'})*
 
 Licence ids that can never be *asserted* as verified (on ingest, restamp or in a
@@ -243,6 +269,11 @@ Fail-closed fallback for unknown / `Proprietary-*` license ids (all False, cap N
 ### foley.licensing.UNKNOWN_LICENSE_META *= LicenseMeta(display_name='Unknown / unverified license', url=None)*
 
 Fail-closed display fallback for unknown / `Proprietary-*` license ids.
+
+### foley.licensing.VENDOR_WATERMARK_REPORTERS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('config', 'response')*
+
+Who stated a vendor’s watermark (`LicenseRecord.vendor_watermark['reported_by']`):
+the source’s config (its terms), or the vendor’s response for this clip.
 
 ### foley.licensing.ai_scope_from_gen_ai_preference(preference)
 
@@ -318,8 +349,10 @@ licence’s code can stand in for it: a revenue cap, or a provider’s own terms
 Copy `old`’s lineage onto `new`, in place, and return `new`.
 
 The lineage is what a re-stamped record must keep from the one it replaces: its
-`transformations` (the edits and fixes, so the credit still reads “(modified)”)
-and its `derived_from_license_ids` (the licences bounding it, #214). Fresh lists,
+`transformations` (the edits and fixes, so the credit still reads “(modified)”),
+its `derived_from_license_ids` (the licences bounding it, #214), its
+`terms_notes` (added to `new`’s: the source’s API obligations, #77) and the
+facts about its bytes (a vendor that reuses them, the vendor’s watermark). Fresh lists,
 so the two records never share one; a `None` reads as empty. `new`’s flags are
 then bounded by every licence it now derives from (never widened), so the copy is
 safe on its own; a later [`apply_license_flags()`](#foley.licensing.apply_license_flags) re-derives under the same bound.
@@ -512,6 +545,26 @@ narrowing it again with [`narrow_to_source()`](#foley.licensing.narrow_to_source
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
+### foley.licensing.excluded_territories(record)
+
+Where `record`’s licence, or any licence it derives from, grants nothing.
+
+[`LICENSE_EXCLUDED_TERRITORIES`](#foley.licensing.LICENSE_EXCLUDED_TERRITORIES) is the SSOT (an exclusion is a term of the
+licence, not of one sound), read over the record’s whole lineage
+([`derived_license_ids()`](#foley.licensing.derived_license_ids)), so a record restamped or narrowed by an excluding
+licence is gated too. Sorted codes; `[]` when nothing is excluded.
+
+```pycon
+>>> excluded_territories(LicenseRecord(source="s", license_id="CC0-1.0"))
+[]
+>>> excluded_territories(LicenseRecord(source="s", license_id="CC0-1.0",
+...     derived_from_license_ids=["Tencent-Hunyuan-Community"]))[:3]
+['EU', 'GB', 'GG']
+```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
 ### foley.licensing.export_refusal(source)
 
 Why the bytes of a sound with rights `source` may not be exported, or `None`.
@@ -658,7 +711,7 @@ An edit is a derivative of its source: it may be used only where both the
 generator’s licence and the source’s allow. Each permission of
 `_DERIVATIVE_SHARED_FLAGS` is kept only when both hold it, attribution is
 required when either requires it, the revenue cap is the lower one, the AI-use
-scope is the stricter one, and the source’s required notice, stated AI-use
+scope is the stricter one, and the source’s required notice, terms notes, stated AI-use
 preference and safety flags carry over. `cache_bytes_ok` stays the output’s (it
 is about storing the new bytes). Routed through [`apply_license_flags()`](#foley.licensing.apply_license_flags), so the
 flags still come from the policy layer, never set by hand.
@@ -744,7 +797,9 @@ What a stored sound’s licence becomes when its source now states `fresh`.
 Returns `(new_record, note)`: `new_record` is `None` when the stored licence
 stays as it is, and `note` is `None` when there is nothing to say. Pure:
 neither argument is changed. The stored lineage (edits, the licences bounding it)
-is always kept ([`carry_lineage()`](#foley.licensing.carry_lineage)).
+is always kept ([`carry_lineage()`](#foley.licensing.carry_lineage)). `terms_notes` are not rights: `fresh`’s
+are added to the stored record whatever happens to its licence (then
+`new_record` is the stored licence with them, even when its rights stay).
 
 * `widen=True`: `fresh` replaces the stored licence. For a source that is the
   authority on its own clips (a corpus’s metadata, `foley.bootstrap.bootstrap()`).
@@ -807,6 +862,26 @@ True
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.licensing.stamp_source_terms(record, stated)
+
+Write what a source `stated` about its terms onto `record`, in place, and return it.
+
+`stated` maps [`SOURCE_STATED_FIELDS`](#foley.licensing.SOURCE_STATED_FIELDS) names to values (a config’s, see
+`foley.sources.base.source_stated_terms()`). No permission flag is touched;
+`terms_notes` are added to the record’s own, once each.
+
+```pycon
+>>> lic = stamp_source_terms(LicenseRecord(source="s"),
+...     {"license_basis": "vendor-tos", "terms_notes": ["Pay the piper."]})
+>>> lic.license_basis, lic.terms_notes, lic.commercial_ok
+('vendor-tos', ['Pay the piper.'], False)
+```
+
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – On a name that is not a stated field, or a value it does not take.
+* **Return type:**
+  [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)
 
 ### foley.licensing.territory_excluded(excluded, territory)
 

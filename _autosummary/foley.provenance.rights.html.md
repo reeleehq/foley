@@ -13,7 +13,10 @@ Export a sound with its rights and provenance, for a store outside foley (#66).
   foley’s id, the sha256 of the archived bytes AND of the exported bytes (a FLAC
   archive re-encoded to WAV hashes differently, so both are kept to chain them) and
   whether the re-encode was lossless, the eight licence flags (`ai_training_ok`,
-  `revenue_cap_usd`, …), a required notice, excluded territories, the safety
+  `revenue_cap_usd`, …), a required notice, the source’s API obligations
+  (`terms_notes`), what the licence rests on (`license_basis` and its
+  confidence), whether the vendor reuses its output, the vendor’s own watermark
+  statement (beside foley’s AudioSeal one), excluded territories, the safety
   flags, the edit lineage and, for an AI-generated clip, its EU AI Act Art. 50
   checklist with the generation block.
 
@@ -62,16 +65,15 @@ The export also interoperates with library tools (Soundminer, Soundly, BaseHead;
 
 ### Functions
 
-| [`excluded_territories`](#foley.provenance.rights.excluded_territories)(lic)                          | Where `lic` or any licence it derives from grants nothing (sorted codes).                                                                           |
-|-----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`export_metadata`](#foley.provenance.rights.export_metadata)(record, rights[, ucs_name])        | The fields an export embeds ([`foley.embedded_metadata.FIELDS`](foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) names). |
-| [`export_sound`](#foley.provenance.rights.export_sound)(sound_id[, fmt, library, ...])        | Export a sound's bytes as `fmt` with its rights and provenance (#66, #231).                                                                         |
-| [`export_ucs_filename`](#foley.provenance.rights.export_ucs_filename)(record, rights, \*[, ...])     | The UCS filename of `record`'s export, or `None` when it has no CatID in `table`.                                                                   |
-| [`id_from_user_data`](#foley.provenance.rights.id_from_user_data)(block)                           | The foley id [`id_to_user_data()`](#foley.provenance.rights.id_to_user_data) encoded as `block`.                                                 |
-| [`id_to_user_data`](#foley.provenance.rights.id_to_user_data)(sound_id)                          | `sound_id` as a filename block, injectively: [`id_from_user_data()`](#foley.provenance.rights.id_from_user_data) inverts it.                       |
-| [`rights_provider`](#foley.provenance.rights.rights_provider)(lic)                               | Who the rights come from: a provider-terms licence's owner, else the source.                                                                        |
-| [`sound_provenance`](#foley.provenance.rights.sound_provenance)(record, \*, archived_sha256, ...) | What an export must carry that `Rights` has no field for (JSON-native).                                                                             |
-| [`sound_rights`](#foley.provenance.rights.sound_rights)(record)                               | `record`'s rights as a dict keyed by `lacing.Rights` field names.                                                                                   |
+| [`export_metadata`](#foley.provenance.rights.export_metadata)(record, rights[, ucs_name])        | The fields an export embeds ([`foley.embedded_metadata.FIELDS`](foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) names).   |
+|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`export_sound`](#foley.provenance.rights.export_sound)(sound_id[, fmt, library, ...])        | Export a sound's bytes as `fmt` with its rights and provenance (#66, #231).                                                                           |
+| [`export_ucs_filename`](#foley.provenance.rights.export_ucs_filename)(record, rights, \*[, ...])     | The UCS filename of `record`'s export, or `None` when it has no CatID in `table`.                                                                     |
+| [`id_from_user_data`](#foley.provenance.rights.id_from_user_data)(block)                           | The foley id [`id_to_user_data()`](#foley.provenance.rights.id_to_user_data) encoded as `block`.                                                   |
+| [`id_to_user_data`](#foley.provenance.rights.id_to_user_data)(sound_id)                          | `sound_id` as a filename block, injectively: [`id_from_user_data()`](#foley.provenance.rights.id_from_user_data) inverts it.                         |
+| [`rights_provider`](#foley.provenance.rights.rights_provider)(lic)                               | Who the rights come from: a provider-terms licence's owner, else the source.                                                                          |
+| [`sound_provenance`](#foley.provenance.rights.sound_provenance)(record, \*, archived_sha256, ...) | What an export must carry that `Rights` has no field for (JSON-native).                                                                               |
+| [`sound_rights`](#foley.provenance.rights.sound_rights)(record)                               | `record`'s rights as a dict keyed by `lacing.Rights` field names.                                                                                     |
 
 ### foley.provenance.rights.ASSET_SOURCE_EXTRAS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('url', 'sha256', 'cost_usd', 'extra')*
 
@@ -113,18 +115,6 @@ a brief title of at most this many characters.
 
 * **Type:**
   The UCS guidance for an FXName
-
-### foley.provenance.rights.excluded_territories(lic)
-
-Where `lic` or any licence it derives from grants nothing (sorted codes).
-
-```pycon
->>> excluded_territories(LicenseRecord(source="s", license_id="CC0-1.0"))
-[]
-```
-
-* **Return type:**
-  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### foley.provenance.rights.export_metadata(record, rights, ucs_name=None)
 

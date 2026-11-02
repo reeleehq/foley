@@ -20,7 +20,6 @@ foley.provenance.rights
 
    .. autosummary::
    
-      excluded_territories
       export_metadata
       export_sound
       export_ucs_filename

@@ -40,6 +40,7 @@ is an error, never a fall-through to the network.
 |----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
 | [`falaw_runner`](#foley.sources.fal.adapter.falaw_runner)(endpoint_id, arguments, \*, api_key) | Call a fal endpoint through falaw and return `(audio bytes, raw response)`.                                                       |
 | [`falaw_uploader`](#foley.sources.fal.adapter.falaw_uploader)(path, \*, api_key)                 | A fal-fetchable URL for the local file at `path` (`falaw.upload`: content-addressed, so an unchanged file is not uploaded twice). |
+| [`reported_watermark`](#foley.sources.fal.adapter.reported_watermark)(response, stated, ...)         | The vendor's watermark as this response reports it (#77), or `None`.                                                              |
 
 ### Classes
 
@@ -216,3 +217,25 @@ so an unchanged file is not uploaded twice).
 
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.sources.fal.adapter.reported_watermark(response, stated, native_defaults)
+
+The vendor’s watermark as this response reports it (#77), or `None`.
+
+Only for an endpoint whose config names the response field
+(`native_defaults['watermark_field']`: Sonilo’s `watermark`), and only when the
+response carries it: an absent field is no report (fal’s schema does not list it),
+so the config’s statement stands. The config’s own statement (`stated`) is kept
+beside the report.
+
+```pycon
+>>> reported_watermark({"watermark": "sonilo-v1"}, None, {"watermark_field": "watermark"})
+{'present': True, 'statement': None, 'reported_by': 'response', 'detail': 'sonilo-v1'}
+>>> reported_watermark({}, None, {"watermark_field": "watermark"}) is None
+True
+>>> reported_watermark({"watermark": "x"}, None, {}) is None
+True
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]

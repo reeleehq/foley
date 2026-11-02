@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=9cebf393"></script>
+    <script src="../_static/documentation_options.js?v=ab1379f9"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.115" />
+  <meta name="docsearch:version" content="0.0.116" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -512,7 +512,10 @@ never imports lacing (it pulls pydantic), so the dict is the contract.</p></li>
 foley’s id, the sha256 of the archived bytes AND of the exported bytes (a FLAC
 archive re-encoded to WAV hashes differently, so both are kept to chain them) and
 whether the re-encode was lossless, the eight licence flags (<code class="docutils literal notranslate"><span class="pre">ai_training_ok</span></code>,
-<code class="docutils literal notranslate"><span class="pre">revenue_cap_usd</span></code>, …), a required notice, excluded territories, the safety
+<code class="docutils literal notranslate"><span class="pre">revenue_cap_usd</span></code>, …), a required notice, the source’s API obligations
+(<code class="docutils literal notranslate"><span class="pre">terms_notes</span></code>), what the licence rests on (<code class="docutils literal notranslate"><span class="pre">license_basis</span></code> and its
+confidence), whether the vendor reuses its output, the vendor’s own watermark
+statement (beside foley’s AudioSeal one), excluded territories, the safety
 flags, the edit lineage and, for an AI-generated clip, its EU AI Act Art. 50
 checklist with the generation block.</p></li>
 </ul>
@@ -580,31 +583,28 @@ of <code class="docutils literal notranslate"><span class="pre">rights</span></c
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.rights.excluded_territories" title="foley.provenance.rights.excluded_territories"><code class="xref py py-obj docutils literal notranslate"><span class="pre">excluded_territories</span></code></a>(lic)</p></td>
-<td><p>Where <code class="docutils literal notranslate"><span class="pre">lic</span></code> or any licence it derives from grants nothing (sorted codes).</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.rights.export_metadata" title="foley.provenance.rights.export_metadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">export_metadata</span></code></a>(record, rights[, ucs_name])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.rights.export_metadata" title="foley.provenance.rights.export_metadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">export_metadata</span></code></a>(record, rights[, ucs_name])</p></td>
 <td><p>The fields an export embeds (<a class="reference internal" href="foley.embedded_metadata.html#foley.embedded_metadata.FIELDS" title="foley.embedded_metadata.FIELDS"><code class="xref py py-data docutils literal notranslate"><span class="pre">foley.embedded_metadata.FIELDS</span></code></a> names).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.rights.export_sound" title="foley.provenance.rights.export_sound"><code class="xref py py-obj docutils literal notranslate"><span class="pre">export_sound</span></code></a>(sound_id[, fmt, library, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.rights.export_sound" title="foley.provenance.rights.export_sound"><code class="xref py py-obj docutils literal notranslate"><span class="pre">export_sound</span></code></a>(sound_id[, fmt, library, ...])</p></td>
 <td><p>Export a sound's bytes as <code class="docutils literal notranslate"><span class="pre">fmt</span></code> with its rights and provenance (#66, #231).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.rights.export_ucs_filename" title="foley.provenance.rights.export_ucs_filename"><code class="xref py py-obj docutils literal notranslate"><span class="pre">export_ucs_filename</span></code></a>(record, rights, *[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.rights.export_ucs_filename" title="foley.provenance.rights.export_ucs_filename"><code class="xref py py-obj docutils literal notranslate"><span class="pre">export_ucs_filename</span></code></a>(record, rights, *[, ...])</p></td>
 <td><p>The UCS filename of <code class="docutils literal notranslate"><span class="pre">record</span></code>'s export, or <code class="docutils literal notranslate"><span class="pre">None</span></code> when it has no CatID in <code class="docutils literal notranslate"><span class="pre">table</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.rights.id_from_user_data" title="foley.provenance.rights.id_from_user_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">id_from_user_data</span></code></a>(block)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.rights.id_from_user_data" title="foley.provenance.rights.id_from_user_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">id_from_user_data</span></code></a>(block)</p></td>
 <td><p>The foley id <a class="reference internal" href="#foley.provenance.rights.id_to_user_data" title="foley.provenance.rights.id_to_user_data"><code class="xref py py-func docutils literal notranslate"><span class="pre">id_to_user_data()</span></code></a> encoded as <code class="docutils literal notranslate"><span class="pre">block</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.rights.id_to_user_data" title="foley.provenance.rights.id_to_user_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">id_to_user_data</span></code></a>(sound_id)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.rights.id_to_user_data" title="foley.provenance.rights.id_to_user_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">id_to_user_data</span></code></a>(sound_id)</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">sound_id</span></code> as a filename block, injectively: <a class="reference internal" href="#foley.provenance.rights.id_from_user_data" title="foley.provenance.rights.id_from_user_data"><code class="xref py py-func docutils literal notranslate"><span class="pre">id_from_user_data()</span></code></a> inverts it.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.rights.rights_provider" title="foley.provenance.rights.rights_provider"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rights_provider</span></code></a>(lic)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.rights.rights_provider" title="foley.provenance.rights.rights_provider"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rights_provider</span></code></a>(lic)</p></td>
 <td><p>Who the rights come from: a provider-terms licence's owner, else the source.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.rights.sound_provenance" title="foley.provenance.rights.sound_provenance"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sound_provenance</span></code></a>(record, *, archived_sha256, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.rights.sound_provenance" title="foley.provenance.rights.sound_provenance"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sound_provenance</span></code></a>(record, *, archived_sha256, ...)</p></td>
 <td><p>What an export must carry that <code class="docutils literal notranslate"><span class="pre">Rights</span></code> has no field for (JSON-native).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.rights.sound_rights" title="foley.provenance.rights.sound_rights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sound_rights</span></code></a>(record)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.rights.sound_rights" title="foley.provenance.rights.sound_rights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sound_rights</span></code></a>(record)</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">record</span></code>'s rights as a dict keyed by <code class="docutils literal notranslate"><span class="pre">lacing.Rights</span></code> field names.</p></td>
 </tr>
 </tbody>
@@ -667,21 +667,6 @@ pins them to lacing’s model when lacing is installed).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The UCS guidance for an FXName</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="foley.provenance.rights.excluded_territories">
-<span class="sig-prename descclassname"><span class="pre">foley.provenance.rights.</span></span><span class="sig-name descname"><span class="pre">excluded_territories</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lic</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/provenance/rights.html#excluded_territories"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.provenance.rights.excluded_territories" title="Link to this definition">#</a></dt>
-<dd><p>Where <code class="docutils literal notranslate"><span class="pre">lic</span></code> or any licence it derives from grants nothing (sorted codes).</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">excluded_territories</span><span class="p">(</span><span class="n">LicenseRecord</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"s"</span><span class="p">,</span> <span class="n">license_id</span><span class="o">=</span><span class="s2">"CC0-1.0"</span><span class="p">))</span>
-<span class="go">[]</span>
-</pre></div>
-</div>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -919,7 +904,6 @@ recorded (the credit line falls back to the source name; a rights record does no
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.PROVENANCE_FIELDS"><code class="docutils literal notranslate"><span class="pre">PROVENANCE_FIELDS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.RIGHTS_FIELDS"><code class="docutils literal notranslate"><span class="pre">RIGHTS_FIELDS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.UCS_FXNAME_MAX_CHARS"><code class="docutils literal notranslate"><span class="pre">UCS_FXNAME_MAX_CHARS</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.excluded_territories"><code class="docutils literal notranslate"><span class="pre">excluded_territories()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.export_metadata"><code class="docutils literal notranslate"><span class="pre">export_metadata()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.export_sound"><code class="docutils literal notranslate"><span class="pre">export_sound()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.rights.export_ucs_filename"><code class="docutils literal notranslate"><span class="pre">export_ucs_filename()</span></code></a></li>

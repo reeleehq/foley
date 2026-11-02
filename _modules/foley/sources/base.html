@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=9cebf393"></script>
+    <script src="../../../_static/documentation_options.js?v=ab1379f9"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.115" />
+  <meta name="docsearch:version" content="0.0.116" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -770,7 +770,7 @@ window.runMermaid = runMermaid;</script>
 <span class="p">)</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">AcquisitionMethod</span><span class="p">,</span> <span class="n">LicenseRecord</span><span class="p">,</span> <span class="n">reject_renamed</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_license_flags</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_STATED_FIELDS</span><span class="p">,</span> <span class="n">apply_license_flags</span><span class="p">,</span> <span class="n">stamp_source_terms</span>
 
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>  <span class="c1"># pragma: no cover - typing only</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Candidate</span><span class="p">,</span> <span class="n">SoundRecord</span>
@@ -1872,6 +1872,45 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<span class="c1">#: The license-block keys a config may state about its terms (#77); the vendor's</span>
+<span class="c1">#: watermark is read from ``capabilities`` instead, where ``watermarked`` already lives.</span>
+<span class="n">_LICENSE_BLOCK_TERMS</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">SOURCE_STATED_FIELDS</span> <span class="k">if</span> <span class="n">f</span> <span class="o">!=</span> <span class="s2">"vendor_watermark"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">source_stated_terms</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""What a source config states about its terms, as licence-record fields (#77).</span>
+
+<span class="sd">    Only what is stated, so a record's ``None`` keeps meaning "unknown":</span>
+
+<span class="sd">    * ``license_basis`` / ``license_basis_confidence`` / ``vendor_trains_on_output`` /</span>
+<span class="sd">      ``terms_notes`` from the config's ``license`` block;</span>
+<span class="sd">    * ``vendor_watermark`` from ``capabilities['watermarked']`` (the vendor-side fact</span>
+<span class="sd">      :func:`foley.sources.capabilities.capabilities_of` already serves) and</span>
+<span class="sd">      ``capabilities['watermark_statement']`` (what the vendor says about it);</span>
+<span class="sd">    * ``vendor_trains_on_output=False`` for a generating source that runs on this</span>
+<span class="sd">      machine (``data_egress='local'``): no vendor ever sees its output.</span>
+
+<span class="sd">    &gt;&gt;&gt; source_stated_terms({"kind": "generate", "data_egress": "local",</span>
+<span class="sd">    ...     "license": {"license_basis": "model-licence"}, "capabilities": {"watermarked": False}})</span>
+<span class="sd">    ... # doctest: +NORMALIZE_WHITESPACE</span>
+<span class="sd">    {'license_basis': 'model-licence', 'vendor_trains_on_output': False,</span>
+<span class="sd">     'vendor_watermark': {'present': False, 'statement': None, 'reported_by': 'config'}}</span>
+<span class="sd">    """</span>
+    <span class="n">block</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"license"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">stated</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">block</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">_LICENSE_BLOCK_TERMS</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">block</span><span class="p">}</span>
+    <span class="n">local</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"data_egress"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"local"</span>
+    <span class="k">if</span> <span class="n">local</span> <span class="ow">and</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"kind"</span><span class="p">)</span> <span class="ow">in</span> <span class="n">GENERATING_KINDS</span><span class="p">:</span>
+        <span class="n">stated</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"vendor_trains_on_output"</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="n">caps</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"capabilities"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="s2">"watermarked"</span> <span class="ow">in</span> <span class="n">caps</span> <span class="ow">or</span> <span class="s2">"watermark_statement"</span> <span class="ow">in</span> <span class="n">caps</span><span class="p">:</span>
+        <span class="n">stated</span><span class="p">[</span><span class="s2">"vendor_watermark"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"present"</span><span class="p">:</span> <span class="n">caps</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"watermarked"</span><span class="p">),</span>
+            <span class="s2">"statement"</span><span class="p">:</span> <span class="n">caps</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"watermark_statement"</span><span class="p">),</span>
+            <span class="s2">"reported_by"</span><span class="p">:</span> <span class="s2">"config"</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="k">return</span> <span class="n">stated</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_build_license</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -1884,6 +1923,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">license_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">creator_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">attribution_text</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">terms</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LicenseRecord</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Construct a :class:`~foley.base.LicenseRecord` and derive its flags (SSOT).</span>
 
@@ -1894,7 +1934,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    ``overrides``) — never hand-set. ``rights_verified`` is passed through</span>
 <span class="sd">    unchanged (it is not a derived flag): ``True`` only for an</span>
 <span class="sd">    authoritatively-recognized license, so an unknown id stays fail-closed and</span>
-<span class="sd">    :func:`foley.keep` drops it while its provenance is still recorded.</span>
+<span class="sd">    :func:`foley.keep` drops it while its provenance is still recorded. ``terms``</span>
+<span class="sd">    (:func:`source_stated_terms`) stamps what the source states about its terms</span>
+<span class="sd">    (:func:`~foley.licensing.stamp_source_terms`); it grants nothing.</span>
 <span class="sd">    """</span>
     <span class="n">record</span> <span class="o">=</span> <span class="n">LicenseRecord</span><span class="p">(</span>
         <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span>
@@ -1907,6 +1949,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">attribution_text</span><span class="o">=</span><span class="n">attribution_text</span><span class="p">,</span>
         <span class="n">rights_verified</span><span class="o">=</span><span class="n">rights_verified</span><span class="p">,</span>
     <span class="p">)</span>
+    <span class="n">stamp_source_terms</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">terms</span> <span class="ow">or</span> <span class="p">{})</span>
     <span class="c1"># The eight permission flags are DERIVED from license_id (+ overrides) by</span>
     <span class="c1"># apply_license_flags — never hand-set here.</span>
     <span class="k">return</span> <span class="n">apply_license_flags</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">overrides</span><span class="o">=</span><span class="n">overrides</span><span class="p">)</span>
@@ -1974,6 +2017,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">license_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">creator_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">attribution_text</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">terms</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LicenseRecord</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Build an API-acquisition :class:`~foley.base.LicenseRecord`, flags derived.</span>
 
@@ -2001,6 +2045,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        license_url: The license URL/label exactly as the source served it.</span>
 <span class="sd">        creator_name: The uploader/creator (required for CC-BY attribution).</span>
 <span class="sd">        attribution_text: A ready-made attribution string, if supplied.</span>
+<span class="sd">        terms: What the source states about its terms (:func:`source_stated_terms`).</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A populated ``LicenseRecord`` with its derived flags (+ overrides) applied.</span>
@@ -2016,6 +2061,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">license_url</span><span class="o">=</span><span class="n">license_url</span><span class="p">,</span>
         <span class="n">creator_name</span><span class="o">=</span><span class="n">creator_name</span><span class="p">,</span>
         <span class="n">attribution_text</span><span class="o">=</span><span class="n">attribution_text</span><span class="p">,</span>
+        <span class="n">terms</span><span class="o">=</span><span class="n">terms</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 
@@ -2105,6 +2151,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">creator_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">attribution_text</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">ai_generated</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">terms</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LicenseRecord</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Build a generated :class:`~foley.base.LicenseRecord`, flags derived + provenance stamped.</span>
 
@@ -2157,6 +2204,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            procedural synthesis (a ``'procedural'`` source, #76): the record then</span>
 <span class="sd">            has ``is_ai_generated=False`` and ``disclosure_recommended=False``</span>
 <span class="sd">            (whatever was passed), and still carries the generation-provenance block.</span>
+<span class="sd">        terms: What the source states about its terms (:func:`source_stated_terms`:</span>
+<span class="sd">            the licence basis, whether the vendor reuses its output, API obligations,</span>
+<span class="sd">            the vendor's watermark statement).</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A populated ``LicenseRecord`` with derived flags applied AND</span>
@@ -2173,6 +2223,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">license_url</span><span class="o">=</span><span class="n">license_url</span><span class="p">,</span>
         <span class="n">creator_name</span><span class="o">=</span><span class="n">creator_name</span><span class="p">,</span>
         <span class="n">attribution_text</span><span class="o">=</span><span class="n">attribution_text</span><span class="p">,</span>
+        <span class="n">terms</span><span class="o">=</span><span class="n">terms</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="c1"># Generation-provenance block — stamped after flag derivation, in one place, so</span>
     <span class="c1"># no adapter hand-sets flags and every generator populates provenance identically.</span>

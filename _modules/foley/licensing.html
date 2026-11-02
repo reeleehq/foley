@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=9cebf393"></script>
+    <script src="../../_static/documentation_options.js?v=ab1379f9"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.115" />
+  <meta name="docsearch:version" content="0.0.116" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1349,8 +1349,10 @@ window.runMermaid = runMermaid;</script>
 <span class="w">    </span><span class="sd">"""Copy ``old``'s lineage onto ``new``, in place, and return ``new``.</span>
 
 <span class="sd">    The lineage is what a re-stamped record must keep from the one it replaces: its</span>
-<span class="sd">    ``transformations`` (the edits and fixes, so the credit still reads "(modified)")</span>
-<span class="sd">    and its ``derived_from_license_ids`` (the licences bounding it, #214). Fresh lists,</span>
+<span class="sd">    ``transformations`` (the edits and fixes, so the credit still reads "(modified)"),</span>
+<span class="sd">    its ``derived_from_license_ids`` (the licences bounding it, #214), its</span>
+<span class="sd">    ``terms_notes`` (added to ``new``'s: the source's API obligations, #77) and the</span>
+<span class="sd">    facts about its bytes (a vendor that reuses them, the vendor's watermark). Fresh lists,</span>
 <span class="sd">    so the two records never share one; a ``None`` reads as empty. ``new``'s flags are</span>
 <span class="sd">    then bounded by every licence it now derives from (never widened), so the copy is</span>
 <span class="sd">    safe on its own; a later :func:`apply_license_flags` re-derives under the same bound.</span>
@@ -1369,6 +1371,12 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    """</span>
     <span class="n">new</span><span class="o">.</span><span class="n">transformations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">old</span><span class="o">.</span><span class="n">transformations</span> <span class="ow">or</span> <span class="p">())</span>
     <span class="n">new</span><span class="o">.</span><span class="n">derived_from_license_ids</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">old</span><span class="o">.</span><span class="n">derived_from_license_ids</span> <span class="ow">or</span> <span class="p">())</span>
+    <span class="c1"># The obligations of the terms the bytes were obtained under outlive a restamp, and</span>
+    <span class="c1"># so do the facts about the bytes: a vendor that reuses them, a vendor watermark.</span>
+    <span class="n">new</span><span class="o">.</span><span class="n">terms_notes</span> <span class="o">=</span> <span class="n">_merged_notes</span><span class="p">(</span><span class="n">new</span><span class="o">.</span><span class="n">terms_notes</span><span class="p">,</span> <span class="n">old</span><span class="o">.</span><span class="n">terms_notes</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">old</span><span class="o">.</span><span class="n">vendor_trains_on_output</span><span class="p">:</span>
+        <span class="n">new</span><span class="o">.</span><span class="n">vendor_trains_on_output</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">new</span><span class="o">.</span><span class="n">vendor_watermark</span> <span class="o">=</span> <span class="n">new</span><span class="o">.</span><span class="n">vendor_watermark</span> <span class="ow">or</span> <span class="n">old</span><span class="o">.</span><span class="n">vendor_watermark</span>
     <span class="k">return</span> <span class="n">_set_flags</span><span class="p">(</span><span class="n">new</span><span class="p">,</span> <span class="n">_bounded_by_lineage</span><span class="p">(</span><span class="n">_flags_of</span><span class="p">(</span><span class="n">new</span><span class="p">),</span> <span class="n">new</span><span class="p">))</span></div>
 
 
@@ -1513,6 +1521,102 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># What a source states about its terms (#77): basis, vendor reuse, API obligations</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="c1">#: What a record's rights rest on (``LicenseRecord.license_basis``): the model's own</span>
+<span class="c1">#: licence (its weights), the vendor's terms of service, or a label an aggregator put</span>
+<span class="c1">#: on it (fal's ``commercial``, an Openverse row), which is a claim about another</span>
+<span class="c1">#: party's licence and never that licence itself.</span>
+<span class="n">LICENSE_BASES</span><span class="p">:</span> <span class="s2">"tuple[str, ...]"</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"model-licence"</span><span class="p">,</span> <span class="s2">"vendor-tos"</span><span class="p">,</span> <span class="s2">"aggregator-label"</span><span class="p">)</span>
+
+<span class="c1">#: How sure foley is that the basis applies to the route the sound came by.</span>
+<span class="n">LICENSE_BASIS_CONFIDENCES</span><span class="p">:</span> <span class="s2">"tuple[str, ...]"</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"confirmed"</span><span class="p">,</span> <span class="s2">"unverified"</span><span class="p">)</span>
+
+<span class="c1">#: Who stated a vendor's watermark (``LicenseRecord.vendor_watermark['reported_by']``):</span>
+<span class="c1">#: the source's config (its terms), or the vendor's response for this clip.</span>
+<span class="n">VENDOR_WATERMARK_REPORTERS</span><span class="p">:</span> <span class="s2">"tuple[str, ...]"</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"config"</span><span class="p">,</span> <span class="s2">"response"</span><span class="p">)</span>
+
+<span class="c1">#: The :class:`~foley.base.LicenseRecord` fields a source *states* (in its config's</span>
+<span class="c1">#: ``license`` block, or per clip): none is derived from a ``license_id`` row and none</span>
+<span class="c1">#: is a permission, so stamping them never widens a record.</span>
+<span class="n">SOURCE_STATED_FIELDS</span><span class="p">:</span> <span class="s2">"tuple[str, ...]"</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"license_basis"</span><span class="p">,</span>
+    <span class="s2">"license_basis_confidence"</span><span class="p">,</span>
+    <span class="s2">"vendor_trains_on_output"</span><span class="p">,</span>
+    <span class="s2">"terms_notes"</span><span class="p">,</span>
+    <span class="s2">"vendor_watermark"</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_checked_stated</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""``value`` for the stated field ``name``, or ``ValueError`` (a config typo must</span>
+<span class="sd">    not read as "not stated")."""</span>
+    <span class="n">allowed</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"license_basis"</span><span class="p">:</span> <span class="n">LICENSE_BASES</span><span class="p">,</span>
+        <span class="s2">"license_basis_confidence"</span><span class="p">:</span> <span class="n">LICENSE_BASIS_CONFIDENCES</span><span class="p">,</span>
+    <span class="p">}</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">allowed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">; use one of </span><span class="si">{</span><span class="n">allowed</span><span class="si">}</span><span class="s2"> or None"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">"vendor_trains_on_output"</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"vendor_trains_on_output=</span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">; use True, False or None"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">"terms_notes"</span> <span class="ow">and</span> <span class="p">(</span>
+        <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">value</span> <span class="ow">or</span> <span class="p">())</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"terms_notes must be a list of sentences (str)"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">"vendor_watermark"</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="n">value</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"present"</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="n">value</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"reported_by"</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">VENDOR_WATERMARK_REPORTERS</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"vendor_watermark=</span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">: 'present' is True, False or None and "</span>
+                <span class="sa">f</span><span class="s2">"'reported_by' one of </span><span class="si">{</span><span class="n">VENDOR_WATERMARK_REPORTERS</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+    <span class="k">return</span> <span class="n">value</span>
+
+
+<div class="viewcode-block" id="stamp_source_terms">
+<a class="viewcode-back" href="../../_autosummary/foley.licensing.html#foley.stamp_source_terms">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">stamp_source_terms</span><span class="p">(</span><span class="n">record</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">,</span> <span class="n">stated</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LicenseRecord</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Write what a source ``stated`` about its terms onto ``record``, in place, and return it.</span>
+
+<span class="sd">    ``stated`` maps :data:`SOURCE_STATED_FIELDS` names to values (a config's, see</span>
+<span class="sd">    :func:`foley.sources.base.source_stated_terms`). No permission flag is touched;</span>
+<span class="sd">    ``terms_notes`` are added to the record's own, once each.</span>
+
+<span class="sd">    &gt;&gt;&gt; lic = stamp_source_terms(LicenseRecord(source="s"),</span>
+<span class="sd">    ...     {"license_basis": "vendor-tos", "terms_notes": ["Pay the piper."]})</span>
+<span class="sd">    &gt;&gt;&gt; lic.license_basis, lic.terms_notes, lic.commercial_ok</span>
+<span class="sd">    ('vendor-tos', ['Pay the piper.'], False)</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: On a name that is not a stated field, or a value it does not take.</span>
+<span class="sd">    """</span>
+    <span class="n">unknown</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">stated</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">SOURCE_STATED_FIELDS</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"not source-stated licence fields: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">unknown</span><span class="p">)</span><span class="si">}</span><span class="s2">; "</span>
+            <span class="sa">f</span><span class="s2">"use </span><span class="si">{</span><span class="n">SOURCE_STATED_FIELDS</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">stated</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">_checked_stated</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">"terms_notes"</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">_merged_notes</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">terms_notes</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">"vendor_watermark"</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">record</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_merged_notes</span><span class="p">(</span><span class="o">*</span><span class="n">note_lists</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[str]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Every note of ``note_lists``, in order, once each (``None`` reads as empty)."""</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">n</span> <span class="k">for</span> <span class="n">notes</span> <span class="ow">in</span> <span class="n">note_lists</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">notes</span> <span class="ow">or</span> <span class="p">()</span> <span class="k">if</span> <span class="n">n</span><span class="p">))</span>
+
+
 <span class="c1">#: The EU's member states (ISO 3166-1 alpha-2), for a licence that excludes "EU",</span>
 <span class="c1">#: with the EU territories that carry their own codes: France's outermost regions</span>
 <span class="c1">#: (Réunion, French Guiana, Guadeloupe, Martinique, Mayotte, Saint-Martin) and</span>
@@ -1532,6 +1636,27 @@ window.runMermaid = runMermaid;</script>
     <span class="c1"># cannot over-grant is to exclude them too (fail closed).</span>
     <span class="s2">"Tencent-Hunyuan-Community"</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">"EU"</span><span class="p">,</span> <span class="s2">"GB"</span><span class="p">,</span> <span class="s2">"KR"</span><span class="p">,</span> <span class="s2">"JE"</span><span class="p">,</span> <span class="s2">"GG"</span><span class="p">,</span> <span class="s2">"IM"</span><span class="p">,</span> <span class="s2">"GI"</span><span class="p">}),</span>
 <span class="p">}</span>
+
+
+<div class="viewcode-block" id="excluded_territories">
+<a class="viewcode-back" href="../../_autosummary/foley.licensing.html#foley.excluded_territories">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">excluded_territories</span><span class="p">(</span><span class="n">record</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[str]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Where ``record``'s licence, or any licence it derives from, grants nothing.</span>
+
+<span class="sd">    :data:`LICENSE_EXCLUDED_TERRITORIES` is the SSOT (an exclusion is a term of the</span>
+<span class="sd">    licence, not of one sound), read over the record's whole lineage</span>
+<span class="sd">    (:func:`derived_license_ids`), so a record restamped or narrowed by an excluding</span>
+<span class="sd">    licence is gated too. Sorted codes; ``[]`` when nothing is excluded.</span>
+
+<span class="sd">    &gt;&gt;&gt; excluded_territories(LicenseRecord(source="s", license_id="CC0-1.0"))</span>
+<span class="sd">    []</span>
+<span class="sd">    &gt;&gt;&gt; excluded_territories(LicenseRecord(source="s", license_id="CC0-1.0",</span>
+<span class="sd">    ...     derived_from_license_ids=["Tencent-Hunyuan-Community"]))[:3]</span>
+<span class="sd">    ['EU', 'GB', 'GG']</span>
+<span class="sd">    """</span>
+    <span class="n">ids</span> <span class="o">=</span> <span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">license_id</span><span class="p">,</span> <span class="o">*</span><span class="n">derived_license_ids</span><span class="p">(</span><span class="n">record</span><span class="p">))</span>
+    <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">()</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">LICENSE_EXCLUDED_TERRITORIES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="p">())</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">)))</span></div>
+
 
 
 <div class="viewcode-block" id="territory_excluded">
@@ -1591,7 +1716,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">record</span><span class="o">.</span><span class="n">contains_recognizable_voice</span> <span class="ow">or</span> <span class="n">record</span><span class="o">.</span><span class="n">potential_trademark</span>
     <span class="p">):</span>
         <span class="k">return</span> <span class="s2">"it is flagged for a recognizable voice or a trademark"</span>
-    <span class="n">excluded</span> <span class="o">=</span> <span class="n">LICENSE_EXCLUDED_TERRITORIES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">license_id</span><span class="p">,</span> <span class="p">())</span>
+    <span class="n">excluded</span> <span class="o">=</span> <span class="n">excluded_territories</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">territory_excluded</span><span class="p">(</span><span class="n">excluded</span><span class="p">,</span> <span class="n">intended_use</span><span class="o">.</span><span class="n">territory</span><span class="p">):</span>
         <span class="n">where</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">excluded</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">intended_use</span><span class="o">.</span><span class="n">territory</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1853,7 +1978,7 @@ window.runMermaid = runMermaid;</script>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">"foley has no licence row for </span><span class="si">{</span><span class="n">lid</span><span class="si">!r}</span><span class="s2">, so the edit's rights cannot be derived"</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">source</span><span class="o">.</span><span class="n">modification_ok</span><span class="p">:</span>
         <span class="k">return</span> <span class="s2">"its licence does not allow modification"</span>
-    <span class="k">if</span> <span class="n">LICENSE_EXCLUDED_TERRITORIES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lid</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">excluded_territories</span><span class="p">(</span><span class="n">source</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">"its licence excludes territories, which the edit's record cannot carry"</span>
     <span class="k">return</span> <span class="kc">None</span></div>
 
@@ -1902,7 +2027,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    generator's licence and the source's allow. Each permission of</span>
 <span class="sd">    :data:`_DERIVATIVE_SHARED_FLAGS` is kept only when both hold it, attribution is</span>
 <span class="sd">    required when either requires it, the revenue cap is the lower one, the AI-use</span>
-<span class="sd">    scope is the stricter one, and the source's required notice, stated AI-use</span>
+<span class="sd">    scope is the stricter one, and the source's required notice, terms notes, stated AI-use</span>
 <span class="sd">    preference and safety flags carry over. ``cache_bytes_ok`` stays the output's (it</span>
 <span class="sd">    is about storing the new bytes). Routed through :func:`apply_license_flags`, so the</span>
 <span class="sd">    flags still come from the policy layer, never set by hand.</span>
@@ -1935,6 +2060,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">output</span><span class="o">.</span><span class="n">ai_training_scope</span><span class="p">,</span> <span class="n">source</span><span class="o">.</span><span class="n">ai_training_scope</span>
     <span class="p">)</span>
     <span class="n">output</span><span class="o">.</span><span class="n">gen_ai_preference</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">gen_ai_preference</span> <span class="ow">or</span> <span class="n">output</span><span class="o">.</span><span class="n">gen_ai_preference</span>
+    <span class="n">output</span><span class="o">.</span><span class="n">terms_notes</span> <span class="o">=</span> <span class="n">_merged_notes</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">terms_notes</span><span class="p">,</span> <span class="n">source</span><span class="o">.</span><span class="n">terms_notes</span><span class="p">)</span>
     <span class="n">notices</span> <span class="o">=</span> <span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">notice_text_required</span><span class="p">,</span> <span class="n">source</span><span class="o">.</span><span class="n">notice_text_required</span><span class="p">)</span>
     <span class="n">output</span><span class="o">.</span><span class="n">notice_text_required</span> <span class="o">=</span> <span class="p">(</span>
         <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">notices</span> <span class="k">if</span> <span class="n">n</span><span class="p">))</span> <span class="ow">or</span> <span class="kc">None</span>
@@ -2018,7 +2144,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Returns ``(new_record, note)``: ``new_record`` is ``None`` when the stored licence</span>
 <span class="sd">    stays as it is, and ``note`` is ``None`` when there is nothing to say. Pure:</span>
 <span class="sd">    neither argument is changed. The stored lineage (edits, the licences bounding it)</span>
-<span class="sd">    is always kept (:func:`carry_lineage`).</span>
+<span class="sd">    is always kept (:func:`carry_lineage`). ``terms_notes`` are not rights: ``fresh``'s</span>
+<span class="sd">    are added to the stored record whatever happens to its licence (then</span>
+<span class="sd">    ``new_record`` is the stored licence with them, even when its rights stay).</span>
 
 <span class="sd">    * ``widen=True``: ``fresh`` replaces the stored licence. For a source that is the</span>
 <span class="sd">      authority on its own clips (a corpus's metadata, :func:`foley.bootstrap.bootstrap`).</span>
@@ -2044,7 +2172,7 @@ window.runMermaid = runMermaid;</script>
     <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">wider</span> <span class="ow">or</span> <span class="n">narrower</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span>
         <span class="nb">getattr</span><span class="p">(</span><span class="n">stored</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="o">==</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">fresh</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">RESTAMP_FIELDS</span>
     <span class="p">):</span>
-        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">_with_fresh_notes</span><span class="p">(</span><span class="n">stored</span><span class="p">,</span> <span class="n">fresh</span><span class="p">),</span> <span class="kc">None</span>
     <span class="n">was</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="p">(</span><span class="n">stored</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">stored</span><span class="o">.</span><span class="n">license_url</span><span class="p">)))</span>
     <span class="n">change</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"licence </span><span class="si">{</span><span class="n">stored</span><span class="o">.</span><span class="n">license_id</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">fresh</span><span class="o">.</span><span class="n">license_id</span><span class="si">}</span><span class="s2"> (was from </span><span class="si">{</span><span class="n">was</span><span class="si">}</span><span class="s2">)"</span> <span class="o">+</span> <span class="p">(</span>
         <span class="sa">f</span><span class="s2">"; no longer allows </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">narrower</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">narrower</span> <span class="k">else</span> <span class="s2">""</span>
@@ -2052,7 +2180,7 @@ window.runMermaid = runMermaid;</script>
     <span class="k">if</span> <span class="n">widen</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">stored</span><span class="o">.</span><span class="n">rights_verified</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">wider</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">candidate</span><span class="p">,</span> <span class="n">change</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">narrower</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="p">(</span>
+        <span class="k">return</span> <span class="n">_with_fresh_notes</span><span class="p">(</span><span class="n">stored</span><span class="p">,</span> <span class="n">fresh</span><span class="p">),</span> <span class="p">(</span>
             <span class="sa">f</span><span class="s2">"not widened: </span><span class="si">{</span><span class="n">fresh</span><span class="o">.</span><span class="n">license_id</span><span class="si">}</span><span class="s2"> would also allow </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">wider</span><span class="p">)</span><span class="si">}</span><span class="s2"> over "</span>
             <span class="sa">f</span><span class="s2">"the stored </span><span class="si">{</span><span class="n">stored</span><span class="o">.</span><span class="n">license_id</span><span class="si">}</span><span class="s2">; to widen it, "</span>
             <span class="sa">f</span><span class="s2">"foley.restamp_rights(ids=[...], license=</span><span class="si">{</span><span class="n">fresh</span><span class="o">.</span><span class="n">license_id</span><span class="si">!r}</span><span class="s2">, apply=True)"</span>
@@ -2063,6 +2191,17 @@ window.runMermaid = runMermaid;</script>
         <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">stored</span><span class="o">.</span><span class="n">license_id</span><span class="si">}</span><span class="s2">, bounded by </span><span class="si">{</span><span class="n">fresh</span><span class="o">.</span><span class="n">license_id</span><span class="si">}</span><span class="s2">"</span>
     <span class="p">)</span></div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_with_fresh_notes</span><span class="p">(</span>
+    <span class="n">stored</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">,</span> <span class="n">fresh</span><span class="p">:</span> <span class="n">LicenseRecord</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LicenseRecord</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""A copy of ``stored`` with ``fresh``'s terms notes added, or ``None`` when it has them."""</span>
+    <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">fresh</span><span class="o">.</span><span class="n">terms_notes</span> <span class="ow">or</span> <span class="p">())</span> <span class="o">&lt;=</span> <span class="nb">set</span><span class="p">(</span><span class="n">stored</span><span class="o">.</span><span class="n">terms_notes</span> <span class="ow">or</span> <span class="p">()):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">kept</span> <span class="o">=</span> <span class="n">carry_lineage</span><span class="p">(</span><span class="n">replace</span><span class="p">(</span><span class="n">stored</span><span class="p">),</span> <span class="n">stored</span><span class="p">)</span>
+    <span class="n">kept</span><span class="o">.</span><span class="n">terms_notes</span> <span class="o">=</span> <span class="n">_merged_notes</span><span class="p">(</span><span class="n">stored</span><span class="o">.</span><span class="n">terms_notes</span><span class="p">,</span> <span class="n">fresh</span><span class="o">.</span><span class="n">terms_notes</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">kept</span>
 
 
 <div class="viewcode-block" id="keep">

@@ -1,4 +1,4 @@
-> built 2026-11-02 03:56 UTC from 449fc68 (main) · foley 0.0.115. Details: build_info.json
+> built 2026-11-02 04:14 UTC from c5d61c9 (main) · foley 0.0.116. Details: build_info.json
 
 # index.html.md
 
@@ -3270,7 +3270,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Mix layer (shared by `SoundEvent` now and `TimelineItem` later).
 
-### *class* foley.base.LicenseRecord(source, source_id=None, source_url=None, acquisition_method=AcquisitionMethod.user, retrieved_at=None, adapter_version=None, content_sha256=None, license_id='unknown', license_name=None, license_version=None, license_url=None, rights_holder=None, creator_name=None, creator_url=None, commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, ai_training_scope=None, gen_ai_preference=None, revenue_cap_usd=None, requires_attribution=False, attribution_text=None, notice_text_required=None, transformations=list(), derived_from_license_ids=list(), is_ai_generated=False, generator_model=None, generator_version=None, generation_prompt=None, generation_prompt_used=None, generation_seed=None, generation_params=dict(), watermark=None, c2pa_manifest_ref=None, contains_recognizable_voice=False, potential_trademark=False, disclosure_recommended=False, rights_verified=False, verified_at=None, schema_version=1)
+### *class* foley.base.LicenseRecord(source, source_id=None, source_url=None, acquisition_method=AcquisitionMethod.user, retrieved_at=None, adapter_version=None, content_sha256=None, license_id='unknown', license_name=None, license_version=None, license_url=None, rights_holder=None, creator_name=None, creator_url=None, commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, ai_training_scope=None, gen_ai_preference=None, revenue_cap_usd=None, license_basis=None, license_basis_confidence=None, vendor_trains_on_output=None, terms_notes=list(), requires_attribution=False, attribution_text=None, notice_text_required=None, transformations=list(), derived_from_license_ids=list(), is_ai_generated=False, generator_model=None, generator_version=None, generation_prompt=None, generation_prompt_used=None, generation_seed=None, generation_params=dict(), watermark=None, vendor_watermark=None, c2pa_manifest_ref=None, contains_recognizable_voice=False, potential_trademark=False, disclosure_recommended=False, rights_verified=False, verified_at=None, schema_version=1)
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
 
@@ -6740,7 +6740,7 @@ no second CLAP forward pass.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float)]]
 
-### *class* foley.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None, derived_from=list(), derived_license_ids=list())
+### *class* foley.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, terms_notes=list(), is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None, derived_from=list(), derived_license_ids=list())
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
 
@@ -7250,7 +7250,7 @@ the *permission* row consulted by [`keep()`](_autosummary/foley.html.md#foley.ke
 license authority; a record’s own `license_name` / `license_url` (when a
 source populated them) take precedence over this default.
 
-### *class* foley.LicenseRecord(source, source_id=None, source_url=None, acquisition_method=AcquisitionMethod.user, retrieved_at=None, adapter_version=None, content_sha256=None, license_id='unknown', license_name=None, license_version=None, license_url=None, rights_holder=None, creator_name=None, creator_url=None, commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, ai_training_scope=None, gen_ai_preference=None, revenue_cap_usd=None, requires_attribution=False, attribution_text=None, notice_text_required=None, transformations=list(), derived_from_license_ids=list(), is_ai_generated=False, generator_model=None, generator_version=None, generation_prompt=None, generation_prompt_used=None, generation_seed=None, generation_params=dict(), watermark=None, c2pa_manifest_ref=None, contains_recognizable_voice=False, potential_trademark=False, disclosure_recommended=False, rights_verified=False, verified_at=None, schema_version=1)
+### *class* foley.LicenseRecord(source, source_id=None, source_url=None, acquisition_method=AcquisitionMethod.user, retrieved_at=None, adapter_version=None, content_sha256=None, license_id='unknown', license_name=None, license_version=None, license_url=None, rights_holder=None, creator_name=None, creator_url=None, commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, ai_training_scope=None, gen_ai_preference=None, revenue_cap_usd=None, license_basis=None, license_basis_confidence=None, vendor_trains_on_output=None, terms_notes=list(), requires_attribution=False, attribution_text=None, notice_text_required=None, transformations=list(), derived_from_license_ids=list(), is_ai_generated=False, generator_model=None, generator_version=None, generation_prompt=None, generation_prompt_used=None, generation_seed=None, generation_params=dict(), watermark=None, vendor_watermark=None, c2pa_manifest_ref=None, contains_recognizable_voice=False, potential_trademark=False, disclosure_recommended=False, rights_verified=False, verified_at=None, schema_version=1)
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
 
@@ -14515,6 +14515,10 @@ item is redistributable but stored by-reference.
 | [`LICENSE_META`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_META)                 | `license_id` -> display name + canonical URL (one row per [`LICENSE_FLAGS`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_FLAGS) key).                                                                                                                                                       |
 | [`AI_TRAINING_SCOPES`](_autosummary/foley.licensing.html.md#foley.licensing.AI_TRAINING_SCOPES)           | The `ai_training_scope` values (`None` = no narrowing beyond `ai_training_ok`).                                                                                                                                                                                                      |
 | [`GEN_AI_PREFERENCE_SCOPES`](_autosummary/foley.licensing.html.md#foley.licensing.GEN_AI_PREFERENCE_SCOPES)     | Freesound `gen_ai_preference` -> `(ai_training_ok override, ai_training_scope)`.                                                                                                                                                                                                     |
+| [`LICENSE_BASES`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_BASES)                | the model's own licence (its weights), the vendor's terms of service, or a label an aggregator put on it (fal's `commercial`, an Openverse row), which is a claim about another party's licence and never that licence itself.                                                       |
+| [`LICENSE_BASIS_CONFIDENCES`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_BASIS_CONFIDENCES)    | How sure foley is that the basis applies to the route the sound came by.                                                                                                                                                                                                             |
+| [`VENDOR_WATERMARK_REPORTERS`](_autosummary/foley.licensing.html.md#foley.licensing.VENDOR_WATERMARK_REPORTERS)   | Who stated a vendor's watermark (`LicenseRecord.vendor_watermark['reported_by']`): the source's config (its terms), or the vendor's response for this clip.                                                                                                                          |
+| [`SOURCE_STATED_FIELDS`](_autosummary/foley.licensing.html.md#foley.licensing.SOURCE_STATED_FIELDS)         | The [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) fields a source *states* (in its config's `license` block, or per clip): none is derived from a `license_id` row and none is a permission, so stamping them never widens a record.       |
 | [`EU_MEMBER_STATES`](_autosummary/foley.licensing.html.md#foley.licensing.EU_MEMBER_STATES)             | The EU's member states (ISO 3166-1 alpha-2), for a licence that excludes "EU", with the EU territories that carry their own codes: France's outermost regions (Réunion, French Guiana, Guadeloupe, Martinique, Mayotte, Saint-Martin) and Finland's Åland.                           |
 | [`LICENSE_EXCLUDED_TERRITORIES`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_EXCLUDED_TERRITORIES) | `license_id` -> the territories where it grants nothing (ISO 3166-1 alpha-2 codes, plus `"EU"` for every member state).                                                                                                                                                              |
 | [`LICENSE_TERMS_PROVIDER`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_TERMS_PROVIDER)       | Whose terms a provider-terms `license_id` is, under the provider names a consumer classifies them by (`an`'s `PROVIDER_TERMS`: a code counts only on a source whose provider is that provider).                                                                                      |
@@ -14540,6 +14544,7 @@ item is redistributable but stored by-reference.
 | [`derivative_refusal`](_autosummary/foley.licensing.html.md#foley.licensing.derivative_refusal)(source)                        | Why a sound with rights `source` may not be edited into a new sound, or `None`.                                                                                                                                                                                                |
 | [`derive_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.derive_license_flags)(license_id, \*[, overrides]) | Look up the flag set for a `license_id` (fail-closed fallback), then apply per-source overrides.                                                                                                                                                                               |
 | [`derived_license_ids`](_autosummary/foley.licensing.html.md#foley.licensing.derived_license_ids)(record)                       | The licence ids of every sound `record` derives from (`[]`: not derived).                                                                                                                                                                                                      |
+| [`excluded_territories`](_autosummary/foley.licensing.html.md#foley.licensing.excluded_territories)(record)                      | Where `record`'s licence, or any licence it derives from, grants nothing.                                                                                                                                                                                                      |
 | [`export_refusal`](_autosummary/foley.licensing.html.md#foley.licensing.export_refusal)(source)                            | Why the bytes of a sound with rights `source` may not be exported, or `None`.                                                                                                                                                                                                  |
 | [`intended_use_for`](_autosummary/foley.licensing.html.md#foley.licensing.intended_use_for)([intended_use, ...])             | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                                                                                                                                                                           |
 | [`is_cc_license_token`](_autosummary/foley.licensing.html.md#foley.licensing.is_cc_license_token)(token)                        | Whether `token` is a search constraint a CC-reading source understands.                                                                                                                                                                                                        |
@@ -14554,6 +14559,7 @@ item is redistributable but stored by-reference.
 | [`refusals`](_autosummary/foley.licensing.html.md#foley.licensing.refusals)(sound_records, intended_use)             | `{sound id: reason}` for each sound record [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) refuses for `intended_use`.                                                                                                                                                 |
 | [`restamped_license`](_autosummary/foley.licensing.html.md#foley.licensing.restamped_license)(stored, fresh, \*[, widen])     | What a stored sound's licence becomes when its source now states `fresh`.                                                                                                                                                                                                      |
 | [`rights_license_id`](_autosummary/foley.licensing.html.md#foley.licensing.rights_license_id)(record)                         | The licence id a consumer should read `record` under, or `None` (UNKNOWN).                                                                                                                                                                                                     |
+| [`stamp_source_terms`](_autosummary/foley.licensing.html.md#foley.licensing.stamp_source_terms)(record, stated)                | Write what a source `stated` about its terms onto `record`, in place, and return it.                                                                                                                                                                                           |
 | [`territory_excluded`](_autosummary/foley.licensing.html.md#foley.licensing.territory_excluded)(excluded, territory)           | Whether `territory` is in `excluded` (`"EU"` covers its member states).                                                                                                                                                                                                        |
 | [`upload_refusal`](_autosummary/foley.licensing.html.md#foley.licensing.upload_refusal)(source)                            | Why the bytes of a sound with rights `source` may not be sent to an edit backend, or `None`.                                                                                                                                                                                   |
 | [`wanted_license_ids`](_autosummary/foley.licensing.html.md#foley.licensing.wanted_license_ids)(config, license)               | The licence ids a `license=` request keeps, or `None` for every accepted one.                                                                                                                                                                                                  |
@@ -14619,6 +14625,20 @@ Finland’s Åland. (The Canaries, Azores, Madeira, Ceuta and Melilla have none.
 Freesound `gen_ai_preference` -> `(ai_training_ok override, ai_training_scope)`.
 `None` as the override leaves the CC row’s flag alone. An unlisted value fails
 closed (see [`ai_scope_from_gen_ai_preference()`](_autosummary/foley.licensing.html.md#foley.licensing.ai_scope_from_gen_ai_preference)).
+
+### foley.licensing.LICENSE_BASES *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('model-licence', 'vendor-tos', 'aggregator-label')*
+
+the model’s own
+licence (its weights), the vendor’s terms of service, or a label an aggregator put
+on it (fal’s `commercial`, an Openverse row), which is a claim about another
+party’s licence and never that licence itself.
+
+* **Type:**
+  What a record’s rights rest on (`LicenseRecord.license_basis`)
+
+### foley.licensing.LICENSE_BASIS_CONFIDENCES *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('confirmed', 'unverified')*
+
+How sure foley is that the basis applies to the route the sound came by.
 
 ### foley.licensing.LICENSE_EXCLUDED_TERRITORIES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)]* *= {'Tencent-Hunyuan-Community': frozenset({'EU', 'GB', 'GG', 'GI', 'IM', 'JE', 'KR'})}*
 
@@ -14713,6 +14733,12 @@ is left out until consumers agree it owes a credit (foley’s row says it does;
 The fields that say a stored licence and a fresh one differ besides their rights
 ([`wider_rights()`](_autosummary/foley.licensing.html.md#foley.licensing.wider_rights), either way); `verified_at` does not.
 
+### foley.licensing.SOURCE_STATED_FIELDS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('license_basis', 'license_basis_confidence', 'vendor_trains_on_output', 'terms_notes', 'vendor_watermark')*
+
+The [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) fields a source *states* (in its config’s
+`license` block, or per clip): none is derived from a `license_id` row and none
+is a permission, so stamping them never widens a record.
+
 ### foley.licensing.UNASSERTABLE_LICENSE_IDS *= frozenset({'ElevenLabs-SFX', 'PDM-1.0', 'unknown'})*
 
 Licence ids that can never be *asserted* as verified (on ingest, restamp or in a
@@ -14727,6 +14753,11 @@ Fail-closed fallback for unknown / `Proprietary-*` license ids (all False, cap N
 ### foley.licensing.UNKNOWN_LICENSE_META *= LicenseMeta(display_name='Unknown / unverified license', url=None)*
 
 Fail-closed display fallback for unknown / `Proprietary-*` license ids.
+
+### foley.licensing.VENDOR_WATERMARK_REPORTERS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('config', 'response')*
+
+Who stated a vendor’s watermark (`LicenseRecord.vendor_watermark['reported_by']`):
+the source’s config (its terms), or the vendor’s response for this clip.
 
 ### foley.licensing.ai_scope_from_gen_ai_preference(preference)
 
@@ -14802,8 +14833,10 @@ licence’s code can stand in for it: a revenue cap, or a provider’s own terms
 Copy `old`’s lineage onto `new`, in place, and return `new`.
 
 The lineage is what a re-stamped record must keep from the one it replaces: its
-`transformations` (the edits and fixes, so the credit still reads “(modified)”)
-and its `derived_from_license_ids` (the licences bounding it, #214). Fresh lists,
+`transformations` (the edits and fixes, so the credit still reads “(modified)”),
+its `derived_from_license_ids` (the licences bounding it, #214), its
+`terms_notes` (added to `new`’s: the source’s API obligations, #77) and the
+facts about its bytes (a vendor that reuses them, the vendor’s watermark). Fresh lists,
 so the two records never share one; a `None` reads as empty. `new`’s flags are
 then bounded by every licence it now derives from (never widened), so the copy is
 safe on its own; a later [`apply_license_flags()`](_autosummary/foley.licensing.html.md#foley.licensing.apply_license_flags) re-derives under the same bound.
@@ -14996,6 +15029,26 @@ narrowing it again with [`narrow_to_source()`](_autosummary/foley.licensing.html
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
+### foley.licensing.excluded_territories(record)
+
+Where `record`’s licence, or any licence it derives from, grants nothing.
+
+[`LICENSE_EXCLUDED_TERRITORIES`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_EXCLUDED_TERRITORIES) is the SSOT (an exclusion is a term of the
+licence, not of one sound), read over the record’s whole lineage
+([`derived_license_ids()`](_autosummary/foley.licensing.html.md#foley.licensing.derived_license_ids)), so a record restamped or narrowed by an excluding
+licence is gated too. Sorted codes; `[]` when nothing is excluded.
+
+```pycon
+>>> excluded_territories(LicenseRecord(source="s", license_id="CC0-1.0"))
+[]
+>>> excluded_territories(LicenseRecord(source="s", license_id="CC0-1.0",
+...     derived_from_license_ids=["Tencent-Hunyuan-Community"]))[:3]
+['EU', 'GB', 'GG']
+```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
 ### foley.licensing.export_refusal(source)
 
 Why the bytes of a sound with rights `source` may not be exported, or `None`.
@@ -15142,7 +15195,7 @@ An edit is a derivative of its source: it may be used only where both the
 generator’s licence and the source’s allow. Each permission of
 `_DERIVATIVE_SHARED_FLAGS` is kept only when both hold it, attribution is
 required when either requires it, the revenue cap is the lower one, the AI-use
-scope is the stricter one, and the source’s required notice, stated AI-use
+scope is the stricter one, and the source’s required notice, terms notes, stated AI-use
 preference and safety flags carry over. `cache_bytes_ok` stays the output’s (it
 is about storing the new bytes). Routed through [`apply_license_flags()`](_autosummary/foley.licensing.html.md#foley.licensing.apply_license_flags), so the
 flags still come from the policy layer, never set by hand.
@@ -15228,7 +15281,9 @@ What a stored sound’s licence becomes when its source now states `fresh`.
 Returns `(new_record, note)`: `new_record` is `None` when the stored licence
 stays as it is, and `note` is `None` when there is nothing to say. Pure:
 neither argument is changed. The stored lineage (edits, the licences bounding it)
-is always kept ([`carry_lineage()`](_autosummary/foley.licensing.html.md#foley.licensing.carry_lineage)).
+is always kept ([`carry_lineage()`](_autosummary/foley.licensing.html.md#foley.licensing.carry_lineage)). `terms_notes` are not rights: `fresh`’s
+are added to the stored record whatever happens to its licence (then
+`new_record` is the stored licence with them, even when its rights stay).
 
 * `widen=True`: `fresh` replaces the stored licence. For a source that is the
   authority on its own clips (a corpus’s metadata, `foley.bootstrap.bootstrap()`).
@@ -15291,6 +15346,26 @@ True
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.licensing.stamp_source_terms(record, stated)
+
+Write what a source `stated` about its terms onto `record`, in place, and return it.
+
+`stated` maps [`SOURCE_STATED_FIELDS`](_autosummary/foley.licensing.html.md#foley.licensing.SOURCE_STATED_FIELDS) names to values (a config’s, see
+`foley.sources.base.source_stated_terms()`). No permission flag is touched;
+`terms_notes` are added to the record’s own, once each.
+
+```pycon
+>>> lic = stamp_source_terms(LicenseRecord(source="s"),
+...     {"license_basis": "vendor-tos", "terms_notes": ["Pay the piper."]})
+>>> lic.license_basis, lic.terms_notes, lic.commercial_ok
+('vendor-tos', ['Pay the piper.'], False)
+```
+
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – On a name that is not a stated field, or a value it does not take.
+* **Return type:**
+  [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
 
 ### foley.licensing.territory_excluded(excluded, territory)
 
@@ -16370,7 +16445,7 @@ Design (report 07 · 10 §\`\`provenance/
 |------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
 | [`Credits`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.Credits)([entries, title, schema_version])     | A deduplicated, ordered collection of [`CreditEntry`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.CreditEntry) for one run. |
 
-### *class* foley.provenance.credits.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None, derived_from=list(), derived_license_ids=list())
+### *class* foley.provenance.credits.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, terms_notes=list(), is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None, derived_from=list(), derived_license_ids=list())
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
 
@@ -16701,7 +16776,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta-dum', 'tudum', 'netflix intro', 'netflix chime', 'ta dum', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm roar', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel bong', 'intel chime', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer doh', 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'ta dum', 'ta-dum', 'netflix sound', 'tudum', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel bong', 'intel chime', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -16944,7 +17019,7 @@ reach the pure helpers via `foley.art50_checklist` / `foley.scan_prompt`.
 |------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
 | [`Credits`](_autosummary/foley.provenance.html.md#foley.provenance.Credits)([entries, title, schema_version])     | A deduplicated, ordered collection of [`CreditEntry`](_autosummary/foley.provenance.html.md#foley.provenance.CreditEntry) for one run. |
 
-### *class* foley.provenance.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None, derived_from=list(), derived_license_ids=list())
+### *class* foley.provenance.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, terms_notes=list(), is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None, derived_from=list(), derived_license_ids=list())
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
 
@@ -17251,7 +17326,10 @@ Export a sound with its rights and provenance, for a store outside foley (#66).
   foley’s id, the sha256 of the archived bytes AND of the exported bytes (a FLAC
   archive re-encoded to WAV hashes differently, so both are kept to chain them) and
   whether the re-encode was lossless, the eight licence flags (`ai_training_ok`,
-  `revenue_cap_usd`, …), a required notice, excluded territories, the safety
+  `revenue_cap_usd`, …), a required notice, the source’s API obligations
+  (`terms_notes`), what the licence rests on (`license_basis` and its
+  confidence), whether the vendor reuses its output, the vendor’s own watermark
+  statement (beside foley’s AudioSeal one), excluded territories, the safety
   flags, the edit lineage and, for an AI-generated clip, its EU AI Act Art. 50
   checklist with the generation block.
 
@@ -17300,16 +17378,15 @@ The export also interoperates with library tools (Soundminer, Soundly, BaseHead;
 
 ### Functions
 
-| [`excluded_territories`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.excluded_territories)(lic)                          | Where `lic` or any licence it derives from grants nothing (sorted codes).                                                                           |
-|-----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`export_metadata`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.export_metadata)(record, rights[, ucs_name])        | The fields an export embeds ([`foley.embedded_metadata.FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) names). |
-| [`export_sound`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.export_sound)(sound_id[, fmt, library, ...])        | Export a sound's bytes as `fmt` with its rights and provenance (#66, #231).                                                                         |
-| [`export_ucs_filename`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.export_ucs_filename)(record, rights, \*[, ...])     | The UCS filename of `record`'s export, or `None` when it has no CatID in `table`.                                                                   |
-| [`id_from_user_data`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.id_from_user_data)(block)                           | The foley id [`id_to_user_data()`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.id_to_user_data) encoded as `block`.                                                 |
-| [`id_to_user_data`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.id_to_user_data)(sound_id)                          | `sound_id` as a filename block, injectively: [`id_from_user_data()`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.id_from_user_data) inverts it.                       |
-| [`rights_provider`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.rights_provider)(lic)                               | Who the rights come from: a provider-terms licence's owner, else the source.                                                                        |
-| [`sound_provenance`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.sound_provenance)(record, \*, archived_sha256, ...) | What an export must carry that `Rights` has no field for (JSON-native).                                                                             |
-| [`sound_rights`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.sound_rights)(record)                               | `record`'s rights as a dict keyed by `lacing.Rights` field names.                                                                                   |
+| [`export_metadata`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.export_metadata)(record, rights[, ucs_name])        | The fields an export embeds ([`foley.embedded_metadata.FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) names).   |
+|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`export_sound`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.export_sound)(sound_id[, fmt, library, ...])        | Export a sound's bytes as `fmt` with its rights and provenance (#66, #231).                                                                           |
+| [`export_ucs_filename`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.export_ucs_filename)(record, rights, \*[, ...])     | The UCS filename of `record`'s export, or `None` when it has no CatID in `table`.                                                                     |
+| [`id_from_user_data`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.id_from_user_data)(block)                           | The foley id [`id_to_user_data()`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.id_to_user_data) encoded as `block`.                                                   |
+| [`id_to_user_data`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.id_to_user_data)(sound_id)                          | `sound_id` as a filename block, injectively: [`id_from_user_data()`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.id_from_user_data) inverts it.                         |
+| [`rights_provider`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.rights_provider)(lic)                               | Who the rights come from: a provider-terms licence's owner, else the source.                                                                          |
+| [`sound_provenance`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.sound_provenance)(record, \*, archived_sha256, ...) | What an export must carry that `Rights` has no field for (JSON-native).                                                                               |
+| [`sound_rights`](_autosummary/foley.provenance.rights.html.md#foley.provenance.rights.sound_rights)(record)                               | `record`'s rights as a dict keyed by `lacing.Rights` field names.                                                                                     |
 
 ### foley.provenance.rights.ASSET_SOURCE_EXTRAS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('url', 'sha256', 'cost_usd', 'extra')*
 
@@ -17351,18 +17428,6 @@ a brief title of at most this many characters.
 
 * **Type:**
   The UCS guidance for an FXName
-
-### foley.provenance.rights.excluded_territories(lic)
-
-Where `lic` or any licence it derives from grants nothing (sorted codes).
-
-```pycon
->>> excluded_territories(LicenseRecord(source="s", license_id="CC0-1.0"))
-[]
-```
-
-* **Return type:**
-  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### foley.provenance.rights.export_metadata(record, rights, ucs_name=None)
 
@@ -18852,7 +18917,7 @@ Stamp the corpus’s uniform license (derived via the licensing SSOT).
 * **Return type:**
   [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
 
-### foley.sources.base.api_license(, source, license_id, rights_verified, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None)
+### foley.sources.base.api_license(, source, license_id, rights_verified, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None, terms=None)
 
 Build an API-acquisition [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived.
 
@@ -18880,6 +18945,7 @@ caching the bytes even for CC0. `redistribute_standalone_ok` (copyright) and
   * **license_url** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The license URL/label exactly as the source served it.
   * **creator_name** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The uploader/creator (required for CC-BY attribution).
   * **attribution_text** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A ready-made attribution string, if supplied.
+  * **terms** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)]) – What the source states about its terms (`source_stated_terms()`).
 * **Return type:**
   [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
 * **Returns:**
@@ -19031,7 +19097,7 @@ True
 * **Return type:**
   [`int`](https://docs.python.org/3/builtins/functions.html#int)
 
-### foley.sources.base.generated_license(, source, license_id, generator_model, generation_prompt, rights_verified=True, generator_version=None, generation_seed=None, generation_params=None, generation_prompt_used=None, disclosure_recommended=True, watermark=None, c2pa_manifest_ref=None, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None, ai_generated=True)
+### foley.sources.base.generated_license(, source, license_id, generator_model, generation_prompt, rights_verified=True, generator_version=None, generation_seed=None, generation_params=None, generation_prompt_used=None, disclosure_recommended=True, watermark=None, c2pa_manifest_ref=None, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None, ai_generated=True, terms=None)
 
 Build a generated [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped.
 
@@ -19084,6 +19150,9 @@ but never flips the flag, so [`foley.keep()`](_autosummary/foley.html.md#foley.k
     procedural synthesis (a `'procedural'` source, #76): the record then
     has `is_ai_generated=False` and `disclosure_recommended=False`
     (whatever was passed), and still carries the generation-provenance block.
+  * **terms** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)]) – What the source states about its terms (`source_stated_terms()`:
+    the licence basis, whether the vendor reuses its output, API obligations,
+    the vendor’s watermark statement).
 * **Return type:**
   [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
 * **Returns:**
@@ -20091,6 +20160,7 @@ is an error, never a fall-through to the network.
 |----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
 | [`falaw_runner`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.falaw_runner)(endpoint_id, arguments, \*, api_key) | Call a fal endpoint through falaw and return `(audio bytes, raw response)`.                                                       |
 | [`falaw_uploader`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.falaw_uploader)(path, \*, api_key)                 | A fal-fetchable URL for the local file at `path` (`falaw.upload`: content-addressed, so an unchanged file is not uploaded twice). |
+| [`reported_watermark`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.reported_watermark)(response, stated, ...)         | The vendor's watermark as this response reports it (#77), or `None`.                                                              |
 
 ### Classes
 
@@ -20268,6 +20338,28 @@ so an unchanged file is not uploaded twice).
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
+### foley.sources.fal.adapter.reported_watermark(response, stated, native_defaults)
+
+The vendor’s watermark as this response reports it (#77), or `None`.
+
+Only for an endpoint whose config names the response field
+(`native_defaults['watermark_field']`: Sonilo’s `watermark`), and only when the
+response carries it: an absent field is no report (fal’s schema does not list it),
+so the config’s statement stands. The config’s own statement (`stated`) is kept
+beside the report.
+
+```pycon
+>>> reported_watermark({"watermark": "sonilo-v1"}, None, {"watermark_field": "watermark"})
+{'present': True, 'statement': None, 'reported_by': 'response', 'detail': 'sonilo-v1'}
+>>> reported_watermark({}, None, {"watermark_field": "watermark"}) is None
+True
+>>> reported_watermark({"watermark": "x"}, None, {}) is None
+True
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
 
 # _autosummary/foley.sources.fal.config.html.md
 
@@ -20306,6 +20398,11 @@ Licences (the per-sound record is fail-closed, so each row says only what is kno
   but not specifically for calls billed through fal). Row: `fal-partner-unverified` — usable in a derivative,
   **not** commercially, until the terms are confirmed (foley#77). Narrowing, never widening.
 
+Each licence block also states what the row rests on (#77): `model-licence` (confirmed)
+for open weights, `vendor-tos` (unverified) for the partner rows, never fal’s own
+`commercial` label; Mirelo and ElevenLabs say the vendor reuses its output, and Sonilo
+reports its own watermark per clip (`native_defaults['watermark_field']`).
+
 The edit endpoints (#162: `fal_stable_audio_3_audio_to_audio`, `_inpaint`, `_extend`)
 declare `modes=['edit']` and their `edit_op` (a [`foley.base.EDIT_OPS`](_autosummary/foley.base.html.md#foley.base.EDIT_OPS) name), so
 only a call with a source clip (`audio=`, see [`foley.edit()`](_autosummary/foley.html.md#foley.edit)) reaches them, and none
@@ -20324,7 +20421,7 @@ bound, when it declares none), never at zero.
 |------------------------------------------------------------------------|------------------------------------------------------------------------------|
 | [`FAL_SOURCES`](_autosummary/foley.sources.fal.config.html.md#foley.sources.fal.config.FAL_SOURCES)           | The fal source names, in the order above (the first is the recommended one). |
 
-### foley.sources.fal.config.EDIT_SOURCE_CONFIGS *= ({'api': {'endpoint_id': 'fal-ai/stable-audio-3/small/sfx/audio-to-audio'}, 'auth': {'apply_url': 'https://fal.ai/dashboard/keys', 'env_var': 'FAL_KEY', 'extra': 'fal', 'type': 'token'}, 'commercial_ok': True, 'data_egress': 'external', 'dependencies': [], 'display_name': 'Stable Audio 3 Small-SFX audio-to-audio (fal)', 'edit_op': 'audio_to_audio', 'kind': 'generate', 'license': {'cache_bytes_ok': True, 'default_license_id': 'Stability-Community'}, 'modes': ['edit'], 'name': 'fal_stable_audio_3_audio_to_audio', 'native_defaults': {'distilled': True, 'duration_default_s': 10.0, 'duration_max_s': 120.0, 'duration_min_s': 1.0, 'fixed_arguments': {'enable_prompt_expansion': False, 'enable_safety_checker': True}, 'generator_version': 'fal-ai/stable-audio-3/small/sfx/audio-to-audio', 'model_id': 'stable-audio-3-small-sfx', 'output_format': 'wav', 'sample_rate': 44100, 'seed_field': 'seed'}, 'on_unsupported_param': 'warn', 'optional_dependencies': ['falaw'], 'output': {'audio_field': 'audio', 'returns': 'url', 'storage': 'by_value'}, 'param_map': {'audio': {'native_name': 'audio_url'}, 'duration_s': {'native_name': 'duration'}, 'expand_prompt': {'native_name': 'enable_prompt_expansion'}, 'negative_prompt': {'native_name': 'negative_prompt'}, 'output_format': {'native_name': 'output_format', 'to_native_map': {'flac': 'flac', 'mp3': 'mp3', 'opus': 'opus', 'wav': 'wav'}}, 'prompt': {'native_name': 'prompt', 'required': True}, 'prompt_influence': {'coerce': {'hi': 25.0, 'kind': 'linear', 'lo': 1.0}, 'native_default': 1.0, 'native_name': 'guidance_scale'}, 'seed': {'native_name': 'seed'}, 'steps': {'native_name': 'num_inference_steps'}, 'strength': {'native_name': 'init_noise_level'}}, 'pricing': {'amount_usd': 0.024, 'seen': '2026-10-27', 'source': 'fal pricing API (GET /v1/models/pricing?endpoint_id=...)', 'unit': 'per_call'}, 'provider_params': {'append': {}, 'priced': ['duration'], 'reserved': ['audio_url', 'enable_prompt_expansion', 'enable_safety_checker', 'num_samples', 'prompt']}, 'rate': {'per_min': 60}, 'supported_affordances': ['prompt', 'audio', 'prompt_influence', 'negative_prompt', 'steps', 'seed', 'output_format', 'expand_prompt', 'duration_s', 'strength'], 'unsupported_affordances': ['loop'], 'website': 'https://fal.ai/models/fal-ai/stable-audio-3/small/sfx/audio-to-audio'}, {'api': {'endpoint_id': 'fal-ai/stable-audio-3/small/sfx/audio-inpainting'}, 'auth': {'apply_url': 'https://fal.ai/dashboard/keys', 'env_var': 'FAL_KEY', 'extra': 'fal', 'type': 'token'}, 'commercial_ok': True, 'data_egress': 'external', 'dependencies': [], 'display_name': 'Stable Audio 3 Small-SFX inpaint (fal)', 'edit_op': 'inpaint', 'kind': 'generate', 'license': {'cache_bytes_ok': True, 'default_license_id': 'Stability-Community'}, 'modes': ['edit'], 'name': 'fal_stable_audio_3_inpaint', 'native_defaults': {'distilled': True, 'fixed_arguments': {'enable_prompt_expansion': False, 'enable_safety_checker': True}, 'generator_version': 'fal-ai/stable-audio-3/small/sfx/audio-inpainting', 'model_id': 'stable-audio-3-small-sfx', 'output_format': 'wav', 'sample_rate': 44100, 'seed_field': 'seed'}, 'on_unsupported_param': 'warn', 'optional_dependencies': ['falaw'], 'output': {'audio_field': 'audio', 'returns': 'url', 'storage': 'by_value'}, 'param_map': {'audio': {'native_name': 'audio_url'}, 'expand_prompt': {'native_name': 'enable_prompt_expansion'}, 'inpaint_end_s': {'native_name': 'mask_end_seconds'}, 'inpaint_start_s': {'native_name': 'mask_start_seconds'}, 'negative_prompt': {'native_name': 'negative_prompt'}, 'output_format': {'native_name': 'output_format', 'to_native_map': {'flac': 'flac', 'mp3': 'mp3', 'opus': 'opus', 'wav': 'wav'}}, 'prompt': {'native_name': 'prompt', 'required': True}, 'prompt_influence': {'coerce': {'hi': 25.0, 'kind': 'linear', 'lo': 1.0}, 'native_default': 1.0, 'native_name': 'guidance_scale'}, 'seed': {'native_name': 'seed'}, 'steps': {'native_name': 'num_inference_steps'}}, 'pricing': {'amount_usd': 0.0259, 'seen': '2026-10-27', 'source': 'fal pricing API (GET /v1/models/pricing?endpoint_id=...)', 'unit': 'per_call'}, 'provider_params': {'append': {}, 'priced': ['duration'], 'reserved': ['audio_url', 'enable_prompt_expansion', 'enable_safety_checker', 'num_samples', 'prompt']}, 'rate': {'per_min': 60}, 'supported_affordances': ['prompt', 'audio', 'prompt_influence', 'negative_prompt', 'steps', 'seed', 'output_format', 'expand_prompt', 'inpaint_start_s', 'inpaint_end_s'], 'unsupported_affordances': ['loop', 'duration_s'], 'website': 'https://fal.ai/models/fal-ai/stable-audio-3/small/sfx/audio-inpainting'}, {'api': {'endpoint_id': 'fal-ai/stable-audio-3/small/sfx/audio-outpainting'}, 'auth': {'apply_url': 'https://fal.ai/dashboard/keys', 'env_var': 'FAL_KEY', 'extra': 'fal', 'type': 'token'}, 'commercial_ok': True, 'data_egress': 'external', 'dependencies': [], 'display_name': 'Stable Audio 3 Small-SFX extend (fal)', 'edit_op': 'extend', 'kind': 'generate', 'license': {'cache_bytes_ok': True, 'default_license_id': 'Stability-Community'}, 'modes': ['edit'], 'name': 'fal_stable_audio_3_extend', 'native_defaults': {'distilled': True, 'fixed_arguments': {'enable_prompt_expansion': False, 'enable_safety_checker': True}, 'generator_version': 'fal-ai/stable-audio-3/small/sfx/audio-outpainting', 'model_id': 'stable-audio-3-small-sfx', 'output_format': 'wav', 'sample_rate': 44100, 'seed_field': 'seed'}, 'on_unsupported_param': 'warn', 'optional_dependencies': ['falaw'], 'output': {'audio_field': 'audio', 'returns': 'url', 'storage': 'by_value'}, 'param_map': {'audio': {'native_name': 'audio_url'}, 'expand_prompt': {'native_name': 'enable_prompt_expansion'}, 'extend_after_s': {'max': 120.0, 'native_name': 'extend_seconds_after'}, 'extend_before_s': {'max': 120.0, 'native_name': 'extend_seconds_before'}, 'negative_prompt': {'native_name': 'negative_prompt'}, 'output_format': {'native_name': 'output_format', 'to_native_map': {'flac': 'flac', 'mp3': 'mp3', 'opus': 'opus', 'wav': 'wav'}}, 'prompt': {'native_name': 'prompt', 'required': True}, 'prompt_influence': {'coerce': {'hi': 25.0, 'kind': 'linear', 'lo': 1.0}, 'native_default': 1.0, 'native_name': 'guidance_scale'}, 'seed': {'native_name': 'seed'}, 'steps': {'native_name': 'num_inference_steps'}}, 'pricing': {'amount_usd': 0.0271, 'seen': '2026-10-27', 'source': 'fal pricing API (GET /v1/models/pricing?endpoint_id=...)', 'unit': 'per_call'}, 'provider_params': {'append': {}, 'priced': ['duration'], 'reserved': ['audio_url', 'enable_prompt_expansion', 'enable_safety_checker', 'num_samples', 'prompt']}, 'rate': {'per_min': 60}, 'supported_affordances': ['prompt', 'audio', 'prompt_influence', 'negative_prompt', 'steps', 'seed', 'output_format', 'expand_prompt', 'extend_before_s', 'extend_after_s'], 'unsupported_affordances': ['loop', 'duration_s'], 'website': 'https://fal.ai/models/fal-ai/stable-audio-3/small/sfx/audio-outpainting'})*
+### foley.sources.fal.config.EDIT_SOURCE_CONFIGS *= ({'api': {'endpoint_id': 'fal-ai/stable-audio-3/small/sfx/audio-to-audio'}, 'auth': {'apply_url': 'https://fal.ai/dashboard/keys', 'env_var': 'FAL_KEY', 'extra': 'fal', 'type': 'token'}, 'commercial_ok': True, 'data_egress': 'external', 'dependencies': [], 'display_name': 'Stable Audio 3 Small-SFX audio-to-audio (fal)', 'edit_op': 'audio_to_audio', 'kind': 'generate', 'license': {'cache_bytes_ok': True, 'default_license_id': 'Stability-Community', 'license_basis': 'model-licence', 'license_basis_confidence': 'confirmed'}, 'modes': ['edit'], 'name': 'fal_stable_audio_3_audio_to_audio', 'native_defaults': {'distilled': True, 'duration_default_s': 10.0, 'duration_max_s': 120.0, 'duration_min_s': 1.0, 'fixed_arguments': {'enable_prompt_expansion': False, 'enable_safety_checker': True}, 'generator_version': 'fal-ai/stable-audio-3/small/sfx/audio-to-audio', 'model_id': 'stable-audio-3-small-sfx', 'output_format': 'wav', 'sample_rate': 44100, 'seed_field': 'seed'}, 'on_unsupported_param': 'warn', 'optional_dependencies': ['falaw'], 'output': {'audio_field': 'audio', 'returns': 'url', 'storage': 'by_value'}, 'param_map': {'audio': {'native_name': 'audio_url'}, 'duration_s': {'native_name': 'duration'}, 'expand_prompt': {'native_name': 'enable_prompt_expansion'}, 'negative_prompt': {'native_name': 'negative_prompt'}, 'output_format': {'native_name': 'output_format', 'to_native_map': {'flac': 'flac', 'mp3': 'mp3', 'opus': 'opus', 'wav': 'wav'}}, 'prompt': {'native_name': 'prompt', 'required': True}, 'prompt_influence': {'coerce': {'hi': 25.0, 'kind': 'linear', 'lo': 1.0}, 'native_default': 1.0, 'native_name': 'guidance_scale'}, 'seed': {'native_name': 'seed'}, 'steps': {'native_name': 'num_inference_steps'}, 'strength': {'native_name': 'init_noise_level'}}, 'pricing': {'amount_usd': 0.024, 'seen': '2026-10-27', 'source': 'fal pricing API (GET /v1/models/pricing?endpoint_id=...)', 'unit': 'per_call'}, 'provider_params': {'append': {}, 'priced': ['duration'], 'reserved': ['audio_url', 'enable_prompt_expansion', 'enable_safety_checker', 'num_samples', 'prompt']}, 'rate': {'per_min': 60}, 'supported_affordances': ['prompt', 'audio', 'prompt_influence', 'negative_prompt', 'steps', 'seed', 'output_format', 'expand_prompt', 'duration_s', 'strength'], 'unsupported_affordances': ['loop'], 'website': 'https://fal.ai/models/fal-ai/stable-audio-3/small/sfx/audio-to-audio'}, {'api': {'endpoint_id': 'fal-ai/stable-audio-3/small/sfx/audio-inpainting'}, 'auth': {'apply_url': 'https://fal.ai/dashboard/keys', 'env_var': 'FAL_KEY', 'extra': 'fal', 'type': 'token'}, 'commercial_ok': True, 'data_egress': 'external', 'dependencies': [], 'display_name': 'Stable Audio 3 Small-SFX inpaint (fal)', 'edit_op': 'inpaint', 'kind': 'generate', 'license': {'cache_bytes_ok': True, 'default_license_id': 'Stability-Community', 'license_basis': 'model-licence', 'license_basis_confidence': 'confirmed'}, 'modes': ['edit'], 'name': 'fal_stable_audio_3_inpaint', 'native_defaults': {'distilled': True, 'fixed_arguments': {'enable_prompt_expansion': False, 'enable_safety_checker': True}, 'generator_version': 'fal-ai/stable-audio-3/small/sfx/audio-inpainting', 'model_id': 'stable-audio-3-small-sfx', 'output_format': 'wav', 'sample_rate': 44100, 'seed_field': 'seed'}, 'on_unsupported_param': 'warn', 'optional_dependencies': ['falaw'], 'output': {'audio_field': 'audio', 'returns': 'url', 'storage': 'by_value'}, 'param_map': {'audio': {'native_name': 'audio_url'}, 'expand_prompt': {'native_name': 'enable_prompt_expansion'}, 'inpaint_end_s': {'native_name': 'mask_end_seconds'}, 'inpaint_start_s': {'native_name': 'mask_start_seconds'}, 'negative_prompt': {'native_name': 'negative_prompt'}, 'output_format': {'native_name': 'output_format', 'to_native_map': {'flac': 'flac', 'mp3': 'mp3', 'opus': 'opus', 'wav': 'wav'}}, 'prompt': {'native_name': 'prompt', 'required': True}, 'prompt_influence': {'coerce': {'hi': 25.0, 'kind': 'linear', 'lo': 1.0}, 'native_default': 1.0, 'native_name': 'guidance_scale'}, 'seed': {'native_name': 'seed'}, 'steps': {'native_name': 'num_inference_steps'}}, 'pricing': {'amount_usd': 0.0259, 'seen': '2026-10-27', 'source': 'fal pricing API (GET /v1/models/pricing?endpoint_id=...)', 'unit': 'per_call'}, 'provider_params': {'append': {}, 'priced': ['duration'], 'reserved': ['audio_url', 'enable_prompt_expansion', 'enable_safety_checker', 'num_samples', 'prompt']}, 'rate': {'per_min': 60}, 'supported_affordances': ['prompt', 'audio', 'prompt_influence', 'negative_prompt', 'steps', 'seed', 'output_format', 'expand_prompt', 'inpaint_start_s', 'inpaint_end_s'], 'unsupported_affordances': ['loop', 'duration_s'], 'website': 'https://fal.ai/models/fal-ai/stable-audio-3/small/sfx/audio-inpainting'}, {'api': {'endpoint_id': 'fal-ai/stable-audio-3/small/sfx/audio-outpainting'}, 'auth': {'apply_url': 'https://fal.ai/dashboard/keys', 'env_var': 'FAL_KEY', 'extra': 'fal', 'type': 'token'}, 'commercial_ok': True, 'data_egress': 'external', 'dependencies': [], 'display_name': 'Stable Audio 3 Small-SFX extend (fal)', 'edit_op': 'extend', 'kind': 'generate', 'license': {'cache_bytes_ok': True, 'default_license_id': 'Stability-Community', 'license_basis': 'model-licence', 'license_basis_confidence': 'confirmed'}, 'modes': ['edit'], 'name': 'fal_stable_audio_3_extend', 'native_defaults': {'distilled': True, 'fixed_arguments': {'enable_prompt_expansion': False, 'enable_safety_checker': True}, 'generator_version': 'fal-ai/stable-audio-3/small/sfx/audio-outpainting', 'model_id': 'stable-audio-3-small-sfx', 'output_format': 'wav', 'sample_rate': 44100, 'seed_field': 'seed'}, 'on_unsupported_param': 'warn', 'optional_dependencies': ['falaw'], 'output': {'audio_field': 'audio', 'returns': 'url', 'storage': 'by_value'}, 'param_map': {'audio': {'native_name': 'audio_url'}, 'expand_prompt': {'native_name': 'enable_prompt_expansion'}, 'extend_after_s': {'max': 120.0, 'native_name': 'extend_seconds_after'}, 'extend_before_s': {'max': 120.0, 'native_name': 'extend_seconds_before'}, 'negative_prompt': {'native_name': 'negative_prompt'}, 'output_format': {'native_name': 'output_format', 'to_native_map': {'flac': 'flac', 'mp3': 'mp3', 'opus': 'opus', 'wav': 'wav'}}, 'prompt': {'native_name': 'prompt', 'required': True}, 'prompt_influence': {'coerce': {'hi': 25.0, 'kind': 'linear', 'lo': 1.0}, 'native_default': 1.0, 'native_name': 'guidance_scale'}, 'seed': {'native_name': 'seed'}, 'steps': {'native_name': 'num_inference_steps'}}, 'pricing': {'amount_usd': 0.0271, 'seen': '2026-10-27', 'source': 'fal pricing API (GET /v1/models/pricing?endpoint_id=...)', 'unit': 'per_call'}, 'provider_params': {'append': {}, 'priced': ['duration'], 'reserved': ['audio_url', 'enable_prompt_expansion', 'enable_safety_checker', 'num_samples', 'prompt']}, 'rate': {'per_min': 60}, 'supported_affordances': ['prompt', 'audio', 'prompt_influence', 'negative_prompt', 'steps', 'seed', 'output_format', 'expand_prompt', 'extend_before_s', 'extend_after_s'], 'unsupported_affordances': ['loop', 'duration_s'], 'website': 'https://fal.ai/models/fal-ai/stable-audio-3/small/sfx/audio-outpainting'})*
 
 named, or picked by foley.edit from their edit_op.
 
@@ -21175,7 +21272,7 @@ applies the by-reference storage gate from the sound’s own license.
         `ucs_category` naming two different top levels.
   * [**SourceConfigurationError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – A missing key or optional dependency.
 
-### foley.sources.api_license(, source, license_id, rights_verified, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None)
+### foley.sources.api_license(, source, license_id, rights_verified, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None, terms=None)
 
 Build an API-acquisition [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived.
 
@@ -21203,6 +21300,7 @@ caching the bytes even for CC0. `redistribute_standalone_ok` (copyright) and
   * **license_url** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The license URL/label exactly as the source served it.
   * **creator_name** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The uploader/creator (required for CC-BY attribution).
   * **attribution_text** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A ready-made attribution string, if supplied.
+  * **terms** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)]) – What the source states about its terms (`source_stated_terms()`).
 * **Return type:**
   [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
 * **Returns:**
@@ -21411,7 +21509,7 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
         not allow it (before anything is paid for).
   * [**WatermarkUnavailable**](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.WatermarkUnavailable) – If `watermark=True` but `foley[provenance]` is absent.
 
-### foley.sources.generated_license(, source, license_id, generator_model, generation_prompt, rights_verified=True, generator_version=None, generation_seed=None, generation_params=None, generation_prompt_used=None, disclosure_recommended=True, watermark=None, c2pa_manifest_ref=None, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None, ai_generated=True)
+### foley.sources.generated_license(, source, license_id, generator_model, generation_prompt, rights_verified=True, generator_version=None, generation_seed=None, generation_params=None, generation_prompt_used=None, disclosure_recommended=True, watermark=None, c2pa_manifest_ref=None, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None, ai_generated=True, terms=None)
 
 Build a generated [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped.
 
@@ -21464,6 +21562,9 @@ but never flips the flag, so [`foley.keep()`](_autosummary/foley.html.md#foley.k
     procedural synthesis (a `'procedural'` source, #76): the record then
     has `is_ai_generated=False` and `disclosure_recommended=False`
     (whatever was passed), and still carries the generation-provenance block.
+  * **terms** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)]) – What the source states about its terms (`source_stated_terms()`:
+    the licence basis, whether the vendor reuses its output, API obligations,
+    the vendor’s watermark statement).
 * **Return type:**
   [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
 * **Returns:**
@@ -27543,7 +27644,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 03:56 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/449fc68de749e628edbafcf529d8c0afe195da48"><code>449fc68</code></a> on branch <code>main</code>, for **foley 0.0.115** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 04:14 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/c5d61c9837b9222103ad5f4622989571add06c6a"><code>c5d61c9</code></a> on branch <code>main</code>, for **foley 0.0.116** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -27552,7 +27653,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/449fc68de749e628edbafcf529d8c0afe195da48"><code>449fc68de749e628edbafcf529d8c0afe195da48</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/c5d61c9837b9222103ad5f4622989571add06c6a"><code>c5d61c9837b9222103ad5f4622989571add06c6a</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -27563,9 +27664,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41385448315">41385448315</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41387088012">41387088012</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>449fc68de749e628edbafcf529d8c0afe195da48</code> (in the history of the built commit) |
+| Event commit | <code>c5d61c9837b9222103ad5f4622989571add06c6a</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -27590,13 +27691,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.115/">0.0.115</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.116/">0.0.116</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 449fc68de749e628edbafcf529d8c0afe195da48
+git checkout c5d61c9837b9222103ad5f4622989571add06c6a
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

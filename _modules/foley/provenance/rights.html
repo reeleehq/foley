@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=9cebf393"></script>
+    <script src="../../../_static/documentation_options.js?v=ab1379f9"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.115" />
+  <meta name="docsearch:version" content="0.0.116" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -728,7 +728,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">  foley's id, the sha256 of the archived bytes AND of the exported bytes (a FLAC</span>
 <span class="sd">  archive re-encoded to WAV hashes differently, so both are kept to chain them) and</span>
 <span class="sd">  whether the re-encode was lossless, the eight licence flags (``ai_training_ok``,</span>
-<span class="sd">  ``revenue_cap_usd``, ...), a required notice, excluded territories, the safety</span>
+<span class="sd">  ``revenue_cap_usd``, ...), a required notice, the source's API obligations</span>
+<span class="sd">  (``terms_notes``), what the licence rests on (``license_basis`` and its</span>
+<span class="sd">  confidence), whether the vendor reuses its output, the vendor's own watermark</span>
+<span class="sd">  statement (beside foley's AudioSeal one), excluded territories, the safety</span>
 <span class="sd">  flags, the edit lineage and, for an AI-generated clip, its EU AI Act Art. 50</span>
 <span class="sd">  checklist with the generation block.</span>
 
@@ -773,12 +776,12 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LicenseRecord</span><span class="p">,</span> <span class="n">SoundRecord</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">LICENSE_EXCLUDED_TERRITORIES</span><span class="p">,</span>
     <span class="n">LICENSE_TERMS_PROVIDER</span><span class="p">,</span>
     <span class="n">LicenseFlags</span><span class="p">,</span>
     <span class="n">LicenseRefusal</span><span class="p">,</span>
     <span class="n">consumer_license_code</span><span class="p">,</span>
     <span class="n">derived_license_ids</span><span class="p">,</span>
+    <span class="n">excluded_territories</span><span class="p">,</span>
     <span class="n">export_refusal</span><span class="p">,</span>
     <span class="n">license_meta</span><span class="p">,</span>
     <span class="n">rights_license_id</span><span class="p">,</span>
@@ -894,19 +897,6 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="n">art50_checklist</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="excluded_territories">
-<a class="viewcode-back" href="../../../_autosummary/foley.provenance.rights.html#foley.excluded_territories">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">excluded_territories</span><span class="p">(</span><span class="n">lic</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[str]"</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Where ``lic`` or any licence it derives from grants nothing (sorted codes).</span>
-
-<span class="sd">    &gt;&gt;&gt; excluded_territories(LicenseRecord(source="s", license_id="CC0-1.0"))</span>
-<span class="sd">    []</span>
-<span class="sd">    """</span>
-    <span class="n">ids</span> <span class="o">=</span> <span class="p">(</span><span class="n">lic</span><span class="o">.</span><span class="n">license_id</span><span class="p">,</span> <span class="o">*</span><span class="n">derived_license_ids</span><span class="p">(</span><span class="n">lic</span><span class="p">))</span>
-    <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">()</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">LICENSE_EXCLUDED_TERRITORIES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="p">())</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">)))</span></div>
-
-
-
 <div class="viewcode-block" id="sound_provenance">
 <a class="viewcode-back" href="../../../_autosummary/foley.provenance.rights.html#foley.sound_provenance">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">sound_provenance</span><span class="p">(</span>
@@ -955,6 +945,11 @@ window.runMermaid = runMermaid;</script>
         <span class="s2">"ai_training_scope"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">ai_training_scope</span><span class="p">,</span>
         <span class="s2">"gen_ai_preference"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">gen_ai_preference</span><span class="p">,</span>
         <span class="s2">"notice_text_required"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">notice_text_required</span><span class="p">,</span>
+        <span class="s2">"terms_notes"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">lic</span><span class="o">.</span><span class="n">terms_notes</span> <span class="ow">or</span> <span class="p">()),</span>
+        <span class="s2">"license_basis"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">license_basis</span><span class="p">,</span>
+        <span class="s2">"license_basis_confidence"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">license_basis_confidence</span><span class="p">,</span>
+        <span class="s2">"vendor_trains_on_output"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">vendor_trains_on_output</span><span class="p">,</span>
+        <span class="s2">"vendor_watermark"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">vendor_watermark</span><span class="p">,</span>
         <span class="s2">"excluded_territories"</span><span class="p">:</span> <span class="n">excluded_territories</span><span class="p">(</span><span class="n">lic</span><span class="p">),</span>
         <span class="s2">"contains_recognizable_voice"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">contains_recognizable_voice</span><span class="p">,</span>
         <span class="s2">"potential_trademark"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">potential_trademark</span><span class="p">,</span>
