@@ -23,7 +23,8 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterable, Mapping, Optional
+import warnings
+from typing import TYPE_CHECKING, Callable, Iterable, Mapping, Optional
 
 from ..audio import save, to_mono
 from ..external import Runner, resolve_program, run_program
@@ -56,15 +57,29 @@ def as_frames_channels(wav) -> "ndarray":
     return a
 
 
-def write_set(wavs: Iterable, sr: int, folder: Path, *, prefix: str) -> int:
-    """Write each waveform in ``wavs`` as a mono 16-bit WAV in ``folder``; return the count."""
+def write_set(
+    wavs: Iterable,
+    sr: int,
+    folder: Path,
+    *,
+    prefix: str,
+    check: "Optional[Callable[..., None]]" = None,
+) -> int:
+    """Write each waveform in ``wavs`` as a mono 16-bit WAV in ``folder``; return the count.
+
+    ``check(clip, sr=, name=)``, if given, sees each ``(frames[, channels])`` clip first
+    and raises to refuse it.
+    """
     folder.mkdir(parents=True)
     n = 0
     for n, wav in enumerate(wavs, start=1):
+        clip, name = as_frames_channels(wav), f"{prefix}{n:05d}"
+        if check is not None:
+            check(clip, sr=sr, name=name)
         save(
-            to_mono(as_frames_channels(wav)),
+            to_mono(clip),
             sr,
-            folder / f"{prefix}{n:05d}.wav",
+            folder / f"{name}.wav",
             fmt="WAV",
             subtype="PCM_16",
         )
@@ -77,7 +92,8 @@ class ExternalFidelity:
     Subclasses set :attr:`toolkit`, :attr:`metric`, :attr:`default_models`,
     :attr:`default_model`, :attr:`python_env`, :attr:`install` (and optionally
     :attr:`failure_hints`), and implement :meth:`frames_needed`; :meth:`options` adds
-    toolkit-specific entries to the driver's spec.
+    toolkit-specific entries to the driver's spec, and :meth:`check_clip` refuses a clip
+    the toolkit cannot embed before anything runs.
 
     Args:
         python: An interpreter with the toolkit installed, usually in its own venv
@@ -86,12 +102,15 @@ class ExternalFidelity:
         models: Model name → (loader class in ``<toolkit>.model_loader``, its args)
             (default :attr:`default_models`).
         workers: The toolkit's embedding worker processes (each loads the model).
-        env: The program's environment (default: this process's), e.g. to set
-            ``TORCH_HOME`` where the weights are cached.
+        env: Variables added to this process's environment for the program, e.g.
+            ``{"TORCH_HOME": ...}`` to choose where the weights are cached.
         timeout: Seconds before the run is abandoned (default: none).
         runner: Runs the command (default ``subprocess.run``).
     """
 
+    #: Below this many embedding frames in a set, warn that the score is mostly noise
+    #: (``None``: never). The hard floor is :meth:`frames_needed`.
+    warn_frames: Optional[int] = None
     toolkit: str  # the package the driver imports, and the stamp's toolkit
     metric: str  # FidelityResult.metric: 'fad' | 'kad'
     default_models: "Mapping[str, tuple[str, tuple]]"
@@ -125,6 +144,9 @@ class ExternalFidelity:
     def frames_needed(self, dim: int) -> "tuple[int, str]":
         """The fewest embedding frames a set may have for a ``dim``-dim embedding, and why."""
         raise NotImplementedError
+
+    def check_clip(self, clip: "ndarray", *, sr: int, name: str) -> None:
+        """Raise :class:`ValueError` if the toolkit cannot embed ``clip`` (default: accept)."""
 
     def options(self) -> dict:
         """Toolkit-specific entries for the driver's spec (default: none)."""
@@ -162,14 +184,17 @@ class ExternalFidelity:
             RuntimeError: If the toolkit fails (its output tail is in the message).
             ValueError: If a clip has another layout, a set is empty, or a set has
                 fewer embedding frames than :meth:`frames_needed` asks.
+
+        Warns:
+            UserWarning: If a set has fewer than :attr:`warn_frames` frames.
         """
         python = self._resolve_python()
         loader, args = self.models[self.model]
         name = self.metric.upper()
         with tempfile.TemporaryDirectory(prefix=f"foley-{self.toolkit}-") as tmp:
             ref, gen, out = (Path(tmp) / n for n in ("ref", "gen", "out.json"))
-            n_ref = write_set(ref_wavs, sr, ref, prefix="ref")
-            n_gen = write_set(gen_wavs, sr, gen, prefix="gen")
+            n_ref = write_set(ref_wavs, sr, ref, prefix="ref", check=self.check_clip)
+            n_gen = write_set(gen_wavs, sr, gen, prefix="gen", check=self.check_clip)
             if not (n_ref and n_gen):
                 raise ValueError(f"{name} needs at least one clip in each set")
             spec = {
@@ -187,7 +212,7 @@ class ExternalFidelity:
                     [python, "-I", str(DRIVER), json.dumps(spec)],
                     out=out,
                     runner=self.runner,
-                    env=self.env,
+                    env=None if self.env is None else {**os.environ, **self.env},
                     timeout=self.timeout,
                     cwd=Path(tmp),
                     what=f"{type(self).__name__} ({self.toolkit} {self.model})",
@@ -206,6 +231,12 @@ class ExternalFidelity:
                 f"{n_gen} generated embedding frames; each set needs at least {least} "
                 f"({why}); use more or longer clips"
             )
+        if self.warn_frames is not None and min(n_ref, n_gen) < self.warn_frames:
+            warnings.warn(
+                f"{name} on {n_ref} reference and {n_gen} generated embedding frames: "
+                f"below {self.warn_frames} frames a set, the score is mostly noise",
+                stacklevel=2,
+            )
         return FidelityResult(
             metric=self.metric,
             value=float(answer["score"]),
@@ -216,4 +247,5 @@ class ExternalFidelity:
                 n_ref=n_ref,
                 n_gen=n_gen,
             ),
+            params=dict(answer.get("params") or {}),
         )

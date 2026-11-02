@@ -12,8 +12,9 @@ It builds ONE embedding model from ``spec["loader"]`` (a class name in
 and the CLAP constructors download their checkpoints (about 2.5 GB); building one
 model avoids that. Then it runs the toolkit's own pipeline (``cache_embedding_files``
 on each directory, then the toolkit's scorer, see :data:`TOOLKITS`) and writes the
-score, the toolkit's version, the model name, the embedding-frame counts and the
-embedding dimension as JSON to ``spec["out"]``.
+score, the toolkit's version, the model name, the embedding-frame counts, the
+embedding dimension and the scorer's parameters (kadtk: the bandwidth it used and its
+scale) as JSON to ``spec["out"]``.
 """
 
 import json
@@ -25,31 +26,39 @@ def _fadtk(spec: dict):
     from fadtk.fad import FrechetAudioDistance
     from fadtk.fad_batch import cache_embedding_files
 
-    def score(ml, ref, gen) -> float:
+    def score(ml, ref, gen) -> "tuple[float, dict]":
         fad = FrechetAudioDistance(
             ml, audio_load_worker=spec["workers"], load_model=False
         )
-        return float(fad.score(ref, gen))
+        return float(fad.score(ref, gen)), {}
 
     return cache_embedding_files, score
 
 
 def _kadtk(spec: dict):
-    """kadtk's embedding cacher, and its KAD scorer (bandwidth and device from ``spec``)."""
+    """kadtk's embedding cacher, and its KAD scorer (bandwidth and device from ``spec``).
+
+    With no bandwidth given, it is computed here the way kadtk would (its
+    ``median_pairwise_distance`` of the generated set's frames) and passed explicitly,
+    so the result can report it.
+    """
     import logging
 
     from kadtk.emb_loader import cache_embedding_files
-    from kadtk.kad import KernelAudioDistance
+    from kadtk.kad import SCALE_FACTOR, KernelAudioDistance, median_pairwise_distance
 
-    def score(ml, ref, gen) -> float:
+    def score(ml, ref, gen) -> "tuple[float, dict]":
         kad = KernelAudioDistance(
             ml,
-            spec.get("device") or "cpu",
+            spec["device"],
             bandwidth=spec.get("bandwidth"),
             audio_load_worker=spec["workers"],
             logger=logging.getLogger("kadtk"),
         )
-        return float(kad.score(ref, gen))
+        if kad.bandwidth is None:
+            kad.bandwidth = median_pairwise_distance(kad.emb_loader.load_embeddings(gen))
+        value = float(kad.score(ref, gen))
+        return value, {"bandwidth": float(kad.bandwidth), "scale": SCALE_FACTOR}
 
     return cache_embedding_files, score
 
@@ -67,7 +76,7 @@ def main(spec_json: str) -> None:
     import numpy as np
 
     spec = json.loads(spec_json)
-    toolkit = spec.get("toolkit", "fadtk")
+    toolkit = spec["toolkit"]
     spec["workers"] = int(spec.get("workers", 1))
     cache_embedding_files, score = TOOLKITS[toolkit](spec)
     model_loader = importlib.import_module(f"{toolkit}.model_loader")
@@ -76,7 +85,7 @@ def main(spec_json: str) -> None:
     ref, gen = Path(spec["ref"]), Path(spec["gen"])
     for d in (ref, gen):
         cache_embedding_files(d, ml, workers=spec["workers"])
-    value = score(ml, ref, gen)
+    value, params = score(ml, ref, gen)
 
     def shapes(d: Path) -> "list[tuple]":
         return [
@@ -94,6 +103,7 @@ def main(spec_json: str) -> None:
                 "n_ref_frames": sum(sh[0] for sh in ref_shapes),
                 "n_gen_frames": sum(sh[0] for sh in gen_shapes),
                 "dim": int(ml.num_features),
+                "params": params,
             }
         ),
         encoding="utf-8",

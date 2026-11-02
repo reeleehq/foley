@@ -20,7 +20,7 @@ stamped with the toolkit; the functions here cover the math.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 
@@ -91,8 +91,9 @@ def kernel_audio_distance(x_ref, x_gen, *, bandwidth: Optional[float] = None) ->
 
     Distribution-free and small-sample-convergent; preferred over FAD for the small
     reference/generated sets of early-stage eval. The diagonal (same-sample) kernel terms
-    are dropped (the unbiased estimator), so ``KAD(X, X) ≈ 0`` and can be slightly
-    negative.
+    are dropped (the unbiased estimator), so it is centred on 0 for two sets from one
+    distribution and is then negative about half the time; small sets make that
+    spread wide, so a value near 0 means "indistinguishable", not "identical".
 
     Args:
         x_ref: Reference embeddings ``(n_ref, d)``.
@@ -143,11 +144,17 @@ class FidelityStamp:
 
 @dataclass
 class FidelityResult:
-    """A stamped set-level fidelity score (attached to ``FitReport.fidelity``)."""
+    """A stamped set-level fidelity score (attached to ``FitReport.fidelity``).
+
+    ``params`` holds the settings the value depends on beyond the stamp, e.g. kadtk's
+    ``bandwidth`` and ``scale``: score a second generator against the same reference
+    with the same ``bandwidth`` for the two values to be comparable.
+    """
 
     metric: str  # 'fad' | 'kad'
     value: float
     stamp: FidelityStamp
+    params: dict = field(default_factory=dict)
 
 
 def generation_fidelity(
