@@ -3,7 +3,11 @@
 Staged precedence, highest wins (report 04 §5.3, [11 §3.1] — normalize
 heterogeneous labels onto UCS via mapping/synonym tables):
 
-    filename-parse  >  keyword/synonym  >  audioset-map  >  none
+    filename-parse  >  declared CatID  >  keyword/synonym  >  audioset-map  >  none
+
+A *declared* CatID is one the file states about itself (the iXML ``CATID`` of a pro
+pack, :mod:`foley.embedded_metadata`); like a filename's, it counts only when the
+table knows it.
 
 Matching is word-boundary aware (so ``"rain"`` matches "heavy rain" but not
 "brainstorm"), a subcategory hit outranks a category-name hit, and multi-word
@@ -24,6 +28,7 @@ from .ucs import default_ucs_table, parse_ucs_name
 
 # Coarse per-stage confidence bands.
 _CONF_FILENAME: float = 1.0
+_CONF_DECLARED: float = 1.0  # the file's own metadata names its CatID
 _CONF_KEYWORD_CONFIDENT: float = (
     0.8  # strong hit (subcategory/synonym) on a verified row
 )
@@ -132,6 +137,7 @@ def resolve_catid(
     caption: Optional[str] = None,
     audioset_labels: Sequence[str] = (),
     filename: Optional[str] = None,
+    catid: Optional[str] = None,
     table: Optional[UcsTable] = None,
     audioset_map: Optional[AudioSetUcsMap] = None,
 ) -> CatIdResolution:
@@ -143,6 +149,8 @@ def resolve_catid(
         audioset_labels: AudioSet MIDs or names (e.g. from PANNs).
         filename: Optional UCS-style filename/path (its token-0 CatID wins if
             recognized).
+        catid: Optional CatID the sound declares (e.g. its iXML ``CATID``); wins
+            over keywords when the table knows it, else it is ignored.
         table: UCS table (defaults to :func:`default_ucs_table`).
         audioset_map: AudioSet->UCS map (defaults to
             :func:`~foley.index.taxonomy.audioset.default_audioset_ucs_map`).
@@ -165,6 +173,17 @@ def resolve_catid(
                 confidence=_CONF_FILENAME,
                 matched_terms=[name.catid],
             )
+
+    row = table.get(catid) if catid else None
+    if row is not None:
+        return CatIdResolution(
+            catid=row.catid,
+            category=row.category,
+            subcategory=row.subcategory,
+            source="metadata",
+            confidence=_CONF_DECLARED,
+            matched_terms=[catid],
+        )
 
     kw = _keyword_stage(tags, caption, table)
     if kw is not None:

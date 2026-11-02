@@ -43,7 +43,7 @@ from collections.abc import Mapping
 from typing import Optional
 
 from ..base import Candidate, CandidateOrigin
-from ..index.ingest import IngestReport, IngestResult, ingest_one
+from ..index.ingest import CONSENT_NOTE, IngestReport, IngestResult, ingest_one
 from ..qc import DEFAULT_MIN_STATUS
 from ._dispatch import plan_generation, record_generation_outcome, run_generation
 from ..runtime import EgressBlocked
@@ -316,11 +316,6 @@ def backend_license_refusal(
         "sound is used>, for a licence that excludes territories)"
     )
     return license_id, why, hint
-
-
-#: The consent note stamped on a stored generation whose license forbids AI
-#: training (mirrors :func:`foley.bootstrap.bootstrap`'s Ring-2 acknowledgement).
-_CONSENT_NOTE = "AI-training restriction acknowledged by operator (consent recorded)"
 
 
 class GenerationError(RuntimeError):
@@ -817,7 +812,7 @@ def _generate(
     # license forbids AI training (mirrors bootstrap's Ring-2 note). ai_training_ok
     # stays False on the record — keep() still rejects it for will_train uses.
     if res.status in ("pass", "warn") and not lic.ai_training_ok:
-        res.notes.append(_CONSENT_NOTE)
+        res.notes.append(CONSENT_NOTE)
     report.record(res)
     return report
 

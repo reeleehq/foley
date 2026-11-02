@@ -27,7 +27,7 @@ import io
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterator, Optional
+from typing import TYPE_CHECKING, Callable, Iterator, Optional
 
 from ..audio import ARCHIVE_FORMAT, WORKING_SAMPLE_RATE, encode, load, to_working
 from ..base import AcquisitionMethod, LicenseRecord, SerializableMixin, SoundRecord
@@ -39,6 +39,7 @@ from ..licensing import (  # noqa: F401 - the assertable sets are re-exported he
     ai_use_permitted,
     apply_license_flags,
     carry_lineage,
+    restamped_license,
 )
 from ..qc import (
     DEFAULT_MIN_STATUS,
@@ -81,7 +82,8 @@ class IngestResult(SerializableMixin):
     not added), ``'skipped_dup'`` (content already in the library),
     ``'rights_blocked'`` (license forbids AI training / embedding, refused before
     embed — see :func:`ingest_one`), ``'skipped_license'`` (dropped by a
-    bootstrap commercial-use / fail-closed license filter), or ``'error'``.
+    bootstrap commercial-use / fail-closed license filter, or a file no licence
+    sidecar covers — see :class:`IngestSkip`), or ``'error'``.
     ``record`` is present only when the clip was ingested. ``cache_key`` is set by
     :func:`foley.generate` to the key its paid bytes were kept under in the generations
     cache (``foley.generations.get(cache_key)``), whatever the outcome — a quarantined
@@ -126,6 +128,12 @@ class IngestReport(SerializableMixin):
     def record(self, result: IngestResult) -> None:
         """Append one :class:`IngestResult`."""
         self.results.append(result)
+
+    def skip(self, path, skip: "IngestSkip") -> None:
+        """Record a file a per-file plan declined (:class:`IngestSkip`), with its reason."""
+        self.results.append(
+            IngestResult(id=str(path), status=skip.status, notes=[skip.reason])
+        )
 
     def error(self, path, exc: Exception) -> None:
         """Record a per-file error without aborting the run."""
@@ -273,6 +281,10 @@ def content_id(src: "AudioSource") -> str:
     return _audio_identity(_probe(src).wav)
 
 
+#: The note on a clip stored under a licence that forbids AI training, by the
+#: caller's explicit consent (``allow_ai_training_forbidden`` / ``accept_ai_restricted``).
+CONSENT_NOTE = "AI-training restriction acknowledged by operator (consent recorded)"
+
 #: The note on every clip ingested without a licence (#55).
 _UNKNOWN_LOCAL_NOTE = (
     "rights unknown (no license given): indexed for local search only; foley.keep() "
@@ -354,6 +366,8 @@ def _ingest_one(
     store: bool = True,
     allow_ai_training_forbidden: bool = False,
     seed_tags: Optional[list] = None,
+    ucs_catid: Optional[str] = None,
+    restamp_duplicate: bool = False,
     commercial: Optional[bool] = None,
 ) -> IngestResult:
     """Ingest one clip into ``library`` and return an :class:`IngestResult`.
@@ -404,6 +418,19 @@ def _ingest_one(
         seed_tags: Optional caller-supplied tags (e.g. a corpus's folder-path
             taxonomy) unioned into the record's ``tags`` alongside the
             supervised/zero-shot tags — so they feed the BM25 keyword index.
+        ucs_catid: Optional CatID the file declares about itself (its iXML
+            ``CATID``, :mod:`foley.embedded_metadata`). It sets
+            ``ucs_category`` (which holds the CatID) when the filename does not
+            parse and the UCS table knows it; otherwise tags/caption decide.
+        restamp_duplicate: When the clip is already stored (``skipped_dup``),
+            re-stamp the stored record from ``license`` without ever widening it
+            (:func:`foley.licensing.restamped_license` with ``widen=False``; its
+            note lands on the result). The rights gate below holds here too: a new
+            licence that forbids AI use (the clip is already embedded) is applied
+            only with ``allow_ai_training_forbidden``; without it the stored record
+            becomes ``unknown`` (unverified, so :func:`foley.keep` refuses it) and
+            the result ``rights_blocked``, as a fresh ingest would be. Default
+            ``False``: a duplicate is left as it is.
         allow_ai_training_forbidden: The universal fail-closed rights gate. A
             sound whose license has ``ai_training_ok=False`` (e.g. Sonniss,
             BBC RemArc) is refused with status ``'rights_blocked'`` *before* it is
@@ -440,7 +467,14 @@ def _ingest_one(
     # so dedup keys on the stable id, not on re-fetched (byte-varying) preview bytes.
     sid = content_id if sound_id is None else sound_id
     if store and sid in lib:
-        return IngestResult(id=sid, status="skipped_dup")
+        dup = IngestResult(id=sid, status="skipped_dup")
+        if restamp_duplicate and license is not None:
+            fresh = resolve_ingest_license(license)
+            consent = allow_ai_training_forbidden
+            _restamp_stored(
+                lib, sid, fresh, dup, consent=consent, commercial=commercial
+            )
+        return dup
 
     # Stage 1 — QC gate (report 08 §3)
     qc_report = (
@@ -467,13 +501,7 @@ def _ingest_one(
     lic = resolve_ingest_license(license, source_url=ref_uri)
     if local_default:
         notes.append(_UNKNOWN_LOCAL_NOTE)
-    ai_ok = ai_use_permitted(
-        lic,
-        open_source_model=bool(getattr(lib.embedder, "open_source", False)),
-        commercial=DEFAULT_INTENDED_USE.commercial
-        if commercial is None
-        else commercial,
-    )
+    ai_ok = _ai_ok(lic, lib, commercial)
     # A local file ingested without a licence is the user's own disk: indexing it for
     # local search is not a use anyone has forbidden, so it proceeds — but keep()
     # refuses it for every use, because its rights are unknown (#55).
@@ -530,6 +558,7 @@ def _ingest_one(
         caption=caption,
         audioset_labels=audioset_labels,
         filename=_src_name(src),
+        catid=ucs_catid,
     )
 
     # `format` is the DELIVERED format (what library.audio() serves): the FLAC
@@ -592,6 +621,54 @@ def ingest_one(*args, **kwargs) -> "IngestResult":
         if res.record is not None and res.record.storage_mode is not None:
             sp.set_attribute("foley.storage_mode", res.record.storage_mode.value)
         return res
+
+
+def _ai_ok(lic: LicenseRecord, lib, commercial: Optional[bool]) -> bool:
+    """Whether ``lib``'s embedder may use a sound under ``lic`` (the ingest rights gate)."""
+    return ai_use_permitted(
+        lic,
+        open_source_model=bool(getattr(lib.embedder, "open_source", False)),
+        commercial=DEFAULT_INTENDED_USE.commercial
+        if commercial is None
+        else commercial,
+    )
+
+
+#: The licence a stored, embedded clip falls back to when its new licence needs AI
+#: consent that was not given (fail-closed: unverified, so keep() refuses it).
+UNCONSENTED_LICENSE_ID = "unknown"
+
+
+def _restamp_stored(
+    lib,
+    sid: str,
+    fresh: LicenseRecord,
+    result: IngestResult,
+    *,
+    consent: bool,
+    commercial: Optional[bool],
+) -> None:
+    """Re-stamp stored ``sid`` from ``fresh`` (never widening, behind the AI gate); note it."""
+    rec = lib.meta[sid]
+    new, note = restamped_license(rec.license, fresh, widen=False)
+    if new is not None and not _ai_ok(new, lib, commercial):
+        if not consent:
+            result.status = "rights_blocked"
+            result.notes.append(
+                f"stored record: {fresh.license_id} does not allow AI use here and the "
+                f"clip is embedded; kept as {UNCONSENTED_LICENSE_ID} until you consent "
+                "(accept_ai_restricted=True / allow_ai_training_forbidden=True)"
+            )
+            unchanged = rec.license.license_id == UNCONSENTED_LICENSE_ID
+            new = None if unchanged else _restamped(rec.license, UNCONSENTED_LICENSE_ID)
+            note = None
+        else:
+            result.notes.append(CONSENT_NOTE)
+    if new is not None:
+        rec.license = new
+        lib.update_record(rec)
+    if note:
+        result.notes.append(f"stored record: {note}")
 
 
 def _run_supervised(tagger, probe: _Probe, notes: list) -> list:
@@ -665,6 +742,24 @@ def iter_audio_files(
 _iter_audio_files = iter_audio_files
 
 
+class PlanConflict(TypeError):
+    """A per-file plan and the caller set the same :func:`ingest_one` keyword."""
+
+
+class IngestSkip(Exception):
+    """Raised by an :func:`ingest_folder` ``file_kwargs`` plan to decline one file.
+
+    Not an error: the file is recorded with ``status`` (default
+    ``'skipped_license'``) and ``reason`` as its note, whatever ``on_error`` says,
+    and the folder carries on.
+    """
+
+    def __init__(self, reason: str, *, status: str = "skipped_license"):
+        super().__init__(reason)
+        self.reason = reason
+        self.status = status
+
+
 def ingest_folder(
     path,
     *,
@@ -672,6 +767,7 @@ def ingest_folder(
     recursive: bool = True,
     exts: tuple[str, ...] = AUDIO_EXTS,
     on_error: str = "collect",
+    file_kwargs: "Optional[Callable[[Path], dict]]" = None,
     **ingest_one_kw,
 ) -> IngestReport:
     """Ingest every audio file under ``path`` and return an :class:`IngestReport`.
@@ -685,6 +781,13 @@ def ingest_folder(
             ``'raise'`` re-raises the first error. Either way an
             :class:`~foley.runtime.EgressBlocked` (offline, the embedder's weights not
             cached) raises at once: every file would fail the same way.
+        file_kwargs: Optional per-file plan, ``path -> dict`` of :func:`ingest_one`
+            keywords for that file (its licence, caption, tags…), beside
+            ``ingest_one_kw``; a keyword in both raises :class:`PlanConflict` (the
+            run stops: every file would conflict). It may raise :class:`IngestSkip`
+            to decline the file (recorded, never raised); any other exception is a
+            per-file error.
+            :func:`foley.index.licensed_library.ingest_licensed_folder` uses it.
         **ingest_one_kw: Forwarded to :func:`ingest_one` (license, taggers, QC
             flags, …).
 
@@ -705,9 +808,15 @@ def ingest_folder(
     ) as run:
         for fp in iter_audio_files(path, recursive=recursive, exts=exts):
             try:
-                report.record(ingest_one(str(fp), library=lib, **ingest_one_kw))
-            except EgressBlocked:
-                raise  # offline without the embedder's weights: every file would fail
+                plan = file_kwargs(fp) if file_kwargs else {}
+                clash = sorted(set(plan) & set(ingest_one_kw))
+                if clash:
+                    raise PlanConflict(f"{clash} are set per file by the plan")
+                report.record(ingest_one(str(fp), library=lib, **ingest_one_kw, **plan))
+            except IngestSkip as skip:
+                report.skip(fp, skip)
+            except (EgressBlocked, PlanConflict):
+                raise  # offline without the weights, or a caller clash: every file fails
             except Exception as exc:
                 if on_error == "raise":
                     raise

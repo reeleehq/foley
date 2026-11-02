@@ -1,0 +1,253 @@
+"""A folder of owned sound packs, each ingested under its own licence (#230).
+
+A purchased pack (BOOM, Pro Sound Effects, Sonniss, ...) states its licence once, in
+a ``foley-license.toml`` sidecar (:mod:`foley.index.license_sidecar`), and describes
+each file inside it (BWF ``bext`` / iXML, :mod:`foley.embedded_metadata`) and in its
+UCS filename (:func:`foley.index.taxonomy.parse_ucs_name`).
+:func:`ingest_licensed_folder` is :func:`~foley.index.ingest.ingest_folder` with a
+per-file plan built from those three::
+
+    from foley.index.licensed_library import ingest_licensed_folder
+    report = ingest_licensed_folder("~/SFX", accept_ai_restricted=True)
+
+* **licence**: the nearest sidecar, searched up to the library root. A file that no
+  sidecar covers, or whose sidecar is invalid, is skipped and reported
+  (``skipped_license``); nothing is guessed, and the rest of the folder carries on.
+* **caption**: the embedded description, else the UCS FXName, else the filename stem.
+* **tags**: the embedded keywords, plus the UCS UserCategory / VendorCategory.
+* **UCS CatID** (``SoundRecord.ucs_category``, which holds the CatID): the filename's,
+  else the iXML ``CATID`` (:func:`~foley.index.taxonomy.resolve_catid`'s precedence).
+* **storage**: by value or by reference as the licence's ``cache_bytes_ok`` says
+  (:meth:`~foley.index.library.SoundLibrary.add`).
+
+**Reruns** are incremental: a file already stored (content-hash ids) is not decoded
+into the index again (``skipped_dup``), but its stored licence is re-stamped from the
+sidecar as it is now, never widened (:func:`foley.licensing.restamped_license` with
+``widen=False``):
+
+* a sidecar that grants *less* (CC0 -> ``owned-pack``), or a stored licence nobody
+  asserted (``unknown``), takes the sidecar's licence;
+* a sidecar that grants *more* (``owned-pack`` -> CC0) leaves the stored licence and
+  says so in a note; widening is a deliberate act: :func:`foley.restamp_rights`;
+* a sidecar that grants something the stored licence does not and lacks something it
+  has (the same audio in two packs under different licences) bounds the stored
+  licence by it: the sound may be used only where both allow, whatever the walk order;
+* a stored file whose sidecar is gone or invalid is re-stamped ``unknown``
+  (unverified), so :func:`foley.keep` refuses it for every use until a sidecar
+  covers it again.
+
+**AI training.** ``owned-pack``, like most EULAs, forbids AI training, and foley
+counts CLAP-embedding a sound as AI use, so such a file is refused at ingest
+(``rights_blocked``) unless the caller consents with ``accept_ai_restricted=True``
+(default ``False``, as for :func:`foley.bootstrap.bootstrap`). Consent admits the
+sound to search for human-facing work only: its licence keeps
+``ai_training_ok=False``, so :func:`foley.keep` still refuses it for any training use.
+"""
+
+from __future__ import annotations
+
+import functools
+from pathlib import Path
+
+from ..embedded_metadata import read_embedded_metadata, unique_words
+from .ingest import (
+    AUDIO_EXTS,
+    CONSENT_NOTE,
+    IngestReport,
+    IngestSkip,
+    content_id,
+    ingest_folder,
+    restamp_rights,
+)
+from .license_sidecar import (
+    SIDECAR_NAMES,
+    SIDECAR_SOURCE,
+    SidecarError,
+    as_walked,
+    sidecar_license,
+)
+from .taxonomy import parse_ucs_name
+
+#: The :func:`~foley.index.ingest.ingest_one` keywords each file's plan sets.
+PLAN_KEYS = ("license", "captioner", "seed_tags", "ucs_catid", "restamp_duplicate")
+
+#: What a caller may not pass: the plan's keys, and the ones that would give every
+#: file one identity or stop it being stored.
+REFUSED_KEYS = (*PLAN_KEYS, "sound_id", "source_uri", "store")
+
+#: The licence a stored sound falls back to when its sidecar is gone (fail-closed).
+LOST_LICENSE_ID = "unknown"
+
+
+def describe_owned_file(path) -> dict:
+    """What a pack file says about itself: ``caption``, plus ``tags`` / ``ucs_catid`` if any.
+
+    The caption is the embedded description (iXML DESCRIPTION, bext Description, iXML
+    FXNAME), else the UCS filename's FXName, else the filename stem; so there is always
+    one. Tags are the embedded keywords plus the UCS UserCategory and VendorCategory.
+    ``ucs_catid`` is the iXML ``CATID`` (the filename's CatID is read at ingest).
+
+    >>> describe_owned_file(__file__)["caption"]  # not a WAV, not a UCS name
+    'licensed_library'
+    """
+    meta = read_embedded_metadata(path)
+    name = parse_ucs_name(path)
+    ucs_tags = (name.user_category, name.vendor_category) if name else ()
+    about = {
+        "caption": meta.get("caption") or (name and name.fx_name) or Path(path).stem
+    }
+    tags = unique_words([*meta.get("tags", ()), *ucs_tags])
+    if tags:
+        about["tags"] = tags
+    if meta.get("ucs_catid"):
+        about["ucs_catid"] = meta["ucs_catid"]
+    return about
+
+
+def unstamp_lost(library, path) -> "str | None":
+    """Re-stamp ``path``'s stored record ``unknown`` if a sidecar had licensed it; say so.
+
+    For a file whose sidecar is gone or invalid: its stored licence is no longer
+    asserted by anyone, so it fails closed (:func:`~foley.index.ingest.restamp_rights`
+    keeps its provenance and lineage, and makes it unverified). ``None`` when the file
+    is not stored, or its licence did not come from a sidecar.
+    """
+    try:
+        sid = content_id(str(path))
+    except Exception as exc:  # an unreadable file: nothing to compare
+        return f"its stored record could not be checked: {exc!r}"
+    rec = library.meta[sid] if sid in library else None
+    if rec is None or rec.license.source != SIDECAR_SOURCE:
+        return None
+    if not restamp_rights(library, ids=[sid], license=LOST_LICENSE_ID, apply=True):
+        return None  # already unknown
+    return (
+        f"its stored record {sid} lost its licence ({rec.license.license_id}): "
+        f"re-stamped {LOST_LICENSE_ID} (unverified)"
+    )
+
+
+def licensed_file_kwargs(path, *, root, library=None) -> dict:
+    """The :func:`~foley.index.ingest.ingest_one` keywords for one pack file (:data:`PLAN_KEYS`).
+
+    ``library``: where to fail a stored copy closed when no sidecar covers ``path``
+    any more (:func:`unstamp_lost`); ``None`` skips that check (and the file's decode).
+
+    Raises:
+        IngestSkip: If no valid sidecar covers ``path`` up to ``root``.
+    """
+    from ..bootstrap import MetadataCaptioner
+
+    try:
+        lic = sidecar_license(path, root=root)
+    except SidecarError as exc:
+        lost = unstamp_lost(library, path) if library is not None else None
+        raise IngestSkip(f"no licence: {exc}" + (f"; {lost}" if lost else "")) from exc
+    about = describe_owned_file(path)
+    return {
+        "license": lic,
+        "captioner": MetadataCaptioner(about["caption"]),
+        "seed_tags": about.get("tags"),
+        "ucs_catid": about.get("ucs_catid"),
+        "restamp_duplicate": True,
+    }
+
+
+def _annotate(report: IngestReport, *, accept_ai_restricted: bool) -> IngestReport:
+    """Note consent on each restricted sound stored, and say why files were left out."""
+    if accept_ai_restricted:
+        for res in report.ingested:
+            if not res.record.license.ai_training_ok:
+                res.notes.append(CONSENT_NOTE)
+    blocked = [r for r in report.results if r.status == "rights_blocked"]
+    if blocked:
+        report.notes.append(
+            f"{len(blocked)} file(s) not admitted (a stored one kept as unknown): their "
+            "licence forbids AI training, and CLAP-embedding counts. "
+            "Pass accept_ai_restricted=True to make them searchable (their licence still "
+            "refuses any training use)"
+        )
+    unlicensed = sorted(
+        {
+            str(Path(r.id).parent)
+            for r in report.results
+            if r.status == "skipped_license"
+        }
+    )
+    if unlicensed:
+        report.notes.append(
+            f"skipped, no valid licence sidecar ({' / '.join(SIDECAR_NAMES)}) covers: "
+            + ", ".join(unlicensed)
+        )
+    return report
+
+
+def ingest_licensed_folder(
+    path,
+    *,
+    library=None,
+    root=None,
+    accept_ai_restricted: bool = False,
+    recursive: bool = True,
+    exts: "tuple[str, ...]" = AUDIO_EXTS,
+    on_error: str = "collect",
+    **ingest_one_kw,
+) -> IngestReport:
+    """Ingest a folder of owned packs, each file under its sidecar's licence (module docs).
+
+    Args:
+        path: The library folder (walked), or a single file of it.
+        library: Target library (default: the process-wide default).
+        root: The folder that bounds the sidecar search (default: ``path``, or its
+            folder for a single file); pass the library root to ingest one sub-folder.
+        accept_ai_restricted: Consent to embed sounds whose licence forbids AI
+            training, for search only. ``False`` (default) refuses them
+            (``rights_blocked``), fail-closed like every other ingest path.
+        recursive / exts / on_error: As for :func:`~foley.index.ingest.ingest_folder`.
+        **ingest_one_kw: Forwarded to :func:`~foley.index.ingest.ingest_one` (QC
+            flags, taggers, ...), except :data:`REFUSED_KEYS`.
+
+    Returns:
+        An :class:`~foley.index.ingest.IngestReport`; run-level ``notes`` name the
+        folders left out and the consent a blocked file needs.
+
+    Raises:
+        FileNotFoundError: If ``path`` does not exist.
+        ValueError: If ``path`` is not under ``root``.
+        TypeError: If a :data:`REFUSED_KEYS` keyword is passed.
+    """
+    from .library import default_library
+
+    taken = sorted(set(REFUSED_KEYS) & set(ingest_one_kw))
+    if taken:
+        raise TypeError(
+            f"{taken} are set per file, from each pack's sidecar and each file's "
+            "own metadata"
+        )
+    target = as_walked(path)
+    if not target.exists():
+        raise FileNotFoundError(f"no such library folder or file: {path}")
+    bound = (
+        as_walked(root)
+        if root is not None
+        else (target if target.is_dir() else target.parent)
+    )
+    if bound != target and bound not in target.parents:
+        raise ValueError(f"{path} is not under the library root {root}")
+    lib = library if library is not None else default_library()
+    # Only a library holding sidecar-licensed sounds can have one that lost its sidecar,
+    # so only then is an unlicensed file decoded to look for its stored copy.
+    had_sidecars = any(r.license.source == SIDECAR_SOURCE for r in lib.meta.values())
+    report = ingest_folder(
+        str(target),
+        library=lib,
+        recursive=recursive,
+        exts=exts,
+        on_error=on_error,
+        file_kwargs=functools.partial(
+            licensed_file_kwargs, root=bound, library=lib if had_sidecars else None
+        ),
+        allow_ai_training_forbidden=accept_ai_restricted,
+        **ingest_one_kw,
+    )
+    return _annotate(report, accept_ai_restricted=accept_ai_restricted)

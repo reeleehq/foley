@@ -19,6 +19,7 @@ Two kinds of command share one parser:
       foley bootstrap [--rings 0,1] [--corpora fsd50k,foleyset] [--data-dir DIR]
                       [--accept-ai-restricted] [--no-commercial-filter]
       foley ingest PATH [--license ID] [--min-status warn|pass|fail] [--no-qc]
+      foley ingest-library PATH [--root DIR] [--accept-ai-restricted] [--no-qc]
       foley search QUERY [-k N] [--commercial-ok]
 
 Wired as the ``foley`` console entry point (``[project.scripts]``). Every command is a
@@ -97,6 +98,26 @@ def _cmd_ingest(args) -> int:
     )
     print(json.dumps(report.summary(), indent=2))
     return 0
+
+
+def _cmd_ingest_library(args) -> int:
+    from . import ingest_library
+    from .qc import QCStatus
+
+    try:
+        report = ingest_library(
+            args.path,
+            root=args.root,
+            accept_ai_restricted=args.accept_ai_restricted,
+            qc=not args.no_qc,
+            min_status=QCStatus(args.min_status),
+        )
+    except (FileNotFoundError, ValueError) as exc:  # a missing path, or outside --root
+        print(f"foley ingest-library: {exc}", file=sys.stderr)
+        return 2
+    print(json.dumps({**report.summary(), "notes": report.notes}, indent=2))
+    # nothing in the index from this folder, new or already there: say it with the exit code
+    return 0 if report.ingested or report.skipped else 1
 
 
 def _assertable_license_ids() -> "list[str]":
@@ -435,6 +456,24 @@ def build_parser() -> argparse.ArgumentParser:
     p_ing.add_argument("--min-status", default="warn", choices=["fail", "warn", "pass"])
     p_ing.add_argument("--no-qc", action="store_true")
     p_ing.set_defaults(func=_cmd_ingest)
+
+    p_lib = sub.add_parser(
+        "ingest-library",
+        help="ingest a folder of owned sound packs, each under its foley-license.toml",
+    )
+    p_lib.add_argument("path")
+    p_lib.add_argument(
+        "--root", help="library root bounding the sidecar search (default: PATH)"
+    )
+    p_lib.add_argument(
+        "--accept-ai-restricted",
+        action="store_true",
+        help="consent to embed packs whose licence forbids AI training (owned-pack), "
+        "for search only; their licence still refuses training",
+    )
+    p_lib.add_argument("--min-status", default="warn", choices=["fail", "warn", "pass"])
+    p_lib.add_argument("--no-qc", action="store_true")
+    p_lib.set_defaults(func=_cmd_ingest_library)
 
     p_rs = sub.add_parser(
         "restamp-rights",
