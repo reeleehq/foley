@@ -846,6 +846,7 @@ def foley_score(
     max_events: int = 6,
     session: str = "default",
     territory: Optional[str] = None,
+    allow_generate: bool = True,
 ) -> dict:
     """Score a narration passage → an editable sound-design timeline + a per-event rationale.
 
@@ -855,6 +856,7 @@ def foley_score(
     clip, nudge an onset, drop a cue — before committing to a render. ``territory``:
     where the sound is used (an ISO country code, or ``"WORLD"`` for online publishing);
     a licence that excludes territories is refused while it is unstated.
+    ``allow_generate=False``: retrieval only (no generation fallback, no generation spend).
     """
     from .. import score
     from ..cost import spend_scope
@@ -871,6 +873,7 @@ def foley_score(
                 intended_use=use,
                 verify=verify,
                 max_events=max_events,
+                allow_generate=allow_generate,
                 weave=False,
             )
     except LicenseRefusal as exc:

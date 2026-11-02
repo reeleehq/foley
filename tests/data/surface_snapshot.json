@@ -129,7 +129,8 @@
       "verify": "listen",
       "max_events": 6,
       "session": "default",
-      "territory": null
+      "territory": null,
+      "allow_generate": true
     },
     "foley_guide": {},
     "foley_capabilities": {},

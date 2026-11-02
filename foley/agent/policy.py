@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import math
 import threading
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from enum import Enum
 from typing import Optional
 
@@ -113,6 +113,20 @@ class Budget:
     _spent_usd: float = 0.0
     _unknown_calls: int = 0
     _lock: object = field(default_factory=threading.Lock, repr=False, compare=False)
+
+    def without_generation(self) -> "Budget":
+        """A fresh budget with these limits and the generation fallback off.
+
+        For a retrieval-only run (``foley.score(allow_generate=False)``). The copy's
+        counters start at zero; spend made while it is in force is still charged to
+        every enclosing budget (:func:`foley.cost.spend_scope`), so this one's cap holds.
+        """
+        limits = {
+            f.name: getattr(self, f.name)
+            for f in fields(self)
+            if f.init and not f.name.startswith("_")
+        }
+        return type(self)(**{**limits, "allow_generate": False})
 
     @property
     def spent_usd(self) -> float:

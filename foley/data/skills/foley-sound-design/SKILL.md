@@ -64,7 +64,7 @@ timeline dicts, store keys) — audio is referenced by a byte-store key, never i
 
 ## Generating a sound from a text description
 
-Retrieval comes first: `foley.find` / `foley.score` search the library and generate only when nothing verified fits (pass `backend=` to choose what the fallback uses). When you already know nothing will fit (a specific foley moment for a film), generate directly:
+Retrieval comes first: `foley.find` / `foley.score` search the library and generate only when nothing verified fits (pass `backend=` to choose what the fallback uses, or `allow_generate=False` for retrieval only: no generation, no spend, an unfitted moment stays silent; `foley_score` takes it too). When you already know nothing will fit (a specific foley moment for a film), generate directly:
 
 ```python
 clip = foley.generate(
@@ -106,6 +106,13 @@ Prompt craft that worked: name the material and the action ("leather shoes on ol
 - **Salience.** Score a moment only if the sound adds meaning. Leave silence where silence works.
 - **Loudness.** Pick a master profile for the delivery target: `podcast` (-16 LUFS), `streaming`
   (-14), `broadcast_ebu` (-23). The mix is loudness-normalized + true-peak-limited.
+- **Who masters.** foley owns the master of the woven mix: its true-peak limiter is what keeps
+  voice + beds + spots from clipping, so pass your delivery target as `master=` (a profile name or
+  a `foley.base.MasterProfile`) and do not re-level `result.weave.audio`. Levelling narration
+  stems *before* `score` is input gain, not a second master, and is fine.
+- **Your own word timings.** `aligner=` (forwarded to `foley.weave`) is the seam for a caller
+  that already knows when each word is spoken; without one, foley uses WhisperX when it is
+  installed, else a fake aligner that spreads the transcript evenly over the whole narration file.
 
 ## Audience reactions: the crowd answers, it does not coincide
 
