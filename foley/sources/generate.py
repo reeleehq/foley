@@ -735,7 +735,9 @@ def _batch_takes(backend: str, adapter, takes: int, *, seeded: bool = False) -> 
     )
     if (config.get("output") or {}).get("container") == "video":
         return 1  # a batch of muxed videos has no demux-failure path: one per call
-    seeds_known = ((config.get("native_defaults") or {}).get("batch") or {}).get("seeds")
+    seeds_known = ((config.get("native_defaults") or {}).get("batch") or {}).get(
+        "seeds"
+    )
     if seeded and seeds_known not in ("reported", "derived"):
         return 1
     return min(takes, batch_limit(config))

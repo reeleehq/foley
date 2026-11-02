@@ -570,7 +570,9 @@ def plan_generation(
         **affordances,
     )
     plan = _looked_up(plan, adapter=adapter, cache=cache, reuse_cached=reuse_cached)
-    if plan.cached is not None:  # a paid sound already on this disk: no egress, no spend
+    if (
+        plan.cached is not None
+    ):  # a paid sound already on this disk: no egress, no spend
         return plan
     require_source_egress(backend, plan.config)
     if _is_paid(plan.config):
@@ -602,7 +604,10 @@ def _planned(
     if variation and affordances.get("seed") is not None:
         # Variation i of a request seeded s IS the request seeded s + i (#210): one
         # key and one seed for it, however it is asked for (alone or in a batch).
-        affordances = {**affordances, "seed": _take_seed(config, affordances, variation)}
+        affordances = {
+            **affordances,
+            "seed": _take_seed(config, affordances, variation),
+        }
         seeded_note = (
             f"variation {variation} of a seeded request: seed {affordances['seed']}"
         )
@@ -679,7 +684,9 @@ def _looked_up(
     """``plan`` with its replayed clip, when a paid request's answer is in the cache."""
     if plan.request_key is None:
         return plan
-    plan.replayable = media_replayable(plan.affordances)  # whatever reuse_cached says (#185)
+    plan.replayable = media_replayable(
+        plan.affordances
+    )  # whatever reuse_cached says (#185)
     if reuse_cached and not plan.replayable:
         name = remote_media_input(plan.affordances)
         plan.notes.append(
@@ -924,7 +931,9 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
 
     with _sending(plan, released):
         try:
-            clip = adapter.generate(plan.prompt, **_sent_affordances(plan), **_extra(plan))
+            clip = adapter.generate(
+                plan.prompt, **_sent_affordances(plan), **_extra(plan)
+            )
         except UndemuxedAnswer as exc:  # billed: keep the answer, so a retry is free
             if plan.request_key is None or exc.clip is None:
                 raise

@@ -181,7 +181,9 @@ class StableAudioAdapter:
         """
         return self._generate(prompt, 1, **affordances)[0]
 
-    def generate_takes(self, prompt: str, n: int, **affordances) -> "list[GeneratedClip]":
+    def generate_takes(
+        self, prompt: str, n: int, **affordances
+    ) -> "list[GeneratedClip]":
         """``n`` takes of ``prompt`` from one pipeline call (#210), through the batch
         knob ``num_waveforms_per_prompt``: take ``i`` is drawn from its own generator,
         seeded ``seed + i`` (:func:`~foley.sources.base.derived_seed`), and records
@@ -337,7 +339,9 @@ class StableAudioAdapter:
         ran_on = {
             k: str(v).removeprefix("torch.") for k, v in ran_on.items() if v is not None
         }
-        audios = [self._encode(a, sample_rate) for a in list(output.audios)[: len(seeds)]]
+        audios = [
+            self._encode(a, sample_rate) for a in list(output.audios)[: len(seeds)]
+        ]
         return audios, sample_rate, ran_on
 
     def _encode(self, audio, sample_rate: int) -> bytes:

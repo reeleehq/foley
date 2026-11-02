@@ -83,7 +83,11 @@ SOURCE_CONFIG = {
         # pipeline has none): it bounds the memory one call takes.
         # Each take's generator is seeded by foley ("derived": seed + i), so a seeded
         # request batches too.
-        "batch": {"native_name": "num_waveforms_per_prompt", "max": 4, "seeds": "derived"},
+        "batch": {
+            "native_name": "num_waveforms_per_prompt",
+            "max": 4,
+            "seeds": "derived",
+        },
         "output_type": "np",
     },
     "output": {"default_format": "wav", "returns": "bytes", "storage": "by_value"},
