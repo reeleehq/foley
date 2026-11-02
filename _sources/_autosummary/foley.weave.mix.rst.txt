@@ -18,6 +18,7 @@ foley.weave.mix
    .. autosummary::
    
       apply_distance
+      attack_release_envelope
       constant_power_pan
       convolution_reverb
       db_to_lin

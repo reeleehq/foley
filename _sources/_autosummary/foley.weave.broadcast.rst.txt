@@ -10,6 +10,8 @@ foley.weave.broadcast
    
       LINE_GAP_S
       BED_UNDER_SPEECH_DB
+      BED_DUCK_DB
+      ACTIVITY_THRESHOLD
       LOOP_CROSSFADE_S
       DEFAULT_TREATMENT
       FILTER_ORDER
@@ -32,10 +34,12 @@ foley.weave.broadcast
       bed_gain_db
       broadcast_bed
       broadcast_license
+      duck_envelope
       join_lines
       mix_program
       mix_refusal
       resolve_treatment
+      speech_activity
    
    .. rubric:: Classes
 

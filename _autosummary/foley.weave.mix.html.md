@@ -26,6 +26,7 @@ later slice behind `foley[weave]`.
 
 | [`apply_distance`](#foley.weave.mix.apply_distance)(clip, sample_rate, distance)        | Apply a distance recipe: attenuation + air-absorption low-pass (report 06 §3.4).                |
 |-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| [`attack_release_envelope`](#foley.weave.mix.attack_release_envelope)(target, sample_rate, \*)   | Smooth a piecewise-constant gain `target` with a one-pole attack/release follower.              |
 | [`constant_power_pan`](#foley.weave.mix.constant_power_pan)(clip, pan)                      | Pan a (mono or stereo) clip to a stereo image with a constant-power law (report 06 §3.3).       |
 | [`convolution_reverb`](#foley.weave.mix.convolution_reverb)(clip, sample_rate, ir, \*, ...) | Convolution reverb with a real (recorded or synthesised) impulse response (report 06 §3.5).     |
 | [`db_to_lin`](#foley.weave.mix.db_to_lin)(db)                                      | Convert decibels to a linear amplitude factor (`10 ** (db/20)`).                                |
@@ -70,6 +71,36 @@ separately via [`reverb_send()`](#foley.weave.mix.reverb_send). `distance == 0` 
   `ndarray`
 * **Returns:**
   The attenuated, low-passed clip (a new array; input not mutated).
+
+### foley.weave.mix.attack_release_envelope(target, sample_rate, , attack=0.02, release=0.3, initial=1.0)
+
+Smooth a piecewise-constant gain `target` with a one-pole attack/release follower.
+
+The recurrence is `y[i] = t[i] + c·(y[i-1] - t[i])` with `c` the attack
+coefficient while the gain falls (`t[i] < y[i-1]`) and the release one otherwise,
+starting from `y[-1] = initial`. Within a run of equal targets the follower never
+crosses the target, so `c` is fixed for the run and the recurrence has the closed
+form `y = t + c**k·(y0 - t)`: each run is one vectorised numpy expression, and the
+Python loop is over runs (a handful per speech span), not samples. It is built for
+piecewise-constant targets (on/off gates): one numpy call per stretch means a
+target that changes every sample is slower than a plain per-sample loop.
+
+* **Parameters:**
+  * **target** (`ndarray`) – `(n,)` gain the follower chases (linear; piecewise constant).
+  * **sample_rate** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Sample rate in Hz.
+  * **attack** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Time constant (s) while the gain falls.
+  * **release** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Time constant (s) while the gain rises.
+  * **initial** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The follower’s value before the first sample.
+* **Return type:**
+  `ndarray`
+* **Returns:**
+  The smoothed `(n,)` float32 envelope (computed in float64).
+
+```pycon
+>>> env = attack_release_envelope([1.0, 0.0, 0.0], 1, attack=1.0)
+>>> [round(float(g), 3) for g in env]
+[1.0, 0.368, 0.135]
+```
 
 ### foley.weave.mix.constant_power_pan(clip, pan)
 

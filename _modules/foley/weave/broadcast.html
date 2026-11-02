@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=e7715e22"></script>
+    <script src="../../../_static/documentation_options.js?v=4309da3b"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.118" />
+  <meta name="docsearch:version" content="0.0.119" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -742,8 +742,12 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">   ``bed_prompt`` through :func:`foley.generate` (budget, consent and licence rules</span>
 <span class="sd">   unchanged; the ``generate=`` seam replaces it in tests).</span>
 <span class="sd">3. **mix** — :func:`mix_program` loops speech and bed to ``duration`` (the WEAVE</span>
-<span class="sd">   :func:`~foley.weave.mix.fit_duration` loop with its equal-power seam) and sets the bed</span>
-<span class="sd">   ``bed_under_speech_db`` below the speech by integrated loudness.</span>
+<span class="sd">   :func:`~foley.weave.mix.fit_duration` loop with its equal-power seam), sets the bed</span>
+<span class="sd">   ``bed_under_speech_db`` below the speech by integrated loudness, and ducks it</span>
+<span class="sd">   (:func:`duck_envelope`): the bed holds that level while a line is spoken and swells</span>
+<span class="sd">   up to ``-duck_db`` back up between lines (a gap shorter than a few release time</span>
+<span class="sd">   constants does not reach it: ~9.2 of 10 dB with the defaults; ``duck_db=0``: a</span>
+<span class="sd">   constant bed).</span>
 <span class="sd">4. **treatment** — the whole program goes through the device (a radio colours the crowd</span>
 <span class="sd">   it carries as much as the voice): a named :class:`TreatmentPreset` from</span>
 <span class="sd">   :data:`TREATMENTS` (band-pass -&gt; RMS compressor -&gt; lookahead peak limiter), or any</span>
@@ -779,7 +783,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">``speech_license`` (e.g. a :class:`~foley.base.LicenseRecord` for the TTS vendor's</span>
 <span class="sd">terms). Without it the result is fail-closed: the speech counts as unknown rights.</span>
 
-<span class="sd">Import cost: stdlib + :mod:`foley.base` only; numpy, scipy and :mod:`mixing.loudness`</span>
+<span class="sd">Import cost: stdlib, :mod:`foley.base` and the numpy-free :mod:`foley.weave.mix` constants; numpy, scipy and :mod:`mixing.loudness`</span>
 <span class="sd">are imported inside the functions that need them, so ``import foley.weave`` stays</span>
 <span class="sd">dol-only.</span>
 <span class="sd">"""</span>
@@ -792,6 +796,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LicenseRecord</span><span class="p">,</span> <span class="n">SoundRecord</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.mix</span><span class="w"> </span><span class="kn">import</span> <span class="n">DUCK_ATTACK_S</span><span class="p">,</span> <span class="n">DUCK_DB</span><span class="p">,</span> <span class="n">DUCK_RELEASE_S</span>
 
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>  <span class="c1"># pragma: no cover - typing only</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">ndarray</span>
@@ -801,6 +806,10 @@ window.runMermaid = runMermaid;</script>
 <span class="n">LINE_GAP_S</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.6</span>
 <span class="c1">#: Where the bed sits under the speech, in LU of integrated loudness (#108: -12 dB).</span>
 <span class="n">BED_UNDER_SPEECH_DB</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">12.0</span>
+<span class="c1">#: How far the bed dips under each line, relative to its level between lines (dB).</span>
+<span class="n">BED_DUCK_DB</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DUCK_DB</span>
+<span class="c1">#: A looped speech-activity mask counts as speech above this value (its seams crossfade).</span>
+<span class="n">ACTIVITY_THRESHOLD</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span>
 <span class="c1">#: Equal-power crossfade at each loop seam of the speech and the bed (s).</span>
 <span class="n">LOOP_CROSSFADE_S</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span>
 <span class="c1">#: The device a broadcast is heard through when none is named.</span>
@@ -1076,6 +1085,27 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<div class="viewcode-block" id="speech_activity">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.broadcast.html#foley.speech_activity">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">speech_activity</span><span class="p">(</span>
+    <span class="n">clips</span><span class="p">:</span> <span class="s2">"Sequence[ndarray]"</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">gap_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">LINE_GAP_S</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ndarray"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Where :func:`join_lines` puts speech: ``1`` over each clip, ``0`` in the gaps.</span>
+
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; speech_activity([np.zeros(2), np.ones(1)], 10, gap_s=0.1).tolist()</span>
+<span class="sd">    [1.0, 1.0, 0.0, 1.0, 0.0]</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+    <span class="k">return</span> <span class="n">join_lines</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">clip</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">"float32"</span><span class="p">)</span> <span class="k">for</span> <span class="n">clip</span> <span class="ow">in</span> <span class="n">clips</span><span class="p">],</span>
+        <span class="n">sample_rate</span><span class="p">,</span>
+        <span class="n">gap_s</span><span class="o">=</span><span class="n">gap_s</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_is_text</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""A line to be spoken: a ``str`` that is not an existing audio file."""</span>
     <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
@@ -1303,6 +1333,46 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_duck_db</span><span class="p">(</span><span class="n">duck_db</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Refuse a positive ``duck_db``: it would make the bed quieter between lines."""</span>
+    <span class="k">if</span> <span class="n">duck_db</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"duck_db must be &lt;= 0 dB (a duck attenuates), got </span><span class="si">{</span><span class="n">duck_db</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="duck_envelope">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.broadcast.html#foley.duck_envelope">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">duck_envelope</span><span class="p">(</span>
+    <span class="n">activity</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span>
+    <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">duck_db</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">BED_DUCK_DB</span><span class="p">,</span>
+    <span class="n">attack</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DUCK_ATTACK_S</span><span class="p">,</span>
+    <span class="n">release</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DUCK_RELEASE_S</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ndarray"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The bed's linear gain: ``1`` while speech is active, up to ``-duck_db`` dB above between.</span>
+
+<span class="sd">    ``activity`` above :data:`ACTIVITY_THRESHOLD` counts as speech; the transitions are</span>
+<span class="sd">    the WEAVE attack/release follower (:func:`~foley.weave.mix.attack_release_envelope`),</span>
+<span class="sd">    so the bed dips into each line and swells back after it without clicks. A</span>
+<span class="sd">    positive ``duck_db`` would invert the effect, so it is refused.</span>
+
+<span class="sd">    &gt;&gt;&gt; duck_envelope([1.0, 1.0], 10, duck_db=-6.0).tolist()</span>
+<span class="sd">    [1.0, 1.0]</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.mix</span><span class="w"> </span><span class="kn">import</span> <span class="n">attack_release_envelope</span><span class="p">,</span> <span class="n">db_to_lin</span>
+
+    <span class="n">_check_duck_db</span><span class="p">(</span><span class="n">duck_db</span><span class="p">)</span>
+    <span class="n">active</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">activity</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">ACTIVITY_THRESHOLD</span>
+    <span class="n">target</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">active</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">db_to_lin</span><span class="p">(</span><span class="o">-</span><span class="n">duck_db</span><span class="p">))</span>
+    <span class="n">settled</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">target</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">if</span> <span class="n">target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">else</span> <span class="mf">1.0</span>  <span class="c1"># no swell-in at the start</span>
+    <span class="k">return</span> <span class="n">attack_release_envelope</span><span class="p">(</span>
+        <span class="n">target</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">attack</span><span class="o">=</span><span class="n">attack</span><span class="p">,</span> <span class="n">release</span><span class="o">=</span><span class="n">release</span><span class="p">,</span> <span class="n">initial</span><span class="o">=</span><span class="n">settled</span>
+    <span class="p">)</span></div>
+
+
+
 <div class="viewcode-block" id="mix_program">
 <a class="viewcode-back" href="../../../_autosummary/foley.weave.broadcast.html#foley.mix_program">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">mix_program</span><span class="p">(</span>
@@ -1312,13 +1382,21 @@ window.runMermaid = runMermaid;</script>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">duration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">bed_under_speech_db</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">BED_UNDER_SPEECH_DB</span><span class="p">,</span>
+    <span class="n">activity</span><span class="p">:</span> <span class="s2">"Optional[ndarray]"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">duck_db</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">BED_DUCK_DB</span><span class="p">,</span>
+    <span class="n">duck_attack_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DUCK_ATTACK_S</span><span class="p">,</span>
+    <span class="n">duck_release_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DUCK_RELEASE_S</span><span class="p">,</span>
     <span class="n">loop_speech</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">crossfade_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">LOOP_CROSSFADE_S</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[ndarray, list[str]]"</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Speech over the bed, both fitted to ``duration`` (default: the speech's length).</span>
 
 <span class="sd">    The bed always loops (seamless, equal-power seams); the speech loops too when</span>
-<span class="sd">    ``loop_speech``, else plays once and the bed carries on. Returns ``(mono, notes)``.</span>
+<span class="sd">    ``loop_speech``, else plays once and the bed carries on. When ``activity`` (where</span>
+<span class="sd">    the speech is spoken, as from :func:`speech_activity`) is given, the bed is ducked</span>
+<span class="sd">    (:func:`duck_envelope`, with ``duck_attack_s`` / ``duck_release_s``):</span>
+<span class="sd">    ``bed_under_speech_db`` under each line, up to ``-duck_db`` louder between them; without it, or with ``duck_db=0``, the bed sits at</span>
+<span class="sd">    ``bed_under_speech_db`` throughout. Returns ``(mono, notes)``.</span>
 <span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.mix</span><span class="w"> </span><span class="kn">import</span> <span class="n">db_to_lin</span><span class="p">,</span> <span class="n">fit_duration</span>
 
@@ -1340,7 +1418,16 @@ window.runMermaid = runMermaid;</script>
         <span class="p">)</span>
 
     <span class="n">gain</span><span class="p">,</span> <span class="n">note</span> <span class="o">=</span> <span class="n">bed_gain_db</span><span class="p">(</span><span class="n">speech</span><span class="p">,</span> <span class="n">bed</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">under_db</span><span class="o">=</span><span class="n">bed_under_speech_db</span><span class="p">)</span>
-    <span class="n">program</span> <span class="o">=</span> <span class="n">fit</span><span class="p">(</span><span class="n">speech</span><span class="p">,</span> <span class="n">loop_speech</span><span class="p">)</span> <span class="o">+</span> <span class="n">fit</span><span class="p">(</span><span class="n">bed</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span> <span class="o">*</span> <span class="n">db_to_lin</span><span class="p">(</span><span class="n">gain</span><span class="p">)</span>
+    <span class="n">bed_gain</span> <span class="o">=</span> <span class="n">db_to_lin</span><span class="p">(</span><span class="n">gain</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">activity</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">duck_db</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">bed_gain</span> <span class="o">=</span> <span class="n">bed_gain</span> <span class="o">*</span> <span class="n">duck_envelope</span><span class="p">(</span>
+            <span class="n">fit</span><span class="p">(</span><span class="n">activity</span><span class="p">,</span> <span class="n">loop_speech</span><span class="p">),</span>
+            <span class="n">sample_rate</span><span class="p">,</span>
+            <span class="n">duck_db</span><span class="o">=</span><span class="n">duck_db</span><span class="p">,</span>
+            <span class="n">attack</span><span class="o">=</span><span class="n">duck_attack_s</span><span class="p">,</span>
+            <span class="n">release</span><span class="o">=</span><span class="n">duck_release_s</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">program</span> <span class="o">=</span> <span class="n">fit</span><span class="p">(</span><span class="n">speech</span><span class="p">,</span> <span class="n">loop_speech</span><span class="p">)</span> <span class="o">+</span> <span class="n">fit</span><span class="p">(</span><span class="n">bed</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span> <span class="o">*</span> <span class="n">bed_gain</span>
     <span class="k">return</span> <span class="n">program</span><span class="p">,</span> <span class="p">[</span><span class="n">note</span><span class="p">]</span> <span class="k">if</span> <span class="n">note</span> <span class="k">else</span> <span class="p">[]</span></div>
 
 
@@ -1459,6 +1546,9 @@ window.runMermaid = runMermaid;</script>
     <span class="n">gap_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">LINE_GAP_S</span><span class="p">,</span>
     <span class="n">duration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">bed_under_speech_db</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">BED_UNDER_SPEECH_DB</span><span class="p">,</span>
+    <span class="n">duck_db</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">BED_DUCK_DB</span><span class="p">,</span>
+    <span class="n">duck_attack_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DUCK_ATTACK_S</span><span class="p">,</span>
+    <span class="n">duck_release_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DUCK_RELEASE_S</span><span class="p">,</span>
     <span class="n">loop_speech</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">crossfade_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">LOOP_CROSSFADE_S</span><span class="p">,</span>
     <span class="n">ceiling_db</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">TREATMENT_CEILING_DB</span><span class="p">,</span>
@@ -1493,6 +1583,13 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        bed_under_speech_db: The bed's level under the speech (LU, integrated</span>
 <span class="sd">            loudness), set **before** the treatment: the device's compressor then</span>
 <span class="sd">            narrows the gap a little, as a real one would.</span>
+<span class="sd">        duck_db: How far the bed dips under each line relative to its level between</span>
+<span class="sd">            lines (dB, negative): the bed sits ``bed_under_speech_db`` under the speech</span>
+<span class="sd">            while a line is spoken and swells up to ``-duck_db`` back up in the gaps</span>
+<span class="sd">            (short gaps fall short: ~9.2 dB with the defaults). Must be ``&lt;= 0``.</span>
+<span class="sd">            ``0``: a constant bed (the behaviour before #253).</span>
+<span class="sd">        duck_attack_s: Time constant (s) of the bed's dip into each line.</span>
+<span class="sd">        duck_release_s: Time constant (s) of the bed's swell after each line.</span>
 <span class="sd">        loop_speech: Repeat the lines to fill ``duration`` (else they play once).</span>
 <span class="sd">        crossfade_s: Equal-power crossfade at each loop seam (s).</span>
 <span class="sd">        ceiling_db: The result's peak ceiling (dBFS), held whatever the treatment</span>
@@ -1523,6 +1620,7 @@ window.runMermaid = runMermaid;</script>
 
     <span class="n">sr</span> <span class="o">=</span> <span class="n">WORKING_SAMPLE_RATE</span> <span class="k">if</span> <span class="n">sr</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">sr</span>
     <span class="n">device</span> <span class="o">=</span> <span class="n">resolve_treatment</span><span class="p">(</span><span class="n">treatment</span><span class="p">)</span>
+    <span class="n">_check_duck_db</span><span class="p">(</span><span class="n">duck_db</span><span class="p">)</span>
     <span class="n">_check_lines</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">tts</span><span class="p">)</span>
     <span class="n">_check_bed_form</span><span class="p">(</span>
         <span class="n">bed</span><span class="p">,</span> <span class="n">bed_prompt</span><span class="p">,</span> <span class="n">bed_license</span><span class="o">=</span><span class="n">bed_license</span><span class="p">,</span> <span class="n">generate_options</span><span class="o">=</span><span class="n">generate_options</span>
@@ -1541,13 +1639,17 @@ window.runMermaid = runMermaid;</script>
             <span class="n">sample_rate</span><span class="o">=</span><span class="n">sr</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="n">_gate</span><span class="p">(</span><span class="n">bed_source</span><span class="p">,</span> <span class="s2">"bed"</span><span class="p">)</span>
-    <span class="n">speech</span> <span class="o">=</span> <span class="n">join_lines</span><span class="p">(</span><span class="n">_speak</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">tts</span><span class="p">),</span> <span class="n">sr</span><span class="p">,</span> <span class="n">gap_s</span><span class="o">=</span><span class="n">gap_s</span><span class="p">)</span>
+    <span class="n">clips</span> <span class="o">=</span> <span class="n">_speak</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">tts</span><span class="p">)</span>
     <span class="n">program</span><span class="p">,</span> <span class="n">mix_notes</span> <span class="o">=</span> <span class="n">mix_program</span><span class="p">(</span>
-        <span class="n">speech</span><span class="p">,</span>
+        <span class="n">join_lines</span><span class="p">(</span><span class="n">clips</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">gap_s</span><span class="o">=</span><span class="n">gap_s</span><span class="p">),</span>
         <span class="n">bed_audio</span><span class="p">,</span>
         <span class="n">sr</span><span class="p">,</span>
         <span class="n">duration</span><span class="o">=</span><span class="n">duration</span><span class="p">,</span>
         <span class="n">bed_under_speech_db</span><span class="o">=</span><span class="n">bed_under_speech_db</span><span class="p">,</span>
+        <span class="n">activity</span><span class="o">=</span><span class="n">speech_activity</span><span class="p">(</span><span class="n">clips</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">gap_s</span><span class="o">=</span><span class="n">gap_s</span><span class="p">),</span>
+        <span class="n">duck_db</span><span class="o">=</span><span class="n">duck_db</span><span class="p">,</span>
+        <span class="n">duck_attack_s</span><span class="o">=</span><span class="n">duck_attack_s</span><span class="p">,</span>
+        <span class="n">duck_release_s</span><span class="o">=</span><span class="n">duck_release_s</span><span class="p">,</span>
         <span class="n">loop_speech</span><span class="o">=</span><span class="n">loop_speech</span><span class="p">,</span>
         <span class="n">crossfade_s</span><span class="o">=</span><span class="n">crossfade_s</span><span class="p">,</span>
     <span class="p">)</span>

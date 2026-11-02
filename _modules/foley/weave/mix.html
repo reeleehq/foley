@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=e7715e22"></script>
+    <script src="../../../_static/documentation_options.js?v=4309da3b"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.118" />
+  <meta name="docsearch:version" content="0.0.119" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -852,16 +852,61 @@ window.runMermaid = runMermaid;</script>
         <span class="n">b</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">n_samples</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">end</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">b</span> <span class="o">&gt;</span> <span class="n">a</span><span class="p">:</span>
             <span class="n">g</span><span class="p">[</span><span class="n">a</span><span class="p">:</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="n">duck</span>
+    <span class="k">return</span> <span class="n">attack_release_envelope</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">attack</span><span class="o">=</span><span class="n">attack</span><span class="p">,</span> <span class="n">release</span><span class="o">=</span><span class="n">release</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="attack_release_envelope">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.mix.html#foley.weave.mix.attack_release_envelope">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">attack_release_envelope</span><span class="p">(</span>
+    <span class="n">target</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span>
+    <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">attack</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DUCK_ATTACK_S</span><span class="p">,</span>
+    <span class="n">release</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DUCK_RELEASE_S</span><span class="p">,</span>
+    <span class="n">initial</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ndarray"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Smooth a piecewise-constant gain ``target`` with a one-pole attack/release follower.</span>
+
+<span class="sd">    The recurrence is ``y[i] = t[i] + c·(y[i-1] - t[i])`` with ``c`` the attack</span>
+<span class="sd">    coefficient while the gain falls (``t[i] &lt; y[i-1]``) and the release one otherwise,</span>
+<span class="sd">    starting from ``y[-1] = initial``. Within a run of equal targets the follower never</span>
+<span class="sd">    crosses the target, so ``c`` is fixed for the run and the recurrence has the closed</span>
+<span class="sd">    form ``y = t + c**k·(y0 - t)``: each run is one vectorised numpy expression, and the</span>
+<span class="sd">    Python loop is over runs (a handful per speech span), not samples. It is built for</span>
+<span class="sd">    piecewise-constant targets (on/off gates): one numpy call per stretch means a</span>
+<span class="sd">    target that changes every sample is slower than a plain per-sample loop.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        target: ``(n,)`` gain the follower chases (linear; piecewise constant).</span>
+<span class="sd">        sample_rate: Sample rate in Hz.</span>
+<span class="sd">        attack: Time constant (s) while the gain falls.</span>
+<span class="sd">        release: Time constant (s) while the gain rises.</span>
+<span class="sd">        initial: The follower's value before the first sample.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The smoothed ``(n,)`` float32 envelope (computed in float64).</span>
+
+<span class="sd">    &gt;&gt;&gt; env = attack_release_envelope([1.0, 0.0, 0.0], 1, attack=1.0)</span>
+<span class="sd">    &gt;&gt;&gt; [round(float(g), 3) for g in env]</span>
+<span class="sd">    [1.0, 0.368, 0.135]</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+    <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">"float64"</span><span class="p">)</span>
     <span class="n">ca</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="mf">1e-9</span><span class="p">,</span> <span class="n">attack</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">)))</span>
     <span class="n">cr</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="mf">1e-9</span><span class="p">,</span> <span class="n">release</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">)))</span>
-    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
-    <span class="n">acc</span> <span class="o">=</span> <span class="mf">1.0</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_samples</span><span class="p">):</span>
-        <span class="n">target</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-        <span class="n">coef</span> <span class="o">=</span> <span class="n">ca</span> <span class="k">if</span> <span class="n">target</span> <span class="o">&lt;</span> <span class="n">acc</span> <span class="k">else</span> <span class="n">cr</span>
-        <span class="n">acc</span> <span class="o">=</span> <span class="n">target</span> <span class="o">+</span> <span class="n">coef</span> <span class="o">*</span> <span class="p">(</span><span class="n">acc</span> <span class="o">-</span> <span class="n">target</span><span class="p">)</span>
-        <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">acc</span>
-    <span class="k">return</span> <span class="n">out</span></div>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">"float64"</span><span class="p">)</span>
+    <span class="n">bounds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(([</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">!=</span> <span class="n">t</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]]))</span>
+    <span class="n">acc</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">bounds</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+        <span class="k">if</span> <span class="n">b</span> <span class="o">&lt;=</span> <span class="n">a</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">level</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">a</span><span class="p">]</span>
+        <span class="n">coef</span> <span class="o">=</span> <span class="n">ca</span> <span class="k">if</span> <span class="n">level</span> <span class="o">&lt;</span> <span class="n">acc</span> <span class="k">else</span> <span class="n">cr</span>
+        <span class="n">out</span><span class="p">[</span><span class="n">a</span><span class="p">:</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="n">level</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">coef</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">b</span> <span class="o">-</span> <span class="n">a</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="n">acc</span> <span class="o">-</span> <span class="n">level</span><span class="p">)</span>
+        <span class="n">acc</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="n">b</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">out</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"float32"</span><span class="p">)</span></div>
 
 
 

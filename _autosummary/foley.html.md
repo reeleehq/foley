@@ -2179,7 +2179,7 @@ Seed `library` from the selected bulk corpora, returning per-corpus reports.
 * **Returns:**
   `{corpus_name: IngestReport}` — inspect each `.summary()`.
 
-### foley.broadcast_bed(lines, , bed=None, bed_prompt=None, treatment='am_radio', gap_s=0.6, duration=None, bed_under_speech_db=-12.0, loop_speech=True, crossfade_s=0.05, ceiling_db=-1.0, speech_license=None, bed_license=None, tts=None, library=None, generate=None, generate_options=None, sr=None)
+### foley.broadcast_bed(lines, , bed=None, bed_prompt=None, treatment='am_radio', gap_s=0.6, duration=None, bed_under_speech_db=-12.0, duck_db=-10.0, duck_attack_s=0.02, duck_release_s=0.3, loop_speech=True, crossfade_s=0.05, ceiling_db=-1.0, speech_license=None, bed_license=None, tts=None, library=None, generate=None, generate_options=None, sr=None)
 
 Speech lines heard through a radio/TV/PA/phone over a bed, looped for a scene (#108).
 
@@ -2204,6 +2204,13 @@ then is the text spoken.
   * **bed_under_speech_db** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The bed’s level under the speech (LU, integrated
     loudness), set **before** the treatment: the device’s compressor then
     narrows the gap a little, as a real one would.
+  * **duck_db** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – How far the bed dips under each line relative to its level between
+    lines (dB, negative): the bed sits `bed_under_speech_db` under the speech
+    while a line is spoken and swells up to `-duck_db` back up in the gaps
+    (short gaps fall short: ~9.2 dB with the defaults). Must be `<= 0`.
+    `0`: a constant bed (the behaviour before #253).
+  * **duck_attack_s** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Time constant (s) of the bed’s dip into each line.
+  * **duck_release_s** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Time constant (s) of the bed’s swell after each line.
   * **loop_speech** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Repeat the lines to fill `duration` (else they play once).
   * **crossfade_s** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Equal-power crossfade at each loop seam (s).
   * **ceiling_db** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The result’s peak ceiling (dBFS), held whatever the treatment

@@ -1,4 +1,4 @@
-> built 2026-11-02 04:47 UTC from c0d4812 (main) · foley 0.0.118. Details: build_info.json
+> built 2026-11-02 05:08 UTC from cef9bfa (main) · foley 0.0.119. Details: build_info.json
 
 # index.html.md
 
@@ -8345,7 +8345,7 @@ Seed `library` from the selected bulk corpora, returning per-corpus reports.
 * **Returns:**
   `{corpus_name: IngestReport}` — inspect each `.summary()`.
 
-### foley.broadcast_bed(lines, , bed=None, bed_prompt=None, treatment='am_radio', gap_s=0.6, duration=None, bed_under_speech_db=-12.0, loop_speech=True, crossfade_s=0.05, ceiling_db=-1.0, speech_license=None, bed_license=None, tts=None, library=None, generate=None, generate_options=None, sr=None)
+### foley.broadcast_bed(lines, , bed=None, bed_prompt=None, treatment='am_radio', gap_s=0.6, duration=None, bed_under_speech_db=-12.0, duck_db=-10.0, duck_attack_s=0.02, duck_release_s=0.3, loop_speech=True, crossfade_s=0.05, ceiling_db=-1.0, speech_license=None, bed_license=None, tts=None, library=None, generate=None, generate_options=None, sr=None)
 
 Speech lines heard through a radio/TV/PA/phone over a bed, looped for a scene (#108).
 
@@ -8370,6 +8370,13 @@ then is the text spoken.
   * **bed_under_speech_db** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The bed’s level under the speech (LU, integrated
     loudness), set **before** the treatment: the device’s compressor then
     narrows the gap a little, as a real one would.
+  * **duck_db** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – How far the bed dips under each line relative to its level between
+    lines (dB, negative): the bed sits `bed_under_speech_db` under the speech
+    while a line is spoken and swells up to `-duck_db` back up in the gaps
+    (short gaps fall short: ~9.2 dB with the defaults). Must be `<= 0`.
+    `0`: a constant bed (the behaviour before #253).
+  * **duck_attack_s** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Time constant (s) of the bed’s dip into each line.
+  * **duck_release_s** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Time constant (s) of the bed’s swell after each line.
   * **loop_speech** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Repeat the lines to fill `duration` (else they play once).
   * **crossfade_s** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Equal-power crossfade at each loop seam (s).
   * **ceiling_db** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The result’s peak ceiling (dBFS), held whatever the treatment
@@ -16954,7 +16961,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta-dum', 'netflix intro', 'tudum', 'netflix sound', 'ta dum', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel bong', 'intel jingle', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chime', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'netflix sound', 'netflix chime', 'tudum', 'ta-dum', 'ta dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel inside', 'intel chime', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -26420,8 +26427,12 @@ The pipeline is small pure stages, each its own function:
    `bed_prompt` through [`foley.generate()`](_autosummary/foley.html.md#foley.generate) (budget, consent and licence rules
    unchanged; the `generate=` seam replaces it in tests).
 3. **mix** — [`mix_program()`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.mix_program) loops speech and bed to `duration` (the WEAVE
-   [`fit_duration()`](_autosummary/foley.weave.mix.html.md#foley.weave.mix.fit_duration) loop with its equal-power seam) and sets the bed
-   > `bed_under_speech_db` below the speech by integrated loudness.
+   [`fit_duration()`](_autosummary/foley.weave.mix.html.md#foley.weave.mix.fit_duration) loop with its equal-power seam), sets the bed
+   > `bed_under_speech_db` below the speech by integrated loudness, and ducks it
+   > ([`duck_envelope()`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.duck_envelope)): the bed holds that level while a line is spoken and swells
+   > up to `-duck_db` back up between lines (a gap shorter than a few release time
+   > constants does not reach it: ~9.2 of 10 dB with the defaults; `duck_db=0`: a
+   > constant bed).
 4. **treatment** — the whole program goes through the device (a radio colours the crowd
    it carries as much as the voice): a named [`TreatmentPreset`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.TreatmentPreset) from
    [`TREATMENTS`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.TREATMENTS) (band-pass -> RMS compressor -> lookahead peak limiter), or any
@@ -26459,7 +26470,7 @@ The speech’s rights are never inferred from the TTS call: pass them as
 `speech_license` (e.g. a [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) for the TTS vendor’s
 terms). Without it the result is fail-closed: the speech counts as unknown rights.
 
-Import cost: stdlib + [`foley.base`](_autosummary/foley.base.html.md#module-foley.base) only; numpy, scipy and `mixing.loudness`
+Import cost: stdlib, [`foley.base`](_autosummary/foley.base.html.md#module-foley.base) and the numpy-free [`foley.weave.mix`](_autosummary/foley.weave.mix.html.md#module-foley.weave.mix) constants; numpy, scipy and `mixing.loudness`
 are imported inside the functions that need them, so `import foley.weave` stays
 dol-only.
 
@@ -26468,6 +26479,8 @@ dol-only.
 | [`LINE_GAP_S`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.LINE_GAP_S)                  | Silence after each spoken line (s); the 0.6 s that read naturally in the #108 starter.                                                                                                                           |
 |------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`BED_UNDER_SPEECH_DB`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.BED_UNDER_SPEECH_DB)         | -12 dB).                                                                                                                                                                                                         |
+| [`BED_DUCK_DB`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.BED_DUCK_DB)                 | How far the bed dips under each line, relative to its level between lines (dB).                                                                                                                                  |
+| [`ACTIVITY_THRESHOLD`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.ACTIVITY_THRESHOLD)          | A looped speech-activity mask counts as speech above this value (its seams crossfade).                                                                                                                           |
 | [`LOOP_CROSSFADE_S`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.LOOP_CROSSFADE_S)            | Equal-power crossfade at each loop seam of the speech and the bed (s).                                                                                                                                           |
 | [`DEFAULT_TREATMENT`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.DEFAULT_TREATMENT)           | The device a broadcast is heard through when none is named.                                                                                                                                                      |
 | [`FILTER_ORDER`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.FILTER_ORDER)                | Butterworth order of the treatment's band-pass (per edge).                                                                                                                                                       |
@@ -26483,16 +26496,18 @@ dol-only.
 
 ### Functions
 
-| [`apply_treatment`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.apply_treatment)(samples, sample_rate, preset)    | Colour `samples` as heard through `preset`'s device (mono or `(n, ch)`).              |
-|---------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
-| [`as_clip`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.as_clip)(item, sample_rate)                       | `item` as a mono `float32` working array at `sample_rate`.                            |
-| [`bed_gain_db`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.bed_gain_db)(speech, bed, sample_rate, \*[, ...]) | The gain that puts `bed` `under_db` below `speech` in integrated loudness.            |
-| [`broadcast_bed`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.broadcast_bed)(lines, \*[, bed, bed_prompt, ...]) | Speech lines heard through a radio/TV/PA/phone over a bed, looped for a scene (#108). |
-| [`broadcast_license`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.broadcast_license)(bed, speech, \*, treatment)    | The broadcast's rights: the bed's, narrowed to the speech's (never widened).          |
-| [`join_lines`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.join_lines)(clips, sample_rate, \*[, gap_s])      | Concatenate mono `clips` with `gap_s` of silence after each one.                      |
-| [`mix_program`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.mix_program)(speech, bed, sample_rate, \*[, ...]) | Speech over the bed, both fitted to `duration` (default: the speech's length).        |
-| [`mix_refusal`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.mix_refusal)(source)                              | Why a sound with rights `source` may not be treated and mixed in, or `None`.          |
-| [`resolve_treatment`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.resolve_treatment)(treatment)                     | `treatment=` as a `(samples, sr) -> samples` callable (`None`: dry).                  |
+| [`apply_treatment`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.apply_treatment)(samples, sample_rate, preset)    | Colour `samples` as heard through `preset`'s device (mono or `(n, ch)`).                                              |
+|---------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
+| [`as_clip`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.as_clip)(item, sample_rate)                       | `item` as a mono `float32` working array at `sample_rate`.                                                            |
+| [`bed_gain_db`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.bed_gain_db)(speech, bed, sample_rate, \*[, ...]) | The gain that puts `bed` `under_db` below `speech` in integrated loudness.                                            |
+| [`broadcast_bed`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.broadcast_bed)(lines, \*[, bed, bed_prompt, ...]) | Speech lines heard through a radio/TV/PA/phone over a bed, looped for a scene (#108).                                 |
+| [`broadcast_license`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.broadcast_license)(bed, speech, \*, treatment)    | The broadcast's rights: the bed's, narrowed to the speech's (never widened).                                          |
+| [`duck_envelope`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.duck_envelope)(activity, sample_rate, \*[, ...])  | The bed's linear gain: `1` while speech is active, up to `-duck_db` dB above between.                                 |
+| [`join_lines`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.join_lines)(clips, sample_rate, \*[, gap_s])      | Concatenate mono `clips` with `gap_s` of silence after each one.                                                      |
+| [`mix_program`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.mix_program)(speech, bed, sample_rate, \*[, ...]) | Speech over the bed, both fitted to `duration` (default: the speech's length).                                        |
+| [`mix_refusal`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.mix_refusal)(source)                              | Why a sound with rights `source` may not be treated and mixed in, or `None`.                                          |
+| [`resolve_treatment`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.resolve_treatment)(treatment)                     | `treatment=` as a `(samples, sr) -> samples` callable (`None`: dry).                                                  |
+| [`speech_activity`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.speech_activity)(clips, sample_rate, \*[, gap_s]) | Where [`join_lines()`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.join_lines) puts speech: `1` over each clip, `0` in the gaps. |
 
 ### Classes
 
@@ -26504,6 +26519,14 @@ dol-only.
 
 | [`BroadcastRefusal`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.BroadcastRefusal)   | A source whose rights do not allow it into a broadcast bed (refused, fail-closed).   |
 |---------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+
+### foley.weave.broadcast.ACTIVITY_THRESHOLD *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.5*
+
+A looped speech-activity mask counts as speech above this value (its seams crossfade).
+
+### foley.weave.broadcast.BED_DUCK_DB *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= -10.0*
+
+How far the bed dips under each line, relative to its level between lines (dB).
 
 ### foley.weave.broadcast.BED_UNDER_SPEECH_DB *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= -12.0*
 
@@ -26757,7 +26780,7 @@ capped at `mixing.loudness.MAX_GAIN_DB`.
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
-### foley.weave.broadcast.broadcast_bed(lines, , bed=None, bed_prompt=None, treatment='am_radio', gap_s=0.6, duration=None, bed_under_speech_db=-12.0, loop_speech=True, crossfade_s=0.05, ceiling_db=-1.0, speech_license=None, bed_license=None, tts=None, library=None, generate=None, generate_options=None, sr=None)
+### foley.weave.broadcast.broadcast_bed(lines, , bed=None, bed_prompt=None, treatment='am_radio', gap_s=0.6, duration=None, bed_under_speech_db=-12.0, duck_db=-10.0, duck_attack_s=0.02, duck_release_s=0.3, loop_speech=True, crossfade_s=0.05, ceiling_db=-1.0, speech_license=None, bed_license=None, tts=None, library=None, generate=None, generate_options=None, sr=None)
 
 Speech lines heard through a radio/TV/PA/phone over a bed, looped for a scene (#108).
 
@@ -26782,6 +26805,13 @@ then is the text spoken.
   * **bed_under_speech_db** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The bed’s level under the speech (LU, integrated
     loudness), set **before** the treatment: the device’s compressor then
     narrows the gap a little, as a real one would.
+  * **duck_db** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – How far the bed dips under each line relative to its level between
+    lines (dB, negative): the bed sits `bed_under_speech_db` under the speech
+    while a line is spoken and swells up to `-duck_db` back up in the gaps
+    (short gaps fall short: ~9.2 dB with the defaults). Must be `<= 0`.
+    `0`: a constant bed (the behaviour before #253).
+  * **duck_attack_s** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Time constant (s) of the bed’s dip into each line.
+  * **duck_release_s** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Time constant (s) of the bed’s swell after each line.
   * **loop_speech** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Repeat the lines to fill `duration` (else they play once).
   * **crossfade_s** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Equal-power crossfade at each loop seam (s).
   * **ceiling_db** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The result’s peak ceiling (dBFS), held whatever the treatment
@@ -26825,6 +26855,23 @@ bytes, not the mix. `speech=None` narrows to unknown rights. Raises
 * **Return type:**
   [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
 
+### foley.weave.broadcast.duck_envelope(activity, sample_rate, , duck_db=-10.0, attack=0.02, release=0.3)
+
+The bed’s linear gain: `1` while speech is active, up to `-duck_db` dB above between.
+
+`activity` above [`ACTIVITY_THRESHOLD`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.ACTIVITY_THRESHOLD) counts as speech; the transitions are
+the WEAVE attack/release follower ([`attack_release_envelope()`](_autosummary/foley.weave.mix.html.md#foley.weave.mix.attack_release_envelope)),
+so the bed dips into each line and swells back after it without clicks. A
+positive `duck_db` would invert the effect, so it is refused.
+
+```pycon
+>>> duck_envelope([1.0, 1.0], 10, duck_db=-6.0).tolist()
+[1.0, 1.0]
+```
+
+* **Return type:**
+  `ndarray`
+
 ### foley.weave.broadcast.join_lines(clips, sample_rate, , gap_s=0.6)
 
 Concatenate mono `clips` with `gap_s` of silence after each one.
@@ -26838,12 +26885,16 @@ Concatenate mono `clips` with `gap_s` of silence after each one.
 * **Return type:**
   `ndarray`
 
-### foley.weave.broadcast.mix_program(speech, bed, sample_rate, , duration=None, bed_under_speech_db=-12.0, loop_speech=True, crossfade_s=0.05)
+### foley.weave.broadcast.mix_program(speech, bed, sample_rate, , duration=None, bed_under_speech_db=-12.0, activity=None, duck_db=-10.0, duck_attack_s=0.02, duck_release_s=0.3, loop_speech=True, crossfade_s=0.05)
 
 Speech over the bed, both fitted to `duration` (default: the speech’s length).
 
 The bed always loops (seamless, equal-power seams); the speech loops too when
-`loop_speech`, else plays once and the bed carries on. Returns `(mono, notes)`.
+`loop_speech`, else plays once and the bed carries on. When `activity` (where
+the speech is spoken, as from [`speech_activity()`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.speech_activity)) is given, the bed is ducked
+([`duck_envelope()`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.duck_envelope), with `duck_attack_s` / `duck_release_s`):
+`bed_under_speech_db` under each line, up to `-duck_db` louder between them; without it, or with `duck_db=0`, the bed sits at
+`bed_under_speech_db` throughout. Returns `(mono, notes)`.
 
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[`ndarray`, [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
@@ -26884,6 +26935,19 @@ True
 
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], `ndarray`]
+
+### foley.weave.broadcast.speech_activity(clips, sample_rate, , gap_s=0.6)
+
+Where [`join_lines()`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.join_lines) puts speech: `1` over each clip, `0` in the gaps.
+
+```pycon
+>>> import numpy as np
+>>> speech_activity([np.zeros(2), np.ones(1)], 10, gap_s=0.1).tolist()
+[1.0, 1.0, 0.0, 1.0, 0.0]
+```
+
+* **Return type:**
+  `ndarray`
 
 
 # _autosummary/foley.weave.cli_aligners.html.md
@@ -27533,7 +27597,7 @@ Force-align `audio` to its transcript, returning word-level timestamps.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
-### foley.weave.broadcast_bed(lines, , bed=None, bed_prompt=None, treatment='am_radio', gap_s=0.6, duration=None, bed_under_speech_db=-12.0, loop_speech=True, crossfade_s=0.05, ceiling_db=-1.0, speech_license=None, bed_license=None, tts=None, library=None, generate=None, generate_options=None, sr=None)
+### foley.weave.broadcast_bed(lines, , bed=None, bed_prompt=None, treatment='am_radio', gap_s=0.6, duration=None, bed_under_speech_db=-12.0, duck_db=-10.0, duck_attack_s=0.02, duck_release_s=0.3, loop_speech=True, crossfade_s=0.05, ceiling_db=-1.0, speech_license=None, bed_license=None, tts=None, library=None, generate=None, generate_options=None, sr=None)
 
 Speech lines heard through a radio/TV/PA/phone over a bed, looped for a scene (#108).
 
@@ -27558,6 +27622,13 @@ then is the text spoken.
   * **bed_under_speech_db** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The bed’s level under the speech (LU, integrated
     loudness), set **before** the treatment: the device’s compressor then
     narrows the gap a little, as a real one would.
+  * **duck_db** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – How far the bed dips under each line relative to its level between
+    lines (dB, negative): the bed sits `bed_under_speech_db` under the speech
+    while a line is spoken and swells up to `-duck_db` back up in the gaps
+    (short gaps fall short: ~9.2 dB with the defaults). Must be `<= 0`.
+    `0`: a constant bed (the behaviour before #253).
+  * **duck_attack_s** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Time constant (s) of the bed’s dip into each line.
+  * **duck_release_s** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Time constant (s) of the bed’s swell after each line.
   * **loop_speech** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Repeat the lines to fill `duration` (else they play once).
   * **crossfade_s** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Equal-power crossfade at each loop seam (s).
   * **ceiling_db** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The result’s peak ceiling (dBFS), held whatever the treatment
@@ -28006,6 +28077,7 @@ later slice behind `foley[weave]`.
 
 | [`apply_distance`](_autosummary/foley.weave.mix.html.md#foley.weave.mix.apply_distance)(clip, sample_rate, distance)        | Apply a distance recipe: attenuation + air-absorption low-pass (report 06 §3.4).                |
 |-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| [`attack_release_envelope`](_autosummary/foley.weave.mix.html.md#foley.weave.mix.attack_release_envelope)(target, sample_rate, \*)   | Smooth a piecewise-constant gain `target` with a one-pole attack/release follower.              |
 | [`constant_power_pan`](_autosummary/foley.weave.mix.html.md#foley.weave.mix.constant_power_pan)(clip, pan)                      | Pan a (mono or stereo) clip to a stereo image with a constant-power law (report 06 §3.3).       |
 | [`convolution_reverb`](_autosummary/foley.weave.mix.html.md#foley.weave.mix.convolution_reverb)(clip, sample_rate, ir, \*, ...) | Convolution reverb with a real (recorded or synthesised) impulse response (report 06 §3.5).     |
 | [`db_to_lin`](_autosummary/foley.weave.mix.html.md#foley.weave.mix.db_to_lin)(db)                                      | Convert decibels to a linear amplitude factor (`10 ** (db/20)`).                                |
@@ -28050,6 +28122,36 @@ separately via [`reverb_send()`](_autosummary/foley.weave.mix.html.md#foley.weav
   `ndarray`
 * **Returns:**
   The attenuated, low-passed clip (a new array; input not mutated).
+
+### foley.weave.mix.attack_release_envelope(target, sample_rate, , attack=0.02, release=0.3, initial=1.0)
+
+Smooth a piecewise-constant gain `target` with a one-pole attack/release follower.
+
+The recurrence is `y[i] = t[i] + c·(y[i-1] - t[i])` with `c` the attack
+coefficient while the gain falls (`t[i] < y[i-1]`) and the release one otherwise,
+starting from `y[-1] = initial`. Within a run of equal targets the follower never
+crosses the target, so `c` is fixed for the run and the recurrence has the closed
+form `y = t + c**k·(y0 - t)`: each run is one vectorised numpy expression, and the
+Python loop is over runs (a handful per speech span), not samples. It is built for
+piecewise-constant targets (on/off gates): one numpy call per stretch means a
+target that changes every sample is slower than a plain per-sample loop.
+
+* **Parameters:**
+  * **target** (`ndarray`) – `(n,)` gain the follower chases (linear; piecewise constant).
+  * **sample_rate** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Sample rate in Hz.
+  * **attack** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Time constant (s) while the gain falls.
+  * **release** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Time constant (s) while the gain rises.
+  * **initial** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The follower’s value before the first sample.
+* **Return type:**
+  `ndarray`
+* **Returns:**
+  The smoothed `(n,)` float32 envelope (computed in float64).
+
+```pycon
+>>> env = attack_release_envelope([1.0, 0.0, 0.0], 1, attack=1.0)
+>>> [round(float(g), 3) for g in env]
+[1.0, 0.368, 0.135]
+```
 
 ### foley.weave.mix.constant_power_pan(clip, pan)
 
@@ -28592,18 +28694,16 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 04:47 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/c0d48126bc4e99302367b2ed27c755abb45fcee3"><code>c0d4812</code></a> on branch <code>main</code>, for **foley 0.0.118** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 05:08 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/cef9bfa2c676d5f8dba3da438ca7d5fedbc16796"><code>cef9bfa</code></a> on branch <code>main</code>, for **foley 0.0.119** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.118) is behind the latest release on PyPI (0.0.119): `pip install foley` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/c0d48126bc4e99302367b2ed27c755abb45fcee3"><code>c0d48126bc4e99302367b2ed27c755abb45fcee3</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/cef9bfa2c676d5f8dba3da438ca7d5fedbc16796"><code>cef9bfa2c676d5f8dba3da438ca7d5fedbc16796</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -28614,9 +28714,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41390168071">41390168071</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41391957948">41391957948</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>c0d48126bc4e99302367b2ed27c755abb45fcee3</code> (in the history of the built commit) |
+| Event commit | <code>cef9bfa2c676d5f8dba3da438ca7d5fedbc16796</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -28641,13 +28741,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.119/">0.0.119</a>, newer than the documented version (0.0.118).
+Latest release: <a href="https://pypi.org/project/foley/0.0.119/">0.0.119</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout c0d48126bc4e99302367b2ed27c755abb45fcee3
+git checkout cef9bfa2c676d5f8dba3da438ca7d5fedbc16796
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

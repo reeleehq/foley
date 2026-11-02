@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=e7715e22"></script>
+    <script src="../_static/documentation_options.js?v=4309da3b"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.118" />
+  <meta name="docsearch:version" content="0.0.119" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -536,34 +536,37 @@ later slice behind <code class="docutils literal notranslate"><span class="pre">
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.mix.apply_distance" title="foley.weave.mix.apply_distance"><code class="xref py py-obj docutils literal notranslate"><span class="pre">apply_distance</span></code></a>(clip, sample_rate, distance)</p></td>
 <td><p>Apply a distance recipe: attenuation + air-absorption low-pass (report 06 §3.4).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.mix.constant_power_pan" title="foley.weave.mix.constant_power_pan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">constant_power_pan</span></code></a>(clip, pan)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.mix.attack_release_envelope" title="foley.weave.mix.attack_release_envelope"><code class="xref py py-obj docutils literal notranslate"><span class="pre">attack_release_envelope</span></code></a>(target, sample_rate, *)</p></td>
+<td><p>Smooth a piecewise-constant gain <code class="docutils literal notranslate"><span class="pre">target</span></code> with a one-pole attack/release follower.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.mix.constant_power_pan" title="foley.weave.mix.constant_power_pan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">constant_power_pan</span></code></a>(clip, pan)</p></td>
 <td><p>Pan a (mono or stereo) clip to a stereo image with a constant-power law (report 06 §3.3).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.mix.convolution_reverb" title="foley.weave.mix.convolution_reverb"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convolution_reverb</span></code></a>(clip, sample_rate, ir, *, ...)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.mix.convolution_reverb" title="foley.weave.mix.convolution_reverb"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convolution_reverb</span></code></a>(clip, sample_rate, ir, *, ...)</p></td>
 <td><p>Convolution reverb with a real (recorded or synthesised) impulse response (report 06 §3.5).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.mix.db_to_lin" title="foley.weave.mix.db_to_lin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">db_to_lin</span></code></a>(db)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.mix.db_to_lin" title="foley.weave.mix.db_to_lin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">db_to_lin</span></code></a>(db)</p></td>
 <td><p>Convert decibels to a linear amplitude factor (<code class="docutils literal notranslate"><span class="pre">10</span> <span class="pre">**</span> <span class="pre">(db/20)</span></code>).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.mix.declick" title="foley.weave.mix.declick"><code class="xref py py-obj docutils literal notranslate"><span class="pre">declick</span></code></a>(clip, sample_rate, *[, fade_in, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.mix.declick" title="foley.weave.mix.declick"><code class="xref py py-obj docutils literal notranslate"><span class="pre">declick</span></code></a>(clip, sample_rate, *[, fade_in, ...])</p></td>
 <td><p>Apply short in/out fades so an edit point produces no click (report 06 §3.6).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.mix.equal_power_crossfade" title="foley.weave.mix.equal_power_crossfade"><code class="xref py py-obj docutils literal notranslate"><span class="pre">equal_power_crossfade</span></code></a>(a, b, overlap_samples)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.mix.equal_power_crossfade" title="foley.weave.mix.equal_power_crossfade"><code class="xref py py-obj docutils literal notranslate"><span class="pre">equal_power_crossfade</span></code></a>(a, b, overlap_samples)</p></td>
 <td><p>Concatenate <code class="docutils literal notranslate"><span class="pre">a</span></code> then <code class="docutils literal notranslate"><span class="pre">b</span></code> with an equal-power crossfade over <code class="docutils literal notranslate"><span class="pre">overlap_samples</span></code> (report 06 §3.6).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.mix.fit_duration" title="foley.weave.mix.fit_duration"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_duration</span></code></a>(clip, sample_rate, *[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.mix.fit_duration" title="foley.weave.mix.fit_duration"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_duration</span></code></a>(clip, sample_rate, *[, ...])</p></td>
 <td><p>Fit <code class="docutils literal notranslate"><span class="pre">clip</span></code> to <code class="docutils literal notranslate"><span class="pre">duration</span></code> seconds — seamless loop (beds) or trim/pass-through (report 06 §4).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.mix.overlay" title="foley.weave.mix.overlay"><code class="xref py py-obj docutils literal notranslate"><span class="pre">overlay</span></code></a>(bus, clip, onset_samples)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.mix.overlay" title="foley.weave.mix.overlay"><code class="xref py py-obj docutils literal notranslate"><span class="pre">overlay</span></code></a>(bus, clip, onset_samples)</p></td>
 <td><p>Add <code class="docutils literal notranslate"><span class="pre">clip</span></code> into <code class="docutils literal notranslate"><span class="pre">bus</span></code> at <code class="docutils literal notranslate"><span class="pre">onset_samples</span></code> (report 06 §6.4 <code class="docutils literal notranslate"><span class="pre">overlay</span></code>).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.mix.reverb_send" title="foley.weave.mix.reverb_send"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reverb_send</span></code></a>(clip, sample_rate, amount)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.mix.reverb_send" title="foley.weave.mix.reverb_send"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reverb_send</span></code></a>(clip, sample_rate, amount)</p></td>
 <td><p>Mix a pure-numpy exponential-decay reverb tail into <code class="docutils literal notranslate"><span class="pre">clip</span></code> (report 06 §3.5).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.mix.speech_duck_gain" title="foley.weave.mix.speech_duck_gain"><code class="xref py py-obj docutils literal notranslate"><span class="pre">speech_duck_gain</span></code></a>(n_samples, sample_rate, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.mix.speech_duck_gain" title="foley.weave.mix.speech_duck_gain"><code class="xref py py-obj docutils literal notranslate"><span class="pre">speech_duck_gain</span></code></a>(n_samples, sample_rate, ...)</p></td>
 <td><p>Build a (linear) gain envelope that dips to <code class="docutils literal notranslate"><span class="pre">duck_db</span></code> during speech spans (report 06 §3.2).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.mix.time_stretch" title="foley.weave.mix.time_stretch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">time_stretch</span></code></a>(clip, sample_rate, *, rate)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.mix.time_stretch" title="foley.weave.mix.time_stretch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">time_stretch</span></code></a>(clip, sample_rate, *, rate)</p></td>
 <td><p>Pitch-preserving time-stretch by <code class="docutils literal notranslate"><span class="pre">rate</span></code> via <code class="docutils literal notranslate"><span class="pre">rubberband</span></code> (report 06 §4, optional).</p></td>
 </tr>
 </tbody>
@@ -616,6 +619,42 @@ separately via <a class="reference internal" href="#foley.weave.mix.reverb_send"
 <dd class="field-odd"><p>The attenuated, low-passed clip (a new array; input not mutated).</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.mix.attack_release_envelope">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.mix.</span></span><span class="sig-name descname"><span class="pre">attack_release_envelope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">attack</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.02</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">release</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/mix.html#attack_release_envelope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.mix.attack_release_envelope" title="Link to this definition">#</a></dt>
+<dd><p>Smooth a piecewise-constant gain <code class="docutils literal notranslate"><span class="pre">target</span></code> with a one-pole attack/release follower.</p>
+<p>The recurrence is <code class="docutils literal notranslate"><span class="pre">y[i]</span> <span class="pre">=</span> <span class="pre">t[i]</span> <span class="pre">+</span> <span class="pre">c·(y[i-1]</span> <span class="pre">-</span> <span class="pre">t[i])</span></code> with <code class="docutils literal notranslate"><span class="pre">c</span></code> the attack
+coefficient while the gain falls (<code class="docutils literal notranslate"><span class="pre">t[i]</span> <span class="pre">&lt;</span> <span class="pre">y[i-1]</span></code>) and the release one otherwise,
+starting from <code class="docutils literal notranslate"><span class="pre">y[-1]</span> <span class="pre">=</span> <span class="pre">initial</span></code>. Within a run of equal targets the follower never
+crosses the target, so <code class="docutils literal notranslate"><span class="pre">c</span></code> is fixed for the run and the recurrence has the closed
+form <code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">=</span> <span class="pre">t</span> <span class="pre">+</span> <span class="pre">c**k·(y0</span> <span class="pre">-</span> <span class="pre">t)</span></code>: each run is one vectorised numpy expression, and the
+Python loop is over runs (a handful per speech span), not samples. It is built for
+piecewise-constant targets (on/off gates): one numpy call per stretch means a
+target that changes every sample is slower than a plain per-sample loop.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></span>) – <code class="docutils literal notranslate"><span class="pre">(n,)</span></code> gain the follower chases (linear; piecewise constant).</p></li>
+<li><p><strong>sample_rate</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Sample rate in Hz.</p></li>
+<li><p><strong>attack</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Time constant (s) while the gain falls.</p></li>
+<li><p><strong>release</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Time constant (s) while the gain rises.</p></li>
+<li><p><strong>initial</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – The follower’s value before the first sample.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The smoothed <code class="docutils literal notranslate"><span class="pre">(n,)</span></code> float32 envelope (computed in float64).</p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">env</span> <span class="o">=</span> <span class="n">attack_release_envelope</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="n">attack</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">g</span><span class="p">),</span> <span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">env</span><span class="p">]</span>
+<span class="go">[1.0, 0.368, 0.135]</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py function">
@@ -890,6 +929,7 @@ to loop/trim. Preserves the channel layout.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.mix.LAYER_GAIN_DB"><code class="docutils literal notranslate"><span class="pre">LAYER_GAIN_DB</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.mix.REVERB_IR_S"><code class="docutils literal notranslate"><span class="pre">REVERB_IR_S</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.mix.apply_distance"><code class="docutils literal notranslate"><span class="pre">apply_distance()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.mix.attack_release_envelope"><code class="docutils literal notranslate"><span class="pre">attack_release_envelope()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.mix.constant_power_pan"><code class="docutils literal notranslate"><span class="pre">constant_power_pan()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.mix.convolution_reverb"><code class="docutils literal notranslate"><span class="pre">convolution_reverb()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.mix.db_to_lin"><code class="docutils literal notranslate"><span class="pre">db_to_lin()</span></code></a></li>
