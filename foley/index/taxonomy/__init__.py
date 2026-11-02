@@ -22,6 +22,7 @@ from .model import AudioSetUcsMap, CatIdResolution, UcsName, UcsRow, UcsTable
 from .resolver import KeywordResolver, TaxonomyResolver, resolve_catid
 from .ucs import (
     default_ucs_table,
+    load_ucs_master,
     load_ucs_table,
     parse_catid_token,
     parse_ucs_filename,
@@ -37,6 +38,7 @@ __all__ = [
     "CatIdResolution",
     # ucs
     "load_ucs_table",
+    "load_ucs_master",
     "default_ucs_table",
     "parse_ucs_filename",
     "parse_ucs_name",

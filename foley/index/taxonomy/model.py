@@ -30,6 +30,7 @@ class UcsRow:
     subcategory: str
     synonyms: tuple[str, ...] = ()
     confident: bool = False
+    explanation: str = ""
 
 
 @dataclass(frozen=True)
