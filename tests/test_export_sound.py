@@ -158,7 +158,9 @@ def test_by_reference_sound_is_refused(library):
 @pytest.mark.parametrize("sound_id", THREE)
 def test_rights_use_exactly_the_rights_field_names(library, sound_id):
     _data, rights, _prov = foley.export_sound(sound_id, library=library)
-    assert set(rights) | {"restrictions"} == set(RIGHTS_FIELDS)  # none: left out
+    # only the Stability clip has a restriction (its cap); without one it is left out
+    assert set(rights) | {"restrictions"} == set(RIGHTS_FIELDS)
+    assert ("restrictions" in rights) == (sound_id == "sa-7")
     assert rights["cacheable"] is True
     assert all(v is None or v != "" for v in rights.values())
 
@@ -355,10 +357,12 @@ def test_the_reviewed_fail_open_cases(generator_license, source_license, code):
 
 def test_an_edit_never_drops_a_revenue_cap():
     for generator_license, source_license in EDITS:
-        if not LICENSE_FLAGS[generator_license].revenue_cap_usd:
+        own_cap = LICENSE_FLAGS[generator_license].revenue_cap_usd
+        if not own_cap:
             continue
         rights = sound_rights(_edit(generator_license, source_license))
-        assert any(r["kind"] == "revenue_cap" for r in rights["restrictions"])
+        stated = [r["usd"] for r in rights["restrictions"] if r["kind"] == "revenue_cap"]
+        assert stated and min(stated) <= own_cap, (generator_license, source_license)
 
 
 def test_an_classifies_no_edit_wider_than_its_lineage():
@@ -405,11 +409,11 @@ def _rights_for(license_id: str) -> dict:
 @pytest.mark.parametrize("license_id", sorted(LICENSE_FLAGS))
 def test_every_licence_gives_a_rights_shaped_dict(license_id):
     rights = _rights_for(license_id)
-    assert set(rights) | {"restrictions"} == set(RIGHTS_FIELDS)
-    assert ("restrictions" in rights) == bool(
+    restricted = bool(
         LICENSE_FLAGS[license_id].revenue_cap_usd
         or LICENSE_EXCLUDED_TERRITORIES.get(license_id)
     )
+    assert set(rights) == set(RIGHTS_FIELDS) - (set() if restricted else {"restrictions"})
     assert isinstance(rights["provider"], str) and rights["provider"]
     assert isinstance(rights["cacheable"], bool)
     assert all(
@@ -419,24 +423,71 @@ def test_every_licence_gives_a_rights_shaped_dict(license_id):
     )
 
 
+def _capped(license_id="CC-BY-4.0", usd=5000, *lineage):
+    return apply_license_flags(
+        LicenseRecord(source="s", license_id=license_id, rights_verified=True,
+                      derived_from_license_ids=list(lineage)),
+        overrides={"revenue_cap_usd": usd},
+    )  # fmt: skip
+
+
 def test_a_revenue_cap_and_excluded_territories_travel_as_restrictions():
     """#282: what no licence code says is stated beside it, in lacing's shape."""
-    stability = _rights_for("Stability-Community")
-    assert stability["restrictions"] == (
+    assert _rights_for("Stability-Community")["restrictions"] == (
         {"kind": "revenue_cap", "terms": "stability-community", "usd": 1_000_000},
     )
     (tencent,) = _rights_for("Tencent-Hunyuan-Community")["restrictions"]
-    assert tencent["kind"] == "territory_excluded" and {"EU", "GB", "KR"} <= set(
-        tencent["codes"]
-    )
+    assert tencent["kind"] == "territory_excluded"
+    assert {"EU", "GB", "KR"} <= set(tencent["codes"])
     # a cap a narrowing set, which no code implies: the code is kept, the cap stated
-    capped = apply_license_flags(
-        LicenseRecord(source="s", license_id="CC-BY-4.0", rights_verified=True),
-        overrides={"revenue_cap_usd": 5000},
-    )
-    rights = sound_rights(SoundRecord(id="x", license=capped))
+    rights = sound_rights(SoundRecord(id="x", license=_capped()))
     assert rights["license"] == "cc-by-4.0"
     assert rights["restrictions"] == ({"kind": "revenue_cap", "terms": None, "usd": 5000},)
+
+
+def test_a_stated_cap_never_reads_higher_than_a_licences_own():
+    """A narrowing cap above Stability's is not stated: the licence's $1M is."""
+    rights = sound_rights(SoundRecord(id="x", license=_capped("Stability-Community", 5_000_000)))
+    assert [r["usd"] for r in rights["restrictions"]] == [1_000_000]
+
+
+def test_a_stale_record_still_states_its_lineages_cap():
+    """The gate reads the licences, not the stored flags (#288 review)."""
+    from dataclasses import replace
+
+    lic = apply_license_flags(
+        LicenseRecord(source="s", license_id="Tencent-Hunyuan-Community",
+                      rights_verified=True, derived_from_license_ids=["Stability-Community"])
+    )  # fmt: skip
+    stale = replace(lic, revenue_cap_usd=None)
+    rights = sound_rights(SoundRecord(id="x", license=stale))
+    caps = [r for r in rights.get("restrictions", ()) if r["kind"] == "revenue_cap"]
+    assert rights["license"] is None or caps == [
+        {"kind": "revenue_cap", "terms": "stability-community", "usd": 1_000_000}
+    ]
+
+
+@pytest.mark.parametrize(
+    "own,source",
+    [
+        ("Tencent-Hunyuan-Community", "Stability-Community"),
+        ("fal-partner-unverified", "Tencent-Hunyuan-Community"),
+        ("research-only", "Tencent-Hunyuan-Community"),
+    ],
+)
+def test_an_unknown_class_clip_over_an_unknown_class_source_keeps_its_own_code(own, source):
+    """#282: with the source's cap and territories stated, these export the clip's own
+    code (a tie between two UNKNOWN classes goes to the clip's own licence); before,
+    the code alone could not carry them and the export was unknown. Every consumer
+    still classes the code as unknown, and nothing of the source's is dropped."""
+    lic = apply_license_flags(
+        LicenseRecord(source="s", license_id=own, rights_verified=True,
+                      derived_from_license_ids=[source])
+    )  # fmt: skip
+    rights = sound_rights(SoundRecord(id="x", license=lic))
+    assert rights["license"] == consumer_license_code(own)
+    stated = {r["terms"] for r in rights["restrictions"]}
+    assert consumer_license_code(source) in stated
 
 
 def test_the_restriction_kinds_are_lacings():
@@ -445,7 +496,7 @@ def test_the_restriction_kinds_are_lacings():
         restrictions.REVENUE_CAP,
         restrictions.TERRITORY_EXCLUDED,
     )
-    # and lacing's evaluator reads foley's restrictions as foley's gate does
+    # and lacing's evaluator reads foley's cap as foley's own gate does
     (cap,) = _rights_for("Stability-Community")["restrictions"]
     rule = restrictions.Restriction(**cap)
     assert restrictions.restriction_breach(rule, restrictions.Use(revenue_usd=2_000_000))
@@ -529,15 +580,12 @@ def test_a_files_licence_states_the_restrictions_rights_carry():
     """#282: a file has no restrictions field, so its licence text never reads wider."""
     from foley.provenance import export_metadata
 
-    capped = apply_license_flags(
-        LicenseRecord(source="s", license_id="CC-BY-4.0", rights_verified=True),
-        overrides={"revenue_cap_usd": 5000},
-    )
-    record = SoundRecord(id="x", license=capped)
+    record = SoundRecord(id="x", license=_capped())
     meta = export_metadata(record, sound_rights(record))
     assert meta["license"] == "cc-by-4.0; revenue cap USD 5000"
     text = export_metadata(record, _rights_for("Tencent-Hunyuan-Community"))["license"]
-    assert text.startswith("tencent-hunyuan-community; not licensed in ") and "KR" in text
+    assert text.startswith("tencent-hunyuan-community; not licensed in ")
+    assert "KR" in text and "(tencent" not in text  # its own terms are not repeated
 
 
 def test_embedding_keeps_the_samples_and_the_hash_names_the_bytes_returned(

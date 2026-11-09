@@ -8,9 +8,10 @@
   ``cacheable``, ``restrictions``), so a consumer validates it with
   ``lacing.Rights(**rights)``. foley never imports lacing (it pulls pydantic), so the
   dict is the contract. ``restrictions`` (lacing#106) states what no licence code
-  says, a revenue cap and excluded territories, as ``lacing.Restriction`` dicts
-  (:func:`foley.licensing.license_restrictions`); like lacing, the dict leaves it out
-  when there is none, so ``Rights(**rights).model_dump() == rights``.
+  says, the revenue caps and excluded territories of the sound's licences, as
+  ``lacing.Restriction`` dicts (:func:`foley.licensing.license_restrictions`); like
+  lacing, the dict leaves it out when there is none, so
+  ``Rights(**rights).model_dump() == rights``.
 * ``provenance`` is what ``Rights`` has no field for and a consumer must not lose:
   foley's id, the sha256 of the archived bytes AND of the exported bytes (a FLAC
   archive re-encoded to WAV hashes differently, so both are kept to chain them) and
@@ -34,8 +35,8 @@ Two rules carry the rights:
   (:func:`foley.licensing.code_implies_at_most`, else ``None``). AI use is not in a
   code: a consumer reads it from the provenance (``flags``, ``ai_training_scope``,
   ``gen_ai_preference``).
-  A restriction stated in ``restrictions`` need not be implied by the code
-  (``carried=`` of :func:`foley.licensing.rights_license_id`).
+  The code is judged together with the restrictions stated beside it
+  (``restrictions=`` of :func:`foley.licensing.rights_license_id`).
   A provider-terms licence names the terms' owner as ``provider``
   (:data:`foley.licensing.LICENSE_TERMS_PROVIDER`), since a consumer reads such a
   code only on that provider's source.
@@ -69,7 +70,6 @@ from urllib.parse import unquote
 
 from ..base import LicenseRecord, SoundRecord
 from ..licensing import (
-    CARRIED_RESTRICTIONS,
     LICENSE_TERMS_PROVIDER,
     REVENUE_CAP,
     TERRITORY_EXCLUDED,
@@ -133,15 +133,17 @@ def _text(value: Optional[str]) -> Optional[str]:
     return value if value and value.strip() else None
 
 
-def rights_provider(lic: LicenseRecord, license_id: Optional[str] = None) -> str:
+def rights_provider(lic: LicenseRecord, *, license_id: Optional[str] = None) -> str:
     """Who the rights come from: the owner of the provider-terms licence exported
-    (``license_id``, else ``lic``'s own), else the source.
+    (``license_id``, else ``lic``'s own), else the source. Keyed on the exported code,
+    so a terms owner is never paired with another licence's code.
 
     >>> rights_provider(LicenseRecord(source="fal_stable_audio_3", license_id="Stability-Community"))
     'stability-ai'
     >>> rights_provider(LicenseRecord(source="freesound", license_id="CC0-1.0"))
     'freesound'
-    >>> rights_provider(LicenseRecord(source="g", license_id="Stability-Community"), "CC-BY-4.0")
+    >>> rights_provider(LicenseRecord(source="g", license_id="Stability-Community"),
+    ...     license_id="CC-BY-4.0")
     'g'
     """
     return LICENSE_TERMS_PROVIDER.get(license_id or lic.license_id, lic.source)
@@ -165,15 +167,15 @@ def sound_rights(record: SoundRecord) -> dict:
     ``(modified)`` notice, the AI disclosure (``AI-generated with <model>``) and an
     edit's sources. ``author`` is ``None`` when no creator or rights holder is
     recorded (the credit line falls back to the source name; a rights record does not).
-    ``restrictions`` (only when there are any) states the revenue cap and excluded
-    territories, which the code then need not imply.
+    ``restrictions`` (only when there are any) states the revenue caps and excluded
+    territories, and the code is judged together with them.
     """
     lic = record.license
     entry = credit_entry(record)
-    license_id = rights_license_id(lic, carried=CARRIED_RESTRICTIONS)
     restrictions = license_restrictions(lic)
+    license_id = rights_license_id(lic, restrictions=restrictions)
     return {
-        "provider": rights_provider(lic, license_id),
+        "provider": rights_provider(lic, license_id=license_id),
         "id": _text(lic.source_id),
         "title": _text(entry.title),
         "license": consumer_license_code(license_id),
@@ -363,14 +365,16 @@ def export_metadata(
     }
 
 
-def _restriction_text(restriction: dict) -> str:
-    """One ``lacing.Restriction`` dict in words (an unknown kind: its kind)."""
-    terms = f" ({restriction['terms']})" if restriction.get("terms") else ""
+def _restriction_text(restriction: dict, *, code: str) -> str:
+    """One ``lacing.Restriction`` dict in words, naming its terms unless they are the
+    exported ``code`` (an unknown kind: its kind)."""
+    terms = restriction.get("terms")
+    by = f" ({terms})" if terms and terms != code else ""
     if restriction["kind"] == REVENUE_CAP:
-        return f"revenue cap USD {restriction['usd']}{terms}"
+        return f"revenue cap USD {restriction['usd']}{by}"
     if restriction["kind"] == TERRITORY_EXCLUDED:
-        return f"not licensed in {', '.join(restriction['codes'])}{terms}"
-    return f"{restriction['kind']}{terms}"
+        return f"not licensed in {', '.join(restriction['codes'])}{by}"
+    return f"{restriction['kind']}{by}"
 
 
 def license_text(rights: dict) -> Optional[str]:
@@ -386,7 +390,8 @@ def license_text(rights: dict) -> Optional[str]:
     code = rights.get("license")
     if code is None:
         return None
-    return "; ".join([code, *map(_restriction_text, rights.get("restrictions", ()))])
+    stated = (_restriction_text(r, code=code) for r in rights.get("restrictions", ()))
+    return "; ".join([code, *stated])
 
 
 def _verified_archive(
