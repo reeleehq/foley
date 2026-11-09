@@ -85,19 +85,23 @@ class ClapZeroShotTagger:
 
         Natural multi-word phrases (``"weather rain"``, ``"glass break"``) are far
         better CLAP prompts — and better BM25 tags / taxonomy-resolver input — than
-        bare abstract subcategory words (``"Break"``, ``"Buzz"``), which are a known
+        bare abstract subcategory words (``"Break"``, ``"Buzz"``); a generic
+        subcategory (``GENERAL``, ``MISC``) gives the bare category, and the
+        ``ARCHIVED`` bookkeeping rows give none, which are a known
         zero-shot artifact (anomalously close to everything). Absolute tag-quality
         calibration (thresholds, label curation) is an eval-harness concern (#10).
         """
         if self._labels is not None:
             return self._labels
-        from .taxonomy import default_ucs_table
+        from .taxonomy import NON_SOUND_CATEGORIES, default_ucs_table
 
         seen: list[str] = []
         for row in default_ucs_table():
+            if row.category in NON_SOUND_CATEGORIES:
+                continue
             cat = (row.category or "").strip().lower()
             sub = (row.subcategory or "").strip().lower()
-            label = cat if (not sub or sub == "general") else f"{cat} {sub}"
+            label = cat if (not sub or row.is_generic) else f"{cat} {sub}"
             label = label.strip()
             if label and label not in seen:
                 seen.append(label)

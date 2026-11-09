@@ -10,7 +10,16 @@ faceting and browse", the CLAP vector does the heavy retrieval).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from functools import cached_property
 from typing import Optional
+
+
+#: Subcategories that name no particular sound (``RAIN``/``GENERAL``, ``AIR``/``MISC``).
+GENERIC_SUBCATEGORIES: frozenset = frozenset({"general", "misc"})
+
+#: Categories whose rows are production bookkeeping (``TMARK``, ``WIP``, ``SCNE``),
+#: not kinds of sound: a filename may name them, a tagger or keyword match never does.
+NON_SOUND_CATEGORIES: frozenset = frozenset({"ARCHIVED"})
 
 
 @dataclass(frozen=True)
@@ -31,6 +40,11 @@ class UcsRow:
     synonyms: tuple[str, ...] = ()
     confident: bool = False
     explanation: str = ""
+
+    @property
+    def is_generic(self) -> bool:
+        """Whether the subcategory names no particular sound (``GENERAL``, ``MISC``)."""
+        return self.subcategory.lower() in GENERIC_SUBCATEGORIES
 
 
 @dataclass(frozen=True)
@@ -66,7 +80,9 @@ class UcsTable:
 
     by_catid: dict[str, UcsRow] = field(default_factory=dict)
     order: list[str] = field(default_factory=list)
-    _ci_index: dict[str, str] = field(default_factory=dict)  # lower(catid) -> catid
+    # lower(catid) -> catid, for mixed-case CatIDs only: ``doorwood`` finds
+    # ``DOORWood``, but ``rain`` (a word) never finds ``RAIN``.
+    _ci_index: dict[str, str] = field(default_factory=dict)
 
     def get(self, catid: str) -> Optional[UcsRow]:
         """Look up a row by CatID: exact first, then case-insensitive."""
@@ -84,6 +100,13 @@ class UcsTable:
 
     def __iter__(self):
         return iter(self.by_catid.values())
+
+    @cached_property
+    def term_index(self):
+        """The rows' matchable terms (:class:`~foley.index.taxonomy.text.TermIndex`), built once."""
+        from .text import build_term_index
+
+        return build_term_index(self)
 
 
 @dataclass

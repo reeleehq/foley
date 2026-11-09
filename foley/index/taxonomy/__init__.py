@@ -13,12 +13,22 @@ Progressive disclosure — the one-call path is::
     resolve_catid(caption="a heavy wooden door creaks open")   # -> CatIdResolution
 
 Everything else (the UCS table, the AudioSet map, a custom resolver) is optional
-keyword injection. The seed tables live in code; the full UCS master and the
-EnvSound-UCS mapping drop in later as JSON under ``data/`` with no logic change.
+keyword injection. The default UCS table is the shipped v8.2.1 master (753
+CatIDs, with their synonyms) plus the in-code seed's curated phrases; a house
+extension and the EnvSound-UCS AudioSet mapping drop in as JSON under ``data/``
+with no logic change.
 """
 
 from .audioset import default_audioset_ucs_map, load_audioset_ucs_map
-from .model import AudioSetUcsMap, CatIdResolution, UcsName, UcsRow, UcsTable
+from .model import (
+    GENERIC_SUBCATEGORIES,
+    NON_SOUND_CATEGORIES,
+    AudioSetUcsMap,
+    CatIdResolution,
+    UcsName,
+    UcsRow,
+    UcsTable,
+)
 from .resolver import KeywordResolver, TaxonomyResolver, resolve_catid
 from .ucs import (
     UCS_NAME_BLOCKS,
@@ -39,6 +49,8 @@ __all__ = [
     "UcsTable",
     "AudioSetUcsMap",
     "CatIdResolution",
+    "GENERIC_SUBCATEGORIES",
+    "NON_SOUND_CATEGORIES",
     # ucs
     "load_ucs_table",
     "load_ucs_master",

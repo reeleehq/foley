@@ -577,7 +577,8 @@ def test_similar_to_sends_the_native_param_with_either_id_form():
     [
         ("AMBIENCE", "Soundscapes"),
         ("ambience", "Soundscapes"),
-        ("MUSIC", "Music"),
+        ("MUSICAL", "Music"),
+        ("MUSCInst", "Music"),  # a CatID: its category
     ],
 )
 def test_ucs_category_becomes_a_bst_category_prefilter(ucs, bst):
@@ -801,7 +802,7 @@ def test_kind_and_ucs_category_on_different_top_levels_raise():
 
 def test_kind_and_ucs_category_on_one_top_level_send_it_once():
     transport = _transport()
-    _adapter(transport).search("rain", kind="music", ucs_category="MUSIC")
+    _adapter(transport).search("rain", kind="music", ucs_category="MUSICAL")
     assert transport.calls[0].params["filter"].count("category:") == 1
     transport = _transport()  # sfx sends no category: the UCS one alone is sent
     _adapter(transport).search("rain", ucs_category="AMBIENCE")

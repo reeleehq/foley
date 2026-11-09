@@ -75,7 +75,7 @@ SOURCE_CONFIG = {
             "to_native": 'category:"{category}"',
             "bst_category_by_ucs_category": {
                 "AMBIENCE": "Soundscapes",
-                "MUSIC": "Music",
+                "MUSICAL": "Music",
                 "VOICES": "Speech",
             },
         },

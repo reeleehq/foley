@@ -9,15 +9,18 @@ string-split, since the category prefix is variable-length).
 :func:`parse_ucs_name` returns every block (:class:`~.model.UcsName`);
 :func:`parse_ucs_filename` just the category pair; :func:`format_ucs_name` is the
 inverse of :func:`parse_ucs_name` (it sanitises each block so the name parses back). The
-loader merges the in-code seed with an optional full-table JSON drop under
-``taxonomy/data/ucs_full.json`` (JSON wins on CatID collision) — open/closed.
+default table is the shipped UCS v8.2.1 master with the seed's curated phrases added,
+and an optional house drop under ``taxonomy/data/ucs_full.json`` on top (it wins on
+CatID collision) — open/closed. A CatID matches case-insensitively only when it is
+mixed-case (``doorwood`` is ``DOORWood``); an all-capitals one (``RAIN``, ``MIX``)
+must be written as such, since in lower case it is an ordinary word.
 """
 
 from __future__ import annotations
 
 import json
 import re
-from dataclasses import fields as dataclass_fields
+from dataclasses import fields as dataclass_fields, replace
 from functools import lru_cache
 from pathlib import Path
 from typing import Callable, Mapping, Optional, Union
@@ -50,26 +53,53 @@ def _json_rows(path: Path) -> "list[dict]":
 
 def _table(rows: "dict[str, UcsRow]") -> UcsTable:
     return UcsTable(
-        by_catid=dict(rows), order=list(rows), _ci_index={c.lower(): c for c in rows}
+        by_catid=dict(rows),
+        order=list(rows),
+        _ci_index={c.lower(): c for c in rows if not c.isupper()},
     )
 
 
-def load_ucs_table(*, data_dir=None, include_seed: bool = True) -> UcsTable:
-    """Build the UCS lookup: the seed rows, overridden/extended by a JSON drop.
+def _with_phrases(row: UcsRow, phrases) -> UcsRow:
+    """``row`` with ``phrases`` appended to its synonyms (order kept, no repeats)."""
+    extra = tuple(
+        p for p in dict.fromkeys(s.lower() for s in phrases) if p not in row.synonyms
+    )
+    return replace(row, synonyms=row.synonyms + extra) if extra else row
+
+
+def load_ucs_table(
+    *, data_dir=None, master=UCS_MASTER_FILE, include_seed: bool = True
+) -> UcsTable:
+    """Build the UCS lookup: the v8.2.1 master, the seed's phrases, then a JSON drop.
 
     Args:
         data_dir: Directory to look for ``ucs_full.json`` in (defaults to the
-            package's ``taxonomy/data/``). When present, its rows override the
-            seed on CatID collision and add the rest of the ~750-row master.
-        include_seed: Start from the in-code seed table (default ``True``).
+            package's ``taxonomy/data/``). Its rows override any row on CatID
+            collision and add new ones (a house extension of UCS).
+        master: The UCS master JSON (default: the shipped v8.2.1 table). ``None``,
+            or a path that does not exist, falls back to the seed rows alone.
+        include_seed: Add the seed's curated phrases to their master rows (default
+            ``True``); with no master, the seed rows are the table either way.
 
     Returns:
         A ready :class:`~foley.index.taxonomy.model.UcsTable`.
+
+    >>> t = load_ucs_table()
+    >>> len(t), t.get("RAIN").category, "rain on window" in t.get("RAIN").synonyms
+    (753, 'RAIN', True)
     """
+    master_path = Path(master) if master else None
     rows: dict[str, UcsRow] = {}
-    if include_seed:
+    if master_path is not None and master_path.exists():
+        rows = {d["catid"]: _row_from_dict(d) for d in _json_rows(master_path)}
+    if include_seed or not rows:
         for d in SEED_UCS_TABLE:
-            rows[d["catid"]] = _row_from_dict(d)
+            known = rows.get(d["catid"])
+            rows[d["catid"]] = (
+                _with_phrases(known, d["synonyms"])
+                if known is not None
+                else _row_from_dict({**d, "confident": True})
+            )
     search_dir = Path(data_dir) if data_dir else _DATA_DIR
     full = search_dir / _UCS_FULL_FILE
     if full.exists():
@@ -80,13 +110,11 @@ def load_ucs_table(*, data_dir=None, include_seed: bool = True) -> UcsTable:
 
 @lru_cache(maxsize=1)
 def load_ucs_master() -> UcsTable:
-    """The authoritative UCS v8.2.1 master (753 rows, 82 categories), without the seed.
+    """The UCS v8.2.1 master as shipped (753 rows, 82 categories): no seed, no drop.
 
-    Opt-in for now: the default table (:func:`default_ucs_table`) is still the
-    in-code seed, whose CatIDs mostly predate the master. Pass it where a table is
-    taken (``parse_ucs_name(name, table=load_ucs_master())``). Row fields are the
-    master's, verbatim (``SubCategory`` in capitals: ``('DOORS', 'WOOD')``), with its
-    explanation and synonyms (lowercased).
+    Row fields are the master's, verbatim (``SubCategory`` in capitals:
+    ``('DOORS', 'WOOD')``), with its explanation and synonyms (lowercased). The
+    default table (:func:`default_ucs_table`) is this plus the seed's phrases.
 
     >>> t = load_ucs_master()
     >>> len(t), t.get("doorwood").subcategory, "WOODHndl" in t
@@ -97,7 +125,7 @@ def load_ucs_master() -> UcsTable:
 
 @lru_cache(maxsize=1)
 def default_ucs_table() -> UcsTable:
-    """The process-wide default UCS table (seed + any JSON drop), built once."""
+    """The process-wide default UCS table (master + seed phrases + any drop), built once."""
     return load_ucs_table()
 
 
@@ -166,7 +194,7 @@ def parse_ucs_name(
 
     >>> n = parse_ucs_name("DOORWood-Gate_SCIFI-Creak Open_JD_NYC_take 2.wav")
     >>> (n.catid, n.category, n.subcategory, n.user_category)
-    ('DOORWood', 'DOORS', 'Wood', 'Gate')
+    ('DOORWood', 'DOORS', 'WOOD', 'Gate')
     >>> (n.vendor_category, n.fx_name, n.creator_id, n.source_id, n.user_data)
     ('SCIFI', 'Creak Open', 'JD', 'NYC', 'take 2')
     >>> m = parse_ucs_name("DOORWood_Sci-Fi Slam 5.1_JD_NYC")

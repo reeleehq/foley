@@ -19,11 +19,18 @@ CLAP zero-shot resolver (embed once, argmax over UCS label prompts, report
 
 from __future__ import annotations
 
-import re
+import math
 from typing import Optional, Protocol, Sequence, runtime_checkable
 
 from .audioset import default_audioset_ucs_map
-from .model import AudioSetUcsMap, CatIdResolution, UcsTable
+from .model import (
+    GENERIC_SUBCATEGORIES,
+    NON_SOUND_CATEGORIES,
+    AudioSetUcsMap,
+    CatIdResolution,
+    UcsTable,
+)
+from .text import stem, terms
 from .ucs import default_ucs_table, parse_ucs_name
 
 # Coarse per-stage confidence bands.
@@ -36,87 +43,127 @@ _CONF_KEYWORD_APPROX: float = 0.6  # strong hit on an approximate (confident=Fal
 _CONF_KEYWORD_WEAK: float = 0.4  # category-name-only brush (no subcategory/synonym hit)
 _CONF_AUDIOSET: float = 0.5
 
-# Common English words that also happen to be a UCS subcategory/synonym token; they
-# are too ambiguous to resolve a CatID on their own, so they match ONLY inside a
-# multi-word phrase (e.g. "glass break"), never as a bare single token ("take a
-# break"). Prevents high-scoring false positives on ordinary narration.
-_AMBIGUOUS_SINGLE_TOKENS = frozenset(
-    {"break", "shot", "hit", "bang", "run", "beat", "arc", "handle", "general"}
+#: English function words: dropped from both sides before matching, so a phrase
+#: matches across them (``"rain on window"`` in "rain on a window").
+DEFAULT_STOP_WORDS: frozenset = frozenset(
+    stem(w)
+    for w in (
+        "a an the and or but if of in on at to for from by with without into onto "
+        "over under up down out off about as is are was were be been being am do does "
+        "did has have had it its this that these those there here he she they we you "
+        "i me him her them us my your his our their who what which when where why how "
+        "not no nor so than then too very can could will would should may might must "
+        "just also only all any some each every few more most other such own same"
+    ).split()
 )
 
-_NON_ALNUM = re.compile(r"[^a-z0-9]+")
+#: Common narration words that the UCS master also lists as a subcategory or
+#: synonym (``quiet`` is ``CRWDQuiet``, ``release`` an ``AIR`` synonym): they count
+#: inside a multi-word term (``"glass break"``, ``"room tone"``), never alone
+#: (``"take a break"``).
+DEFAULT_AMBIGUOUS_WORDS: frozenset = frozenset(
+    stem(w)
+    for w in (
+        "break shot hit bang run beat arc handle general misc sound tone quiet open "
+        "release work little long big blue set hold catch drop fall person meeting "
+        "day night time way thing place side part piece light heavy small large"
+    ).split()
+)
+
+#: Categories the keyword stage never picks (a filename or declared CatID still may).
+DEFAULT_SKIP_CATEGORIES: frozenset = NON_SOUND_CATEGORIES
+
+#: Base weight of a matched term, by where it came from; a multi-word term adds
+#: :data:`_PHRASE_BONUS` per extra word.
+_KIND_WEIGHT = {"subcategory": 3.0, "synonym": 2.0, "category": 1.5}
+_PHRASE_BONUS = 1.0
 
 
-def _normalize(text: str) -> str:
-    """Lowercase and collapse non-alphanumerics to single spaces."""
-    return _NON_ALNUM.sub(" ", text.lower()).strip()
-
-
-def _search_fields(tags: Sequence[str], caption: Optional[str]) -> "list[str]":
-    """Per-field normalized strings (each tag, then the caption).
+def _search_fields(tags: Sequence[str], caption: Optional[str]) -> "list[tuple]":
+    """Per-field stemmed words (each tag, then the caption).
 
     Kept as separate fields so a multi-word phrase can only match *within* one
-    field — a bigram must never straddle a tag<->caption (or tag<->tag) boundary
+    field: a phrase must never straddle a tag<->caption (or tag<->tag) boundary
     (e.g. tags=['glass'] + caption='break room' must NOT match 'glass break').
     """
-    fields = [_normalize(t) for t in (tags or ()) if t]
-    if caption:
-        fields.append(_normalize(caption))
-    return [f for f in fields if f]
+    texts = [t for t in (tags or ()) if t] + ([caption] if caption else [])
+    return [f for f in (terms(t) for t in texts) if f]
+
+
+def _contains(field_words: tuple, words: tuple) -> bool:
+    n = len(words)
+    return any(field_words[i : i + n] == words for i in range(len(field_words) - n + 1))
+
+
+def _term_weight(term, row_count: int) -> float:
+    """A matched term's weight: its kind's, a phrase bonus, and less if many rows share it.
+
+    A subcategory or category is the row's own name, so it keeps its full weight; a
+    synonym shared by ``n`` rows is divided by ``sqrt(n)`` (``"car"`` is a synonym of
+    32 rows, ``"doorknob"`` of one).
+    """
+    weight = _KIND_WEIGHT[term.kind] + _PHRASE_BONUS * (len(term.words) - 1)
+    return weight / math.sqrt(row_count) if term.kind == "synonym" else weight
 
 
 def _keyword_stage(
-    tags: Sequence[str], caption: Optional[str], table: UcsTable
+    tags: Sequence[str],
+    caption: Optional[str],
+    table: UcsTable,
+    *,
+    stop_words: frozenset,
+    ambiguous_words: frozenset,
+    skip_categories: frozenset,
 ) -> "Optional[tuple]":
+    """The best keyword match: ``(row, matched_terms, strong)``, or ``None``.
+
+    ``strong`` means a subcategory or synonym matched; a category-name-only match is
+    weak evidence, and lands on the category's generic row when it has one.
+    """
     fields = _search_fields(tags, caption)
     if not fields:
         return None
-    padded_fields = [f" {f} " for f in fields]
-    tokens: set[str] = set()
-    for f in fields:
-        tokens.update(f.split())
 
-    def hit(phrase: str) -> bool:
-        p = _normalize(phrase)
-        if not p:
-            return False
-        if " " in p:  # multi-word: word-boundary substring within a single field
-            needle = f" {p} "
-            return any(needle in pf for pf in padded_fields)
-        if p in _AMBIGUOUS_SINGLE_TOKENS:  # too ambiguous to match bare
-            return False
-        return p in tokens  # single token: exact word (across fields)
+    def content(words):  # a phrase matches across stop words: "rain on a window"
+        return tuple(w for w in words if w not in stop_words)
 
-    # ``strong`` = a subcategory or synonym matched (real evidence); a bare
-    # category-name brush is ``weak`` and gets a lower reported confidence.
-    best = None  # ((score, -order_index), row, matched_terms, strong)
-    for order_index, catid in enumerate(table.order):
-        row = table.by_catid[catid]
-        matched: list[str] = []
-        score = 0.0
-        strong = False
-        sub = row.subcategory.lower()
-        if sub and sub != "general" and hit(sub):
-            score += 3.0 + sub.count(" ")
-            matched.append(sub)
-            strong = True
-        for syn in row.synonyms:
-            if hit(syn):
-                score += 2.0 + syn.count(" ")
-                matched.append(syn)
-                strong = True
-        cat = row.category.lower()
-        if cat not in matched and hit(cat):
-            score += 0.5
-            matched.append(cat)
-        if score <= 0:
-            continue
-        key = (score, -order_index)
-        if best is None or key > best[0]:
-            best = (key, row, matched, strong)
-    if best is None:
+    content_fields = [content(f) for f in fields]
+    index = table.term_index
+    scores: dict[str, list] = {}  # catid -> [score, matched, strong]
+    for word in {w for f in fields for w in f}:
+        for term in index.by_first_word.get(word, ()):
+            words = content(term.words)
+            if not words or (len(words) == 1 and words[0] in ambiguous_words):
+                continue
+            if not any(_contains(f, words) for f in content_fields):
+                continue
+            if term.kind == "subcategory" and words[0] in GENERIC_SUBCATEGORIES:
+                continue
+            row = table.by_catid[term.catid]
+            if row.category in skip_categories:
+                continue
+            entry = scores.setdefault(term.catid, [0.0, [], False])
+            entry[0] += _term_weight(term, index.row_count[term.words])
+            text = " ".join(term.words)
+            if text not in entry[1]:
+                entry[1].append(text)
+            entry[2] = entry[2] or term.kind != "category"
+    if not scores:
         return None
-    return best[1], best[2], best[3]
+    order = {catid: i for i, catid in enumerate(table.order)}
+
+    def rank(catid):
+        score, _, strong = scores[catid]
+        return (
+            round(score, 6),
+            strong,
+            table.by_catid[catid].is_generic,
+            -order[catid],
+        )
+
+    best = max(scores, key=rank)
+    score, matched, strong = scores[best]
+    return table.by_catid[best], matched, strong
 
 
 def _audioset_stage(
@@ -140,6 +187,9 @@ def resolve_catid(
     catid: Optional[str] = None,
     table: Optional[UcsTable] = None,
     audioset_map: Optional[AudioSetUcsMap] = None,
+    stop_words: frozenset = DEFAULT_STOP_WORDS,
+    ambiguous_words: frozenset = DEFAULT_AMBIGUOUS_WORDS,
+    skip_categories: frozenset = DEFAULT_SKIP_CATEGORIES,
 ) -> CatIdResolution:
     """Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -154,6 +204,12 @@ def resolve_catid(
         table: UCS table (defaults to :func:`default_ucs_table`).
         audioset_map: AudioSet->UCS map (defaults to
             :func:`~foley.index.taxonomy.audioset.default_audioset_ucs_map`).
+        stop_words: Stemmed words dropped from both sides before matching
+            (default :data:`DEFAULT_STOP_WORDS`).
+        ambiguous_words: Stemmed words that match only inside a multi-word term,
+            never alone (default :data:`DEFAULT_AMBIGUOUS_WORDS`).
+        skip_categories: UCS categories the keyword stage never picks (default
+            :data:`DEFAULT_SKIP_CATEGORIES`; a filename or declared CatID still may).
 
     Returns:
         A :class:`~foley.index.taxonomy.model.CatIdResolution` (falsy when
@@ -185,7 +241,14 @@ def resolve_catid(
             matched_terms=[catid],
         )
 
-    kw = _keyword_stage(tags, caption, table)
+    kw = _keyword_stage(
+        tags,
+        caption,
+        table,
+        stop_words=stop_words,
+        ambiguous_words=ambiguous_words,
+        skip_categories=skip_categories,
+    )
     if kw is not None:
         row, matched, strong = kw
         if not strong:  # category-name-only brush — weak evidence
@@ -236,10 +299,19 @@ class KeywordResolver:
         *,
         table: Optional[UcsTable] = None,
         audioset_map: Optional[AudioSetUcsMap] = None,
+        stop_words: frozenset = DEFAULT_STOP_WORDS,
+        ambiguous_words: frozenset = DEFAULT_AMBIGUOUS_WORDS,
+        skip_categories: frozenset = DEFAULT_SKIP_CATEGORIES,
     ):
-        """Create a resolver over the given (or default) UCS table + AudioSet map."""
+        """Create a resolver over the given (or default) UCS table + AudioSet map.
+
+        ``stop_words``, ``ambiguous_words`` and ``skip_categories`` are as in :func:`resolve_catid`.
+        """
         self.table = table or default_ucs_table()
         self.audioset_map = audioset_map or default_audioset_ucs_map()
+        self.stop_words = stop_words
+        self.ambiguous_words = ambiguous_words
+        self.skip_categories = skip_categories
 
     def resolve(self, record) -> CatIdResolution:
         """Resolve a :class:`~foley.base.SoundRecord`'s tags/caption/labels/uri."""
@@ -250,4 +322,7 @@ class KeywordResolver:
             filename=getattr(record, "uri", None),
             table=self.table,
             audioset_map=self.audioset_map,
+            stop_words=self.stop_words,
+            ambiguous_words=self.ambiguous_words,
+            skip_categories=self.skip_categories,
         )
