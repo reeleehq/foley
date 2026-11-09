@@ -12,8 +12,43 @@ The default UCS table is the shipped v8.2.1 master (``data/ucs_master.json``; #2
   the table, so a resolution still lands on a real CatID.
 
 Every CatID here exists in UCS v8.2.1. The pre-master seed used invented ones
-(``WEATHRain``, ``GLASBreak``); #237's PR lists where each one went.
+(``WEATHRain``, ``GLASBreak``); :data:`LEGACY_CATIDS` says where each one went, so a
+record stamped with one still finds its row.
 """
+
+#: The pre-master seed's invented CatIDs -> the real UCS v8.2.1 CatID that replaced
+#: each (#237). ``IMPTGeneral`` has none: UCS has no generic impact row.
+#: :meth:`~foley.index.taxonomy.model.UcsTable.get` resolves them.
+LEGACY_CATIDS: "dict[str, str]" = {
+    "WEATHRain": "RAIN",
+    "WEATHWind": "WIND",
+    "WEATHThunder": "THUN",
+    "DOORMetal": "DOORMetl",
+    "DOORKnob": "DOORHdwr",
+    "FOOTWood": "FEETHmn",
+    "FOOTConc": "FEETHmn",
+    "FOOTGravel": "FEETHmn",
+    "DESTGeneral": "DESTRCrsh",
+    "GLASBreak": "GLASBrk",
+    "WATRRun": "WATRFlow",
+    "WATRSplash": "WATRSplsh",
+    "LIQDPour": "WATRPour",
+    "FIREGeneral": "FIREBurn",
+    "FIREWhoosh": "FIREWhsh",
+    "VEHCarInt": "VEHInt",
+    "VEHCarExt": "VEHCar",
+    "AMBUrban": "AMBUrbn",
+    "AMBNature": "AMBForst",
+    "GUIBeep": "UIBeep",
+    "GUIWhoosh": "UIMvmt",
+    "ANMLBird": "BIRDSong",
+    "GUNHandgun": "GUNPis",
+    "EXPLGeneral": "EXPLReal",
+    "CLOTHMove": "CLOTHMvmt",
+    "PAPRHandle": "PAPRHndl",
+    "MACHGeneral": "MACHMisc",
+    "COMMPhone": "COMTelph",
+}
 
 #: Curated rows, keyed by real UCS v8.2.1 CatIDs. Each row: catid, category,
 #: subcategory (the master's), and extra lowercased phrases.

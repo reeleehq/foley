@@ -7,13 +7,16 @@ validation, and the open/closed JSON drop merge.
 """
 
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
 from foley.base import SoundRecord
 from foley.index.taxonomy import (
+    DEFAULT_MATCH_POLICY,
     KeywordResolver,
+    MatchPolicy,
     load_audioset_ucs_map,
     load_ucs_table,
     parse_ucs_filename,
@@ -41,9 +44,45 @@ def test_parse_ucs_filename_case_insensitive_catid():
 
 def test_an_all_capitals_catid_is_case_sensitive():
     # RAIN, WIND, MIX are UCS CatIDs; in lower case they are words in a plain name
-    assert parse_ucs_filename("RAIN_Heavy_AB.wav") == ("RAIN", "GENERAL")
+    assert parse_ucs_filename("RAIN_Heavy_JD_NYC.wav") == ("RAIN", "GENERAL")
     assert parse_ucs_filename("rain_loop.wav") == (None, None)
     assert parse_ucs_filename("mix_final.wav") == (None, None)
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["RAW_01.wav", "MIX_final.wav", "REF_track_v2.wav", "TEST_tone.wav", "IR_hall.wav",
+     "PROD_meeting_notes.wav", "ADR_line12.wav", "ASSET_logo.wav", "WIP_draft.wav",
+     "RAIN_02.wav", "WIND_01.wav", "STORM_2024.wav"],
+)  # fmt: skip
+def test_an_all_capitals_catid_needs_every_mandatory_block(name):
+    """RAW, MIX, REF are UCS CatIDs (ARCHIVED), and also how ordinary names start."""
+    assert parse_ucs_filename(name) == (None, None)
+
+
+def test_an_ordinary_name_never_beats_a_declared_catid():
+    assert resolve_catid(filename="RAW_take3.wav", catid="DOORWood").catid == "DOORWood"
+    assert resolve_catid(filename="MIX_final_JD_NYC.wav").catid == "MIX"  # every block
+    # a mixed-case CatID stays lenient: one block after it is enough
+    assert parse_ucs_filename("DOORWOOD_x.wav") == ("DOORS", "WOOD")
+
+
+def test_a_legacy_catid_finds_its_real_row():
+    """A record stamped by the pre-master seed (WEATHRain) still finds RAIN."""
+    from foley.index.taxonomy import LEGACY_CATIDS, default_ucs_table, format_ucs_name
+
+    table = default_ucs_table()
+    assert table.get("WEATHRain").catid == "RAIN" and "GLASBreak" in table
+    assert all(table.get(old).catid == new for old, new in LEGACY_CATIDS.items())
+    assert format_ucs_name(catid="WEATHRain", fx_name="Heavy", creator_id="JD",
+                           source_id="NYC") == "RAIN_Heavy_JD_NYC"  # fmt: skip
+    assert "IMPTGeneral" not in table  # UCS has no generic impact row
+    assert "WEATHRain" not in load_ucs_table(legacy_catids={})
+
+
+def test_an_empty_table_is_refused():
+    with pytest.raises(ValueError, match="include_seed"):
+        load_ucs_table(master=None, include_seed=False)
 
 
 def test_parse_ucs_filename_non_conformant_returns_none():
@@ -159,11 +198,14 @@ def test_ambiguous_common_words_do_not_false_positive():
 
 
 def test_multiword_phrase_does_not_straddle_field_boundary():
-    # 'engine' (a tag) + 'car ...' (caption) must NOT match the phrase 'engine car'
+    # in one field, 'engine car' and 'glass break' are phrases...
+    assert "engine car" in resolve_catid(caption="engine car was parked").matched_terms
+    assert resolve_catid(caption="glass break room").catid == "GLASBrk"
+    # ...split between a tag and the caption, they are not
     res = resolve_catid(tags=["engine"], caption="car was parked")
     assert "engine car" not in res.matched_terms
     res2 = resolve_catid(tags=["glass"], caption="break room where staff relax")
-    assert "glass break" not in res2.matched_terms and res2.catid != "GLASBrk"
+    assert "glass break" not in res2.matched_terms and res2.catid == "GLASMisc"
 
 
 def test_category_only_match_is_weak_confidence():
@@ -199,10 +241,46 @@ def test_confident_row_has_higher_confidence_than_approx(tmp_path):
 
 
 def test_inflections_meet_their_base_form():
-    # "doors"/"creaks"/"wooden"/"drips" reach DOORS, creak, WOOD, drip
+    # "doors"/"creaking"/"drips" reach DOORS, "door creak", drip; "wooden door" is a phrase
     assert resolve_catid(caption="old wooden doors creaking").catid == "DOORWood"
     assert resolve_catid(caption="water drips into a sink").catid == "WATRDrip"
     assert resolve_catid(caption="wall clock ticks").catid == "CLOCKTick"
+
+
+@pytest.mark.parametrize(
+    "word, base",
+    [("rattling", "rattle"), ("screens", "screen"), ("creaking", "creak"),
+     ("dripping", "drip"), ("cries", "cry"), ("buzzes", "buzz"), ("door", "door")],
+)  # fmt: skip
+def test_an_inflection_meets_its_vocabulary_word(word, base):
+    from foley.index.taxonomy import default_ucs_table
+    from foley.index.taxonomy.resolver import term_index
+
+    index = term_index(default_ucs_table())
+    assert index.lemmas(word) == index.lemmas(base) != frozenset()
+
+
+@pytest.mark.parametrize(
+    "word, other",
+    [("golden", "gold"), ("chicken", "chick"), ("scraping", "scrap"), ("news", "new"),
+     ("thing", "the"), ("tired", "tire")],
+)  # fmt: skip
+def test_no_word_is_conflated_with_a_different_word(word, other):
+    """Inflections are listed for the vocabulary, never stripped from the query."""
+    from foley.index.taxonomy import default_ucs_table
+    from foley.index.taxonomy.resolver import term_index
+
+    index = term_index(default_ucs_table())
+    assert not index.lemmas(word) & index.lemmas(other)
+
+
+def test_the_term_index_is_built_once_per_table():
+    from foley.index.taxonomy import default_ucs_table
+    from foley.index.taxonomy.resolver import term_index
+
+    table = default_ucs_table()
+    assert term_index(table) is term_index(table)
+    assert not hasattr(table, "term_index")  # the table stays plain data
 
 
 def test_a_phrase_matches_across_function_words():
@@ -212,16 +290,116 @@ def test_a_phrase_matches_across_function_words():
 
 def test_archived_bookkeeping_rows_are_never_keyword_picks():
     # TMARK / SCNE / WIP are UCS CatIDs for production bookkeeping, not sounds
-    assert resolve_catid(caption="a work in progress test tone").catid not in {
-        "WIP", "TEST", "TMARK"}  # fmt: skip
+    caption = "a work in progress test tone"
+    everything = replace(DEFAULT_MATCH_POLICY, skip_categories=frozenset())
+    assert resolve_catid(caption=caption, policy=everything).catid == "WIP"  # it would win
+    res = resolve_catid(caption=caption)
+    assert res.category != "ARCHIVED" and res.confidence <= DEFAULT_MATCH_POLICY.weak_confidence
     assert resolve_catid(filename="WIP_draft_JD_X.wav").catid == "WIP"  # names still do
 
 
-def test_the_stop_lists_are_seams():
-    assert resolve_catid(caption="a quiet afternoon", ambiguous_words=frozenset()).catid
+def test_the_match_policy_is_the_one_seam():
+    open_words = replace(DEFAULT_MATCH_POLICY, ambiguous_words=frozenset())
+    assert resolve_catid(caption="a quiet afternoon").catid is None
+    assert resolve_catid(caption="a quiet afternoon", policy=open_words).catid == "CRWDQuiet"
+    no_stops = replace(DEFAULT_MATCH_POLICY, stop_words=frozenset())
+    assert "rain on window" in resolve_catid(caption="rain on a window").matched_terms
+    assert "rain on window" not in resolve_catid(caption="rain on a window",
+                                                 policy=no_stops).matched_terms  # fmt: skip
     logo = SoundRecord(id="s", caption="trademarked logo")
     assert KeywordResolver().resolve(logo).catid is None  # TMARK is ARCHIVED
-    assert KeywordResolver(skip_categories=frozenset()).resolve(logo).catid == "TMARK"
+    everything = replace(DEFAULT_MATCH_POLICY, skip_categories=frozenset())
+    assert KeywordResolver(policy=everything).resolve(logo).catid == "TMARK"
+    loud = replace(DEFAULT_MATCH_POLICY, weak_confidence=0.3)
+    assert resolve_catid(caption="glass", policy=loud).confidence == 0.3
+
+
+def test_a_policy_with_bands_out_of_order_is_refused():
+    with pytest.raises(ValueError, match="descend"):
+        MatchPolicy(strong_confidence=0.5, single_confidence=0.7)
+    with pytest.raises(ValueError, match="kind_weights"):
+        MatchPolicy(kind_weights={"synonym": 1.0})
+
+
+# ---------------------------------------------------------------------------
+# the probe set: pinned outcomes and bands
+# ---------------------------------------------------------------------------
+
+STRONG, SINGLE, WEAK = (DEFAULT_MATCH_POLICY.strong_confidence,
+                        DEFAULT_MATCH_POLICY.single_confidence,
+                        DEFAULT_MATCH_POLICY.weak_confidence)  # fmt: skip
+
+# caption -> (CatID, band)
+PROBE_POSITIVES = {
+    "a heavy wooden door creaks open": ("DOORWood", STRONG),
+    "heavy rainfall outside": ("RAIN", SINGLE),
+    "steady rain on a window": ("RAIN", STRONG),
+    "distant thunder rumble storm": ("THUN", STRONG),
+    "the sound of glass break": ("GLASBrk", STRONG),
+    "glass shattering on the floor": ("GLASBrk", STRONG),
+    "a dog barked in the distance": ("ANMLDog", STRONG),
+    "a cat meows": ("ANMLCat", STRONG),
+    "a doorknob turning": ("DOORHdwr", SINGLE),
+    "car horn honk": ("VEHHorn", STRONG),
+    "footsteps on gravel": ("FEETHmn", STRONG),
+    "a crackling fire": ("FIREBurn", STRONG),  # the seed's phrase
+    "water splash": ("WATRSplsh", STRONG),
+    "ocean waves crash on rocks": ("WATRWave", STRONG),
+    "church bell tolls": ("BELLLrg", STRONG),
+    "wall clock ticks": ("CLOCKTick", STRONG),
+    "crowd applause": ("CRWDApls", STRONG),
+    "a whisper": ("VOXWhsp", STRONG),
+    "jet plane overhead": ("AEROJet", STRONG),
+    "train horn": ("TRNHorn", STRONG),
+    "page turn": ("PAPRHndl", STRONG),
+    "old telephone rings": ("COMTelph", STRONG),
+    "a gust of wind blowing past": ("WINDGust", STRONG),
+    "water drips into a sink": ("WATRDrip", STRONG),
+    "wind howling": ("WINDTonl", STRONG),
+    "glass door": ("DOORGlas", STRONG),
+    "metal door": ("DOORMetl", STRONG),
+    "wind up toy": ("TOYMech", STRONG),
+    # a category's own name lands on its generic row, at the weak band
+    "glass": ("GLASMisc", WEAK),
+    "chains rattling": ("CHAINMisc", WEAK),
+    "the wind picked up": ("WIND", WEAK),
+    "vehicles": ("VEHMisc", WEAK),
+}
+
+#: Ordinary sentences: nothing, or nothing above the weak band.
+PROBE_NEGATIVES = [
+    "a productive brainstorm session", "let's take a coffee break",
+    "he had a shot of espresso", "a quiet afternoon", "she opened the letter and smiled",
+    "he thought about his mother", "the meeting ran long", "a weather report on tv tonight",
+    "they talked about the release date", "the price went up", "the price went up a little",
+    "she felt a little blue", "a long day at work", "he signed the contract",
+    "he was tired", "the evening news report", "turn left at the light", "take a break",
+    "a cup of coffee", "the phone rang", "we drove to work", "it was a good day",
+]  # fmt: skip
+
+
+@pytest.mark.parametrize("caption", PROBE_POSITIVES)
+def test_probe_positive(caption):
+    catid, band = PROBE_POSITIVES[caption]
+    res = resolve_catid(caption=caption)
+    assert (res.catid, res.confidence) == (catid, band), res.matched_terms
+
+
+@pytest.mark.parametrize("caption", PROBE_NEGATIVES)
+def test_probe_negative_stays_at_most_weak(caption):
+    res = resolve_catid(caption=caption)
+    assert res.confidence <= WEAK, (res.catid, res.matched_terms)
+
+
+def test_a_lone_synonym_is_banded_by_how_many_rows_share_it():
+    # one word, one row lists it -> single; many rows share it -> weak
+    assert resolve_catid(caption="a doorknob").confidence == SINGLE
+    assert resolve_catid(caption="a coffee").confidence == WEAK
+
+
+def test_a_weak_keyword_match_yields_to_an_audioset_hit():
+    res = resolve_catid(caption="a weather report", audioset_labels=["Thunder"])
+    assert (res.source, res.catid) == ("audioset", "THUN")
 
 
 # ---------------------------------------------------------------------------

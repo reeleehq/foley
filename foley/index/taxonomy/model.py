@@ -10,7 +10,6 @@ faceting and browse", the CLAP vector does the heavy retrieval).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from functools import cached_property
 from typing import Optional
 
 
@@ -29,9 +28,8 @@ class UcsRow:
     A ``catid`` (e.g. ``'DOORWood'``) is an OPAQUE key — the category prefix is
     variable-length and not reliably splittable — so ``catid -> (category,
     subcategory)`` is always a table lookup, never a string split (report
-    04 §5.2). ``confident=False`` marks an APPROXIMATE CatID reconstructed for the
-    seed table; verify it against the UCS master before treating it as
-    authoritative.
+    04 §5.2). ``confident=False`` marks an unverified row (a house drop's); the
+    keyword resolver bands its matches one notch lower.
     """
 
     catid: str
@@ -69,13 +67,17 @@ class UcsName:
     user_data: Optional[str] = None
 
 
-@dataclass
+@dataclass(eq=False)
 class UcsTable:
-    """A loaded UCS lookup: by CatID (exact + case-insensitive) and by synonym.
+    """A loaded UCS lookup by CatID: exact, case-insensitive, or a legacy CatID.
+
+    Plain data, compared by identity (a matcher caches its index per table).
 
     Attributes:
         by_catid: ``CatID -> UcsRow`` (case-sensitive primary key).
         order: The CatIDs in stable insertion order (deterministic tie-breaking).
+        legacy: ``lower(old CatID) -> CatID`` for CatIDs foley once stamped that are
+            not UCS (``weathrain`` -> ``RAIN``), so a stored record still finds its row.
     """
 
     by_catid: dict[str, UcsRow] = field(default_factory=dict)
@@ -83,13 +85,15 @@ class UcsTable:
     # lower(catid) -> catid, for mixed-case CatIDs only: ``doorwood`` finds
     # ``DOORWood``, but ``rain`` (a word) never finds ``RAIN``.
     _ci_index: dict[str, str] = field(default_factory=dict)
+    legacy: dict[str, str] = field(default_factory=dict)
 
     def get(self, catid: str) -> Optional[UcsRow]:
-        """Look up a row by CatID: exact first, then case-insensitive."""
+        """Look up a row by CatID: exact, then case-insensitive, then a legacy CatID."""
         row = self.by_catid.get(catid)
         if row is not None:
             return row
-        canonical = self._ci_index.get(catid.lower())
+        key = catid.lower()
+        canonical = self._ci_index.get(key) or self.legacy.get(key)
         return self.by_catid.get(canonical) if canonical else None
 
     def __contains__(self, catid: str) -> bool:
@@ -100,13 +104,6 @@ class UcsTable:
 
     def __iter__(self):
         return iter(self.by_catid.values())
-
-    @cached_property
-    def term_index(self):
-        """The rows' matchable terms (:class:`~foley.index.taxonomy.text.TermIndex`), built once."""
-        from .text import build_term_index
-
-        return build_term_index(self)
 
 
 @dataclass

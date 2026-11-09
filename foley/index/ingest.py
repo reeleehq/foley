@@ -50,7 +50,7 @@ from ..qc import (
     run_qc,
 )
 from ..stores import content_key
-from .taxonomy import resolve_catid
+from .taxonomy import RECORD_MIN_CONFIDENCE, CatIdResolution, resolve_catid
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from numpy import ndarray
@@ -373,6 +373,7 @@ def _ingest_one(
     ucs_catid: Optional[str] = None,
     restamp_duplicate: 'bool | Literal["remade"]' = False,
     commercial: Optional[bool] = None,
+    catid_min_confidence: float = RECORD_MIN_CONFIDENCE,
 ) -> IngestResult:
     """Ingest one clip into ``library`` and return an :class:`IngestResult`.
 
@@ -449,6 +450,11 @@ def _ingest_one(
         commercial: Whether the AI use is for a commercial purpose (decides a
             ``nc_open_source_only`` scope, #69). ``None`` (default) means
             :data:`~foley.licensing.DEFAULT_INTENDED_USE`'s (commercial).
+        catid_min_confidence: The least resolution confidence stamped as the
+            record's UCS CatID (default
+            :data:`~foley.index.taxonomy.RECORD_MIN_CONFIDENCE`, an AudioSet-map
+            hit's). A weaker keyword brush (a category name alone, a synonym many
+            rows share) is left off the record, with a note; ``0`` stamps any.
 
     Returns:
         An :class:`IngestResult`; its ``record`` is ``None`` when quarantined, a
@@ -578,6 +584,13 @@ def _ingest_one(
         filename=_src_name(src),
         catid=ucs_catid,
     )
+    if resolution and resolution.confidence < catid_min_confidence:
+        notes.append(
+            f"UCS CatID {resolution.catid} not stamped: confidence "
+            f"{resolution.confidence:.2f} < {catid_min_confidence:.2f} "
+            f"(from {', '.join(resolution.matched_terms)})"
+        )
+        resolution = CatIdResolution()
 
     # `format` is the DELIVERED format (what library.audio() serves): the FLAC
     # archive when cached by-value, else the untouched source container. (`lic`

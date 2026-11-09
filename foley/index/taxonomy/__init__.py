@@ -29,8 +29,17 @@ from .model import (
     UcsRow,
     UcsTable,
 )
-from .resolver import KeywordResolver, TaxonomyResolver, resolve_catid
+from .resolver import (
+    DEFAULT_MATCH_POLICY,
+    RECORD_MIN_CONFIDENCE,
+    KeywordResolver,
+    MatchPolicy,
+    TaxonomyResolver,
+    resolve_catid,
+)
+from .seed import LEGACY_CATIDS
 from .ucs import (
+    UCS_MANDATORY_BLOCKS,
     UCS_NAME_BLOCKS,
     UCS_NAME_MAX_BYTES,
     default_ucs_table,
@@ -59,7 +68,9 @@ __all__ = [
     "parse_ucs_name",
     "format_ucs_name",
     "UCS_NAME_BLOCKS",
+    "UCS_MANDATORY_BLOCKS",
     "UCS_NAME_MAX_BYTES",
+    "LEGACY_CATIDS",
     "parse_catid_token",
     # audioset
     "load_audioset_ucs_map",
@@ -68,4 +79,7 @@ __all__ = [
     "resolve_catid",
     "TaxonomyResolver",
     "KeywordResolver",
+    "MatchPolicy",
+    "DEFAULT_MATCH_POLICY",
+    "RECORD_MIN_CONFIDENCE",
 ]

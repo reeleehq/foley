@@ -26,9 +26,10 @@ from __future__ import annotations
 
 import importlib.util
 import math
-import re
 from collections import Counter
 from typing import TYPE_CHECKING, Optional
+
+from ..analysis import tokenize
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from numpy import ndarray
@@ -37,23 +38,16 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 _BM25_K1: float = 1.5
 _BM25_B: float = 0.75
 
-_WORD_RE = re.compile(r"[a-z0-9]+")
-
-
-def _tokenize(text: str) -> list[str]:
-    """Lowercase word/number tokens (the shared analyzer for the stdlib BM25)."""
-    return _WORD_RE.findall(text.lower())
-
 
 def _fts5_or_match(query: str) -> "Optional[str]":
     """Build a crash-safe FTS5 ``MATCH`` string from a raw user query.
 
-    Tokenizes with the shared analyzer (only ``[a-z0-9]+`` survives) and double-quotes
-    each token, so no FTS5 metacharacter — a colon, an unbalanced quote, a bare boolean
+    Tokenizes with the shared analyzer (:func:`foley.analysis.tokenize`: only
+    ``[a-z0-9]+`` survives) and double-quotes each token, so no FTS5 metacharacter — a colon, an unbalanced quote, a bare boolean
     word, parentheses — can reach the FTS5 parser and raise ``sqlite3.OperationalError``.
     Returns ``None`` when the query yields no usable token (the caller returns no hits).
     """
-    tokens = _tokenize(query)
+    tokens = tokenize(query)
     if not tokens:
         return None
     return " OR ".join(f'"{t}"' for t in tokens)
@@ -196,13 +190,13 @@ class MemoryIndex:
         docs = self._texts
         if not docs:
             return []
-        tokenized = {i: _tokenize(t) for i, t in docs.items()}
+        tokenized = {i: tokenize(t) for i, t in docs.items()}
         n_docs = len(tokenized)
         avgdl = sum(len(t) for t in tokenized.values()) / n_docs or 1.0
         df: Counter = Counter()
         for toks in tokenized.values():
             df.update(set(toks))
-        q_terms = _tokenize(query)
+        q_terms = tokenize(query)
         scores: dict[str, float] = {}
         for id_, toks in tokenized.items():
             tf = Counter(toks)
