@@ -997,6 +997,57 @@ def excluded_territories(record: LicenseRecord) -> "list[str]":
     return sorted(set().union(*(LICENSE_EXCLUDED_TERRITORIES.get(i, ()) for i in ids)))
 
 
+#: The usage restrictions an export states beside its licence code, as
+#: ``lacing.Restriction`` kinds (lacing#106; a test pins them to lacing's names).
+REVENUE_CAP = "revenue_cap"
+TERRITORY_EXCLUDED = "territory_excluded"
+CARRIED_RESTRICTIONS: frozenset = frozenset({REVENUE_CAP, TERRITORY_EXCLUDED})
+
+
+def license_restrictions(record: LicenseRecord) -> "tuple[dict, ...]":
+    """What ``record`` may not be used for that no licence code says, as
+    ``lacing.Restriction`` dicts (the shape ``Restriction.model_dump()`` gives).
+
+    * ``revenue_cap``: the record's ``revenue_cap_usd``, its ``terms`` the consumer
+      code of the chain licence that sets it (``None`` when a narrowing set it);
+    * ``territory_excluded``: one per licence of the chain that excludes territories
+      (:data:`LICENSE_EXCLUDED_TERRITORIES`), its sorted codes verbatim (``EU`` is a
+      region code; lacing records it as given).
+
+    >>> license_restrictions(apply_license_flags(LicenseRecord(source="s",
+    ...     license_id="Stability-Community")))
+    ({'kind': 'revenue_cap', 'terms': 'stability-community', 'usd': 1000000},)
+    >>> license_restrictions(LicenseRecord(source="s", license_id="CC0-1.0"))
+    ()
+    """
+    chain = tuple(dict.fromkeys(_license_chain(record)))
+    out = []
+    cap = record.revenue_cap_usd
+    if cap is not None:
+        setter = next(
+            (
+                i
+                for i in chain
+                if LICENSE_FLAGS.get(i, UNKNOWN_LICENSE_FLAGS).revenue_cap_usd == cap
+            ),
+            None,
+        )
+        out.append(
+            {"kind": REVENUE_CAP, "terms": consumer_license_code(setter), "usd": cap}
+        )
+    for license_id in chain:
+        codes = LICENSE_EXCLUDED_TERRITORIES.get(license_id)
+        if codes:
+            out.append(
+                {
+                    "kind": TERRITORY_EXCLUDED,
+                    "terms": consumer_license_code(license_id),
+                    "codes": tuple(sorted(codes)),
+                }
+            )
+    return tuple(out)
+
+
 def territory_excluded(excluded, territory: Optional[str]) -> bool:
     """Whether ``territory`` is in ``excluded`` (``"EU"`` covers its member states).
 
@@ -1222,8 +1273,17 @@ def consumer_license_class(license_id: str) -> str:
     return "unknown"
 
 
-def rights_license_id(record: LicenseRecord) -> Optional[str]:
+def rights_license_id(
+    record: LicenseRecord, *, carried: frozenset = frozenset()
+) -> Optional[str]:
     """The licence id a consumer should read ``record`` under, or ``None`` (UNKNOWN).
+
+    ``carried`` names the restriction kinds the export states beside the code
+    (:data:`CARRIED_RESTRICTIONS`, as :func:`license_restrictions` gives them): a
+    restriction carried there need not be implied by the code. ``sound_rights``
+    carries both kinds (#282); the default carries none. A Stable Audio edit of a CC
+    BY sound still gives ``None``: Stability's licence also bars standalone
+    redistribution, which CC BY grants and no restriction kind states.
 
     ``None`` when the rights are unverified (a Public Domain Mark is a claim, not a
     grant). For a clip derived from others (an edit, :func:`derived_license_ids`), the
@@ -1256,16 +1316,22 @@ def rights_license_id(record: LicenseRecord) -> Optional[str]:
     'CC-BY-NC-4.0'
     >>> rights_license_id(rec("Stability-Community", "CC-BY-4.0")) is None
     True
+    >>> capped = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-4.0",
+    ...     rights_verified=True), overrides={"revenue_cap_usd": 1000})
+    >>> rights_license_id(capped), rights_license_id(capped, carried=CARRIED_RESTRICTIONS)
+    (None, 'CC-BY-4.0')
     >>> rights_license_id(rec("Stability-Community", "Tencent-Hunyuan-Community")) is None
     True
     >>> rights_license_id(rec("CC-BY-SA-4.0", "CC-BY-NC-4.0")) is None
     True
     """
-    code = _strictest_license_id(record)
-    return code if code_implies_at_most(code, record) else None
+    code = _strictest_license_id(record, carried=carried)
+    return code if code_implies_at_most(code, record, carried=carried) else None
 
 
-def _strictest_license_id(record: LicenseRecord) -> Optional[str]:
+def _strictest_license_id(
+    record: LicenseRecord, *, carried: frozenset = frozenset()
+) -> Optional[str]:
     """The most restrictive licence of ``record``'s chain, by consumer class
     (:func:`rights_license_id` before its final gate)."""
     if not record.rights_verified:
@@ -1282,11 +1348,19 @@ def _strictest_license_id(record: LicenseRecord) -> Optional[str]:
     worst = max(sources, key=rank, default=None)
     if worst is None or rank(worst) <= rank(own, source=False):
         return own if consumer_license_code(own) else None
-    if CONSUMER_LICENSE_CLASSES[rank(worst)] == "unknown" or carries_own_restriction(
-        own
+    if CONSUMER_LICENSE_CLASSES[rank(worst)] == "unknown" or (
+        carries_own_restriction(own) and not _restriction_carried(own, carried)
     ):
         return None
     return worst
+
+
+def _restriction_carried(license_id: str, carried: frozenset) -> bool:
+    """Whether ``license_id``'s own restriction travels beside the code: its revenue
+    cap, as a ``revenue_cap`` restriction whose ``terms`` name the licence (and so
+    its provider's terms). A provider's terms with no cap have no restriction kind."""
+    flags = LICENSE_FLAGS.get(license_id, UNKNOWN_LICENSE_FLAGS)
+    return flags.revenue_cap_usd is not None and REVENUE_CAP in carried
 
 
 def carries_own_restriction(license_id: str) -> bool:
@@ -1338,20 +1412,29 @@ _CODE_PERMISSIONS = (
 )
 
 
-def _no_wider(flags: LicenseFlags, bound: LicenseFlags) -> bool:
+def _no_wider(
+    flags: LicenseFlags, bound: LicenseFlags, *, cap_carried: bool = False
+) -> bool:
     """Whether ``flags`` allows nothing ``bound`` does not: each of
-    :data:`_CODE_PERMISSIONS`, owing no attribution ``bound`` owes, a cap no higher."""
+    :data:`_CODE_PERMISSIONS`, owing no attribution ``bound`` owes, a cap no higher
+    (unless the cap is ``cap_carried`` beside the code)."""
     cap, bound_cap = flags.revenue_cap_usd, bound.revenue_cap_usd
     return (
         all(getattr(bound, n) or not getattr(flags, n) for n in _CODE_PERMISSIONS)
         and (flags.requires_attribution or not bound.requires_attribution)
-        and (bound_cap is None or (cap is not None and cap <= bound_cap))
+        and (cap_carried or bound_cap is None or (cap is not None and cap <= bound_cap))
     )
 
 
-def code_implies_at_most(code: Optional[str], record: LicenseRecord) -> bool:
+def code_implies_at_most(
+    code: Optional[str], record: LicenseRecord, *, carried: frozenset = frozenset()
+) -> bool:
     """Whether exporting ``record`` under the licence ``code`` tells a consumer no
     more than ``record`` allows (``None``, UNKNOWN, implies nothing).
+
+    A restriction kind in ``carried`` (:data:`CARRIED_RESTRICTIONS`) is stated beside
+    the code (:func:`license_restrictions`), so the code need not imply it: the
+    revenue cap for ``revenue_cap``, the territories for ``territory_excluded``.
 
     Every one must hold (:func:`_no_wider`: the permissions of
     :data:`_CODE_PERMISSIONS`, attribution, the revenue cap):
@@ -1377,11 +1460,19 @@ def code_implies_at_most(code: Optional[str], record: LicenseRecord) -> bool:
     if code is None:
         return True
     chain, granted = _license_chain(record), granted_flags(code)
+    cap_carried = REVENUE_CAP in carried
     return (
-        _no_wider(derive_license_flags(code), _flags_of(record))
-        and all(_no_wider(granted, granted_flags(i)) for i in chain)
-        and set(excluded_territories(record))
-        <= LICENSE_EXCLUDED_TERRITORIES.get(code, frozenset())
+        _no_wider(
+            derive_license_flags(code), _flags_of(record), cap_carried=cap_carried
+        )
+        and all(
+            _no_wider(granted, granted_flags(i), cap_carried=cap_carried) for i in chain
+        )
+        and (
+            TERRITORY_EXCLUDED in carried
+            or set(excluded_territories(record))
+            <= LICENSE_EXCLUDED_TERRITORIES.get(code, frozenset())
+        )
         and all(code == i for i in chain if is_share_alike(i))
     )
 
