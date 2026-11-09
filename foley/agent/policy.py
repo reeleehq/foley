@@ -133,6 +133,15 @@ class Budget:
         """Dollars charged so far this run (calls of unknown cost count as 0 here)."""
         return self._spent_usd
 
+    @property
+    def unknown_cost_calls(self) -> int:
+        """How many calls this run made whose cost is still unknown (not in :attr:`spent_usd`).
+
+        Each one was approved (``approve_unknown_cost``); ``spent_usd`` is then a
+        lower bound, never the whole cost.
+        """
+        return self._unknown_calls
+
     def _approves_unknown(self) -> bool:
         if self.approve_unknown_cost is not None:
             return bool(self.approve_unknown_cost)
