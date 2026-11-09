@@ -7,8 +7,13 @@ Export a sound with its rights and provenance, for a store outside foley (#66).
 * `rights` is a plain dict keyed by the field names of `lacing.Rights` (pinned to
   `an`’s `AssetSource`: `provider`, `id`, `title`, `license`,
   `license_url`, `attribution`, `source_page_url`, `author`, `author_url`,
-  `cacheable`), so a consumer validates it with `lacing.Rights(**rights)`. foley
-  never imports lacing (it pulls pydantic), so the dict is the contract.
+  `cacheable`, `restrictions`), so a consumer validates it with
+  `lacing.Rights(**rights)`. foley never imports lacing (it pulls pydantic), so the
+  dict is the contract. `restrictions` (lacing#106) states what no licence code
+  says, the revenue caps and excluded territories of the sound’s licences, as
+  `lacing.Restriction` dicts ([`foley.licensing.license_restrictions()`](foley.licensing.html.md#foley.licensing.license_restrictions)); like
+  lacing, the dict leaves it out when there is none, so
+  `Rights(**rights).model_dump() == rights`.
 * `provenance` is what `Rights` has no field for and a consumer must not lose:
   foley’s id, the sha256 of the archived bytes AND of the exported bytes (a FLAC
   archive re-encoded to WAV hashes differently, so both are kept to chain them) and
@@ -32,6 +37,8 @@ Two rules carry the rights:
   ([`foley.licensing.code_implies_at_most()`](foley.licensing.html.md#foley.licensing.code_implies_at_most), else `None`). AI use is not in a
   code: a consumer reads it from the provenance (`flags`, `ai_training_scope`,
   `gen_ai_preference`).
+  The code is judged together with the restrictions stated beside it
+  (`restrictions=` of [`foley.licensing.rights_license_id()`](foley.licensing.html.md#foley.licensing.rights_license_id)).
   A provider-terms licence names the terms’ owner as `provider`
   ([`foley.licensing.LICENSE_TERMS_PROVIDER`](foley.licensing.html.md#foley.licensing.LICENSE_TERMS_PROVIDER)), since a consumer reads such a
   code only on that provider’s source.
@@ -69,15 +76,16 @@ The export also interoperates with library tools (Soundminer, Soundly, BaseHead;
 
 ### Functions
 
-| [`export_metadata`](#foley.provenance.rights.export_metadata)(record, rights[, ucs_name])        | The fields an export embeds ([`foley.embedded_metadata.FIELDS`](foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) names).   |
-|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`export_sound`](#foley.provenance.rights.export_sound)(sound_id[, fmt, library, ...])        | Export a sound's bytes as `fmt` with its rights and provenance (#66, #231).                                                                           |
-| [`export_ucs_filename`](#foley.provenance.rights.export_ucs_filename)(record, rights, \*[, ...])     | The UCS filename of `record`'s export, or `None` when it has no CatID in `table`.                                                                     |
-| [`id_from_user_data`](#foley.provenance.rights.id_from_user_data)(block)                           | The foley id [`id_to_user_data()`](#foley.provenance.rights.id_to_user_data) encoded as `block`.                                                   |
-| [`id_to_user_data`](#foley.provenance.rights.id_to_user_data)(sound_id)                          | `sound_id` as a filename block, injectively: [`id_from_user_data()`](#foley.provenance.rights.id_from_user_data) inverts it.                         |
-| [`rights_provider`](#foley.provenance.rights.rights_provider)(lic)                               | Who the rights come from: a provider-terms licence's owner, else the source.                                                                          |
-| [`sound_provenance`](#foley.provenance.rights.sound_provenance)(record, \*, archived_sha256, ...) | What an export must carry that `Rights` has no field for (JSON-native).                                                                               |
-| [`sound_rights`](#foley.provenance.rights.sound_rights)(record)                               | `record`'s rights as a dict keyed by `lacing.Rights` field names.                                                                                     |
+| [`export_metadata`](#foley.provenance.rights.export_metadata)(record, rights[, ucs_name])        | The fields an export embeds ([`foley.embedded_metadata.FIELDS`](foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) names).         |
+|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`export_sound`](#foley.provenance.rights.export_sound)(sound_id[, fmt, library, ...])        | Export a sound's bytes as `fmt` with its rights and provenance (#66, #231).                                                                                 |
+| [`export_ucs_filename`](#foley.provenance.rights.export_ucs_filename)(record, rights, \*[, ...])     | The UCS filename of `record`'s export, or `None` when it has no CatID in `table`.                                                                           |
+| [`id_from_user_data`](#foley.provenance.rights.id_from_user_data)(block)                           | The foley id [`id_to_user_data()`](#foley.provenance.rights.id_to_user_data) encoded as `block`.                                                         |
+| [`id_to_user_data`](#foley.provenance.rights.id_to_user_data)(sound_id)                          | `sound_id` as a filename block, injectively: [`id_from_user_data()`](#foley.provenance.rights.id_from_user_data) inverts it.                               |
+| [`license_text`](#foley.provenance.rights.license_text)(rights)                               | `rights`' licence code with its restrictions in words, for a file's licence field; `None` when the licence is unknown (a restriction alone grants nothing). |
+| [`rights_provider`](#foley.provenance.rights.rights_provider)(lic, \*[, license_id])             | Who the rights come from: the owner of the provider-terms licence exported (`license_id`, else `lic`'s own), else the source.                               |
+| [`sound_provenance`](#foley.provenance.rights.sound_provenance)(record, \*, archived_sha256, ...) | What an export must carry that `Rights` has no field for (JSON-native).                                                                                     |
+| [`sound_rights`](#foley.provenance.rights.sound_rights)(record)                               | `record`'s rights as a dict keyed by `lacing.Rights` field names.                                                                                           |
 
 ### foley.provenance.rights.ASSET_SOURCE_EXTRAS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('url', 'sha256', 'cost_usd', 'extra')*
 
@@ -100,7 +108,7 @@ export has none, so the file never pairs foley’s licence with a vendor’s URL
 
 The containers that take `bext` / `iXML` chunks (RIFF WAVE, as libsndfile names them).
 
-### foley.provenance.rights.PROVENANCE_FIELDS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('provider', 'id', 'title', 'license', 'license_url', 'attribution', 'source_page_url', 'author', 'author_url', 'cacheable', 'url', 'sha256', 'cost_usd', 'extra')*
+### foley.provenance.rights.PROVENANCE_FIELDS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('provider', 'id', 'title', 'license', 'license_url', 'attribution', 'source_page_url', 'author', 'author_url', 'cacheable', 'restrictions', 'url', 'sha256', 'cost_usd', 'extra')*
 
 a foley row’s own
 metadata must not use one, or it would read as that record’s claim.
@@ -108,7 +116,7 @@ metadata must not use one, or it would read as that record’s claim.
 * **Type:**
   Every provenance field name a downstream record gives an asset
 
-### foley.provenance.rights.RIGHTS_FIELDS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('provider', 'id', 'title', 'license', 'license_url', 'attribution', 'source_page_url', 'author', 'author_url', 'cacheable')*
+### foley.provenance.rights.RIGHTS_FIELDS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('provider', 'id', 'title', 'license', 'license_url', 'attribution', 'source_page_url', 'author', 'author_url', 'cacheable', 'restrictions')*
 
 `lacing.Rights`’ field names, the keys of [`sound_rights()`](#foley.provenance.rights.sound_rights) (lacing#34; a test
 pins them to lacing’s model when lacing is installed).
@@ -126,8 +134,10 @@ The fields an export embeds ([`foley.embedded_metadata.FIELDS`](foley.embedded_m
 
 The caption and tags, the UCS fields of `ucs_name` (the parse of the export’s
 filename, so the file and its name agree), the designer (`rights`’ author) and
-`rights`’ licence, licence URL and attribution line, verbatim. Empty values are
-left out by the writer.
+`rights`’ licence, licence URL and attribution line, verbatim. A file has no
+restrictions field, so the licence text states them after the code
+([`license_text()`](#foley.provenance.rights.license_text)): the file never reads wider than the rights. Empty values
+are left out by the writer.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -218,15 +228,36 @@ in case (which a case-insensitive filesystem, macOS or Windows, would merge).
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
-### foley.provenance.rights.rights_provider(lic)
+### foley.provenance.rights.license_text(rights)
 
-Who the rights come from: a provider-terms licence’s owner, else the source.
+`rights`’ licence code with its restrictions in words, for a file’s licence
+field; `None` when the licence is unknown (a restriction alone grants nothing).
+
+```pycon
+>>> license_text({"license": "cc-by-4.0", "restrictions": (
+...     {"kind": "revenue_cap", "terms": None, "usd": 5000},)})
+'cc-by-4.0; revenue cap USD 5000'
+>>> license_text({"license": "cc0-1.0"}), license_text({"license": None})
+('cc0-1.0', None)
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.provenance.rights.rights_provider(lic, , license_id=None)
+
+Who the rights come from: the owner of the provider-terms licence exported
+(`license_id`, else `lic`’s own), else the source. Keyed on the exported code,
+so a terms owner is never paired with another licence’s code.
 
 ```pycon
 >>> rights_provider(LicenseRecord(source="fal_stable_audio_3", license_id="Stability-Community"))
 'stability-ai'
 >>> rights_provider(LicenseRecord(source="freesound", license_id="CC0-1.0"))
 'freesound'
+>>> rights_provider(LicenseRecord(source="g", license_id="Stability-Community"),
+...     license_id="CC-BY-4.0")
+'g'
 ```
 
 * **Return type:**
@@ -257,6 +288,8 @@ most restrictive licence of an edit’s lineage), `license_url` that licence’s
 `(modified)` notice, the AI disclosure (`AI-generated with <model>`) and an
 edit’s sources. `author` is `None` when no creator or rights holder is
 recorded (the credit line falls back to the source name; a rights record does not).
+`restrictions` (only when there are any) states the revenue caps and excluded
+territories, and the code is judged together with them.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)

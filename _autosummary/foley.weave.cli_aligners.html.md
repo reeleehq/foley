@@ -49,7 +49,7 @@ Installation and the trade-offs between the aligners: `misc/docs/aligners.md`.
 
 aeneas task languages (ISO 639-3) per foley language code.
 
-### *class* foley.weave.cli_aligners.AeneasAligner(\*, python='/opt/hostedtoolcache/Python/3.12.15/x64/bin/python', languages=None, timeout=None, runner=<function run>)
+### *class* foley.weave.cli_aligners.AeneasAligner(\*, python='/opt/hostedtoolcache/Python/3.12.16/x64/bin/python', languages=None, timeout=None, runner=<function run>)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 

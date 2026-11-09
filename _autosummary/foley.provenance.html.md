@@ -147,8 +147,10 @@ The fields an export embeds ([`foley.embedded_metadata.FIELDS`](foley.embedded_m
 
 The caption and tags, the UCS fields of `ucs_name` (the parse of the export’s
 filename, so the file and its name agree), the designer (`rights`’ author) and
-`rights`’ licence, licence URL and attribution line, verbatim. Empty values are
-left out by the writer.
+`rights`’ licence, licence URL and attribution line, verbatim. A file has no
+restrictions field, so the licence text states them after the code
+(`license_text()`): the file never reads wider than the rights. Empty values
+are left out by the writer.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -320,6 +322,8 @@ most restrictive licence of an edit’s lineage), `license_url` that licence’s
 `(modified)` notice, the AI disclosure (`AI-generated with <model>`) and an
 edit’s sources. `author` is `None` when no creator or rights holder is
 recorded (the credit line falls back to the source name; a rights record does not).
+`restrictions` (only when there are any) states the revenue caps and excluded
+territories, and the code is judged together with them.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)

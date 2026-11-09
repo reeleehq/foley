@@ -25,6 +25,7 @@ foley.provenance.rights
       export_ucs_filename
       id_from_user_data
       id_to_user_data
+      license_text
       rights_provider
       sound_provenance
       sound_rights

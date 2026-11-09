@@ -1,39 +1,39 @@
 {
   "schema_version": 1,
-  "built_at": "2026-11-02T09:06:32Z",
+  "built_at": "2026-11-09T03:07:13Z",
   "package": {
     "name": "foley",
-    "version": "0.0.134",
+    "version": "0.0.135",
     "display_name": "foley",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "cd06f6b59d510a3649242d56982b5e0b5461bbaa",
-    "short_commit": "cd06f6b",
+    "commit": "56302f4fc21f391e7d6b28cae0a5b742d6991162",
+    "short_commit": "56302f4",
     "branch": "main",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/reeleehq/foley",
-    "commit_url": "https://github.com/reeleehq/foley/commit/cd06f6b59d510a3649242d56982b5e0b5461bbaa",
+    "commit_url": "https://github.com/reeleehq/foley/commit/56302f4fc21f391e7d6b28cae0a5b742d6991162",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "reeleehq/foley",
-    "sha": "cd06f6b59d510a3649242d56982b5e0b5461bbaa",
+    "sha": "56302f4fc21f391e7d6b28cae0a5b742d6991162",
     "sha_in_history": true,
     "ref": "refs/heads/main",
     "ref_name": "main",
-    "run_id": "41417634384",
-    "run_url": "https://github.com/reeleehq/foley/actions/runs/41417634384",
+    "run_id": "42554336156",
+    "run_url": "https://github.com/reeleehq/foley/actions/runs/42554336156",
     "server_url": "https://github.com"
   },
   "tools": {
     "epythet": "0.2.22",
     "sphinx": "9.1.1",
     "docutils": "0.22.4",
-    "python": "3.12.15"
+    "python": "3.12.16"
   },
   "config": {
     "theme": "auto",
@@ -56,15 +56,15 @@
   },
   "site": {
     "modules_documented": 138,
-    "objects_documented": 2160
+    "objects_documented": 2163
   },
   "pypi": {
     "checked": true,
-    "latest": "0.0.134",
+    "latest": "0.0.135",
     "relation": "same",
     "error": null
   },
-  "reproduce": "git clone https://github.com/reeleehq/foley && cd foley\ngit checkout cd06f6b59d510a3649242d56982b5e0b5461bbaa\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/reeleehq/foley && cd foley\ngit checkout 56302f4fc21f391e7d6b28cae0a5b742d6991162\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
     "aligned": true,

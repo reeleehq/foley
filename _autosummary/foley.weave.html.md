@@ -74,7 +74,7 @@ signed + embedded C2PA manifest are best-effort no-ops when their extras/cert ar
 | [`BroadcastRefusal`](#foley.weave.BroadcastRefusal)   | A source whose rights do not allow it into a broadcast bed (refused, fail-closed).   |
 |---------------------------------------------------------------------|--------------------------------------------------------------------------------------|
 
-### *class* foley.weave.AeneasAligner(\*, python='/opt/hostedtoolcache/Python/3.12.15/x64/bin/python', languages=None, timeout=None, runner=<function run>)
+### *class* foley.weave.AeneasAligner(\*, python='/opt/hostedtoolcache/Python/3.12.16/x64/bin/python', languages=None, timeout=None, runner=<function run>)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 

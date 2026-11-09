@@ -28,6 +28,7 @@ foley.licensing
       SOURCE_STATED_FIELDS
       EU_MEMBER_STATES
       LICENSE_EXCLUDED_TERRITORIES
+      REVENUE_CAP
       LICENSE_TERMS_PROVIDER
       CONSUMER_LICENSE_CODES
       PUBLIC_LICENSE_IDS
@@ -66,6 +67,7 @@ foley.licensing
       keep_sound
       license_id_from_cc_url
       license_meta
+      license_restrictions
       narrow_to_source
       placed_record
       refusal_reason
