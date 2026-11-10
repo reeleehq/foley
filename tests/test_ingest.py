@@ -260,3 +260,20 @@ def test_an_unknown_restamp_mode_is_refused_before_anything_is_read(mode):
 
     with pytest.raises(ValueError, match="restamp_duplicate"):
         ingest_one(b"not audio", restamp_duplicate=mode)
+
+
+def test_a_weak_catid_resolution_is_not_stamped(library):
+    """A category name alone is a brush: noted, not written onto the record."""
+    from foley.bootstrap import MetadataCaptioner
+
+    def ingest(freq, caption, **kw):
+        return ingest_one(_flac(_tone(freq)), library=library, do_supervised=False,
+                          do_zeroshot=False, captioner=MetadataCaptioner(caption), **kw)  # fmt: skip
+
+    strong = ingest(300, "a heavy wooden door creaks open")
+    assert strong.record.ucs_category == "DOORWood"
+    weak = ingest(500, "a weather report on tv tonight")
+    assert weak.record.ucs_category is None
+    assert any("WTHR not stamped" in n for n in weak.notes)
+    anyway = ingest(700, "a weather report on tv tonight", catid_min_confidence=0)
+    assert anyway.record.ucs_category == "WTHR"

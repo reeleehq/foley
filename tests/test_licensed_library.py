@@ -66,16 +66,16 @@ def packs(tmp_path):
     _write_wav(
         a / "take_07.wav",
         420,
-        caption="Puddle stomp in the rain",  # keywords alone would say WEATHRain
+        caption="Puddle stomp in the rain",  # keywords alone would say RAIN
         tags=["puddle", "stomp"],
-        ucs_catid="WATRSplash",
+        ucs_catid="WATRSplsh",
     )
     (a / "foley-license.toml").write_text(
         'license = "owned-pack"\nlicensor = "BOOM"\npack = "Doors and Water"\n'
     )
     b = lib / "packB"
     _write_wav(b / "rain_loop.wav", 550)  # plain name, no metadata: the stem
-    _write_wav(b / "sub" / "GLASBreak-Bottle_SCIFI-Shatter_JD_LAB.wav", 660)
+    _write_wav(b / "sub" / "GLASBrk-Bottle_SCIFI-Shatter_JD_LAB.wav", 660)
     (b / "foley-license.json").write_text(json.dumps({"license": "CC0-1.0"}))
     _write_wav(lib / "unlicensed" / "thunder.wav", 770)
     return lib
@@ -100,12 +100,12 @@ def test_two_packs_ingest_with_their_captions_categories_and_licences(packs, lib
         "DOORWood_Creak Open_JD_NYC.wav",
         "take_07.wav",
         "rain_loop.wav",
-        "GLASBreak-Bottle_SCIFI-Shatter_JD_LAB.wav",
+        "GLASBrk-Bottle_SCIFI-Shatter_JD_LAB.wav",
     }
     # caption: embedded description > UCS FXName > filename stem
     door, splash = got["DOORWood_Creak Open_JD_NYC.wav"].record, got["take_07.wav"].record
     rain = got["rain_loop.wav"].record
-    glass = got["GLASBreak-Bottle_SCIFI-Shatter_JD_LAB.wav"].record
+    glass = got["GLASBrk-Bottle_SCIFI-Shatter_JD_LAB.wav"].record
     assert (door.caption, splash.caption, rain.caption, glass.caption) == (
         "Creak Open",
         "Puddle stomp in the rain",
@@ -113,9 +113,9 @@ def test_two_packs_ingest_with_their_captions_categories_and_licences(packs, lib
         "Shatter",
     )
     # ucs_category holds the CatID: the filename's, else the iXML CATID (over keywords)
-    assert (door.ucs_category, door.ucs_subcategory) == ("DOORWood", "Wood")
-    assert (splash.ucs_category, splash.ucs_subcategory) == ("WATRSplash", "Splash")
-    assert glass.ucs_category == "GLASBreak"
+    assert (door.ucs_category, door.ucs_subcategory) == ("DOORWood", "WOOD")
+    assert (splash.ucs_category, splash.ucs_subcategory) == ("WATRSplsh", "SPLASH")
+    assert glass.ucs_category == "GLASBrk"
     # tags: embedded keywords, plus the UCS UserCategory / VendorCategory
     assert {"puddle", "stomp"} <= set(splash.tags)
     assert {"Bottle", "SCIFI"} <= set(glass.tags)
@@ -149,7 +149,7 @@ def test_without_consent_owned_packs_stay_out_and_the_report_says_how(packs, lib
     report = ingest_licensed_folder(packs, library=library, **QUIET)
     blocked = [r for r in report.results if r.status == "rights_blocked"]
     assert len(blocked) == 2  # packA's two owned-pack files
-    assert set(_by_name(report, packs)) == {"rain_loop.wav", "GLASBreak-Bottle_SCIFI-Shatter_JD_LAB.wav"}
+    assert set(_by_name(report, packs)) == {"rain_loop.wav", "GLASBrk-Bottle_SCIFI-Shatter_JD_LAB.wav"}
     assert any("accept_ai_restricted=True" in n for n in report.notes)
 
 
@@ -209,10 +209,10 @@ def test_a_skip_is_recorded_even_when_errors_raise(packs, library):
 
 
 def test_a_declared_catid_ranks_below_the_filename_and_above_keywords():
-    res = resolve_catid(caption="heavy rain", catid="WATRSplash")
-    assert (res.catid, res.source) == ("WATRSplash", "metadata")
-    assert resolve_catid(filename="DOORWood_Creak_JD_NYC.wav", catid="WATRSplash").catid == "DOORWood"
-    assert resolve_catid(caption="heavy rain", catid="NOTACAT").catid == "WEATHRain"
+    res = resolve_catid(caption="heavy rain", catid="WATRSplsh")
+    assert (res.catid, res.source) == ("WATRSplsh", "metadata")
+    assert resolve_catid(filename="DOORWood_Creak_JD_NYC.wav", catid="WATRSplsh").catid == "DOORWood"
+    assert resolve_catid(caption="heavy rain", catid="NOTACAT").catid == "RAIN"
 
 
 def test_cli_ingest_library_dispatches(monkeypatch, capsys):

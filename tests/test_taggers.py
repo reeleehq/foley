@@ -39,7 +39,8 @@ def test_zeroshot_default_labels_are_natural_ucs_phrases():
     labels = ClapZeroShotTagger().labels
     assert labels  # non-empty
     # natural "category subcategory" phrases, not bare abstract words
-    assert "weather rain" in labels and "doors wood" in labels
+    assert "rain" in labels and "doors wood" in labels  # RAIN/GENERAL: bare
+    assert "air misc" not in labels and not any(l.startswith("archived") for l in labels)
     assert all(label == label.lower() for label in labels)
     assert len(labels) == len(set(labels))  # deduped
 

@@ -550,7 +550,7 @@ def test_a_wav_export_carries_its_metadata_and_a_ucs_filename(library, door):
     assert (name.catid, name.category, name.subcategory) == (
         "DOORWood",
         "DOORS",
-        "Wood",
+        "WOOD",
     )
     assert (name.creator_id, name.source_id, id_from_user_data(name.user_data)) == (
         "amy",

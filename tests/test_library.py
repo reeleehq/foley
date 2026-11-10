@@ -55,9 +55,9 @@ def populated(library):
     _add(library, "s2", "soft cat meowing indoors", ["cat", "meow"],
          ucs="ANMLCat", commercial=False, snr=10.0, duration=1.5)
     _add(library, "s3", "heavy rain on a window pane", ["rain", "weather"],
-         ucs="WEATHRain", commercial=True, snr=25.0, duration=5.0)
+         ucs="RAIN", commercial=True, snr=25.0, duration=5.0)
     _add(library, "s4", "distant thunder rumble in a storm", ["thunder", "storm"],
-         ucs="WEATHThunder", commercial=True, duration=8.0)
+         ucs="THUN", commercial=True, duration=8.0)
     _add(library, "s5", "dog barking loudly outside", ["dog", "bark"],
          ucs="ANMLDog", commercial=True, duration=3.0)
     return library
@@ -116,8 +116,8 @@ def test_filter_commercial_ok_excludes_noncommercial(populated):
 
 
 def test_filter_ucs_category(populated):
-    hits = populated.search("rain", k=5, ucs_category="WEATHRain")
-    assert hits and all(c.sound.ucs_category == "WEATHRain" for c in hits)
+    hits = populated.search("rain", k=5, ucs_category="RAIN")
+    assert hits and all(c.sound.ucs_category == "RAIN" for c in hits)
 
 
 def test_filter_min_snr(populated):
@@ -161,7 +161,7 @@ def test_search_clip_returns_candidates(populated):
 
 
 def test_filter_browse(populated):
-    recs = populated.filter(ucs_category="WEATHRain")
+    recs = populated.filter(ucs_category="RAIN")
     assert [r.id for r in recs] == ["s3"]
 
 

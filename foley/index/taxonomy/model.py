@@ -13,6 +13,14 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 
+#: Subcategories that name no particular sound (``RAIN``/``GENERAL``, ``AIR``/``MISC``).
+GENERIC_SUBCATEGORIES: frozenset = frozenset({"general", "misc"})
+
+#: Categories whose rows are production bookkeeping (``TMARK``, ``WIP``, ``SCNE``),
+#: not kinds of sound: a filename may name them, a tagger or keyword match never does.
+NON_SOUND_CATEGORIES: frozenset = frozenset({"ARCHIVED"})
+
+
 @dataclass(frozen=True)
 class UcsRow:
     """One Universal Category System entry.
@@ -20,9 +28,8 @@ class UcsRow:
     A ``catid`` (e.g. ``'DOORWood'``) is an OPAQUE key — the category prefix is
     variable-length and not reliably splittable — so ``catid -> (category,
     subcategory)`` is always a table lookup, never a string split (report
-    04 §5.2). ``confident=False`` marks an APPROXIMATE CatID reconstructed for the
-    seed table; verify it against the UCS master before treating it as
-    authoritative.
+    04 §5.2). ``confident=False`` marks an unverified row (a house drop's); the
+    keyword resolver bands its matches one notch lower.
     """
 
     catid: str
@@ -31,6 +38,11 @@ class UcsRow:
     synonyms: tuple[str, ...] = ()
     confident: bool = False
     explanation: str = ""
+
+    @property
+    def is_generic(self) -> bool:
+        """Whether the subcategory names no particular sound (``GENERAL``, ``MISC``)."""
+        return self.subcategory.lower() in GENERIC_SUBCATEGORIES
 
 
 @dataclass(frozen=True)
@@ -55,25 +67,33 @@ class UcsName:
     user_data: Optional[str] = None
 
 
-@dataclass
+@dataclass(eq=False)
 class UcsTable:
-    """A loaded UCS lookup: by CatID (exact + case-insensitive) and by synonym.
+    """A loaded UCS lookup by CatID: exact, case-insensitive, or a legacy CatID.
+
+    Plain data, compared by identity (a matcher caches its index per table).
 
     Attributes:
         by_catid: ``CatID -> UcsRow`` (case-sensitive primary key).
         order: The CatIDs in stable insertion order (deterministic tie-breaking).
+        legacy: ``lower(old CatID) -> CatID`` for CatIDs foley once stamped that are
+            not UCS (``weathrain`` -> ``RAIN``), so a stored record still finds its row.
     """
 
     by_catid: dict[str, UcsRow] = field(default_factory=dict)
     order: list[str] = field(default_factory=list)
-    _ci_index: dict[str, str] = field(default_factory=dict)  # lower(catid) -> catid
+    # lower(catid) -> catid, for mixed-case CatIDs only: ``doorwood`` finds
+    # ``DOORWood``, but ``rain`` (a word) never finds ``RAIN``.
+    _ci_index: dict[str, str] = field(default_factory=dict)
+    legacy: dict[str, str] = field(default_factory=dict)
 
     def get(self, catid: str) -> Optional[UcsRow]:
-        """Look up a row by CatID: exact first, then case-insensitive."""
+        """Look up a row by CatID: exact, then case-insensitive, then a legacy CatID."""
         row = self.by_catid.get(catid)
         if row is not None:
             return row
-        canonical = self._ci_index.get(catid.lower())
+        key = catid.lower()
+        canonical = self._ci_index.get(key) or self.legacy.get(key)
         return self.by_catid.get(canonical) if canonical else None
 
     def __contains__(self, catid: str) -> bool:
