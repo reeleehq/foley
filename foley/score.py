@@ -12,13 +12,27 @@ budget keeps it sparse (not every sentence gets a sound), the **fail-closed lice
 runs before verification, and the verify ladder (clap → listen → judge) guards fit — so a
 one-call ``foley.score(segments, audio=...)`` yields a restrained, license-clean result.
 
+**What the spend cap means** (``max_usd=`` / ``budget=Budget(max_usd=...)``, #281): no
+call of known cost is made that would take the run past the cap. Before each segment, its
+worst case (:func:`foley.agent.tools.find_upper_bound`) is checked against what is left:
+
+* if it does not fit, the segment runs **retrieval-only** (no generation fallback);
+* if even that does not fit (paid LLM rungs), the segment is **skipped** — unless nothing
+  has been spent yet, in which case ``score`` raises before spending anything, as
+  ``find`` does.
+
+Each degraded segment is named in :attr:`ScoreResult.notes`. A call of *unknown* cost
+runs only when approved (``approve_unknown_cost``) and is counted, not summed:
+:attr:`ScoreResult.spent_usd` is then a lower bound, which
+:attr:`ScoreResult.unknown_cost_calls` says (#280).
+
 Stdlib-only at import (numpy/torch/whisperx stay lazy inside ``find``/``weave``), so importing
 this keeps ``import foley`` dol-only.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Optional, Sequence, Union
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
@@ -56,6 +70,18 @@ class ScoreResult:
     timeline: "SoundDesignTimeline"
     events: "list[ScoredEvent]"
     weave: "Optional[WeaveResult]" = None
+    #: What the run spent on calls of known cost, in USD (a lower bound when
+    #: :attr:`unknown_cost_calls` is not zero).
+    spent_usd: float = 0.0
+    #: Calls this run made whose cost is unknown (approved, counted, not in ``spent_usd``).
+    unknown_cost_calls: int = 0
+    #: Segments the spend cap degraded: run retrieval-only, or skipped (#281).
+    notes: "list[str]" = field(default_factory=list)
+
+    @property
+    def has_unknown_costs(self) -> bool:
+        """Whether :attr:`spent_usd` leaves out calls of unknown cost (never read as free)."""
+        return self.unknown_cost_calls > 0
 
     @property
     def n_sounds(self) -> int:
@@ -93,6 +119,7 @@ def score(
     weave: Optional[bool] = None,
     llm: Optional[str] = None,
     budget=None,
+    max_usd: Optional[float] = None,
     **weave_kwargs,
 ) -> ScoreResult:
     """Choose sounds for narration text and (optionally) weave them into the narration audio.
@@ -147,7 +174,10 @@ def score(
         budget: The run's :class:`~foley.agent.policy.Budget` — one spend cap
             (``max_usd``) across every segment's paid calls (#57). Default: $1, or $3
             when ``llm`` (or ``$FOLEY_LLM``) is ``'anthropic'``
-            (:func:`foley.cost.default_max_usd`, #88).
+            (:func:`foley.cost.default_max_usd`, #88). What a host can rely on the cap
+            to mean is in this module's docstring.
+        max_usd: Shorthand for ``budget=Budget(max_usd=max_usd)`` (#283); passing both
+            is a ``TypeError``.
         **weave_kwargs: Forwarded to :func:`foley.weave` (e.g. ``language``, ``aligner``,
             ``sign_cert``, ``watermark``). Checked against ``weave``'s signature before
             anything runs, so a typo costs nothing.
@@ -157,7 +187,10 @@ def score(
 
     Raises:
         TypeError: If a ``weave_kwargs`` key is not a :func:`foley.weave` option (raised
-            before any find, verify or generation call).
+            before any find, verify or generation call), or if both ``budget`` and
+            ``max_usd`` are given.
+        BudgetExceeded: If the first segment cannot afford even a retrieval-only run
+            (nothing has been spent).
         ValueError: If ``master`` is an unknown profile name, or ``segment_starts`` does
             not fit the segments, the transcript or (for a path, bytes or an array) the
             audio's duration, all raised just as early. For a library ref or a file-like
@@ -171,6 +204,7 @@ def score(
 
     # fail fast: a typo raises before any find/verify/generation spend
     _check_weave_kwargs(weave_kwargs)
+    budget = _budget_from(budget, max_usd)
     master = resolve_master(master)
     segs = [segments] if isinstance(segments, str) else list(segments)
     use = intended_use_for(intended_use, commercial_ok=commercial_ok)
@@ -215,14 +249,18 @@ def score(
     from .agent.policy import Budget
     from .cost import active_budget, default_max_usd, spend_scope
 
-    if not allow_generate:
-        # find's loop budget turns the fallback off (its pre-flight then counts no
-        # generation); the run's spend is still capped by the scope below.
-        base = budget if budget is not None else Budget(max_usd=default_max_usd(llm))
-        find_kw["budget"] = base.without_generation()
     if budget is None and active_budget() is None:
         # One cap for the whole score run, sized to the LLM the caller chose (#88).
         budget = Budget(max_usd=default_max_usd(llm))
+    # find's loop budget turns the fallback off (its pre-flight then counts no
+    # generation); the run's spend is still capped by the scope below.
+    loop_budget = find_kw.get("budget") or budget or active_budget()
+    retrieval_only_kw = {**find_kw, "budget": loop_budget.without_generation()}
+    # What each segment may run, fullest first (#281: degrade, do not raise mid-run).
+    find_options = (
+        (find_kw, retrieval_only_kw) if allow_generate else (retrieval_only_kw,)
+    )
+    notes: "list[str]" = []
     with (
         obs.run(
             "score",
@@ -233,10 +271,23 @@ def score(
                 "allow_generate": allow_generate,
             },
         ),
-        spend_scope(budget),
+        spend_scope(budget) as run_budget,
     ):
+        spent0, unknown0 = run_budget.spent_usd, run_budget.unknown_cost_calls
         for i, seg in enumerate(segs):
-            for c in find(seg, **find_kw):
+            seg_kw = _affordable_find_kw(
+                seg,
+                i,
+                find_options,
+                notes=notes,
+                nothing_spent=(
+                    run_budget.spent_usd == spent0
+                    and run_budget.unknown_cost_calls == unknown0
+                ),
+            )
+            if seg_kw is None:
+                continue
+            for c in find(seg, **seg_kw):
                 all_candidates.append(c)
                 v = c.verdict
                 events.append(
@@ -267,7 +318,61 @@ def score(
             wk["library"] = library if library is not None else default_library()
             woven = _weave(audio, timeline, **wk)
             timeline = woven.timeline
-    return ScoreResult(timeline=timeline, events=events, weave=woven)
+        spent = round(run_budget.spent_usd - spent0, 10)
+        unknown = run_budget.unknown_cost_calls - unknown0
+    return ScoreResult(
+        timeline=timeline,
+        events=events,
+        weave=woven,
+        spent_usd=spent,
+        unknown_cost_calls=unknown,
+        notes=notes,
+    )
+
+
+def _budget_from(budget, max_usd: Optional[float]):
+    """``budget``, or ``Budget(max_usd=max_usd)`` for the shorthand (never both)."""
+    if max_usd is None:
+        return budget
+    if budget is not None:
+        raise TypeError(
+            "pass budget= or max_usd=, not both (max_usd is shorthand for "
+            "budget=Budget(max_usd=...))"
+        )
+    from .agent.policy import Budget
+
+    return Budget(max_usd=max_usd)
+
+
+#: The arguments of :func:`foley.find` that size its worst case (``find_upper_bound``).
+_BOUND_KEYS = ("max_events", "backend", "llm", "verify", "budget")
+
+
+def _affordable_find_kw(seg: str, i: int, options, *, notes: list, nothing_spent: bool):
+    """The first of ``options`` (``find`` keywords, fullest first) whose worst case fits
+    every budget in force, else ``None`` (skip the segment); a fallback is noted.
+
+    Raises the refusal when nothing fits and nothing has been spent yet: the run then
+    fails before spending, as ``find``'s own pre-flight does.
+    """
+    from .agent.tools import find_upper_bound
+    from .cost import BudgetExceeded, check
+
+    refusals: "list[BudgetExceeded]" = []
+    for kw in options:
+        bound = find_upper_bound(seg, **{k: kw[k] for k in _BOUND_KEYS if k in kw})
+        try:
+            check(bound, what=f"segment {i} (upper bound)")
+        except BudgetExceeded as exc:
+            refusals.append(exc)
+            continue
+        if refusals:
+            notes.append(f"segment {i}: retrieval-only: {refusals[0]}")
+        return kw
+    if nothing_spent:
+        raise refusals[-1]
+    notes.append(f"segment {i}: skipped: {refusals[-1]}")
+    return None
 
 
 def _weave_option(weave_kwargs: dict, name: str):

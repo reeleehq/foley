@@ -951,3 +951,96 @@ def test_estimate_refuses_a_meaning_carrying_param_the_backend_cannot_honour(mon
     with pytest.raises(UnsupportedParameter, match="seed"):  # every backend refuses
         foley.estimate("generate", backend=("fal_sonilo", "fal_elevenlabs"),
                        prompt="rain", seed=3)
+
+
+# ---------------------------------------------------------------------------
+# #281 / #283 / #280 — what score's cap means, its shorthand, what it reports
+# ---------------------------------------------------------------------------
+
+TWO = ["The heavy oak door creaked.", "Rain fell on the roof."]
+
+
+def test_a_cap_below_one_segments_worst_case_degrades_instead_of_raising(
+    paid_source, library
+):
+    """#281: max_usd=0 renders retrieval-only, spends nothing, and says so."""
+    adapter = paid_source("tenc", amount=0.12)
+    result = foley.score(TWO, library=library, backend="tenc", max_events=1, max_usd=0)
+    assert adapter.calls == 0 and result.spent_usd == 0.0
+    assert [n.split(":")[0] for n in result.notes] == ["segment 0", "segment 1"]
+    assert all("retrieval-only" in n for n in result.notes)
+
+
+def test_a_cap_that_fits_one_segment_degrades_the_next_and_reports_the_spend(
+    paid_source, library
+):
+    """#281: the second segment no longer fits, so it runs retrieval-only instead of
+    raising after the first was paid for; the spend is reported (#280)."""
+    adapter = paid_source("forty", amount=0.40)
+    result = foley.score(
+        TWO, library=library, backend="forty", max_events=1, max_usd=0.5
+    )
+    assert adapter.calls == 1
+    assert result.spent_usd == pytest.approx(0.40) and not result.has_unknown_costs
+    assert len(result.notes) == 1 and result.notes[0].startswith(
+        "segment 1: retrieval-only"
+    )
+
+
+def test_an_unapproved_unknown_cost_degrades_and_an_approved_one_is_counted(
+    paid_source, library
+):
+    """#280: unknown is never read as free: counted, and flagged on the result."""
+    adapter = paid_source("metered", unit="per_compute_second", amount=0.001)
+    result = foley.score(TWO[:1], library=library, backend="metered", max_events=1)
+    assert adapter.calls == 0 and "retrieval-only" in result.notes[0]
+    approved = foley.score(
+        TWO[:1],
+        library=library,
+        backend="metered",
+        max_events=1,
+        budget=Budget(approve_unknown_cost=True),
+    )
+    assert adapter.calls == 1 and approved.notes == []
+    assert approved.unknown_cost_calls == 1 and approved.has_unknown_costs
+    assert approved.spent_usd == 0.0  # a lower bound, which has_unknown_costs says
+
+
+def test_a_segment_nothing_fits_is_skipped_once_something_was_spent(monkeypatch):
+    """#281: after spend, a segment that cannot afford even retrieval is skipped (not
+    raised, which would lose what was paid); before any spend it raises."""
+    import importlib
+
+    from foley.agent import tools
+
+    score_module = importlib.import_module("foley.score")
+    from foley.cost import spend_scope
+
+    monkeypatch.setattr(tools, "find_upper_bound", lambda seg, **kw: 0.5)
+    options = ({"budget": Budget()}, {"budget": Budget().without_generation()})
+    with spend_scope(Budget(max_usd=1.0)) as budget:
+        budget.charge(0.75)
+        notes = []
+        got = score_module._affordable_find_kw(
+            "x", 3, options, notes=notes, nothing_spent=False
+        )
+        assert got is None and notes[0].startswith("segment 3: skipped")
+        with pytest.raises(BudgetExceeded, match="segment 3"):
+            score_module._affordable_find_kw(
+                "x", 3, options, notes=[], nothing_spent=True
+            )
+
+
+def test_max_usd_is_shorthand_for_a_budget(paid_source, library):
+    """#283: hosts pass the number; foley builds the Budget, and refuses both."""
+    adapter = paid_source("sixtyc", amount=0.60)
+    result = foley.score(
+        TWO[:1], library=library, backend="sixtyc", max_events=1, max_usd=0.5
+    )
+    assert adapter.calls == 0 and "retrieval-only" in result.notes[0]  # $0.60 > $0.50
+    result = foley.score(
+        TWO[:1], library=library, backend="sixtyc", max_events=1, max_usd=0.7
+    )
+    assert adapter.calls == 1 and result.spent_usd == pytest.approx(0.60)
+    with pytest.raises(TypeError, match="not both"):
+        foley.score(TWO, library=library, budget=Budget(), max_usd=1.0)
