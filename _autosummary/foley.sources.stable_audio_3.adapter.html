@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=5574531b"></script>
+    <script src="../_static/documentation_options.js?v=628cd971"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.135" />
+  <meta name="docsearch:version" content="0.0.136" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -518,12 +518,17 @@
 <code class="docutils literal notranslate"><span class="pre">Stability-AI/stable-audio-3</span></code> (a script plus a requirements file, weights fetched on
 first use from the ungated <code class="docutils literal notranslate"><span class="pre">stabilityai/stable-audio-3-optimized</span></code>). The adapter drives
 that checkout’s <code class="docutils literal notranslate"><span class="pre">scripts/sa3_tflite.py</span></code> with the checkout’s own virtualenv Python, so
-foley takes on no dependency and <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">foley</span></code> stays dol-only. Setup is two commands
+foley takes on no model dependency (the process and venv helpers are <code class="docutils literal notranslate"><span class="pre">ps.isolated</span></code>’s,
+stdlib-only). Setup is two commands
 (<a class="reference internal" href="#foley.sources.stable_audio_3.adapter.setup_hint" title="foley.sources.stable_audio_3.adapter.setup_hint"><code class="xref py py-func docutils literal notranslate"><span class="pre">setup_hint()</span></code></a>); a missing checkout raises <code class="xref py py-class docutils literal notranslate"><span class="pre">SourceConfigurationError</span></code> with them,
 which the generation order treats as “skip this backend”.</p>
 <ul class="simple">
-<li><p><strong>Seam:</strong> <code class="docutils literal notranslate"><span class="pre">runner=</span></code> (<code class="docutils literal notranslate"><span class="pre">runner(cmd,</span> <span class="pre">*,</span> <span class="pre">cwd,</span> <span class="pre">env,</span> <span class="pre">timeout)</span> <span class="pre">-&gt;</span> <span class="pre">(returncode,</span> <span class="pre">stderr)</span></code>)
-is the process boundary; a test injects a fake that writes the <code class="docutils literal notranslate"><span class="pre">--out</span></code> file.</p></li>
+<li><p><strong>Seam:</strong> <code class="docutils literal notranslate"><span class="pre">runner=</span></code> (<code class="docutils literal notranslate"><span class="pre">runner(cmd,</span> <span class="pre">*,</span> <span class="pre">cwd,</span> <span class="pre">env,</span> <span class="pre">timeout)</span> <span class="pre">-&gt;</span> <span class="pre">(returncode,</span> <span class="pre">output)</span></code>)
+is the process boundary, <code class="xref py py-func docutils literal notranslate"><span class="pre">ps.isolated.run_process()</span></code> by default; a test injects a
+fake that writes the <code class="docutils literal notranslate"><span class="pre">--out</span></code> file. <code class="docutils literal notranslate"><span class="pre">env</span></code> holds only the variables foley adds; the
+default runner layers them over the host’s environment minus <code class="docutils literal notranslate"><span class="pre">PYTHONPATH</span></code>,
+<code class="docutils literal notranslate"><span class="pre">PYTHONHOME</span></code> and <code class="docutils literal notranslate"><span class="pre">VIRTUAL_ENV</span></code>, returns stdout and stderr interleaved, and on
+timeout kills the whole process tree.</p></li>
 <li><p><strong>Offline:</strong> the process runs with <code class="docutils literal notranslate"><span class="pre">HF_HUB_OFFLINE=1</span></code> when the runtime forbids
 external egress, and a failure then raises <a class="reference internal" href="foley.runtime.html#foley.runtime.ModelNotCached" title="foley.runtime.ModelNotCached"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelNotCached</span></code></a>
 (foley never downloads weights inside <a class="reference internal" href="foley.html#foley.offline" title="foley.offline"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.offline()</span></code></a>, #86).</p></li>
@@ -535,10 +540,7 @@ negative prompt only acts when CFG is above 1, so it is dropped with a note.</p>
 <p class="rubric">Module Attributes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.stable_audio_3.adapter.Runner" title="foley.sources.stable_audio_3.adapter.Runner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Runner</span></code></a></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">runner(cmd,</span> <span class="pre">*,</span> <span class="pre">cwd,</span> <span class="pre">env,</span> <span class="pre">timeout)</span> <span class="pre">-&gt;</span> <span class="pre">(returncode,</span> <span class="pre">stderr_text)</span></code>.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.stable_audio_3.adapter.Adapter" title="foley.sources.stable_audio_3.adapter.Adapter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Adapter</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.stable_audio_3.adapter.Adapter" title="foley.sources.stable_audio_3.adapter.Adapter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Adapter</span></code></a></p></td>
 <td><p>Registry convention (arioso): the loader imports <code class="docutils literal notranslate"><span class="pre">adapter.Adapter</span></code>.</p></td>
 </tr>
 </tbody>
@@ -577,13 +579,6 @@ negative prompt only acts when CFG is above 1, so it is dropped with a note.</p>
 <dd><p>Registry convention (arioso): the loader imports <code class="docutils literal notranslate"><span class="pre">adapter.Adapter</span></code>.</p>
 </dd></dl>
 
-<dl class="py data">
-<dt class="sig sig-object py" id="foley.sources.stable_audio_3.adapter.Runner">
-<span class="sig-prename descclassname"><span class="pre">foley.sources.stable_audio_3.adapter.</span></span><span class="sig-name descname"><span class="pre">Runner</span></span><a class="headerlink" href="#foley.sources.stable_audio_3.adapter.Runner" title="Link to this definition">#</a></dt>
-<dd><p><code class="docutils literal notranslate"><span class="pre">runner(cmd,</span> <span class="pre">*,</span> <span class="pre">cwd,</span> <span class="pre">env,</span> <span class="pre">timeout)</span> <span class="pre">-&gt;</span> <span class="pre">(returncode,</span> <span class="pre">stderr_text)</span></code>.</p>
-<p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code>[[…], <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple[int,</span> <span class="pre">str]</span></code>]</p>
-</dd></dl>
-
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.sources.stable_audio_3.adapter.StableAudio3Adapter">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.sources.stable_audio_3.adapter.</span></span><span class="sig-name descname"><span class="pre">StableAudio3Adapter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">runner</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">home</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/stable_audio_3/adapter.html#StableAudio3Adapter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.stable_audio_3.adapter.StableAudio3Adapter" title="Link to this definition">#</a></dt>
@@ -593,7 +588,9 @@ negative prompt only acts when CFG is above 1, so it is dropped with a note.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>config</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span>) – The <code class="docutils literal notranslate"><span class="pre">SOURCE_CONFIG</span></code> (the registry passes it positionally).</p></li>
-<li><p><strong>runner</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/constants.html#Ellipsis" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]]</span>) – The process boundary (see <a class="reference internal" href="#foley.sources.stable_audio_3.adapter.Runner" title="foley.sources.stable_audio_3.adapter.Runner"><code class="xref py py-data docutils literal notranslate"><span class="pre">Runner</span></code></a>); defaults to a subprocess.</p></li>
+<li><p><strong>runner</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/constants.html#Ellipsis" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]]</span>) – The process boundary (<code class="docutils literal notranslate"><span class="pre">ps.isolated.Runner</span></code>); defaults to
+<code class="xref py py-func docutils literal notranslate"><span class="pre">ps.isolated.run_process()</span></code> (stdin closed, so a prompting script fails
+instead of waiting).</p></li>
 <li><p><strong>home</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></a>]</span>) – The Stability checkout; defaults to <a class="reference internal" href="#foley.sources.stable_audio_3.adapter.sa3_home" title="foley.sources.stable_audio_3.adapter.sa3_home"><code class="xref py py-func docutils literal notranslate"><span class="pre">sa3_home()</span></code></a>.</p></li>
 </ul>
 </dd>
@@ -720,7 +717,6 @@ runs (cost, egress): a caller owns those.</p>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.stable_audio_3.adapter.Adapter"><code class="docutils literal notranslate"><span class="pre">Adapter</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.stable_audio_3.adapter.Runner"><code class="docutils literal notranslate"><span class="pre">Runner</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.stable_audio_3.adapter.StableAudio3Adapter"><code class="docutils literal notranslate"><span class="pre">StableAudio3Adapter</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.stable_audio_3.adapter.StableAudio3Adapter.generate"><code class="docutils literal notranslate"><span class="pre">StableAudio3Adapter.generate()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.stable_audio_3.adapter.StableAudio3Adapter.invoke_native"><code class="docutils literal notranslate"><span class="pre">StableAudio3Adapter.invoke_native()</span></code></a></li>

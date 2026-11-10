@@ -8,7 +8,6 @@ foley.sources.stable\_audio\_3.adapter
 
    .. autosummary::
    
-      Runner
       Adapter
    
    .. rubric:: Functions

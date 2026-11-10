@@ -1,4 +1,4 @@
-> built 2026-11-09 03:07 UTC from 56302f4 (main) · foley 0.0.135. Details: build_info.json
+> built 2026-11-10 14:40 UTC from e610b6e (main) · foley 0.0.136. Details: build_info.json
 
 # index.html.md
 
@@ -18984,7 +18984,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'ta dum', 'netflix chime', 'netflix sound', 'tudum', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel bong', 'intel inside', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'netflix chime', 'tudum', 'ta dum', 'ta-dum', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel chime', 'intel jingle', 'intel inside', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -27485,12 +27485,17 @@ The model is not a pip package: Stability ships it as `optimized/tflite` in
 `Stability-AI/stable-audio-3` (a script plus a requirements file, weights fetched on
 first use from the ungated `stabilityai/stable-audio-3-optimized`). The adapter drives
 that checkout’s `scripts/sa3_tflite.py` with the checkout’s own virtualenv Python, so
-foley takes on no dependency and `import foley` stays dol-only. Setup is two commands
+foley takes on no model dependency (the process and venv helpers are `ps.isolated`’s,
+stdlib-only). Setup is two commands
 ([`setup_hint()`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.setup_hint)); a missing checkout raises `SourceConfigurationError` with them,
 which the generation order treats as “skip this backend”.
 
-* **Seam:** `runner=` (`runner(cmd, *, cwd, env, timeout) -> (returncode, stderr)`)
-  is the process boundary; a test injects a fake that writes the `--out` file.
+* **Seam:** `runner=` (`runner(cmd, *, cwd, env, timeout) -> (returncode, output)`)
+  is the process boundary, `ps.isolated.run_process()` by default; a test injects a
+  fake that writes the `--out` file. `env` holds only the variables foley adds; the
+  default runner layers them over the host’s environment minus `PYTHONPATH`,
+  `PYTHONHOME` and `VIRTUAL_ENV`, returns stdout and stderr interleaved, and on
+  timeout kills the whole process tree.
 * **Offline:** the process runs with `HF_HUB_OFFLINE=1` when the runtime forbids
   external egress, and a failure then raises [`ModelNotCached`](_autosummary/foley.runtime.html.md#foley.runtime.ModelNotCached)
   (foley never downloads weights inside [`foley.offline()`](_autosummary/foley.html.md#foley.offline), #86).
@@ -27501,9 +27506,8 @@ which the generation order treats as “skip this backend”.
 
 ### Module Attributes
 
-| [`Runner`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.Runner)   | `runner(cmd, *, cwd, env, timeout) -> (returncode, stderr_text)`.   |
-|-----------------------------------------------------------|---------------------------------------------------------------------|
-| [`Adapter`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.Adapter)  | Registry convention (arioso): the loader imports `adapter.Adapter`. |
+| [`Adapter`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.Adapter)   | Registry convention (arioso): the loader imports `adapter.Adapter`.   |
+|------------------------------------------------------------|-----------------------------------------------------------------------|
 
 ### Functions
 
@@ -27522,12 +27526,6 @@ which the generation order treats as “skip this backend”.
 
 Registry convention (arioso): the loader imports `adapter.Adapter`.
 
-### foley.sources.stable_audio_3.adapter.Runner
-
-`runner(cmd, *, cwd, env, timeout) -> (returncode, stderr_text)`.
-
-alias of `Callable`[[…], `tuple[int, str]`]
-
 ### *class* foley.sources.stable_audio_3.adapter.StableAudio3Adapter(config=None, , runner=None, home=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
@@ -27536,7 +27534,9 @@ Local Stable Audio 3 Small-SFX adapter (a [`GenerateAdapter`](_autosummary/foley
 
 * **Parameters:**
   * **config** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – The `SOURCE_CONFIG` (the registry passes it positionally).
-  * **runner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`int`](https://docs.python.org/3/builtins/functions.html#int), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]]) – The process boundary (see [`Runner`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.Runner)); defaults to a subprocess.
+  * **runner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`Tuple`](https://docs.python.org/3/library/typing.html#typing.Tuple)[[`int`](https://docs.python.org/3/builtins/functions.html#int), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]]) – The process boundary (`ps.isolated.Runner`); defaults to
+    `ps.isolated.run_process()` (stdin closed, so a prompting script fails
+    instead of waiting).
   * **home** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)]) – The Stability checkout; defaults to [`sa3_home()`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.sa3_home).
 
 #### generate(prompt, , duration_s=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
@@ -31091,16 +31091,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-09 03:07 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/56302f4fc21f391e7d6b28cae0a5b742d6991162"><code>56302f4</code></a> on branch <code>main</code>, for **foley 0.0.135** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-10 14:40 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/e610b6e90e1387428e038ff6ab8bfafff076af82"><code>e610b6e</code></a> on branch <code>main</code>, for **foley 0.0.136** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.136) is behind the latest release on PyPI (0.0.137): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/56302f4fc21f391e7d6b28cae0a5b742d6991162"><code>56302f4fc21f391e7d6b28cae0a5b742d6991162</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/e610b6e90e1387428e038ff6ab8bfafff076af82"><code>e610b6e90e1387428e038ff6ab8bfafff076af82</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -31111,9 +31113,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/42554336156">42554336156</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/42835950011">42835950011</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>56302f4fc21f391e7d6b28cae0a5b742d6991162</code> (in the history of the built commit) |
+| Event commit | <code>e610b6e90e1387428e038ff6ab8bfafff076af82</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -31138,13 +31140,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.135/">0.0.135</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.137/">0.0.137</a>, newer than the documented version (0.0.136).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 56302f4fc21f391e7d6b28cae0a5b742d6991162
+git checkout e610b6e90e1387428e038ff6ab8bfafff076af82
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
