@@ -241,3 +241,41 @@ def test_provider_flag_abbreviations_cannot_override_core_flags(tmp_path):
     )
     assert cmd.index("--see") < cmd.index("--seed")
     assert cmd[cmd.index("--seed") + 1] == "3"
+
+
+def test_the_default_runner_is_ps_isolated_and_env_holds_only_foleys_additions(home):
+    """#294: the process boundary is ``ps.isolated.run_process``; ``env`` is a delta."""
+    from ps.isolated import run_process
+
+    assert StableAudio3Adapter(home=home)._runner is run_process
+    run = FakeRunner()
+    with offline():
+        StableAudio3Adapter(runner=run, home=home).generate("x")
+    assert run.calls[0]["env"] == {"HF_HUB_OFFLINE": "1"}
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="symlinks a POSIX venv layout")
+def test_the_default_runner_drives_a_real_script_and_reads_its_combined_output(
+    tmp_path, monkeypatch
+):
+    """The real (default) runner on a stand-in script: no model, no weights."""
+    home = tmp_path / "sa3"
+    tflite = home / "optimized" / "tflite"
+    (tflite / "scripts").mkdir(parents=True)
+    (tflite / ".venv" / "bin").mkdir(parents=True)
+    (tflite / ".venv" / "bin" / "python").symlink_to(sys.executable)
+    (tflite / "scripts" / "sa3_tflite.py").write_text(
+        "import os, sys\n"
+        "print('progress on stdout')\n"
+        "out = sys.argv[sys.argv.index('--out') + 1]\n"
+        "if os.environ.get('PYTHONPATH') or not os.environ.get('HF_HUB_OFFLINE'):\n"
+        "    print('host PYTHONPATH leaked or offline flag missing', file=sys.stderr)\n"
+        "    sys.exit(3)\n"
+        "open(out, 'wb').write(b'RIFF-fake')\n"
+    )
+    monkeypatch.setenv("PYTHONPATH", "/host/packages")
+    with offline():
+        audio = StableAudio3Adapter(home=home).invoke_native(
+            "x", {"seconds": 1, "steps": 1, "cfg": 1.0, "seed": 0}
+        )
+    assert audio == b"RIFF-fake"
