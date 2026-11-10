@@ -4,12 +4,17 @@ The model is not a pip package: Stability ships it as ``optimized/tflite`` in
 ``Stability-AI/stable-audio-3`` (a script plus a requirements file, weights fetched on
 first use from the ungated ``stabilityai/stable-audio-3-optimized``). The adapter drives
 that checkout's ``scripts/sa3_tflite.py`` with the checkout's own virtualenv Python, so
-foley takes on no dependency and ``import foley`` stays dol-only. Setup is two commands
+foley takes on no model dependency (the process and venv helpers are ``ps.isolated``'s,
+stdlib-only). Setup is two commands
 (:func:`setup_hint`); a missing checkout raises :class:`SourceConfigurationError` with them,
 which the generation order treats as "skip this backend".
 
-* **Seam:** ``runner=`` (``runner(cmd, *, cwd, env, timeout) -> (returncode, stderr)``)
-  is the process boundary; a test injects a fake that writes the ``--out`` file.
+* **Seam:** ``runner=`` (``runner(cmd, *, cwd, env, timeout) -> (returncode, output)``)
+  is the process boundary, :func:`ps.isolated.run_process` by default; a test injects a
+  fake that writes the ``--out`` file. ``env`` holds only the variables foley adds; the
+  default runner layers them over the host's environment minus ``PYTHONPATH``,
+  ``PYTHONHOME`` and ``VIRTUAL_ENV``, returns stdout and stderr interleaved, and on
+  timeout kills the whole process tree.
 * **Offline:** the process runs with ``HF_HUB_OFFLINE=1`` when the runtime forbids
   external egress, and a failure then raises :class:`~foley.runtime.ModelNotCached`
   (foley never downloads weights inside :func:`foley.offline`, #86).
@@ -25,7 +30,9 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Optional
+
+from ps.isolated import Runner, run_process, venv_python
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
 from ..base import (
@@ -41,34 +48,14 @@ from ..base import (
 )
 from .config import SOURCE_CONFIG
 
-#: ``runner(cmd, *, cwd, env, timeout) -> (returncode, stderr_text)``.
-Runner = Callable[..., "tuple[int, str]"]
-
 #: What the script's traceback names when huggingface_hub, forbidden to download
 #: (HF_HUB_OFFLINE=1), finds a weight file missing from the local cache.
 _WEIGHTS_MISSING = ("LocalEntryNotFoundError", "FileNotFoundError")
 
 
-def _run_process(cmd, *, cwd, env, timeout) -> "tuple[int, str]":
-    """The default runner: a subprocess, stderr captured (stdout is progress noise)."""
-    proc = subprocess.run(
-        cmd,
-        cwd=cwd,
-        env=env,
-        timeout=timeout,
-        capture_output=True,
-        text=True,
-        stdin=subprocess.DEVNULL,  # the script prompts on a missing flag: never wait on a tty
-    )
-    return proc.returncode, proc.stderr
-
-
 def _venv_python(tflite_dir: Path) -> Path:
     """The checkout's virtualenv interpreter (POSIX or Windows layout)."""
-    for rel in (".venv/bin/python", ".venv/Scripts/python.exe"):
-        if (tflite_dir / rel).exists():
-            return tflite_dir / rel
-    return tflite_dir / ".venv/bin/python"
+    return venv_python(tflite_dir / ".venv")
 
 
 def sa3_home(config: Optional[dict] = None) -> Path:
@@ -108,7 +95,9 @@ class StableAudio3Adapter:
 
     Args:
         config: The ``SOURCE_CONFIG`` (the registry passes it positionally).
-        runner: The process boundary (see :data:`Runner`); defaults to a subprocess.
+        runner: The process boundary (``ps.isolated.Runner``); defaults to
+            :func:`ps.isolated.run_process` (stdin closed, so a prompting script fails
+            instead of waiting).
         home: The Stability checkout; defaults to :func:`sa3_home`.
     """
 
@@ -121,7 +110,7 @@ class StableAudio3Adapter:
     ):
         self.config = config if config is not None else SOURCE_CONFIG
         self.name = self.config["name"]
-        self._runner = runner or _run_process
+        self._runner = runner or run_process
         self._home = Path(home).expanduser() if home else sa3_home(self.config)
 
     def generate(
@@ -243,21 +232,31 @@ class StableAudio3Adapter:
 
         tflite = self._tflite_dir()
         online = current_runtime().allows(EXTERNAL)
-        env = dict(os.environ)
+        # Added to the host's environment by the runner. Unbuffered, so an error the
+        # script logs before it exits is not followed by stdout flushed late: the
+        # combined output then ends with the error, which the tail below quotes.
+        env = {"PYTHONUNBUFFERED": "1"}
         if not online:
             env["HF_HUB_OFFLINE"] = "1"  # never download weights inside offline()
         with tempfile.TemporaryDirectory(prefix="foley-sa3-") as tmp:
             out = Path(tmp) / "clip.wav"
-            code, stderr = self._runner(
-                self._command(tflite, prompt, native, out),
-                cwd=str(tflite),
-                env=env,
-                timeout=self.config["native_defaults"]["timeout_s"],
-            )
+            timeout = self.config["native_defaults"]["timeout_s"]
+            try:
+                code, output = self._runner(
+                    self._command(tflite, prompt, native, out),
+                    cwd=str(tflite),
+                    env=env,
+                    timeout=timeout,
+                )
+            except subprocess.TimeoutExpired:
+                raise RuntimeError(
+                    f"{self.name}: the Stable Audio 3 script did not finish within "
+                    f"{timeout} s and was killed (with everything it started)"
+                ) from None
             if code != 0 or not out.exists():
-                tail = (stderr or "").strip().splitlines()[-3:]
+                tail = (output or "").strip().splitlines()[-3:]
                 said = " | ".join(tail)
-                if not online and any(m in (stderr or "") for m in _WEIGHTS_MISSING):
+                if not online and any(m in (output or "") for m in _WEIGHTS_MISSING):
                     raise ModelNotCached(
                         f"{self.name}: the weights are not on this machine, and foley "
                         "will not download them inside offline(). Fetch them once while "
