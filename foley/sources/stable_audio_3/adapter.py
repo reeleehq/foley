@@ -27,6 +27,7 @@ which the generation order treats as "skip this backend".
 from __future__ import annotations
 
 import os
+import subprocess
 import tempfile
 from pathlib import Path
 from typing import Optional
@@ -231,17 +232,27 @@ class StableAudio3Adapter:
 
         tflite = self._tflite_dir()
         online = current_runtime().allows(EXTERNAL)
-        env = {}  # added to the host's environment by the runner
+        # Added to the host's environment by the runner. Unbuffered, so an error the
+        # script logs before it exits is not followed by stdout flushed late: the
+        # combined output then ends with the error, which the tail below quotes.
+        env = {"PYTHONUNBUFFERED": "1"}
         if not online:
             env["HF_HUB_OFFLINE"] = "1"  # never download weights inside offline()
         with tempfile.TemporaryDirectory(prefix="foley-sa3-") as tmp:
             out = Path(tmp) / "clip.wav"
-            code, output = self._runner(
-                self._command(tflite, prompt, native, out),
-                cwd=str(tflite),
-                env=env,
-                timeout=self.config["native_defaults"]["timeout_s"],
-            )
+            timeout = self.config["native_defaults"]["timeout_s"]
+            try:
+                code, output = self._runner(
+                    self._command(tflite, prompt, native, out),
+                    cwd=str(tflite),
+                    env=env,
+                    timeout=timeout,
+                )
+            except subprocess.TimeoutExpired:
+                raise RuntimeError(
+                    f"{self.name}: the Stable Audio 3 script did not finish within "
+                    f"{timeout} s and was killed (with everything it started)"
+                ) from None
             if code != 0 or not out.exists():
                 tail = (output or "").strip().splitlines()[-3:]
                 said = " | ".join(tail)
