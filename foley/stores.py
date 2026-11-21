@@ -166,13 +166,13 @@ def make_meta_store(
     json_store = mk_dirs_if_missing(JsonFiles(str(rootdir)))  # values are dict
     return wrap_kvs(
         json_store,
-        obj_of_data=SoundRecord.from_dict,  # dict -> SoundRecord on read
-        data_of_obj=lambda rec: rec.to_dict(),  # SoundRecord -> dict on write
+        value_decoder=SoundRecord.from_dict,  # dict -> SoundRecord on read
+        value_encoder=lambda rec: rec.to_dict(),  # SoundRecord -> dict on write
         # dol applies id_of_key to reach the underlying store and key_of_id when
         # listing, so id_of_key escapes the id + adds the suffix and key_of_id
         # reverses it — exposing bare sound_id keys over safe {enc}.json files.
-        id_of_key=_meta_filename,  # sound_id -> escaped filename
-        key_of_id=_meta_key,  # filename -> sound_id
+        key_encoder=_meta_filename,  # sound_id -> escaped filename
+        key_decoder=_meta_key,  # filename -> sound_id
     )
 
 
@@ -196,7 +196,7 @@ def make_provenance_store(
         A ``MutableMapping[str, dict]`` keyed by content id.
     """
     json_store = mk_dirs_if_missing(JsonFiles(str(rootdir)))
-    return wrap_kvs(json_store, id_of_key=_meta_filename, key_of_id=_meta_key)
+    return wrap_kvs(json_store, key_encoder=_meta_filename, key_decoder=_meta_key)
 
 
 def make_run_store(rootdir: Rootdir = DEFAULT_RUN_DIR) -> MutableMapping[str, dict]:
@@ -215,7 +215,7 @@ def make_run_store(rootdir: Rootdir = DEFAULT_RUN_DIR) -> MutableMapping[str, di
         A ``MutableMapping[str, dict]`` keyed by ``run_id``.
     """
     json_store = mk_dirs_if_missing(JsonFiles(str(rootdir)))
-    return wrap_kvs(json_store, id_of_key=_meta_filename, key_of_id=_meta_key)
+    return wrap_kvs(json_store, key_encoder=_meta_filename, key_decoder=_meta_key)
 
 
 def check_session_id(session_id) -> str:
@@ -278,7 +278,7 @@ def make_session_store(
     )
     root = root / name
     json_store = mk_dirs_if_missing(JsonFiles(str(root)))
-    return wrap_kvs(json_store, id_of_key=_meta_filename, key_of_id=_meta_key)
+    return wrap_kvs(json_store, key_encoder=_meta_filename, key_decoder=_meta_key)
 
 
 @dataclass
