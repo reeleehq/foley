@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="_static/documentation_options.js?v=628cd971"></script>
+    <script src="_static/documentation_options.js?v=c6f45d68"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.136" />
+  <meta name="docsearch:version" content="0.0.137" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -435,7 +435,7 @@ for what’s next. Follow along in <a class="reference internal" href="#misc/doc
 <p><strong>Rights intent and migration.</strong> <code class="docutils literal notranslate"><span class="pre">foley.plan</span></code>, <code class="docutils literal notranslate"><span class="pre">foley.weave</span></code>, <code class="docutils literal notranslate"><span class="pre">foley.search</span></code> and <code class="docutils literal notranslate"><span class="pre">foley.similar</span></code> take <code class="docutils literal notranslate"><span class="pre">intended_use=</span></code> (an <code class="docutils literal notranslate"><span class="pre">IntendedUse</span></code>: commercial or not, where the sound is shown). Given, the licence gate is fail-closed: search and similar drop every row the intent does not keep, and plan and weave raise <code class="docutils literal notranslate"><span class="pre">foley.LicenseRefusal</span></code> (its <code class="docutils literal notranslate"><span class="pre">.refused</span></code> maps each refused id to the reason), judging every enabled clip by its library record and the narration too when it is a library sound. <code class="docutils literal notranslate"><span class="pre">foley.plan</span></code> without <code class="docutils literal notranslate"><span class="pre">library=</span></code> judges each candidate’s own record (the one it was found with); pass <code class="docutils literal notranslate"><span class="pre">library=</span></code> to judge the library’s current one. A clip whose record cannot be read (a corrupt stored record) counts as having no record, so it is refused under an explicit intent; for the same reason a plain mapping of audio arrays used as <code class="docutils literal notranslate"><span class="pre">library=</span></code> cannot pass an explicit intent (it holds sounds, not licence records) and only works without one. A narration given as audio has no licence and is not judged. The MCP and CLI verbs pass their <code class="docutils literal notranslate"><span class="pre">commercial_ok</span></code> / <code class="docutils literal notranslate"><span class="pre">territory</span></code> through to the same gate. Without <code class="docutils literal notranslate"><span class="pre">intended_use=</span></code>, plan and weave behave as before but emit one <code class="docutils literal notranslate"><span class="pre">FutureWarning</span></code> naming the sounds the default intent (<code class="docutils literal notranslate"><span class="pre">foley.DEFAULT_INTENDED_USE</span></code>: commercial publishing) would refuse: a future release gates by default. Pass <code class="docutils literal notranslate"><span class="pre">intended_use=foley.DEFAULT_INTENDED_USE</span></code> to opt in now, or <code class="docutils literal notranslate"><span class="pre">intended_use=foley.IntendedUse(...)</span></code> for your actual use. Search and similar without it keep today’s commercial-only filter.</p>
 </section>
 <section id="how-it-works-four-stages">
-<h2>How it works — four stages<a class="headerlink" href="#how-it-works-four-stages" title="Link to this heading">#</a></h2>
+<span id="how-it-works--four-stages"></span><h2>How it works — four stages<a class="headerlink" href="#how-it-works-four-stages" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Stage</p></th>
@@ -527,7 +527,7 @@ slash command, and a <code class="docutils literal notranslate"><span class="pre
 research reports below; taste heuristics (layering, ducking, onset, licensing) live in the skill.</p>
 </section>
 <section id="design-research">
-<h2>Design &amp; research<a class="headerlink" href="#design-research" title="Link to this heading">#</a></h2>
+<span id="design--research"></span><h2>Design &amp; research<a class="headerlink" href="#design-research" title="Link to this heading">#</a></h2>
 <p>foley’s design is grounded in five research reports (unified, cited):</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="#misc/docs/design.md"><span class="xref myst">Design</span></a> · <a class="reference internal" href="#misc/docs/roadmap.md"><span class="xref myst">Roadmap</span></a></p></li>
@@ -603,7 +603,7 @@ what’s degraded. Full docs: <strong><a class="reference external" href="https:
 </section>
 </section>
 
-<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-11-10 14:40 UTC from <a href="https://github.com/reeleehq/foley/commit/e610b6e90e1387428e038ff6ab8bfafff076af82">e610b6e</a> (main) · foley 0.0.136 · <a href="about-this-build.html">about this build</a></p>
+<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-11-21 18:56 UTC from <a href="https://github.com/reeleehq/foley/commit/f8500804cf0589470f71eaa3092f4471f95c300c">f850080</a> (main) · foley 0.0.137 · <a href="about-this-build.html">about this build</a></p>
 
                 </article>
               
