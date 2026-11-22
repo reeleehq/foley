@@ -9,21 +9,27 @@ string-split, since the category prefix is variable-length).
 :func:`parse_ucs_name` returns every block (:class:`~.model.UcsName`);
 :func:`parse_ucs_filename` just the category pair; :func:`format_ucs_name` is the
 inverse of :func:`parse_ucs_name` (it sanitises each block so the name parses back). The
-loader merges the in-code seed with an optional full-table JSON drop under
-``taxonomy/data/ucs_full.json`` (JSON wins on CatID collision) — open/closed.
+default table is the shipped UCS v8.2.1 master with the seed's curated phrases added,
+and an optional house drop under ``taxonomy/data/ucs_full.json`` on top (it wins on
+CatID collision) — open/closed. A CatID matches case-insensitively only when it is
+mixed-case (``doorwood`` is ``DOORWood``). An all-capitals one (``RAIN``, ``MIX``,
+``RAW``, ``REF``) must be written as such, and counts only in a name with every
+mandatory block (:data:`UCS_MANDATORY_BLOCKS`), since ``RAW_01.wav`` and
+``MIX_final.wav`` are ordinary names.
 """
 
 from __future__ import annotations
 
 import json
 import re
-from dataclasses import fields as dataclass_fields
+from dataclasses import fields as dataclass_fields, replace
 from functools import lru_cache
 from pathlib import Path
+from types import MappingProxyType
 from typing import Callable, Mapping, Optional, Union
 
 from .model import UcsName, UcsRow, UcsTable
-from .seed import SEED_UCS_TABLE
+from .seed import LEGACY_CATIDS, SEED_UCS_TABLE
 
 _DATA_DIR = Path(__file__).parent / "data"
 _UCS_FULL_FILE = "ucs_full.json"
@@ -48,45 +54,96 @@ def _json_rows(path: Path) -> "list[dict]":
     return doc["rows"] if isinstance(doc, dict) else doc
 
 
-def _table(rows: "dict[str, UcsRow]") -> UcsTable:
+def _table(
+    rows: "dict[str, UcsRow]",
+    *,
+    legacy_catids: "Mapping[str, str]" = MappingProxyType({}),
+) -> UcsTable:
+    """A :class:`UcsTable` of ``rows``; each legacy CatID whose target is a row (and
+    that is not a row itself) resolves to it."""
     return UcsTable(
-        by_catid=dict(rows), order=list(rows), _ci_index={c.lower(): c for c in rows}
+        by_catid=dict(rows),
+        order=list(rows),
+        _ci_index={c.lower(): c for c in rows if not c.isupper()},
+        legacy={
+            old.lower(): new
+            for old, new in legacy_catids.items()
+            if new in rows and old not in rows
+        },
     )
 
 
-def load_ucs_table(*, data_dir=None, include_seed: bool = True) -> UcsTable:
-    """Build the UCS lookup: the seed rows, overridden/extended by a JSON drop.
+def _with_phrases(row: UcsRow, phrases) -> UcsRow:
+    """``row`` with ``phrases`` appended to its synonyms (order kept, no repeats)."""
+    extra = tuple(
+        p for p in dict.fromkeys(s.lower() for s in phrases) if p not in row.synonyms
+    )
+    return replace(row, synonyms=row.synonyms + extra) if extra else row
+
+
+def load_ucs_table(
+    *,
+    data_dir=None,
+    master=UCS_MASTER_FILE,
+    include_seed: bool = True,
+    legacy_catids: "Mapping[str, str]" = LEGACY_CATIDS,
+) -> UcsTable:
+    """Build the UCS lookup: the v8.2.1 master, the seed's phrases, then a JSON drop.
 
     Args:
         data_dir: Directory to look for ``ucs_full.json`` in (defaults to the
-            package's ``taxonomy/data/``). When present, its rows override the
-            seed on CatID collision and add the rest of the ~750-row master.
-        include_seed: Start from the in-code seed table (default ``True``).
+            package's ``taxonomy/data/``). Its rows override any row on CatID
+            collision and add new ones (a house extension of UCS).
+        master: The UCS master JSON (default: the shipped v8.2.1 table). ``None``,
+            or a path that does not exist, falls back to the seed rows alone.
+        include_seed: Add the seed's curated phrases to their master rows (default
+            ``True``); with no master, the seed rows are the table.
+        legacy_catids: Old CatIDs a stored record may carry, mapped to real ones
+            (default :data:`~foley.index.taxonomy.seed.LEGACY_CATIDS`); the table's
+            ``get`` resolves them.
 
     Returns:
         A ready :class:`~foley.index.taxonomy.model.UcsTable`.
+
+    Raises:
+        ValueError: no master and ``include_seed=False``: there would be no rows.
+
+    >>> t = load_ucs_table()
+    >>> len(t), t.get("RAIN").category, "rain on window" in t.get("RAIN").synonyms
+    (753, 'RAIN', True)
     """
+    master_path = Path(master) if master else None
     rows: dict[str, UcsRow] = {}
+    if master_path is not None and master_path.exists():
+        rows = {d["catid"]: _row_from_dict(d) for d in _json_rows(master_path)}
+    elif not include_seed:
+        raise ValueError(
+            f"no UCS master at {master!r} and include_seed=False: the table would be "
+            "empty (pass include_seed=True for the seed rows alone)"
+        )
     if include_seed:
         for d in SEED_UCS_TABLE:
-            rows[d["catid"]] = _row_from_dict(d)
+            known = rows.get(d["catid"])
+            rows[d["catid"]] = (
+                _with_phrases(known, d["synonyms"])
+                if known is not None
+                else _row_from_dict({**d, "confident": True})
+            )
     search_dir = Path(data_dir) if data_dir else _DATA_DIR
     full = search_dir / _UCS_FULL_FILE
     if full.exists():
         for d in _json_rows(full):
             rows[d["catid"]] = _row_from_dict(d)
-    return _table(rows)
+    return _table(rows, legacy_catids=legacy_catids)
 
 
 @lru_cache(maxsize=1)
 def load_ucs_master() -> UcsTable:
-    """The authoritative UCS v8.2.1 master (753 rows, 82 categories), without the seed.
+    """The UCS v8.2.1 master as shipped (753 rows, 82 categories): no seed, no drop.
 
-    Opt-in for now: the default table (:func:`default_ucs_table`) is still the
-    in-code seed, whose CatIDs mostly predate the master. Pass it where a table is
-    taken (``parse_ucs_name(name, table=load_ucs_master())``). Row fields are the
-    master's, verbatim (``SubCategory`` in capitals: ``('DOORS', 'WOOD')``), with its
-    explanation and synonyms (lowercased).
+    Row fields are the master's, verbatim (``SubCategory`` in capitals:
+    ``('DOORS', 'WOOD')``), with its explanation and synonyms (lowercased). The
+    default table (:func:`default_ucs_table`) is this plus the seed's phrases.
 
     >>> t = load_ucs_master()
     >>> len(t), t.get("doorwood").subcategory, "WOODHndl" in t
@@ -97,7 +154,7 @@ def load_ucs_master() -> UcsTable:
 
 @lru_cache(maxsize=1)
 def default_ucs_table() -> UcsTable:
-    """The process-wide default UCS table (seed + any JSON drop), built once."""
+    """The process-wide default UCS table (master + seed phrases + any drop), built once."""
     return load_ucs_table()
 
 
@@ -105,6 +162,18 @@ def default_ucs_table() -> UcsTable:
 #: UserCategory to the CatID and VendorCategory to the FXName.
 BLOCK_SEP = "_"
 ATTACH_SEP = "-"
+
+#: The blocks every UCS filename has (``CatID_FXName_CreatorID_SourceID``). A name
+#: whose CatID is all capitals (``RAW``, ``MIX``, ``RAIN``) must have all of them to
+#: read as UCS: with fewer, ``RAW_01.wav`` is just a name.
+UCS_MANDATORY_BLOCKS = ("catid", "fx_name", "creator_id", "source_id")
+
+
+def _reads_as_word(token: str, row: UcsRow) -> bool:
+    """Whether a filename's CatID ``token`` is an all-capitals CatID (``RAW``), as
+    written: an ordinary name may start with it too."""
+    return token == row.catid and token.isupper()
+
 
 #: A filename extension: a short alphanumeric suffix (``.wav``, ``.flac``). A dot
 #: anywhere else (``Creak 5.1_JD``) belongs to the name.
@@ -158,15 +227,17 @@ def parse_ucs_name(
 ) -> Optional[UcsName]:
     """Every block of a UCS filename as a :class:`~.model.UcsName`, else ``None``.
 
-    Fail-quiet like :func:`parse_ucs_filename`: ``None`` when the name has no ``_`` or
-    its CatID is not in the table. Blocks past SourceID are the UserData (rejoined
-    with ``_``); a block the name lacks is ``None``. The FXName block's head before a
-    hyphen is the VendorCategory only when ``is_vendor_tag`` accepts it
-    (:func:`looks_like_vendor_tag`), so ``Sci-Fi Door`` stays whole.
+    Fail-quiet like :func:`parse_ucs_filename`: ``None`` when the name has no ``_``,
+    its CatID is not in the table, or its CatID is all capitals (``RAW``, ``MIX``) and
+    it lacks a mandatory block (:data:`UCS_MANDATORY_BLOCKS`). Blocks past SourceID
+    are the UserData (rejoined with ``_``); a block the name lacks is ``None``. The
+    FXName block's head before a hyphen is the VendorCategory only when
+    ``is_vendor_tag`` accepts it (:func:`looks_like_vendor_tag`), so ``Sci-Fi Door``
+    stays whole.
 
     >>> n = parse_ucs_name("DOORWood-Gate_SCIFI-Creak Open_JD_NYC_take 2.wav")
     >>> (n.catid, n.category, n.subcategory, n.user_category)
-    ('DOORWood', 'DOORS', 'Wood', 'Gate')
+    ('DOORWood', 'DOORS', 'WOOD', 'Gate')
     >>> (n.vendor_category, n.fx_name, n.creator_id, n.source_id, n.user_data)
     ('SCIFI', 'Creak Open', 'JD', 'NYC', 'take 2')
     >>> m = parse_ucs_name("DOORWood_Sci-Fi Slam 5.1_JD_NYC")
@@ -176,13 +247,17 @@ def parse_ucs_name(
     True
     >>> parse_ucs_name("NOTACAT_x_y_z.wav") is None, parse_ucs_name("plain.wav") is None
     (True, True)
+    >>> parse_ucs_name("MIX_final.wav") is None, parse_ucs_name("RAIN_Heavy_JD_NYC.wav").catid
+    (True, 'RAIN')
     """
     blocks = _ucs_blocks(filename)
     if not blocks:
         return None
     catid, user_category = _split_attached(blocks[0])
-    row = (table or default_ucs_table()).get(catid)
+    row = (table if table is not None else default_ucs_table()).get(catid)
     if row is None:
+        return None
+    if _reads_as_word(catid, row) and len(blocks) < len(UCS_MANDATORY_BLOCKS):
         return None
 
     def block(i: int) -> Optional[str]:
@@ -303,7 +378,8 @@ def format_ucs_name(
     ``format_ucs_name(parse_ucs_name(f))`` is ``f`` for any ``f`` this function made.
     The CatID is looked up in ``table`` (default: :func:`default_ucs_table`) and
     written in its canonical spelling; an unknown one raises, since the name would
-    not parse.
+    not parse. An all-capitals CatID keeps every mandatory block, empty if need be
+    (``RAIN_Heavy__``), so the name reads back as UCS.
 
     Args:
         name: The blocks to format (``category`` / ``subcategory`` are ignored).
@@ -375,8 +451,9 @@ def format_ucs_name(
         ]
         if any(user_data):
             parts += user_data
-        else:
-            while len(parts) > 2 and not parts[-1]:
+        else:  # an all-capitals CatID keeps its mandatory blocks, empty or not
+            keep = len(UCS_MANDATORY_BLOCKS) if row.catid.isupper() else 2
+            while len(parts) > keep and not parts[-1]:
                 parts.pop()
         return BLOCK_SEP.join(parts) + suffix
 

@@ -13,14 +13,33 @@ Progressive disclosure — the one-call path is::
     resolve_catid(caption="a heavy wooden door creaks open")   # -> CatIdResolution
 
 Everything else (the UCS table, the AudioSet map, a custom resolver) is optional
-keyword injection. The seed tables live in code; the full UCS master and the
-EnvSound-UCS mapping drop in later as JSON under ``data/`` with no logic change.
+keyword injection. The default UCS table is the shipped v8.2.1 master (753
+CatIDs, with their synonyms) plus the in-code seed's curated phrases; a house
+extension and the EnvSound-UCS AudioSet mapping drop in as JSON under ``data/``
+with no logic change.
 """
 
 from .audioset import default_audioset_ucs_map, load_audioset_ucs_map
-from .model import AudioSetUcsMap, CatIdResolution, UcsName, UcsRow, UcsTable
-from .resolver import KeywordResolver, TaxonomyResolver, resolve_catid
+from .model import (
+    GENERIC_SUBCATEGORIES,
+    NON_SOUND_CATEGORIES,
+    AudioSetUcsMap,
+    CatIdResolution,
+    UcsName,
+    UcsRow,
+    UcsTable,
+)
+from .resolver import (
+    DEFAULT_MATCH_POLICY,
+    RECORD_MIN_CONFIDENCE,
+    KeywordResolver,
+    MatchPolicy,
+    TaxonomyResolver,
+    resolve_catid,
+)
+from .seed import LEGACY_CATIDS
 from .ucs import (
+    UCS_MANDATORY_BLOCKS,
     UCS_NAME_BLOCKS,
     UCS_NAME_MAX_BYTES,
     default_ucs_table,
@@ -39,6 +58,8 @@ __all__ = [
     "UcsTable",
     "AudioSetUcsMap",
     "CatIdResolution",
+    "GENERIC_SUBCATEGORIES",
+    "NON_SOUND_CATEGORIES",
     # ucs
     "load_ucs_table",
     "load_ucs_master",
@@ -47,7 +68,9 @@ __all__ = [
     "parse_ucs_name",
     "format_ucs_name",
     "UCS_NAME_BLOCKS",
+    "UCS_MANDATORY_BLOCKS",
     "UCS_NAME_MAX_BYTES",
+    "LEGACY_CATIDS",
     "parse_catid_token",
     # audioset
     "load_audioset_ucs_map",
@@ -56,4 +79,7 @@ __all__ = [
     "resolve_catid",
     "TaxonomyResolver",
     "KeywordResolver",
+    "MatchPolicy",
+    "DEFAULT_MATCH_POLICY",
+    "RECORD_MIN_CONFIDENCE",
 ]
