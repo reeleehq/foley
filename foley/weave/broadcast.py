@@ -86,19 +86,26 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Callable, Optional, Sequence, Union
 
 from ..base import LicenseRecord, SoundRecord
-from mixing.treatment import (  # the device colouring moved to mixing (#284)
-    DEFAULT_CEILING_DB,
-    TREATMENTS,
-    Treatment,
-    TreatmentPreset,
-    apply_treatment,
-    resolve_treatment,
-)
-
 from .mix import DUCK_ATTACK_S, DUCK_DB, DUCK_RELEASE_S
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
+    from mixing.treatment import Treatment
     from numpy import ndarray
+
+#: The device colouring lives in ``mixing.treatment`` (#284), imported on first use so
+#: that importing ``foley.weave`` stays dol-only (the purity test pins it).
+_MIXING_TREATMENT_NAMES = frozenset(
+    {"TREATMENTS", "TreatmentPreset", "apply_treatment", "resolve_treatment"}
+)
+
+
+def __getattr__(name: str):
+    if name in _MIXING_TREATMENT_NAMES:
+        from mixing import treatment
+
+        return getattr(treatment, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
 
 # --- named defaults (no literal hides in code) -------------------------------------
 #: Silence after each spoken line (s); the 0.6 s that read naturally in the #108 starter.
@@ -113,8 +120,8 @@ ACTIVITY_THRESHOLD: float = 0.5
 LOOP_CROSSFADE_S: float = 0.05
 #: The device a broadcast is heard through when none is named.
 DEFAULT_TREATMENT: str = "am_radio"
-#: The treatment's peak ceiling (dBFS) after make-up gain (mixing's own default).
-TREATMENT_CEILING_DB: float = DEFAULT_CEILING_DB
+#: The treatment's peak ceiling (dBFS) after make-up gain (the same as mixing.treatment's default).
+TREATMENT_CEILING_DB: float = -1.0
 #: The ``transformations`` op recorded on the result's licence.
 BROADCAST_OP: str = "broadcast_bed"
 #: The licence id of rights that were not given (fail-closed, never refused).
@@ -146,7 +153,7 @@ def _limit(samples, sample_rate: int, ceiling_db: float):
     return limited if samples.ndim == 2 else limited[:, 0]
 
 
-def _treatment_name(treatment: Treatment) -> str:
+def _treatment_name(treatment: "Treatment") -> str:
     """The device's name as recorded on the result (``'dry'`` for none)."""
     if treatment is None or isinstance(treatment, str):
         return treatment or "dry"
@@ -874,7 +881,7 @@ def broadcast_bed(
     *,
     bed=None,
     bed_prompt: Optional[str] = None,
-    treatment: Treatment = DEFAULT_TREATMENT,
+    treatment: "Treatment" = DEFAULT_TREATMENT,
     gap_s: float = LINE_GAP_S,
     duration: Optional[float] = None,
     bed_under_speech_db: float = BED_UNDER_SPEECH_DB,
@@ -978,6 +985,8 @@ def broadcast_bed(
     from .mix import declick
 
     sr = WORKING_SAMPLE_RATE if sr is None else sr
+    from mixing.treatment import resolve_treatment
+
     device = resolve_treatment(treatment)
     _check_duck_db(duck_db)
     _check_lines(lines, tts)
