@@ -35,6 +35,7 @@ from __future__ import annotations
 import io
 import math
 import os
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, BinaryIO, Callable, Optional, Union
 
 if TYPE_CHECKING:  # pragma: no cover - typing only, never imported at runtime
@@ -669,6 +670,217 @@ def loudness_normalize(
     if measured <= LUFS_GATE_FLOOR:  # silent, too short or near-silent: unchanged
         return samples, measured
     return samples * (10.0 ** (gain_db / 20.0)), measured
+
+
+# --- the accent-ready clip (foley#296) -------------------------------------------
+
+#: An accent's level: a sound effect that punctuates, under dialogue and music.
+ACCENT_TARGET_LUFS: float = -30.0
+#: The clip starts at the first sample within this many dB of its loudest window.
+ACCENT_START_DB: float = 35.0
+#: The clip keeps its decay down to this many dB under its loudest window.
+ACCENT_TAIL_DB: float = 50.0
+#: The window the start and the tail are judged on (a transient's scale).
+ACCENT_WINDOW_S: float = 0.002
+#: A declick at the start, short enough to keep the transient.
+ACCENT_FADE_IN_S: float = 0.003
+#: The fade that ends the kept decay.
+ACCENT_FADE_OUT_S: float = 0.04
+#: The sample-peak ceiling an accent is levelled under (dBFS).
+ACCENT_PEAK_CEILING_DBFS: float = -3.0
+
+
+@dataclass(frozen=True)
+class AccentReport:
+    """What :func:`accent` made, measured on the clip it returns.
+
+    ``lufs`` of a clip shorter than one BS.1770 block (0.4 s) is measured with the
+    clip padded with silence to one block (``lufs_padded``): a convention that lets
+    a one-shot be levelled at all, not a BS.1770 measurement. ``onset_s`` is where
+    the transient lands in the clip (``0.0`` unless ``pre_s`` kept a lead-in);
+    ``trimmed_start_s`` is how much lead-in was cut from the source.
+    """
+
+    duration_s: float
+    lufs: float
+    lufs_padded: bool
+    peak_dbfs: float
+    onset_s: float
+    trimmed_start_s: float
+    gain_db: float
+
+
+def _window_peaks(
+    samples: "ndarray", sample_rate: int, window_s: float
+) -> "tuple[ndarray, ndarray, int]":
+    """``(|x| per sample (channels folded by max), peak per window, window length)``."""
+    import numpy as np
+
+    mag = np.abs(np.asarray(samples, dtype=np.float64))
+    if mag.ndim == 2:
+        mag = mag.max(axis=1)
+    h = max(1, int(round(window_s * sample_rate)))
+    pad = (-len(mag)) % h
+    windows = np.concatenate([mag, np.zeros(pad)]).reshape(-1, h).max(axis=1)
+    return mag, windows, h
+
+
+def onset_offset_s(
+    samples: "ndarray",
+    sample_rate: int,
+    *,
+    within_db: float = ACCENT_START_DB,
+    window_s: float = ACCENT_WINDOW_S,
+) -> float:
+    """Seconds to the first sample within ``within_db`` of the clip's loudest window:
+    where its transient starts (``0.0`` for a silent clip).
+
+    Sample-exact, unlike a hop-based trim (librosa's starts up to a hop early).
+
+    >>> import numpy as np
+    >>> x = np.zeros(1000); x[250:] = 0.5
+    >>> onset_offset_s(x, 1000)
+    0.25
+    """
+    import numpy as np
+
+    mag, windows, _h = _window_peaks(samples, sample_rate, window_s)
+    if not windows.size or windows.max() <= 0:
+        return 0.0
+    threshold = windows.max() * 10.0 ** (-within_db / 20.0)
+    return float(np.argmax(mag >= threshold) / sample_rate)
+
+
+def accent(
+    samples: "ndarray",
+    sample_rate: int,
+    *,
+    target_lufs: float = ACCENT_TARGET_LUFS,
+    start_db: float = ACCENT_START_DB,
+    tail_db: float = ACCENT_TAIL_DB,
+    window_s: float = ACCENT_WINDOW_S,
+    pre_s: float = 0.0,
+    fade_in_s: float = ACCENT_FADE_IN_S,
+    fade_out_s: float = ACCENT_FADE_OUT_S,
+    max_len_s: Optional[float] = None,
+    peak_ceiling_dbfs: float = ACCENT_PEAK_CEILING_DBFS,
+    min_block_s: float = LUFS_MIN_BLOCK_S,
+    meter: Optional[Meter] = None,
+) -> "tuple[ndarray, AccentReport]":
+    """An accent-ready clip: its transient at t=0, its decay kept, its level set.
+
+    A late transient makes a sound feel late on its cue, a trim that cuts the decay
+    makes it clipped, and a one-shot shorter than one BS.1770 block is left unlevelled
+    by :func:`loudness_normalize`. In order:
+
+    1. **start**: the first sample within ``start_db`` of the loudest ``window_s``
+       window (:func:`onset_offset_s`), keeping ``pre_s`` before it;
+    2. **tail**: up to the last window within ``tail_db`` of the loudest, so the decay
+       stays; then at most ``max_len_s``;
+    3. **fades**: ``fade_in_s`` (a declick) and ``fade_out_s``;
+    4. **level**: to ``target_lufs`` by :func:`loudness_gain_db` (silent and near-silent
+       clips are not amplified; the sample peak stays under ``peak_ceiling_dbfs``); a
+       clip shorter than ``min_block_s`` is measured padded with silence to one block,
+       and the report says so (``lufs_padded``).
+
+    Args:
+        samples: Working array (mono or multichannel, time on axis 0).
+        sample_rate: Sample rate in Hz.
+
+    Returns:
+        ``(clip, report)``: the clip in ``samples``' dtype, and an :class:`AccentReport`
+        measured on it. A silent clip comes back unchanged with ``gain_db`` 0.
+
+    Lazy dependencies: ``numpy``, :mod:`mixing.loudness` (the meter).
+    """
+    import numpy as np
+
+    x = np.asarray(samples)
+    mag, windows, h = _window_peaks(x, sample_rate, window_s)
+    if not windows.size or windows.max() <= 0:
+        return x, _accent_report(
+            x,
+            sample_rate,
+            gain_db=0.0,
+            trimmed=0,
+            min_block_s=min_block_s,
+            meter=meter,
+            start_db=start_db,
+            window_s=window_s,
+        )
+    loudest = windows.max()
+    onset = int(np.argmax(mag >= loudest * 10.0 ** (-start_db / 20.0)))
+    start = max(0, onset - int(round(pre_s * sample_rate)))
+    last = int(np.flatnonzero(windows >= loudest * 10.0 ** (-tail_db / 20.0))[-1])
+    end = min(len(mag), (last + 1) * h)
+    if max_len_s is not None:
+        end = min(end, start + int(round(max_len_s * sample_rate)))
+    clip = fade(x[start:end], sample_rate, fade_in_s=fade_in_s, fade_out_s=fade_out_s)
+    gain_db, _measured = loudness_gain_db(
+        _padded_to_block(clip, sample_rate, min_block_s),
+        sample_rate,
+        target_lufs=target_lufs,
+        peak_ceiling_dbfs=peak_ceiling_dbfs,
+        min_block_s=min_block_s,
+        meter=meter,
+    )
+    out = (clip * (10.0 ** (gain_db / 20.0))).astype(x.dtype, copy=False)
+    return out, _accent_report(
+        out,
+        sample_rate,
+        gain_db=gain_db,
+        trimmed=start,
+        min_block_s=min_block_s,
+        meter=meter,
+        start_db=start_db,
+        window_s=window_s,
+    )
+
+
+def _padded_to_block(
+    samples: "ndarray", sample_rate: int, min_block_s: float
+) -> "ndarray":
+    """``samples`` padded with silence to one gating block, when shorter."""
+    import numpy as np
+
+    short = math.ceil(min_block_s * sample_rate) - samples.shape[0]
+    if short <= 0:
+        return samples
+    return np.concatenate(
+        [samples, np.zeros((short,) + samples.shape[1:], dtype=samples.dtype)]
+    )
+
+
+def _accent_report(
+    clip: "ndarray",
+    sample_rate: int,
+    *,
+    gain_db: float,
+    trimmed: int,
+    min_block_s: float,
+    meter: Optional[Meter],
+    start_db: float,
+    window_s: float,
+) -> AccentReport:
+    import numpy as np
+
+    measured = _padded_to_block(clip, sample_rate, min_block_s)
+    peak = float(np.max(np.abs(clip))) if clip.size else 0.0
+    return AccentReport(
+        duration_s=clip.shape[0] / sample_rate,
+        lufs=integrated_lufs(
+            measured, sample_rate, min_block_s=min_block_s, meter=meter
+        )
+        if peak > 0
+        else float("-inf"),
+        lufs_padded=measured is not clip,
+        peak_dbfs=20.0 * math.log10(peak) if peak > 0 else float("-inf"),
+        onset_s=onset_offset_s(
+            clip, sample_rate, within_db=start_db, window_s=window_s
+        ),
+        trimmed_start_s=trimmed / sample_rate,
+        gain_db=float(gain_db),
+    )
 
 
 def to_working(
