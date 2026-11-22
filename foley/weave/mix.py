@@ -135,20 +135,18 @@ def attack_release_envelope(
     release: float = DUCK_RELEASE_S,
     initial: float = 1.0,
 ) -> "ndarray":
-    """Smooth a piecewise-constant gain ``target`` with a one-pole attack/release follower.
+    """Smooth a gain ``target`` with the one-pole attack/release follower.
 
-    The recurrence is ``y[i] = t[i] + c·(y[i-1] - t[i])`` with ``c`` the attack
-    coefficient while the gain falls (``t[i] < y[i-1]``) and the release one otherwise,
-    starting from ``y[-1] = initial``. Within a run of equal targets the follower never
-    crosses the target, so ``c`` is fixed for the run and the recurrence has the closed
-    form ``y = t + c**k·(y0 - t)``: each run is one vectorised numpy expression, and the
-    Python loop is over runs (a handful per speech span), not samples. It is built for
-    piecewise-constant targets (on/off gates): one numpy call per stretch means a
-    target that changes every sample is slower than a plain per-sample loop.
+    ``mixing.loudness.attack_release``, the one follower behind mixing's ducking and
+    compressor too (reeleehq/foley#306): ``y[i] = t[i] + c·(y[i-1] - t[i])`` with ``c``
+    the attack coefficient while the gain falls and the release one otherwise, from
+    ``y[-1] = initial``. On a piecewise-constant target (an on/off gate) mixing solves
+    each run in closed form, so it is fast per sample; a target that changes every
+    sample is looped over.
 
     Args:
         target: ``(n,)`` gain the follower chases (linear; piecewise constant).
-        sample_rate: Sample rate in Hz.
+        sample_rate: Sample rate in Hz (one step per sample).
         attack: Time constant (s) while the gain falls.
         release: Time constant (s) while the gain rises.
         initial: The follower's value before the first sample.
@@ -161,21 +159,15 @@ def attack_release_envelope(
     [1.0, 0.368, 0.135]
     """
     import numpy as np
+    from mixing.loudness import attack_release
 
-    t = np.asarray(target, dtype="float64")
-    ca = float(np.exp(-1.0 / max(1e-9, attack * sample_rate)))
-    cr = float(np.exp(-1.0 / max(1e-9, release * sample_rate)))
-    out = np.empty(t.shape[0], dtype="float64")
-    bounds = np.concatenate(([0], np.flatnonzero(t[1:] != t[:-1]) + 1, [t.shape[0]]))
-    acc = float(initial)
-    for a, b in zip(bounds[:-1], bounds[1:]):
-        if b <= a:
-            continue
-        level = t[a]
-        coef = ca if level < acc else cr
-        out[a:b] = level + np.power(coef, np.arange(1, b - a + 1)) * (acc - level)
-        acc = float(out[b - 1])
-    return out.astype("float32")
+    return attack_release(
+        np.asarray(target, dtype="float64"),
+        step_s=1.0 / sample_rate,
+        attack_s=attack,
+        release_s=release,
+        initial=initial,
+    ).astype("float32")
 
 
 def _one_pole_lowpass(clip: "ndarray", coef: float) -> "ndarray":
