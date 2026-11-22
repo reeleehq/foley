@@ -35,7 +35,15 @@ import weakref
 from collections import defaultdict
 from dataclasses import dataclass, field, replace
 from types import MappingProxyType
-from typing import Callable, Iterable, Mapping, Optional, Protocol, Sequence, runtime_checkable
+from typing import (
+    Callable,
+    Iterable,
+    Mapping,
+    Optional,
+    Protocol,
+    Sequence,
+    runtime_checkable,
+)
 
 from ...analysis import tokenize
 from .audioset import default_audioset_ucs_map
@@ -85,6 +93,7 @@ DEFAULT_AMBIGUOUS_WORDS: frozenset = frozenset(
 DEFAULT_KIND_WEIGHTS: "Mapping[str, float]" = MappingProxyType(
     {"subcategory": 3.0, "category": 3.0, "synonym": 2.0}
 )
+
 
 def inverse_sqrt_share(shared_by: int, n_rows: int) -> float:  # noqa: ARG001
     """A synonym listed by ``shared_by`` rows weighs ``1/sqrt(shared_by)`` of its kind's
