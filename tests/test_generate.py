@@ -593,7 +593,8 @@ def test_stable_audio_loop_and_format_warn_no_kwarg():
 def test_stable_audio_seed_builds_generator():
     torch = pytest.importorskip("torch")
     pipe = FakePipeline()
-    clip = _sa_adapter(pipe).generate("creak", seed=42)
+    # no make_generator: the default seam must build a real torch.Generator
+    clip = StableAudioAdapter(pipeline=pipe).generate("creak", seed=42)
     assert clip.candidate.sound.license.generation_seed == 42
     assert isinstance(pipe.calls[0]["generator"], torch.Generator)
 
