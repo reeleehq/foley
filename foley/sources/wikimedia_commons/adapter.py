@@ -102,6 +102,7 @@ class WikimediaCommonsAdapter:
         k: int = 15,
         page: int = 1,
         provider_params: Optional[dict] = None,
+        include_pronunciations: bool = False,
         **kw,
     ) -> "list[Candidate]":
         """Search Commons audio for ``query``; return licence-checked candidates.
@@ -114,6 +115,8 @@ class WikimediaCommonsAdapter:
             page: The results page (1-based, ``k`` per page), sent as an offset.
             provider_params: Native search params merged over the translated ones
                 (#61); the per-item licence check still applies.
+            include_pronunciations: Keep recordings of a person saying a word
+                (Lingua Libre, ``<lang>-<word>.ogg``); dropped by default (#295).
         """
         wanted = wanted_license_ids(self.config, license)
         if wanted == []:  # a licence this source does not accept: nothing can match
@@ -124,7 +127,8 @@ class WikimediaCommonsAdapter:
             gsrnamespace=api["namespace_file"],
             gsrsearch=query + api["search_suffix"],
             gsrlimit=page_size(self.config, k),
-            prop="imageinfo",
+            prop="imageinfo|categories",
+            cllimit="max",
             iiprop=_IMAGEINFO,
         )
         params.update(paging_params(self.config, page, params["gsrlimit"]))
@@ -139,6 +143,8 @@ class WikimediaCommonsAdapter:
         )
         out = []
         for page in pages:
+            if not include_pronunciations and self._is_pronunciation(page):
+                continue
             cand = self._candidate(page, only=wanted)
             if cand is not None:
                 out.append(cand)
@@ -178,6 +184,16 @@ class WikimediaCommonsAdapter:
         )
 
     # -- page -> licence-checked Candidate ----------------------------------
+
+    def _is_pronunciation(self, page: dict) -> bool:
+        """Whether a hit is a person saying a word, not a sound effect (#295)."""
+        rule = self.config.get("exclude") or {}
+        pattern = rule.get("pronunciation_title")
+        if pattern and re.search(pattern, str(page.get("title", ""))):
+            return True
+        words = [w.lower() for w in rule.get("pronunciation_category_words", ())]
+        names = (str(c.get("title", "")).lower() for c in page.get("categories") or ())
+        return any(w in name for name in names for w in words)
 
     def _candidate(self, page: dict, *, only: Optional[list]) -> Optional[Candidate]:
         infos = page.get("imageinfo") or []
