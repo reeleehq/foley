@@ -31,6 +31,15 @@ SOURCE_CONFIG = {
         # offset + limit up to about 10,000.
         "page": {"native_name": "gsroffset", "as": "offset", "result_window": 10000},
     },
+    # A person *saying* a word is not a sound effect (#295). Commons is full of them
+    # (Lingua Libre's ``LL-Q…`` files, ``En-us-stumble.ogg``), and they pass the licence
+    # gate. A file is dropped when its title matches ``pronunciation_title`` or one of
+    # its categories contains a ``pronunciation_category_words`` entry; the search's
+    # ``include_pronunciations=True`` keeps them (speech uses).
+    "exclude": {
+        "pronunciation_title": r"^File:LL-Q\d+ ",
+        "pronunciation_category_words": ["pronunciation"],
+    },
     "supported_affordances": ["query", "k", "license", "page"],
     "on_unsupported_param": "warn",
     "api": {
@@ -67,6 +76,7 @@ SOURCE_CONFIG = {
             "gsrsearch",
             "gsrnamespace",
             "prop",
+            "cllimit",
             "iiprop",
             "pageids",
             "titles",
