@@ -32,7 +32,9 @@ def _text(rng: random.Random):
 def _random_blocks(rng: random.Random) -> dict:
     catid = rng.choice(default_ucs_table().order)
     blocks = {k: _text(rng) for k in UCS_NAME_BLOCKS}
-    blocks["catid"] = rng.choice([catid, catid.lower(), catid.upper()])
+    # an all-capitals CatID (RAIN) is case-sensitive; a mixed-case one is not
+    spellings = [catid] if catid.isupper() else [catid, catid.lower(), catid.upper()]
+    blocks["catid"] = rng.choice(spellings)
     if rng.random() < 0.5:
         blocks["vendor_category"] = None
     return blocks
@@ -108,8 +110,7 @@ def test_a_trailing_extension_lookalike_is_unmade_in_a_stem():
 
 def test_the_catid_must_be_in_the_table():
     with pytest.raises(ValueError, match="not a CatID"):
-        # a master CatID, not in the seed
-        format_ucs_name(catid="WOODHndl", fx_name="x")
+        format_ucs_name(catid="WOODHandl", fx_name="x")  # 8.2.0's, renamed in 8.2.1
     master = load_ucs_master()
     name = format_ucs_name(catid="woodhndl", fx_name="x", table=master)
     assert (

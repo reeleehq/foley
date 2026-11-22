@@ -221,3 +221,16 @@ def test_a_video_billed_source_is_never_settled_below_its_exact_quote():
     per_call = GenerationPlan(backend="x", prompt="", config={"pricing": {"unit": "per_second"}},
                               affordances={}, estimate_usd=0.2)
     assert _billed(per_call, 0.1) == 0.1  # elsewhere the actual replaces the estimate
+
+
+def test_a_settle_above_the_cap_is_reported_as_overshoot_and_refuses_the_next_call():
+    """#293: the cap is checked against estimates; an actual above it is visible, never hidden."""
+    from foley.agent.policy import Budget, BudgetExceeded
+
+    b = Budget(max_usd=0.5)
+    assert b.overshoot_usd == 0.0
+    b.reserve(0.4, what="gen")
+    b.settle(0.4, 0.7)
+    assert round(b.spent_usd, 10) == 0.7 and round(b.overshoot_usd, 10) == 0.2
+    with pytest.raises(BudgetExceeded):
+        b.reserve(0.0, what="next")

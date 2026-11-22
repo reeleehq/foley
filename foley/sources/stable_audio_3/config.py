@@ -68,6 +68,9 @@ SOURCE_CONFIG = {
         "home_env": "FOLEY_SA3_DIR",
         "tflite_subdir": "optimized/tflite",
         "repo_url": "https://github.com/Stability-AI/stable-audio-3",
+        # The commit the script's flags were written against (#298): the setup hint
+        # checks out exactly this, so what a user runs does not depend on the day.
+        "repo_commit": "77e0398c26f7d22d801ec1bb036307e8b231f741",
         "timeout_s": 900,
     },
     "output": {"default_format": "wav", "returns": "bytes", "storage": "by_value"},
