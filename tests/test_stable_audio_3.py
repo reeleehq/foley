@@ -22,6 +22,7 @@ from foley.sources.stable_audio_3.adapter import (  # noqa: E402
 )
 
 from ._fakes import make_sa3_home  # noqa: E402
+from foley.sources.stable_audio_3.config import SOURCE_CONFIG  # noqa: E402
 
 SR = 44_100
 
@@ -97,9 +98,10 @@ def test_distilled_ignores_prompt_influence_and_negative_prompt_with_notes(home)
 
 def test_a_missing_runtime_says_how_to_set_it_up(tmp_path):
     ad = StableAudio3Adapter(runner=FakeRunner(), home=tmp_path)
-    with pytest.raises(SourceConfigurationError, match="git clone"):
+    with pytest.raises(SourceConfigurationError, match="uv venv"):
         ad.generate("x")
     assert "uv venv" in setup_hint()
+    assert SOURCE_CONFIG["native_defaults"]["repo_commit"] in setup_hint()  # pinned (#298)
 
 
 def test_runtime_ready_follows_the_env_dir(home, tmp_path, monkeypatch):
@@ -121,7 +123,7 @@ def test_offline_never_downloads_and_missing_weights_name_the_fetch(home, monkey
         code=1, write=False, stderr="huggingface_hub.errors.LocalEntryNotFoundError: x"
     )
     ad = StableAudio3Adapter(runner=run, home=home)
-    with offline(), pytest.raises(ModelNotCached, match="git clone"):
+    with offline(), pytest.raises(ModelNotCached, match="uv venv"):
         ad.generate("x")
     assert run.calls[0]["env"]["HF_HUB_OFFLINE"] == "1"
     online = FakeRunner()
@@ -146,7 +148,8 @@ def test_the_runtime_is_declared_for_check_requirements(home, monkeypatch):
     assert check_requirements(names=(name,)) == {name: False}
     install = verify_and_setup(names=(name,))[name]["install"]
     # the shell hint is POSIX only (.venv/bin); elsewhere it points at the project page
-    assert ("git clone" in install) == sys.platform.startswith(("darwin", "linux"))
+    pin = SOURCE_CONFIG["native_defaults"]["repo_commit"]
+    assert (pin in install) == sys.platform.startswith(("darwin", "linux"))  # #298
 
 
 def test_the_local_default_precedes_stable_audio_open_in_the_order():
@@ -237,7 +240,7 @@ def test_provider_flag_abbreviations_cannot_override_core_flags(tmp_path):
 
     a = sa3.Adapter()
     cmd = a._command(
-        tmp_path, "p", {"see": 7, "seconds": 2.0, "steps": 8, "cfg": 1.0, "seed": 3}, tmp_path / "o.wav"
+        tmp_path / "python", tmp_path, "p", {"see": 7, "seconds": 2.0, "steps": 8, "cfg": 1.0, "seed": 3}, tmp_path / "o.wav"
     )
     assert cmd.index("--see") < cmd.index("--seed")
     assert cmd[cmd.index("--seed") + 1] == "3"
@@ -329,7 +332,7 @@ _MISSING_WEIGHTS_ON_STDOUT = (
 @_POSIX_VENV
 def test_missing_weights_named_on_stdout_are_model_not_cached_offline(tmp_path):
     home = _stand_in_home(tmp_path, _MISSING_WEIGHTS_ON_STDOUT)
-    with offline(), pytest.raises(ModelNotCached, match="git clone") as err:
+    with offline(), pytest.raises(ModelNotCached, match="uv venv") as err:
         StableAudio3Adapter(home=home).invoke_native("x", _NATIVE)
     assert "LocalEntryNotFoundError: no sm-sfx in the cache" in str(err.value)
 

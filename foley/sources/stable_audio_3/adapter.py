@@ -5,7 +5,7 @@ The model is not a pip package: Stability ships it as ``optimized/tflite`` in
 first use from the ungated ``stabilityai/stable-audio-3-optimized``). The adapter drives
 that checkout's ``scripts/sa3_tflite.py`` with the checkout's own virtualenv Python, so
 foley takes on no model dependency (the process and venv helpers are ``ps.isolated``'s,
-stdlib-only). Setup is two commands
+stdlib-only). The checkout is pinned to ``repo_commit`` (:func:`sa3_runtime`, #298). Setup is two commands
 (:func:`setup_hint`); a missing checkout raises :class:`SourceConfigurationError` with them,
 which the generation order treats as "skip this backend".
 
@@ -32,7 +32,14 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
-from ps.isolated import Runner, run_process, venv_python
+from ps.isolated import (
+    GitSource,
+    Runner,
+    Runtime,
+    RuntimeNotInstalled,
+    SourceMismatch,
+    run_process,
+)
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
 from ..base import (
@@ -53,37 +60,49 @@ from .config import SOURCE_CONFIG
 _WEIGHTS_MISSING = ("LocalEntryNotFoundError", "FileNotFoundError")
 
 
-def _venv_python(tflite_dir: Path) -> Path:
-    """The checkout's virtualenv interpreter (POSIX or Windows layout)."""
-    return venv_python(tflite_dir / ".venv")
-
-
 def sa3_home(config: Optional[dict] = None) -> Path:
     """Where the Stability checkout lives: ``$FOLEY_SA3_DIR``, else the config's default."""
+    return sa3_runtime(config).root()
+
+
+def sa3_runtime(
+    config: Optional[dict] = None, *, home: Optional[Path] = None
+) -> Runtime:
+    """The Stability checkout as a :class:`ps.isolated.Runtime` pinned to ``repo_commit``.
+
+    An explicit ``home`` is the caller's own installation, so it is not checked
+    against the pin (as for a root named by ``$FOLEY_SA3_DIR``, which only warns).
+    """
     nd = (config or SOURCE_CONFIG)["native_defaults"]
-    return Path(os.environ.get(nd["home_env"]) or nd["home_default"]).expanduser()
+    default = Path(nd["home_default"]).expanduser()
+    root = Path(home).expanduser() if home else default
+    sub = nd["tflite_subdir"]
+    return Runtime(
+        name=root.name,
+        default_dir=str(root.parent),
+        env_var=None if home else nd["home_env"],
+        venv=f"{sub}/.venv",
+        cwd=sub,
+        source=None if home else GitSource(nd["repo_url"], nd["repo_commit"]),
+        setup=(
+            f"cd {{root}}/{sub} && uv venv .venv --python 3.11 && "
+            "uv pip install --python .venv/bin/python -r requirements.txt && "
+            f".venv/bin/python scripts/install.py --download {nd['dit']}"
+        ),
+    )
 
 
 def runtime_ready(
     config: Optional[dict] = None, *, home: Optional[Path] = None
 ) -> bool:
     """Whether the checkout and its virtualenv are in place (weights download on first use)."""
-    nd = (config or SOURCE_CONFIG)["native_defaults"]
-    tflite = (home or sa3_home(config)) / nd["tflite_subdir"]
-    scripts = tflite / "scripts" / "sa3_tflite.py"
-    return scripts.exists() and _venv_python(tflite).exists()
+    rt = sa3_runtime(config, home=home)
+    return (rt.workdir() / "scripts" / "sa3_tflite.py").exists() and rt.installed()
 
 
 def setup_hint(config: Optional[dict] = None) -> str:
     """The commands that install the runtime and fetch the weights (never run by foley)."""
-    nd = (config or SOURCE_CONFIG)["native_defaults"]
-    home, sub = sa3_home(config), nd["tflite_subdir"]
-    return (
-        f"git clone --depth 1 {nd['repo_url']} {home} && cd {home}/{sub} && "
-        "uv venv .venv --python 3.11 && "
-        "uv pip install --python .venv/bin/python -r requirements.txt && "
-        f".venv/bin/python scripts/install.py --download {nd['dit']}"
-    )
+    return sa3_runtime(config).hint()
 
 
 #: The flags foley itself sets and records (they must win over any abbreviation).
@@ -111,7 +130,7 @@ class StableAudio3Adapter:
         self.config = config if config is not None else SOURCE_CONFIG
         self.name = self.config["name"]
         self._runner = runner or run_process
-        self._home = Path(home).expanduser() if home else sa3_home(self.config)
+        self._home_arg = Path(home).expanduser() if home else None
 
     def generate(
         self,
@@ -188,23 +207,28 @@ class StableAudio3Adapter:
 
     # -- the process --------------------------------------------------------
 
-    def _tflite_dir(self) -> Path:
-        """The TFLite build inside the checkout, or the setup instructions."""
-        tflite = self._home / self.config["native_defaults"]["tflite_subdir"]
-        if not runtime_ready(self.config, home=self._home):
+    def _runtime(self) -> "tuple[Path, Path]":
+        """``(interpreter, tflite dir)`` of the pinned checkout, or the setup instructions."""
+        rt = sa3_runtime(self.config, home=self._home_arg)
+        try:
+            python = rt.interpreter()
+        except (RuntimeNotInstalled, SourceMismatch) as error:
             raise SourceConfigurationError(
-                f"{self.name}: the Stable Audio 3 TFLite runtime is not set up at "
-                f"{tflite} (set ${self.config['native_defaults']['home_env']} to use "
-                f"another checkout). One-time setup (about 1.2 GB of ungated weights):\n"
-                f"  {setup_hint(self.config)}"
+                f"{self.name}: the Stable Audio 3 TFLite runtime is not usable "
+                f"(about 1.2 GB of ungated weights). {error}"
+            ) from None
+        tflite = rt.workdir()
+        if not (tflite / "scripts" / "sa3_tflite.py").exists():
+            raise SourceConfigurationError(
+                f"{self.name}: {tflite}/scripts/sa3_tflite.py is missing; {rt.hint()}"
             )
-        return tflite
+        return python, tflite
 
     def _command(
-        self, tflite: Path, prompt: str, native: dict, out: Path
+        self, python: Path, tflite: Path, prompt: str, native: dict, out: Path
     ) -> "list[str]":
         nd = self.config["native_defaults"]
-        cmd = [str(_venv_python(tflite)), str(tflite / "scripts" / "sa3_tflite.py")]
+        cmd = [str(python), str(tflite / "scripts" / "sa3_tflite.py")]
         # Provider-only flags first, then foley's own: argparse keeps the last value
         # and accepts abbreviations, so no extra key (``--see``, ``--ou``) can
         # override what foley sends and records.
@@ -230,7 +254,7 @@ class StableAudio3Adapter:
         """
         from ...runtime import EXTERNAL, ModelNotCached, current_runtime
 
-        tflite = self._tflite_dir()
+        python, tflite = self._runtime()
         online = current_runtime().allows(EXTERNAL)
         # Added to the host's environment by the runner. Unbuffered, so an error the
         # script logs before it exits is not followed by stdout flushed late: the
@@ -243,7 +267,7 @@ class StableAudio3Adapter:
             timeout = self.config["native_defaults"]["timeout_s"]
             try:
                 code, output = self._runner(
-                    self._command(tflite, prompt, native, out),
+                    self._command(python, tflite, prompt, native, out),
                     cwd=str(tflite),
                     env=env,
                     timeout=timeout,
