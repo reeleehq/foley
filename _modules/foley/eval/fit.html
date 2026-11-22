@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=df9b7052"></script>
+    <script src="../../../_static/documentation_options.js?v=1412e09f"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.143" />
+  <meta name="docsearch:version" content="0.0.144" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -899,18 +899,30 @@ window.runMermaid = runMermaid;</script>
     <span class="p">)</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_family</span><span class="p">(</span><span class="n">catid</span><span class="p">:</span> <span class="s2">"Optional[str]"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The UCS category of ``catid`` (variable-length CatID prefixes: ``AIRBlow`` is AIR,</span>
+<span class="sd">    ``RAIN`` is RAIN); the CatID itself when the default table does not list it."""</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">catid</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..index.taxonomy</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_ucs_table</span>
+
+    <span class="n">row</span> <span class="o">=</span> <span class="n">default_ucs_table</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">catid</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">row</span><span class="o">.</span><span class="n">category</span> <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">catid</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_strata_key</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">strata_keys</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Derive the stratum tuple from a :class:`SoundEvent` (family × diegetic by default).</span>
 
-<span class="sd">    ``family`` is the UCS 4-char category prefix of ``ucs_catid`` (e.g. ``RAINGnrl`` →</span>
-<span class="sd">    ``RAIN``), falling back to the mix layer; ``diegetic`` splits story-world vs</span>
+<span class="sd">    ``family`` is the UCS category of ``ucs_catid`` read from the table (``DOORWood`` →</span>
+<span class="sd">    ``DOORS``, ``RAIN`` → ``RAIN``), falling back to the CatID's own</span>
+<span class="sd">    letters when the table does not know it (a custom code), then to the mix layer; ``diegetic`` splits story-world vs</span>
 <span class="sd">    audience-only cues. No new golden package-data is shipped — strata come from the</span>
 <span class="sd">    existing ``seed.json``.</span>
 <span class="sd">    """</span>
     <span class="n">parts</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">strata_keys</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">"family"</span><span class="p">:</span>
-            <span class="n">fam</span> <span class="o">=</span> <span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">ucs_catid</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)[:</span><span class="mi">4</span><span class="p">]</span> <span class="ow">or</span> <span class="n">event</span><span class="o">.</span><span class="n">layer</span><span class="o">.</span><span class="n">value</span>
+            <span class="n">fam</span> <span class="o">=</span> <span class="n">_family</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">ucs_catid</span><span class="p">)</span> <span class="ow">or</span> <span class="n">event</span><span class="o">.</span><span class="n">layer</span><span class="o">.</span><span class="n">value</span>
             <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fam</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">"diegetic"</span><span class="p">:</span>
             <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"diegetic"</span> <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">diegetic</span> <span class="k">else</span> <span class="s2">"non-diegetic"</span><span class="p">)</span>

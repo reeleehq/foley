@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=df9b7052"></script>
+    <script src="../../../_static/documentation_options.js?v=1412e09f"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.143" />
+  <meta name="docsearch:version" content="0.0.144" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -809,7 +809,23 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.mix</span><span class="w"> </span><span class="kn">import</span> <span class="n">DUCK_ATTACK_S</span><span class="p">,</span> <span class="n">DUCK_DB</span><span class="p">,</span> <span class="n">DUCK_RELEASE_S</span>
 
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>  <span class="c1"># pragma: no cover - typing only</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">mixing.treatment</span><span class="w"> </span><span class="kn">import</span> <span class="n">Treatment</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">ndarray</span>
+
+<span class="c1">#: The device colouring lives in ``mixing.treatment`` (#284), imported on first use so</span>
+<span class="c1">#: that importing ``foley.weave`` stays dol-only (the purity test pins it).</span>
+<span class="n">_MIXING_TREATMENT_NAMES</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span>
+    <span class="p">{</span><span class="s2">"TREATMENTS"</span><span class="p">,</span> <span class="s2">"TreatmentPreset"</span><span class="p">,</span> <span class="s2">"apply_treatment"</span><span class="p">,</span> <span class="s2">"resolve_treatment"</span><span class="p">}</span>
+<span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="fm">__getattr__</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_MIXING_TREATMENT_NAMES</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">mixing</span><span class="w"> </span><span class="kn">import</span> <span class="n">treatment</span>
+
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">treatment</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"module </span><span class="si">{</span><span class="vm">__name__</span><span class="si">!r}</span><span class="s2"> has no attribute </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+
 
 <span class="c1"># --- named defaults (no literal hides in code) -------------------------------------</span>
 <span class="c1">#: Silence after each spoken line (s); the 0.6 s that read naturally in the #108 starter.</span>
@@ -824,16 +840,8 @@ window.runMermaid = runMermaid;</script>
 <span class="n">LOOP_CROSSFADE_S</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span>
 <span class="c1">#: The device a broadcast is heard through when none is named.</span>
 <span class="n">DEFAULT_TREATMENT</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"am_radio"</span>
-<span class="c1">#: Butterworth order of the treatment's band-pass (per edge).</span>
-<span class="n">FILTER_ORDER</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span>
-<span class="c1">#: The band-pass's upper edge is held under this fraction of Nyquist (a low ``sr``).</span>
-<span class="n">MAX_CUTOFF_NYQUIST_FRACTION</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.95</span>
-<span class="c1">#: Time constant of the compressor's RMS level detector (s).</span>
-<span class="n">COMPRESSOR_DETECTOR_S</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.02</span>
-<span class="c1">#: The treatment's peak ceiling (dBFS) after make-up gain.</span>
+<span class="c1">#: The treatment's peak ceiling (dBFS) after make-up gain (the same as mixing.treatment's default).</span>
 <span class="n">TREATMENT_CEILING_DB</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span>
-<span class="c1">#: Floor of the compressor's level detector, so silence has a finite level (dBFS).</span>
-<span class="n">DETECTOR_FLOOR_DB</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">120.0</span>
 <span class="c1">#: The ``transformations`` op recorded on the result's licence.</span>
 <span class="n">BROADCAST_OP</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"broadcast_bed"</span>
 <span class="c1">#: The licence id of rights that were not given (fail-closed, never refused).</span>
@@ -854,121 +862,6 @@ window.runMermaid = runMermaid;</script>
 <span class="c1"># --- treatment: the device the broadcast is heard through ---------------------------</span>
 
 
-<div class="viewcode-block" id="TreatmentPreset">
-<a class="viewcode-back" href="../../../_autosummary/foley.weave.broadcast.html#foley.TreatmentPreset">[docs]</a>
-<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">TreatmentPreset</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""A diegetic-source colouring: band-pass -&gt; RMS compressor -&gt; make-up -&gt; limiter.</span>
-
-<span class="sd">    Callable as ``preset(samples, sample_rate)``, so a preset is just one value of the</span>
-<span class="sd">    ``treatment=`` strategy (any ``(samples, sr) -&gt; samples`` callable is another).</span>
-
-<span class="sd">    Attributes:</span>
-<span class="sd">        name: The preset's name (recorded on the result's licence).</span>
-<span class="sd">        highpass_hz: Lower edge of the device's passband (Hz).</span>
-<span class="sd">        lowpass_hz: Upper edge of the device's passband (Hz).</span>
-<span class="sd">        threshold_db: Compressor threshold (dBFS of the RMS detector).</span>
-<span class="sd">        ratio: Compressor ratio above the threshold (``1`` = none).</span>
-<span class="sd">        makeup_db: Gain after the compressor (dB).</span>
-<span class="sd">        filter_order: Butterworth order of the band-pass.</span>
-<span class="sd">        detector_s: RMS detector time constant (s).</span>
-<span class="sd">        ceiling_db: Peak ceiling of the final limiter (dBFS).</span>
-<span class="sd">    """</span>
-
-    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">highpass_hz</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">lowpass_hz</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">threshold_db</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">ratio</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">makeup_db</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
-    <span class="n">filter_order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">FILTER_ORDER</span>
-    <span class="n">detector_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">COMPRESSOR_DETECTOR_S</span>
-    <span class="n">ceiling_db</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">TREATMENT_CEILING_DB</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">problems</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">why</span>
-            <span class="k">for</span> <span class="n">bad</span><span class="p">,</span> <span class="n">why</span> <span class="ow">in</span> <span class="p">(</span>
-                <span class="p">(</span>
-                    <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">highpass_hz</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">lowpass_hz</span><span class="p">,</span>
-                    <span class="s2">"0 &lt; highpass_hz &lt; lowpass_hz"</span><span class="p">,</span>
-                <span class="p">),</span>
-                <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ratio</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"ratio &gt;= 1"</span><span class="p">),</span>
-                <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter_order</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"filter_order &gt;= 1"</span><span class="p">),</span>
-                <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">detector_s</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"detector_s &gt; 0"</span><span class="p">),</span>
-            <span class="p">)</span>
-            <span class="k">if</span> <span class="n">bad</span>
-        <span class="p">]</span>
-        <span class="k">if</span> <span class="n">problems</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"treatment </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> needs </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">problems</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">samples</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ndarray"</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">apply_treatment</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span></div>
-
-
-
-<span class="c1">#: The named devices. Passbands: ``am_radio`` is the #108 starter's chain (highpass 450,</span>
-<span class="c1">#: lowpass 3200); ``phone`` is the narrowband telephone channel (300-3400 Hz, ITU-T</span>
-<span class="c1">#: G.712); ``tv`` a small TV speaker; ``pa`` a horn loudspeaker, squashed hardest.</span>
-<span class="n">TREATMENTS</span><span class="p">:</span> <span class="s2">"dict[str, TreatmentPreset]"</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">p</span>
-    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="p">(</span>
-        <span class="n">TreatmentPreset</span><span class="p">(</span>
-            <span class="s2">"am_radio"</span><span class="p">,</span> <span class="mf">450.0</span><span class="p">,</span> <span class="mf">3200.0</span><span class="p">,</span> <span class="n">threshold_db</span><span class="o">=-</span><span class="mf">24.0</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span> <span class="n">makeup_db</span><span class="o">=</span><span class="mf">6.0</span>
-        <span class="p">),</span>
-        <span class="n">TreatmentPreset</span><span class="p">(</span>
-            <span class="s2">"tv"</span><span class="p">,</span> <span class="mf">150.0</span><span class="p">,</span> <span class="mf">7000.0</span><span class="p">,</span> <span class="n">threshold_db</span><span class="o">=-</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">makeup_db</span><span class="o">=</span><span class="mf">4.0</span>
-        <span class="p">),</span>
-        <span class="n">TreatmentPreset</span><span class="p">(</span>
-            <span class="s2">"pa"</span><span class="p">,</span> <span class="mf">400.0</span><span class="p">,</span> <span class="mf">4000.0</span><span class="p">,</span> <span class="n">threshold_db</span><span class="o">=-</span><span class="mf">26.0</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="mf">6.0</span><span class="p">,</span> <span class="n">makeup_db</span><span class="o">=</span><span class="mf">8.0</span>
-        <span class="p">),</span>
-        <span class="n">TreatmentPreset</span><span class="p">(</span>
-            <span class="s2">"phone"</span><span class="p">,</span> <span class="mf">300.0</span><span class="p">,</span> <span class="mf">3400.0</span><span class="p">,</span> <span class="n">threshold_db</span><span class="o">=-</span><span class="mf">22.0</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span> <span class="n">makeup_db</span><span class="o">=</span><span class="mf">6.0</span>
-        <span class="p">),</span>
-    <span class="p">)</span>
-<span class="p">}</span>
-
-<span class="c1">#: What ``treatment=`` takes: a :data:`TREATMENTS` name, a :class:`TreatmentPreset`,</span>
-<span class="c1">#: any ``(samples, sr) -&gt; samples`` callable, or ``None`` (dry, no device).</span>
-<span class="n">Treatment</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TreatmentPreset</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[[</span><span class="s2">"ndarray"</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="s2">"ndarray"</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_band_pass</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">preset</span><span class="p">:</span> <span class="n">TreatmentPreset</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Butterworth band-pass along axis 0 (causal, as the device is)."""</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">butter</span><span class="p">,</span> <span class="n">sosfilt</span>
-
-    <span class="n">nyquist</span> <span class="o">=</span> <span class="n">sample_rate</span> <span class="o">/</span> <span class="mf">2.0</span>
-    <span class="n">high</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">preset</span><span class="o">.</span><span class="n">lowpass_hz</span><span class="p">,</span> <span class="n">MAX_CUTOFF_NYQUIST_FRACTION</span> <span class="o">*</span> <span class="n">nyquist</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="n">preset</span><span class="o">.</span><span class="n">highpass_hz</span> <span class="o">&lt;</span> <span class="n">high</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"treatment </span><span class="si">{</span><span class="n">preset</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2">: passband </span><span class="si">{</span><span class="n">preset</span><span class="o">.</span><span class="n">highpass_hz</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">high</span><span class="si">}</span><span class="s2"> Hz is empty "</span>
-            <span class="sa">f</span><span class="s2">"at </span><span class="si">{</span><span class="n">sample_rate</span><span class="si">}</span><span class="s2"> Hz"</span>
-        <span class="p">)</span>
-    <span class="n">sos</span> <span class="o">=</span> <span class="n">butter</span><span class="p">(</span>
-        <span class="n">preset</span><span class="o">.</span><span class="n">filter_order</span><span class="p">,</span>
-        <span class="p">[</span><span class="n">preset</span><span class="o">.</span><span class="n">highpass_hz</span><span class="p">,</span> <span class="n">high</span><span class="p">],</span>
-        <span class="n">btype</span><span class="o">=</span><span class="s2">"bandpass"</span><span class="p">,</span>
-        <span class="n">fs</span><span class="o">=</span><span class="n">sample_rate</span><span class="p">,</span>
-        <span class="n">output</span><span class="o">=</span><span class="s2">"sos"</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="k">return</span> <span class="n">sosfilt</span><span class="p">(</span><span class="n">sos</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_compress</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">preset</span><span class="p">:</span> <span class="n">TreatmentPreset</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Feed-forward compressor on a one-pole RMS detector (channels linked)."""</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">lfilter</span>
-
-    <span class="n">mono</span> <span class="o">=</span> <span class="n">samples</span> <span class="k">if</span> <span class="n">samples</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">samples</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">a</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">preset</span><span class="o">.</span><span class="n">detector_s</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">)))</span>
-    <span class="n">power</span> <span class="o">=</span> <span class="n">lfilter</span><span class="p">([</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">a</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="n">a</span><span class="p">],</span> <span class="n">mono</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"float64"</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
-    <span class="n">floor</span> <span class="o">=</span> <span class="mf">10.0</span> <span class="o">**</span> <span class="p">(</span><span class="n">DETECTOR_FLOOR_DB</span> <span class="o">/</span> <span class="mf">10.0</span><span class="p">)</span>
-    <span class="n">level_db</span> <span class="o">=</span> <span class="mf">10.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">power</span><span class="p">,</span> <span class="n">floor</span><span class="p">))</span>
-    <span class="n">over</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">level_db</span> <span class="o">-</span> <span class="n">preset</span><span class="o">.</span><span class="n">threshold_db</span><span class="p">)</span>
-    <span class="n">gain</span> <span class="o">=</span> <span class="mf">10.0</span> <span class="o">**</span> <span class="p">((</span><span class="o">-</span><span class="n">over</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">preset</span><span class="o">.</span><span class="n">ratio</span><span class="p">)</span> <span class="o">+</span> <span class="n">preset</span><span class="o">.</span><span class="n">makeup_db</span><span class="p">)</span> <span class="o">/</span> <span class="mf">20.0</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">samples</span> <span class="o">*</span> <span class="p">(</span><span class="n">gain</span> <span class="k">if</span> <span class="n">samples</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">gain</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">])</span>
-
-
 <span class="k">def</span><span class="w"> </span><span class="nf">_limit</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">ceiling_db</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Peak-limit to ``ceiling_db`` with the shared lookahead limiter (mixing.loudness)."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..audio</span><span class="w"> </span><span class="kn">import</span> <span class="n">loudness_component</span>
@@ -980,56 +873,7 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="n">limited</span> <span class="k">if</span> <span class="n">samples</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">limited</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
 
 
-<div class="viewcode-block" id="apply_treatment">
-<a class="viewcode-back" href="../../../_autosummary/foley.weave.broadcast.html#foley.apply_treatment">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">apply_treatment</span><span class="p">(</span>
-    <span class="n">samples</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">preset</span><span class="p">:</span> <span class="n">TreatmentPreset</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ndarray"</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Colour ``samples`` as heard through ``preset``'s device (mono or ``(n, ch)``).</span>
-
-<span class="sd">    Band-pass -&gt; RMS compressor with make-up gain -&gt; lookahead peak limiter</span>
-<span class="sd">    (:func:`mixing.loudness.limit_peaks`). Returns ``float32``, same shape.</span>
-
-<span class="sd">    Lazy dependencies: numpy, scipy, ``mixing[loudness]`` (all in ``foley[audio]``).</span>
-<span class="sd">    """</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-
-    <span class="k">if</span> <span class="n">samples</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">samples</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"float32"</span><span class="p">)</span>
-    <span class="n">shaped</span> <span class="o">=</span> <span class="n">_compress</span><span class="p">(</span><span class="n">_band_pass</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">preset</span><span class="p">),</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">preset</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">_limit</span><span class="p">(</span><span class="n">shaped</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">preset</span><span class="o">.</span><span class="n">ceiling_db</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">"float32"</span><span class="p">)</span></div>
-
-
-
-<div class="viewcode-block" id="resolve_treatment">
-<a class="viewcode-back" href="../../../_autosummary/foley.weave.broadcast.html#foley.resolve_treatment">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">resolve_treatment</span><span class="p">(</span><span class="n">treatment</span><span class="p">:</span> <span class="n">Treatment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="s2">"ndarray"</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="s2">"ndarray"</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""``treatment=`` as a ``(samples, sr) -&gt; samples`` callable (``None``: dry).</span>
-
-<span class="sd">    &gt;&gt;&gt; resolve_treatment("phone").name</span>
-<span class="sd">    'phone'</span>
-<span class="sd">    &gt;&gt;&gt; resolve_treatment(None)(1, 2)</span>
-<span class="sd">    1</span>
-<span class="sd">    """</span>
-    <span class="k">if</span> <span class="n">treatment</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="k">lambda</span> <span class="n">samples</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="n">samples</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">treatment</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">TREATMENTS</span><span class="p">[</span><span class="n">treatment</span><span class="p">]</span>
-        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"unknown treatment </span><span class="si">{</span><span class="n">treatment</span><span class="si">!r}</span><span class="s2">; one of </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">TREATMENTS</span><span class="p">)</span><span class="si">}</span><span class="s2">, "</span>
-                <span class="s2">"a TreatmentPreset, or a (samples, sr) -&gt; samples callable"</span>
-            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
-    <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">treatment</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">treatment</span>
-    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">"treatment must be a name, a preset or a callable, not </span><span class="si">{</span><span class="n">treatment</span><span class="si">!r}</span><span class="s2">"</span>
-    <span class="p">)</span></div>
-
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_treatment_name</span><span class="p">(</span><span class="n">treatment</span><span class="p">:</span> <span class="n">Treatment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_treatment_name</span><span class="p">(</span><span class="n">treatment</span><span class="p">:</span> <span class="s2">"Treatment"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The device's name as recorded on the result (``'dry'`` for none)."""</span>
     <span class="k">if</span> <span class="n">treatment</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">treatment</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">treatment</span> <span class="ow">or</span> <span class="s2">"dry"</span>
@@ -1792,7 +1636,7 @@ window.runMermaid = runMermaid;</script>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">bed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">bed_prompt</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">treatment</span><span class="p">:</span> <span class="n">Treatment</span> <span class="o">=</span> <span class="n">DEFAULT_TREATMENT</span><span class="p">,</span>
+    <span class="n">treatment</span><span class="p">:</span> <span class="s2">"Treatment"</span> <span class="o">=</span> <span class="n">DEFAULT_TREATMENT</span><span class="p">,</span>
     <span class="n">gap_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">LINE_GAP_S</span><span class="p">,</span>
     <span class="n">duration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">bed_under_speech_db</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">BED_UNDER_SPEECH_DB</span><span class="p">,</span>
@@ -1896,6 +1740,8 @@ window.runMermaid = runMermaid;</script>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.mix</span><span class="w"> </span><span class="kn">import</span> <span class="n">declick</span>
 
     <span class="n">sr</span> <span class="o">=</span> <span class="n">WORKING_SAMPLE_RATE</span> <span class="k">if</span> <span class="n">sr</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">sr</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">mixing.treatment</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_treatment</span>
+
     <span class="n">device</span> <span class="o">=</span> <span class="n">resolve_treatment</span><span class="p">(</span><span class="n">treatment</span><span class="p">)</span>
     <span class="n">_check_duck_db</span><span class="p">(</span><span class="n">duck_db</span><span class="p">)</span>
     <span class="n">_check_lines</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">tts</span><span class="p">)</span>

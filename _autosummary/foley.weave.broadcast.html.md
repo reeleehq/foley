@@ -33,8 +33,8 @@ The pipeline is small pure stages, each its own function:
    > constants does not reach it: ~9.2 of 10 dB with the defaults; `duck_db=0`: a
    > constant bed).
 4. **treatment** — the whole program goes through the device (a radio colours the crowd
-   it carries as much as the voice): a named [`TreatmentPreset`](#foley.weave.broadcast.TreatmentPreset) from
-   [`TREATMENTS`](#foley.weave.broadcast.TREATMENTS) (band-pass -> RMS compressor -> lookahead peak limiter), or any
+   it carries as much as the voice): a named `TreatmentPreset` from
+   `TREATMENTS` (band-pass -> RMS compressor -> lookahead peak limiter), or any
    > `(samples, sr) -> samples` callable.
 
 Rights are checked first ([`mix_refusal()`](#foley.weave.broadcast.mix_refusal): no no-derivatives, territory-limited
@@ -85,30 +85,23 @@ dol-only.
 
 ### Module Attributes
 
-| [`LINE_GAP_S`](#foley.weave.broadcast.LINE_GAP_S)                  | Silence after each spoken line (s); the 0.6 s that read naturally in the #108 starter.                                                                                                                           |
-|------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`BED_UNDER_SPEECH_DB`](#foley.weave.broadcast.BED_UNDER_SPEECH_DB)         | -12 dB).                                                                                                                                                                                                         |
-| [`BED_DUCK_DB`](#foley.weave.broadcast.BED_DUCK_DB)                 | How far the bed dips under each line, relative to its level between lines (dB).                                                                                                                                  |
-| [`ACTIVITY_THRESHOLD`](#foley.weave.broadcast.ACTIVITY_THRESHOLD)          | A looped speech-activity mask counts as speech above this value (its seams crossfade).                                                                                                                           |
-| [`LOOP_CROSSFADE_S`](#foley.weave.broadcast.LOOP_CROSSFADE_S)            | Equal-power crossfade at each loop seam of the speech and the bed (s).                                                                                                                                           |
-| [`DEFAULT_TREATMENT`](#foley.weave.broadcast.DEFAULT_TREATMENT)           | The device a broadcast is heard through when none is named.                                                                                                                                                      |
-| [`FILTER_ORDER`](#foley.weave.broadcast.FILTER_ORDER)                | Butterworth order of the treatment's band-pass (per edge).                                                                                                                                                       |
-| [`MAX_CUTOFF_NYQUIST_FRACTION`](#foley.weave.broadcast.MAX_CUTOFF_NYQUIST_FRACTION) | The band-pass's upper edge is held under this fraction of Nyquist (a low `sr`).                                                                                                                                  |
-| [`COMPRESSOR_DETECTOR_S`](#foley.weave.broadcast.COMPRESSOR_DETECTOR_S)       | Time constant of the compressor's RMS level detector (s).                                                                                                                                                        |
-| [`TREATMENT_CEILING_DB`](#foley.weave.broadcast.TREATMENT_CEILING_DB)        | The treatment's peak ceiling (dBFS) after make-up gain.                                                                                                                                                          |
-| [`DETECTOR_FLOOR_DB`](#foley.weave.broadcast.DETECTOR_FLOOR_DB)           | Floor of the compressor's level detector, so silence has a finite level (dBFS).                                                                                                                                  |
-| [`BROADCAST_OP`](#foley.weave.broadcast.BROADCAST_OP)                | The `transformations` op recorded on the result's licence.                                                                                                                                                       |
-| [`UNKNOWN_LICENSE_ID`](#foley.weave.broadcast.UNKNOWN_LICENSE_ID)          | The licence id of rights that were not given (fail-closed, never refused).                                                                                                                                       |
-| [`STORE_OWNED_INGEST_KWARGS`](#foley.weave.broadcast.STORE_OWNED_INGEST_KWARGS)   | The `ingest_one` keywords `store=True` sets itself (not `ingest_options`).                                                                                                                                       |
-| [`TREATMENTS`](#foley.weave.broadcast.TREATMENTS)                  | `am_radio` is the #108 starter's chain (highpass 450, lowpass 3200); `phone` is the narrowband telephone channel (300-3400 Hz, ITU-T G.712); `tv` a small TV speaker; `pa` a horn loudspeaker, squashed hardest. |
-| [`Treatment`](#foley.weave.broadcast.Treatment)                   | a [`TREATMENTS`](#foley.weave.broadcast.TREATMENTS) name, a [`TreatmentPreset`](#foley.weave.broadcast.TreatmentPreset), any `(samples, sr) -> samples` callable, or `None` (dry, no device).     |
-| [`ClipLike`](#foley.weave.broadcast.ClipLike)                    | an array at `sr`, `(samples, its_sr)`, encoded bytes, or a file path.                                                                                                                                            |
+| [`LINE_GAP_S`](#foley.weave.broadcast.LINE_GAP_S)                | Silence after each spoken line (s); the 0.6 s that read naturally in the #108 starter.           |
+|----------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| [`BED_UNDER_SPEECH_DB`](#foley.weave.broadcast.BED_UNDER_SPEECH_DB)       | -12 dB).                                                                                         |
+| [`BED_DUCK_DB`](#foley.weave.broadcast.BED_DUCK_DB)               | How far the bed dips under each line, relative to its level between lines (dB).                  |
+| [`ACTIVITY_THRESHOLD`](#foley.weave.broadcast.ACTIVITY_THRESHOLD)        | A looped speech-activity mask counts as speech above this value (its seams crossfade).           |
+| [`LOOP_CROSSFADE_S`](#foley.weave.broadcast.LOOP_CROSSFADE_S)          | Equal-power crossfade at each loop seam of the speech and the bed (s).                           |
+| [`DEFAULT_TREATMENT`](#foley.weave.broadcast.DEFAULT_TREATMENT)         | The device a broadcast is heard through when none is named.                                      |
+| [`TREATMENT_CEILING_DB`](#foley.weave.broadcast.TREATMENT_CEILING_DB)      | The treatment's peak ceiling (dBFS) after make-up gain (the same as mixing.treatment's default). |
+| [`BROADCAST_OP`](#foley.weave.broadcast.BROADCAST_OP)              | The `transformations` op recorded on the result's licence.                                       |
+| [`UNKNOWN_LICENSE_ID`](#foley.weave.broadcast.UNKNOWN_LICENSE_ID)        | The licence id of rights that were not given (fail-closed, never refused).                       |
+| [`STORE_OWNED_INGEST_KWARGS`](#foley.weave.broadcast.STORE_OWNED_INGEST_KWARGS) | The `ingest_one` keywords `store=True` sets itself (not `ingest_options`).                       |
+| [`ClipLike`](#foley.weave.broadcast.ClipLike)                  | an array at `sr`, `(samples, its_sr)`, encoded bytes, or a file path.                            |
 
 ### Functions
 
-| [`apply_treatment`](#foley.weave.broadcast.apply_treatment)(samples, sample_rate, preset)    | Colour `samples` as heard through `preset`'s device (mono or `(n, ch)`).                                              |
-|---------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
 | [`as_clip`](#foley.weave.broadcast.as_clip)(item, sample_rate)                       | `item` as a mono `float32` working array at `sample_rate`.                                                            |
+|---------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
 | [`bed_gain_db`](#foley.weave.broadcast.bed_gain_db)(speech, bed, sample_rate, \*[, ...]) | The gain that puts `bed` `under_db` below `speech` in integrated loudness.                                            |
 | [`broadcast_bed`](#foley.weave.broadcast.broadcast_bed)(lines, \*[, bed, bed_prompt, ...]) | Speech lines heard through a radio/TV/PA/phone over a bed, looped for a scene (#108).                                 |
 | [`broadcast_license`](#foley.weave.broadcast.broadcast_license)(bed, speech, \*, treatment)    | The broadcast's rights: the bed's, narrowed to the speech's (never widened).                                          |
@@ -116,15 +109,13 @@ dol-only.
 | [`join_lines`](#foley.weave.broadcast.join_lines)(clips, sample_rate, \*[, gap_s])      | Concatenate mono `clips` with `gap_s` of silence after each one.                                                      |
 | [`mix_program`](#foley.weave.broadcast.mix_program)(speech, bed, sample_rate, \*[, ...]) | Speech over the bed, both fitted to `duration` (default: the speech's length).                                        |
 | [`mix_refusal`](#foley.weave.broadcast.mix_refusal)(source, \*[, share_alike])           | Why a sound with rights `source` may not be treated and mixed in, or `None`.                                          |
-| [`resolve_treatment`](#foley.weave.broadcast.resolve_treatment)(treatment)                     | `treatment=` as a `(samples, sr) -> samples` callable (`None`: dry).                                                  |
 | [`speech_activity`](#foley.weave.broadcast.speech_activity)(clips, sample_rate, \*[, gap_s]) | Where [`join_lines()`](#foley.weave.broadcast.join_lines) puts speech: `1` over each clip, `0` in the gaps. |
 | [`store_refusal`](#foley.weave.broadcast.store_refusal)(rights, library, \*[, ...])        | Why a broadcast with `rights` may not go into `library`, or `None`.                                                   |
 
 ### Classes
 
-| [`BroadcastBed`](#foley.weave.broadcast.BroadcastBed)(audio, sr, license, sources, ...)   | A rendered broadcast bed: the audio and the rights of everything in it.         |
-|---------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
-| [`TreatmentPreset`](#foley.weave.broadcast.TreatmentPreset)(name, highpass_hz, ...[, ...])   | A diegetic-source colouring: band-pass -> RMS compressor -> make-up -> limiter. |
+| [`BroadcastBed`](#foley.weave.broadcast.BroadcastBed)(audio, sr, license, sources, ...)   | A rendered broadcast bed: the audio and the rights of everything in it.   |
+|---------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
 
 ### Exceptions
 
@@ -228,10 +219,6 @@ Bases: [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueEr
 
 A source whose rights do not allow it into a broadcast bed (refused, fail-closed).
 
-### foley.weave.broadcast.COMPRESSOR_DETECTOR_S *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.02*
-
-Time constant of the compressor’s RMS level detector (s).
-
 ### foley.weave.broadcast.ClipLike
 
 an array at `sr`, `(samples, its_sr)`, encoded bytes, or a file path.
@@ -245,14 +232,6 @@ alias of `ndarray` | [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#
 
 The device a broadcast is heard through when none is named.
 
-### foley.weave.broadcast.DETECTOR_FLOOR_DB *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= -120.0*
-
-Floor of the compressor’s level detector, so silence has a finite level (dBFS).
-
-### foley.weave.broadcast.FILTER_ORDER *: [int](https://docs.python.org/3/builtins/functions.html#int)* *= 4*
-
-Butterworth order of the treatment’s band-pass (per edge).
-
 ### foley.weave.broadcast.LINE_GAP_S *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.6*
 
 Silence after each spoken line (s); the 0.6 s that read naturally in the #108 starter.
@@ -261,124 +240,17 @@ Silence after each spoken line (s); the 0.6 s that read naturally in the #108 st
 
 Equal-power crossfade at each loop seam of the speech and the bed (s).
 
-### foley.weave.broadcast.MAX_CUTOFF_NYQUIST_FRACTION *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.95*
-
-The band-pass’s upper edge is held under this fraction of Nyquist (a low `sr`).
-
 ### foley.weave.broadcast.STORE_OWNED_INGEST_KWARGS *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= frozenset({'allow_ai_training_forbidden', 'library', 'license', 'restamp_duplicate', 'sound_id', 'store'})*
 
 The `ingest_one` keywords `store=True` sets itself (not `ingest_options`).
 
-### foley.weave.broadcast.TREATMENTS *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [TreatmentPreset](#foley.weave.broadcast.TreatmentPreset)]* *= {'am_radio': TreatmentPreset(name='am_radio', highpass_hz=450.0, lowpass_hz=3200.0, threshold_db=-24.0, ratio=4.0, makeup_db=6.0, filter_order=4, detector_s=0.02, ceiling_db=-1.0), 'pa': TreatmentPreset(name='pa', highpass_hz=400.0, lowpass_hz=4000.0, threshold_db=-26.0, ratio=6.0, makeup_db=8.0, filter_order=4, detector_s=0.02, ceiling_db=-1.0), 'phone': TreatmentPreset(name='phone', highpass_hz=300.0, lowpass_hz=3400.0, threshold_db=-22.0, ratio=4.0, makeup_db=6.0, filter_order=4, detector_s=0.02, ceiling_db=-1.0), 'tv': TreatmentPreset(name='tv', highpass_hz=150.0, lowpass_hz=7000.0, threshold_db=-20.0, ratio=3.0, makeup_db=4.0, filter_order=4, detector_s=0.02, ceiling_db=-1.0)}*
-
-`am_radio` is the #108 starter’s chain (highpass 450,
-lowpass 3200); `phone` is the narrowband telephone channel (300-3400 Hz, ITU-T
-G.712); `tv` a small TV speaker; `pa` a horn loudspeaker, squashed hardest.
-
-* **Type:**
-  The named devices. Passbands
-
 ### foley.weave.broadcast.TREATMENT_CEILING_DB *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= -1.0*
 
-The treatment’s peak ceiling (dBFS) after make-up gain.
-
-### foley.weave.broadcast.Treatment
-
-a [`TREATMENTS`](#foley.weave.broadcast.TREATMENTS) name, a [`TreatmentPreset`](#foley.weave.broadcast.TreatmentPreset),
-any `(samples, sr) -> samples` callable, or `None` (dry, no device).
-
-* **Type:**
-  What `treatment=` takes
-
-alias of [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`TreatmentPreset`](#foley.weave.broadcast.TreatmentPreset) | `Callable`[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], `ndarray`] | [`None`](https://docs.python.org/3/builtins/constants.html#None)
-
-### *class* foley.weave.broadcast.TreatmentPreset(name, highpass_hz, lowpass_hz, threshold_db, ratio, makeup_db=0.0, filter_order=4, detector_s=0.02, ceiling_db=-1.0)
-
-Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
-
-A diegetic-source colouring: band-pass -> RMS compressor -> make-up -> limiter.
-
-Callable as `preset(samples, sample_rate)`, so a preset is just one value of the
-`treatment=` strategy (any `(samples, sr) -> samples` callable is another).
-
-#### name
-
-The preset’s name (recorded on the result’s licence).
-
-* **Type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
-#### highpass_hz
-
-Lower edge of the device’s passband (Hz).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### lowpass_hz
-
-Upper edge of the device’s passband (Hz).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### threshold_db
-
-Compressor threshold (dBFS of the RMS detector).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### ratio
-
-Compressor ratio above the threshold (`1` = none).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### makeup_db
-
-Gain after the compressor (dB).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### filter_order
-
-Butterworth order of the band-pass.
-
-* **Type:**
-  [`int`](https://docs.python.org/3/builtins/functions.html#int)
-
-#### detector_s
-
-RMS detector time constant (s).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### ceiling_db
-
-Peak ceiling of the final limiter (dBFS).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+The treatment’s peak ceiling (dBFS) after make-up gain (the same as mixing.treatment’s default).
 
 ### foley.weave.broadcast.UNKNOWN_LICENSE_ID *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= 'unknown'*
 
 The licence id of rights that were not given (fail-closed, never refused).
-
-### foley.weave.broadcast.apply_treatment(samples, sample_rate, preset)
-
-Colour `samples` as heard through `preset`’s device (mono or `(n, ch)`).
-
-Band-pass -> RMS compressor with make-up gain -> lookahead peak limiter
-(`mixing.loudness.limit_peaks()`). Returns `float32`, same shape.
-
-Lazy dependencies: numpy, scipy, `mixing[loudness]` (all in `foley[audio]`).
-
-* **Return type:**
-  `ndarray`
 
 ### foley.weave.broadcast.as_clip(item, sample_rate)
 
@@ -418,8 +290,8 @@ then is the text spoken.
   * **bed** – The bed: a library sound id, or its audio (any `lines` form).
   * **bed_prompt** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Instead of `bed`: a prompt for [`foley.generate()`](foley.html.md#foley.generate) (its budget,
     paid-generation consent and licence gate apply unchanged).
-  * **treatment** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`TreatmentPreset`](#foley.weave.broadcast.TreatmentPreset), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], `ndarray`], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – The device: a [`TREATMENTS`](#foley.weave.broadcast.TREATMENTS) name (`'am_radio'` default,
-    `'tv'`, `'pa'`, `'phone'`), a [`TreatmentPreset`](#foley.weave.broadcast.TreatmentPreset), any
+  * **treatment** (`Treatment`) – The device: a `TREATMENTS` name (`'am_radio'` default,
+    `'tv'`, `'pa'`, `'phone'`), a `TreatmentPreset`, any
     `(samples, sr) -> samples` callable (e.g. the fleet’s, once `mixing` has
     it), or `None` for dry. Applied to the whole program, crowd included.
   * **gap_s** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Silence after each line (s).
@@ -580,20 +452,6 @@ True
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
-
-### foley.weave.broadcast.resolve_treatment(treatment)
-
-`treatment=` as a `(samples, sr) -> samples` callable (`None`: dry).
-
-```pycon
->>> resolve_treatment("phone").name
-'phone'
->>> resolve_treatment(None)(1, 2)
-1
-```
-
-* **Return type:**
-  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], `ndarray`]
 
 ### foley.weave.broadcast.speech_activity(clips, sample_rate, , gap_s=0.6)
 

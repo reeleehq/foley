@@ -67,7 +67,6 @@ signed + embedded C2PA manifest are best-effort no-ops when their extras/cert ar
 | [`MasterProfile`](#foley.weave.MasterProfile)([target_lufs, true_peak_db, ...])  | Loudness master target — the delivery spec as data, not code (report 06 §5.2).                                                     |
 | [`MasterReport`](#foley.weave.MasterReport)(target_lufs, input_lufs, ...)       | What the master stage did — a JSON-serialisable audit row for the run-artifact.                                                    |
 | [`BroadcastBed`](#foley.weave.BroadcastBed)(audio, sr, license, sources, ...)   | A rendered broadcast bed: the audio and the rights of everything in it.                                                            |
-| [`TreatmentPreset`](#foley.weave.TreatmentPreset)(name, highpass_hz, ...[, ...])   | A diegetic-source colouring: band-pass -> RMS compressor -> make-up -> limiter.                                                    |
 
 ### Exceptions
 
@@ -389,78 +388,6 @@ Align each segment on its own slice of `audio`; timings in whole-file seconds.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
-### *class* foley.weave.TreatmentPreset(name, highpass_hz, lowpass_hz, threshold_db, ratio, makeup_db=0.0, filter_order=4, detector_s=0.02, ceiling_db=-1.0)
-
-Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
-
-A diegetic-source colouring: band-pass -> RMS compressor -> make-up -> limiter.
-
-Callable as `preset(samples, sample_rate)`, so a preset is just one value of the
-`treatment=` strategy (any `(samples, sr) -> samples` callable is another).
-
-#### name
-
-The preset’s name (recorded on the result’s licence).
-
-* **Type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
-#### highpass_hz
-
-Lower edge of the device’s passband (Hz).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### lowpass_hz
-
-Upper edge of the device’s passband (Hz).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### threshold_db
-
-Compressor threshold (dBFS of the RMS detector).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### ratio
-
-Compressor ratio above the threshold (`1` = none).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### makeup_db
-
-Gain after the compressor (dB).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### filter_order
-
-Butterworth order of the band-pass.
-
-* **Type:**
-  [`int`](https://docs.python.org/3/builtins/functions.html#int)
-
-#### detector_s
-
-RMS detector time constant (s).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### ceiling_db
-
-Peak ceiling of the final limiter (dBFS).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
 ### *class* foley.weave.WeaveResult(audio, sr, timeline, credits, captions_vtt, captions_srt, master_report, run_manifest_ref=None, content_credential=None, watermark=None, notes=list(), alignment=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
@@ -522,8 +449,8 @@ then is the text spoken.
   * **bed** – The bed: a library sound id, or its audio (any `lines` form).
   * **bed_prompt** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Instead of `bed`: a prompt for [`foley.generate()`](foley.html.md#foley.generate) (its budget,
     paid-generation consent and licence gate apply unchanged).
-  * **treatment** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`TreatmentPreset`](foley.weave.broadcast.html.md#foley.weave.broadcast.TreatmentPreset), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], `ndarray`], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – The device: a `TREATMENTS` name (`'am_radio'` default,
-    `'tv'`, `'pa'`, `'phone'`), a [`TreatmentPreset`](#foley.weave.TreatmentPreset), any
+  * **treatment** (`Treatment`) – The device: a `TREATMENTS` name (`'am_radio'` default,
+    `'tv'`, `'pa'`, `'phone'`), a `TreatmentPreset`, any
     `(samples, sr) -> samples` callable (e.g. the fleet’s, once `mixing` has
     it), or `None` for dry. Applied to the whole program, crowd included.
   * **gap_s** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Silence after each line (s).

@@ -1,4 +1,4 @@
-> built 2026-11-22 08:10 UTC from 2712e61 (main) · foley 0.0.143. Details: build_info.json
+> built 2026-11-22 08:21 UTC from 163a31f (main) · foley 0.0.144. Details: build_info.json
 
 # index.html.md
 
@@ -10165,7 +10165,7 @@ then is the text spoken.
   * **bed** – The bed: a library sound id, or its audio (any `lines` form).
   * **bed_prompt** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Instead of `bed`: a prompt for [`foley.generate()`](_autosummary/foley.html.md#foley.generate) (its budget,
     paid-generation consent and licence gate apply unchanged).
-  * **treatment** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`TreatmentPreset`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.TreatmentPreset), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], `ndarray`], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – The device: a `TREATMENTS` name (`'am_radio'` default,
+  * **treatment** (`Treatment`) – The device: a `TREATMENTS` name (`'am_radio'` default,
     `'tv'`, `'pa'`, `'phone'`), a `TreatmentPreset`, any
     `(samples, sr) -> samples` callable (e.g. the fleet’s, once `mixing` has
     it), or `None` for dry. Applied to the whole program, crowd included.
@@ -11740,7 +11740,7 @@ Resample `samples` to `target_sr` (a no-op when already there).
 
 Lazy dependency: `soxr`.
 
-### foley.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'it', 'us', 'too', 'have', 'or', 'when', 'a', 'so', 'just', 'such', 'those', 'are', 'only', 'with', 'that', 'for', 'same', 'do', 'has', 'what', 'will', 'by', 'other', 'they', 'them', 'there', 'we', 'on', 'his', 'was', 'then', 'not', 'but', 'this', 'some', 'under', 'you', 'into', 'all', 'why', 'very', 'the', 'no', 'can', 'being', 'she', 'few', 'and', 'these', 'my', 'how', 'without', 'its', 'also', 'who', 'is', 'does', 'nor', 'here', 'i', 'more', 'at', 'did', 'any', 'he', 'be', 'had', 'if', 'may', 'onto', 'which', 'been', 'could', 'as', 'him', 'an', 'own', 'were', 'each', 'might', 'where', 'their', 'our', 'most', 'am', 'than', 'should', 'from', 'of', 'your', 'me', 'her', 'would', 'about', 'every', 'must', 'in', 'to'}), ambiguous_words=frozenset({'way', 'open', 'down', 'general', 'set', 'heavy', 'work', 'over', 'blue', 'big', 'fall', 'large', 'night', 'long', 'hold', 'quiet', 'misc', 'hit', 'drop', 'break', 'person', 'arc', 'part', 'beat', 'time', 'out', 'small', 'off', 'day', 'bang', 'light', 'sound', 'piece', 'thing', 'side', 'shot', 'meeting', 'release', 'place', 'up', 'tone', 'handle', 'little', 'catch', 'run'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### foley.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'it', 'but', 'has', 'than', 'be', 'very', 'no', 'them', 'could', 'should', 'nor', 'other', 'does', 'our', 'onto', 'how', 'might', 'some', 'have', 'am', 'do', 'on', 'being', 'my', 'are', 'for', 'us', 'those', 'every', 'such', 'there', 'his', 'all', 'your', 'their', 'few', 'me', 'him', 'may', 'most', 'as', 'her', 'more', 'also', 'that', 'too', 'had', 'any', 'which', 'this', 'he', 'then', 'with', 'only', 'these', 'under', 'own', 'an', 'what', 'can', 'same', 'here', 'about', 'did', 'just', 'into', 'where', 'by', 'you', 'without', 'she', 'was', 'why', 'we', 'of', 'so', 'will', 'if', 'and', 'to', 'been', 'in', 'its', 'would', 'when', 'the', 'from', 'each', 'a', 'i', 'is', 'must', 'who', 'not', 'they', 'at', 'were', 'or'}), ambiguous_words=frozenset({'light', 'day', 'small', 'beat', 'open', 'place', 'set', 'blue', 'hit', 'work', 'heavy', 'out', 'off', 'general', 'large', 'misc', 'little', 'part', 'over', 'thing', 'down', 'side', 'night', 'catch', 'long', 'drop', 'handle', 'person', 'tone', 'time', 'quiet', 'sound', 'big', 'up', 'piece', 'break', 'bang', 'run', 'hold', 'fall', 'arc', 'meeting', 'way', 'release', 'shot'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -13611,7 +13611,7 @@ Fuse several ranked id lists into one, by reciprocal rank.
   `[(id, fused_score), ...]` sorted by fused score descending, ties
   broken by `id` ascending (so the fusion is fully deterministic).
 
-### foley.index.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'it', 'us', 'too', 'have', 'or', 'when', 'a', 'so', 'just', 'such', 'those', 'are', 'only', 'with', 'that', 'for', 'same', 'do', 'has', 'what', 'will', 'by', 'other', 'they', 'them', 'there', 'we', 'on', 'his', 'was', 'then', 'not', 'but', 'this', 'some', 'under', 'you', 'into', 'all', 'why', 'very', 'the', 'no', 'can', 'being', 'she', 'few', 'and', 'these', 'my', 'how', 'without', 'its', 'also', 'who', 'is', 'does', 'nor', 'here', 'i', 'more', 'at', 'did', 'any', 'he', 'be', 'had', 'if', 'may', 'onto', 'which', 'been', 'could', 'as', 'him', 'an', 'own', 'were', 'each', 'might', 'where', 'their', 'our', 'most', 'am', 'than', 'should', 'from', 'of', 'your', 'me', 'her', 'would', 'about', 'every', 'must', 'in', 'to'}), ambiguous_words=frozenset({'way', 'open', 'down', 'general', 'set', 'heavy', 'work', 'over', 'blue', 'big', 'fall', 'large', 'night', 'long', 'hold', 'quiet', 'misc', 'hit', 'drop', 'break', 'person', 'arc', 'part', 'beat', 'time', 'out', 'small', 'off', 'day', 'bang', 'light', 'sound', 'piece', 'thing', 'side', 'shot', 'meeting', 'release', 'place', 'up', 'tone', 'handle', 'little', 'catch', 'run'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### foley.index.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'it', 'but', 'has', 'than', 'be', 'very', 'no', 'them', 'could', 'should', 'nor', 'other', 'does', 'our', 'onto', 'how', 'might', 'some', 'have', 'am', 'do', 'on', 'being', 'my', 'are', 'for', 'us', 'those', 'every', 'such', 'there', 'his', 'all', 'your', 'their', 'few', 'me', 'him', 'may', 'most', 'as', 'her', 'more', 'also', 'that', 'too', 'had', 'any', 'which', 'this', 'he', 'then', 'with', 'only', 'these', 'under', 'own', 'an', 'what', 'can', 'same', 'here', 'about', 'did', 'just', 'into', 'where', 'by', 'you', 'without', 'she', 'was', 'why', 'we', 'of', 'so', 'will', 'if', 'and', 'to', 'been', 'in', 'its', 'would', 'when', 'the', 'from', 'each', 'a', 'i', 'is', 'must', 'who', 'not', 'they', 'at', 'were', 'or'}), ambiguous_words=frozenset({'light', 'day', 'small', 'beat', 'open', 'place', 'set', 'blue', 'hit', 'work', 'heavy', 'out', 'off', 'general', 'large', 'misc', 'little', 'part', 'over', 'thing', 'down', 'side', 'night', 'catch', 'long', 'drop', 'handle', 'person', 'tone', 'time', 'quiet', 'sound', 'big', 'up', 'piece', 'break', 'bang', 'run', 'hold', 'fall', 'arc', 'meeting', 'way', 'release', 'shot'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -15727,7 +15727,7 @@ The result of resolving free tags/caption/labels to a UCS CatID.
 `subcategory` feeds `ucs_subcategory` on
 ingest, and `ucs_catid` on the query side.
 
-### *class* foley.index.taxonomy.KeywordResolver(, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'it', 'us', 'too', 'have', 'or', 'when', 'a', 'so', 'just', 'such', 'those', 'are', 'only', 'with', 'that', 'for', 'same', 'do', 'has', 'what', 'will', 'by', 'other', 'they', 'them', 'there', 'we', 'on', 'his', 'was', 'then', 'not', 'but', 'this', 'some', 'under', 'you', 'into', 'all', 'why', 'very', 'the', 'no', 'can', 'being', 'she', 'few', 'and', 'these', 'my', 'how', 'without', 'its', 'also', 'who', 'is', 'does', 'nor', 'here', 'i', 'more', 'at', 'did', 'any', 'he', 'be', 'had', 'if', 'may', 'onto', 'which', 'been', 'could', 'as', 'him', 'an', 'own', 'were', 'each', 'might', 'where', 'their', 'our', 'most', 'am', 'than', 'should', 'from', 'of', 'your', 'me', 'her', 'would', 'about', 'every', 'must', 'in', 'to'}), ambiguous_words=frozenset({'way', 'open', 'down', 'general', 'set', 'heavy', 'work', 'over', 'blue', 'big', 'fall', 'large', 'night', 'long', 'hold', 'quiet', 'misc', 'hit', 'drop', 'break', 'person', 'arc', 'part', 'beat', 'time', 'out', 'small', 'off', 'day', 'bang', 'light', 'sound', 'piece', 'thing', 'side', 'shot', 'meeting', 'release', 'place', 'up', 'tone', 'handle', 'little', 'catch', 'run'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### *class* foley.index.taxonomy.KeywordResolver(, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'it', 'but', 'has', 'than', 'be', 'very', 'no', 'them', 'could', 'should', 'nor', 'other', 'does', 'our', 'onto', 'how', 'might', 'some', 'have', 'am', 'do', 'on', 'being', 'my', 'are', 'for', 'us', 'those', 'every', 'such', 'there', 'his', 'all', 'your', 'their', 'few', 'me', 'him', 'may', 'most', 'as', 'her', 'more', 'also', 'that', 'too', 'had', 'any', 'which', 'this', 'he', 'then', 'with', 'only', 'these', 'under', 'own', 'an', 'what', 'can', 'same', 'here', 'about', 'did', 'just', 'into', 'where', 'by', 'you', 'without', 'she', 'was', 'why', 'we', 'of', 'so', 'will', 'if', 'and', 'to', 'been', 'in', 'its', 'would', 'when', 'the', 'from', 'each', 'a', 'i', 'is', 'must', 'who', 'not', 'they', 'at', 'were', 'or'}), ambiguous_words=frozenset({'light', 'day', 'small', 'beat', 'open', 'place', 'set', 'blue', 'hit', 'work', 'heavy', 'out', 'off', 'general', 'large', 'misc', 'little', 'part', 'over', 'thing', 'down', 'side', 'night', 'catch', 'long', 'drop', 'handle', 'person', 'tone', 'time', 'quiet', 'sound', 'big', 'up', 'piece', 'break', 'bang', 'run', 'hold', 'fall', 'arc', 'meeting', 'way', 'release', 'shot'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -16091,7 +16091,7 @@ True
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName)]
 
-### foley.index.taxonomy.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'it', 'us', 'too', 'have', 'or', 'when', 'a', 'so', 'just', 'such', 'those', 'are', 'only', 'with', 'that', 'for', 'same', 'do', 'has', 'what', 'will', 'by', 'other', 'they', 'them', 'there', 'we', 'on', 'his', 'was', 'then', 'not', 'but', 'this', 'some', 'under', 'you', 'into', 'all', 'why', 'very', 'the', 'no', 'can', 'being', 'she', 'few', 'and', 'these', 'my', 'how', 'without', 'its', 'also', 'who', 'is', 'does', 'nor', 'here', 'i', 'more', 'at', 'did', 'any', 'he', 'be', 'had', 'if', 'may', 'onto', 'which', 'been', 'could', 'as', 'him', 'an', 'own', 'were', 'each', 'might', 'where', 'their', 'our', 'most', 'am', 'than', 'should', 'from', 'of', 'your', 'me', 'her', 'would', 'about', 'every', 'must', 'in', 'to'}), ambiguous_words=frozenset({'way', 'open', 'down', 'general', 'set', 'heavy', 'work', 'over', 'blue', 'big', 'fall', 'large', 'night', 'long', 'hold', 'quiet', 'misc', 'hit', 'drop', 'break', 'person', 'arc', 'part', 'beat', 'time', 'out', 'small', 'off', 'day', 'bang', 'light', 'sound', 'piece', 'thing', 'side', 'shot', 'meeting', 'release', 'place', 'up', 'tone', 'handle', 'little', 'catch', 'run'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### foley.index.taxonomy.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'it', 'but', 'has', 'than', 'be', 'very', 'no', 'them', 'could', 'should', 'nor', 'other', 'does', 'our', 'onto', 'how', 'might', 'some', 'have', 'am', 'do', 'on', 'being', 'my', 'are', 'for', 'us', 'those', 'every', 'such', 'there', 'his', 'all', 'your', 'their', 'few', 'me', 'him', 'may', 'most', 'as', 'her', 'more', 'also', 'that', 'too', 'had', 'any', 'which', 'this', 'he', 'then', 'with', 'only', 'these', 'under', 'own', 'an', 'what', 'can', 'same', 'here', 'about', 'did', 'just', 'into', 'where', 'by', 'you', 'without', 'she', 'was', 'why', 'we', 'of', 'so', 'will', 'if', 'and', 'to', 'been', 'in', 'its', 'would', 'when', 'the', 'from', 'each', 'a', 'i', 'is', 'must', 'who', 'not', 'they', 'at', 'were', 'or'}), ambiguous_words=frozenset({'light', 'day', 'small', 'beat', 'open', 'place', 'set', 'blue', 'hit', 'work', 'heavy', 'out', 'off', 'general', 'large', 'misc', 'little', 'part', 'over', 'thing', 'down', 'side', 'night', 'catch', 'long', 'drop', 'handle', 'person', 'tone', 'time', 'quiet', 'sound', 'big', 'up', 'piece', 'break', 'bang', 'run', 'hold', 'fall', 'arc', 'meeting', 'way', 'release', 'shot'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -16365,7 +16365,7 @@ One term of a row found in the input.
 `words` are the term’s content lemmas (stop words dropped); `shared_by` is how
 many rows list the term.
 
-### *class* foley.index.taxonomy.resolver.KeywordResolver(, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'it', 'us', 'too', 'have', 'or', 'when', 'a', 'so', 'just', 'such', 'those', 'are', 'only', 'with', 'that', 'for', 'same', 'do', 'has', 'what', 'will', 'by', 'other', 'they', 'them', 'there', 'we', 'on', 'his', 'was', 'then', 'not', 'but', 'this', 'some', 'under', 'you', 'into', 'all', 'why', 'very', 'the', 'no', 'can', 'being', 'she', 'few', 'and', 'these', 'my', 'how', 'without', 'its', 'also', 'who', 'is', 'does', 'nor', 'here', 'i', 'more', 'at', 'did', 'any', 'he', 'be', 'had', 'if', 'may', 'onto', 'which', 'been', 'could', 'as', 'him', 'an', 'own', 'were', 'each', 'might', 'where', 'their', 'our', 'most', 'am', 'than', 'should', 'from', 'of', 'your', 'me', 'her', 'would', 'about', 'every', 'must', 'in', 'to'}), ambiguous_words=frozenset({'way', 'open', 'down', 'general', 'set', 'heavy', 'work', 'over', 'blue', 'big', 'fall', 'large', 'night', 'long', 'hold', 'quiet', 'misc', 'hit', 'drop', 'break', 'person', 'arc', 'part', 'beat', 'time', 'out', 'small', 'off', 'day', 'bang', 'light', 'sound', 'piece', 'thing', 'side', 'shot', 'meeting', 'release', 'place', 'up', 'tone', 'handle', 'little', 'catch', 'run'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### *class* foley.index.taxonomy.resolver.KeywordResolver(, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'it', 'but', 'has', 'than', 'be', 'very', 'no', 'them', 'could', 'should', 'nor', 'other', 'does', 'our', 'onto', 'how', 'might', 'some', 'have', 'am', 'do', 'on', 'being', 'my', 'are', 'for', 'us', 'those', 'every', 'such', 'there', 'his', 'all', 'your', 'their', 'few', 'me', 'him', 'may', 'most', 'as', 'her', 'more', 'also', 'that', 'too', 'had', 'any', 'which', 'this', 'he', 'then', 'with', 'only', 'these', 'under', 'own', 'an', 'what', 'can', 'same', 'here', 'about', 'did', 'just', 'into', 'where', 'by', 'you', 'without', 'she', 'was', 'why', 'we', 'of', 'so', 'will', 'if', 'and', 'to', 'been', 'in', 'its', 'would', 'when', 'the', 'from', 'each', 'a', 'i', 'is', 'must', 'who', 'not', 'they', 'at', 'were', 'or'}), ambiguous_words=frozenset({'light', 'day', 'small', 'beat', 'open', 'place', 'set', 'blue', 'hit', 'work', 'heavy', 'out', 'off', 'general', 'large', 'misc', 'little', 'part', 'over', 'thing', 'down', 'side', 'night', 'catch', 'long', 'drop', 'handle', 'person', 'tone', 'time', 'quiet', 'sound', 'big', 'up', 'piece', 'break', 'bang', 'run', 'hold', 'fall', 'arc', 'meeting', 'way', 'release', 'shot'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -16508,7 +16508,7 @@ Return the CatID resolution for `record`.
 
 Evidence strengths, strongest first (indices into [`MatchPolicy.bands`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.MatchPolicy.bands)).
 
-### foley.index.taxonomy.resolver.keyword_resolution(tags=(), caption=None, , table=None, policy=MatchPolicy(stop_words=frozenset({'it', 'us', 'too', 'have', 'or', 'when', 'a', 'so', 'just', 'such', 'those', 'are', 'only', 'with', 'that', 'for', 'same', 'do', 'has', 'what', 'will', 'by', 'other', 'they', 'them', 'there', 'we', 'on', 'his', 'was', 'then', 'not', 'but', 'this', 'some', 'under', 'you', 'into', 'all', 'why', 'very', 'the', 'no', 'can', 'being', 'she', 'few', 'and', 'these', 'my', 'how', 'without', 'its', 'also', 'who', 'is', 'does', 'nor', 'here', 'i', 'more', 'at', 'did', 'any', 'he', 'be', 'had', 'if', 'may', 'onto', 'which', 'been', 'could', 'as', 'him', 'an', 'own', 'were', 'each', 'might', 'where', 'their', 'our', 'most', 'am', 'than', 'should', 'from', 'of', 'your', 'me', 'her', 'would', 'about', 'every', 'must', 'in', 'to'}), ambiguous_words=frozenset({'way', 'open', 'down', 'general', 'set', 'heavy', 'work', 'over', 'blue', 'big', 'fall', 'large', 'night', 'long', 'hold', 'quiet', 'misc', 'hit', 'drop', 'break', 'person', 'arc', 'part', 'beat', 'time', 'out', 'small', 'off', 'day', 'bang', 'light', 'sound', 'piece', 'thing', 'side', 'shot', 'meeting', 'release', 'place', 'up', 'tone', 'handle', 'little', 'catch', 'run'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### foley.index.taxonomy.resolver.keyword_resolution(tags=(), caption=None, , table=None, policy=MatchPolicy(stop_words=frozenset({'it', 'but', 'has', 'than', 'be', 'very', 'no', 'them', 'could', 'should', 'nor', 'other', 'does', 'our', 'onto', 'how', 'might', 'some', 'have', 'am', 'do', 'on', 'being', 'my', 'are', 'for', 'us', 'those', 'every', 'such', 'there', 'his', 'all', 'your', 'their', 'few', 'me', 'him', 'may', 'most', 'as', 'her', 'more', 'also', 'that', 'too', 'had', 'any', 'which', 'this', 'he', 'then', 'with', 'only', 'these', 'under', 'own', 'an', 'what', 'can', 'same', 'here', 'about', 'did', 'just', 'into', 'where', 'by', 'you', 'without', 'she', 'was', 'why', 'we', 'of', 'so', 'will', 'if', 'and', 'to', 'been', 'in', 'its', 'would', 'when', 'the', 'from', 'each', 'a', 'i', 'is', 'must', 'who', 'not', 'they', 'at', 'were', 'or'}), ambiguous_words=frozenset({'light', 'day', 'small', 'beat', 'open', 'place', 'set', 'blue', 'hit', 'work', 'heavy', 'out', 'off', 'general', 'large', 'misc', 'little', 'part', 'over', 'thing', 'down', 'side', 'night', 'catch', 'long', 'drop', 'handle', 'person', 'tone', 'time', 'quiet', 'sound', 'big', 'up', 'piece', 'break', 'bang', 'run', 'hold', 'fall', 'arc', 'meeting', 'way', 'release', 'shot'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 The keyword stage alone: the best row for `tags`/`caption`, banded.
 
@@ -16523,7 +16523,7 @@ The keyword stage alone: the best row for `tags`/`caption`, banded.
 * **Return type:**
   [`CatIdResolution`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.CatIdResolution)
 
-### foley.index.taxonomy.resolver.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'it', 'us', 'too', 'have', 'or', 'when', 'a', 'so', 'just', 'such', 'those', 'are', 'only', 'with', 'that', 'for', 'same', 'do', 'has', 'what', 'will', 'by', 'other', 'they', 'them', 'there', 'we', 'on', 'his', 'was', 'then', 'not', 'but', 'this', 'some', 'under', 'you', 'into', 'all', 'why', 'very', 'the', 'no', 'can', 'being', 'she', 'few', 'and', 'these', 'my', 'how', 'without', 'its', 'also', 'who', 'is', 'does', 'nor', 'here', 'i', 'more', 'at', 'did', 'any', 'he', 'be', 'had', 'if', 'may', 'onto', 'which', 'been', 'could', 'as', 'him', 'an', 'own', 'were', 'each', 'might', 'where', 'their', 'our', 'most', 'am', 'than', 'should', 'from', 'of', 'your', 'me', 'her', 'would', 'about', 'every', 'must', 'in', 'to'}), ambiguous_words=frozenset({'way', 'open', 'down', 'general', 'set', 'heavy', 'work', 'over', 'blue', 'big', 'fall', 'large', 'night', 'long', 'hold', 'quiet', 'misc', 'hit', 'drop', 'break', 'person', 'arc', 'part', 'beat', 'time', 'out', 'small', 'off', 'day', 'bang', 'light', 'sound', 'piece', 'thing', 'side', 'shot', 'meeting', 'release', 'place', 'up', 'tone', 'handle', 'little', 'catch', 'run'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### foley.index.taxonomy.resolver.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'it', 'but', 'has', 'than', 'be', 'very', 'no', 'them', 'could', 'should', 'nor', 'other', 'does', 'our', 'onto', 'how', 'might', 'some', 'have', 'am', 'do', 'on', 'being', 'my', 'are', 'for', 'us', 'those', 'every', 'such', 'there', 'his', 'all', 'your', 'their', 'few', 'me', 'him', 'may', 'most', 'as', 'her', 'more', 'also', 'that', 'too', 'had', 'any', 'which', 'this', 'he', 'then', 'with', 'only', 'these', 'under', 'own', 'an', 'what', 'can', 'same', 'here', 'about', 'did', 'just', 'into', 'where', 'by', 'you', 'without', 'she', 'was', 'why', 'we', 'of', 'so', 'will', 'if', 'and', 'to', 'been', 'in', 'its', 'would', 'when', 'the', 'from', 'each', 'a', 'i', 'is', 'must', 'who', 'not', 'they', 'at', 'were', 'or'}), ambiguous_words=frozenset({'light', 'day', 'small', 'beat', 'open', 'place', 'set', 'blue', 'hit', 'work', 'heavy', 'out', 'off', 'general', 'large', 'misc', 'little', 'part', 'over', 'thing', 'down', 'side', 'night', 'catch', 'long', 'drop', 'handle', 'person', 'tone', 'time', 'quiet', 'sound', 'big', 'up', 'piece', 'break', 'bang', 'run', 'hold', 'fall', 'arc', 'meeting', 'way', 'release', 'shot'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -19728,7 +19728,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix chime', 'ta-dum', 'netflix intro', 'netflix sound', 'ta dum', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel bong', 'intel chime', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc three-note', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta-dum', 'netflix chime', 'ta dum', 'netflix sound', 'netflix intro', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel chime', 'intel jingle', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -29403,8 +29403,8 @@ The pipeline is small pure stages, each its own function:
    > constants does not reach it: ~9.2 of 10 dB with the defaults; `duck_db=0`: a
    > constant bed).
 4. **treatment** — the whole program goes through the device (a radio colours the crowd
-   it carries as much as the voice): a named [`TreatmentPreset`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.TreatmentPreset) from
-   [`TREATMENTS`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.TREATMENTS) (band-pass -> RMS compressor -> lookahead peak limiter), or any
+   it carries as much as the voice): a named `TreatmentPreset` from
+   `TREATMENTS` (band-pass -> RMS compressor -> lookahead peak limiter), or any
    > `(samples, sr) -> samples` callable.
 
 Rights are checked first ([`mix_refusal()`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.mix_refusal): no no-derivatives, territory-limited
@@ -29455,30 +29455,23 @@ dol-only.
 
 ### Module Attributes
 
-| [`LINE_GAP_S`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.LINE_GAP_S)                  | Silence after each spoken line (s); the 0.6 s that read naturally in the #108 starter.                                                                                                                           |
-|------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`BED_UNDER_SPEECH_DB`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.BED_UNDER_SPEECH_DB)         | -12 dB).                                                                                                                                                                                                         |
-| [`BED_DUCK_DB`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.BED_DUCK_DB)                 | How far the bed dips under each line, relative to its level between lines (dB).                                                                                                                                  |
-| [`ACTIVITY_THRESHOLD`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.ACTIVITY_THRESHOLD)          | A looped speech-activity mask counts as speech above this value (its seams crossfade).                                                                                                                           |
-| [`LOOP_CROSSFADE_S`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.LOOP_CROSSFADE_S)            | Equal-power crossfade at each loop seam of the speech and the bed (s).                                                                                                                                           |
-| [`DEFAULT_TREATMENT`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.DEFAULT_TREATMENT)           | The device a broadcast is heard through when none is named.                                                                                                                                                      |
-| [`FILTER_ORDER`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.FILTER_ORDER)                | Butterworth order of the treatment's band-pass (per edge).                                                                                                                                                       |
-| [`MAX_CUTOFF_NYQUIST_FRACTION`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.MAX_CUTOFF_NYQUIST_FRACTION) | The band-pass's upper edge is held under this fraction of Nyquist (a low `sr`).                                                                                                                                  |
-| [`COMPRESSOR_DETECTOR_S`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.COMPRESSOR_DETECTOR_S)       | Time constant of the compressor's RMS level detector (s).                                                                                                                                                        |
-| [`TREATMENT_CEILING_DB`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.TREATMENT_CEILING_DB)        | The treatment's peak ceiling (dBFS) after make-up gain.                                                                                                                                                          |
-| [`DETECTOR_FLOOR_DB`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.DETECTOR_FLOOR_DB)           | Floor of the compressor's level detector, so silence has a finite level (dBFS).                                                                                                                                  |
-| [`BROADCAST_OP`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.BROADCAST_OP)                | The `transformations` op recorded on the result's licence.                                                                                                                                                       |
-| [`UNKNOWN_LICENSE_ID`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.UNKNOWN_LICENSE_ID)          | The licence id of rights that were not given (fail-closed, never refused).                                                                                                                                       |
-| [`STORE_OWNED_INGEST_KWARGS`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.STORE_OWNED_INGEST_KWARGS)   | The `ingest_one` keywords `store=True` sets itself (not `ingest_options`).                                                                                                                                       |
-| [`TREATMENTS`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.TREATMENTS)                  | `am_radio` is the #108 starter's chain (highpass 450, lowpass 3200); `phone` is the narrowband telephone channel (300-3400 Hz, ITU-T G.712); `tv` a small TV speaker; `pa` a horn loudspeaker, squashed hardest. |
-| [`Treatment`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.Treatment)                   | a [`TREATMENTS`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.TREATMENTS) name, a [`TreatmentPreset`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.TreatmentPreset), any `(samples, sr) -> samples` callable, or `None` (dry, no device).     |
-| [`ClipLike`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.ClipLike)                    | an array at `sr`, `(samples, its_sr)`, encoded bytes, or a file path.                                                                                                                                            |
+| [`LINE_GAP_S`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.LINE_GAP_S)                | Silence after each spoken line (s); the 0.6 s that read naturally in the #108 starter.           |
+|----------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| [`BED_UNDER_SPEECH_DB`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.BED_UNDER_SPEECH_DB)       | -12 dB).                                                                                         |
+| [`BED_DUCK_DB`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.BED_DUCK_DB)               | How far the bed dips under each line, relative to its level between lines (dB).                  |
+| [`ACTIVITY_THRESHOLD`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.ACTIVITY_THRESHOLD)        | A looped speech-activity mask counts as speech above this value (its seams crossfade).           |
+| [`LOOP_CROSSFADE_S`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.LOOP_CROSSFADE_S)          | Equal-power crossfade at each loop seam of the speech and the bed (s).                           |
+| [`DEFAULT_TREATMENT`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.DEFAULT_TREATMENT)         | The device a broadcast is heard through when none is named.                                      |
+| [`TREATMENT_CEILING_DB`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.TREATMENT_CEILING_DB)      | The treatment's peak ceiling (dBFS) after make-up gain (the same as mixing.treatment's default). |
+| [`BROADCAST_OP`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.BROADCAST_OP)              | The `transformations` op recorded on the result's licence.                                       |
+| [`UNKNOWN_LICENSE_ID`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.UNKNOWN_LICENSE_ID)        | The licence id of rights that were not given (fail-closed, never refused).                       |
+| [`STORE_OWNED_INGEST_KWARGS`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.STORE_OWNED_INGEST_KWARGS) | The `ingest_one` keywords `store=True` sets itself (not `ingest_options`).                       |
+| [`ClipLike`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.ClipLike)                  | an array at `sr`, `(samples, its_sr)`, encoded bytes, or a file path.                            |
 
 ### Functions
 
-| [`apply_treatment`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.apply_treatment)(samples, sample_rate, preset)    | Colour `samples` as heard through `preset`'s device (mono or `(n, ch)`).                                              |
-|---------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
 | [`as_clip`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.as_clip)(item, sample_rate)                       | `item` as a mono `float32` working array at `sample_rate`.                                                            |
+|---------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
 | [`bed_gain_db`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.bed_gain_db)(speech, bed, sample_rate, \*[, ...]) | The gain that puts `bed` `under_db` below `speech` in integrated loudness.                                            |
 | [`broadcast_bed`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.broadcast_bed)(lines, \*[, bed, bed_prompt, ...]) | Speech lines heard through a radio/TV/PA/phone over a bed, looped for a scene (#108).                                 |
 | [`broadcast_license`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.broadcast_license)(bed, speech, \*, treatment)    | The broadcast's rights: the bed's, narrowed to the speech's (never widened).                                          |
@@ -29486,15 +29479,13 @@ dol-only.
 | [`join_lines`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.join_lines)(clips, sample_rate, \*[, gap_s])      | Concatenate mono `clips` with `gap_s` of silence after each one.                                                      |
 | [`mix_program`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.mix_program)(speech, bed, sample_rate, \*[, ...]) | Speech over the bed, both fitted to `duration` (default: the speech's length).                                        |
 | [`mix_refusal`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.mix_refusal)(source, \*[, share_alike])           | Why a sound with rights `source` may not be treated and mixed in, or `None`.                                          |
-| [`resolve_treatment`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.resolve_treatment)(treatment)                     | `treatment=` as a `(samples, sr) -> samples` callable (`None`: dry).                                                  |
 | [`speech_activity`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.speech_activity)(clips, sample_rate, \*[, gap_s]) | Where [`join_lines()`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.join_lines) puts speech: `1` over each clip, `0` in the gaps. |
 | [`store_refusal`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.store_refusal)(rights, library, \*[, ...])        | Why a broadcast with `rights` may not go into `library`, or `None`.                                                   |
 
 ### Classes
 
-| [`BroadcastBed`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.BroadcastBed)(audio, sr, license, sources, ...)   | A rendered broadcast bed: the audio and the rights of everything in it.         |
-|---------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
-| [`TreatmentPreset`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.TreatmentPreset)(name, highpass_hz, ...[, ...])   | A diegetic-source colouring: band-pass -> RMS compressor -> make-up -> limiter. |
+| [`BroadcastBed`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.BroadcastBed)(audio, sr, license, sources, ...)   | A rendered broadcast bed: the audio and the rights of everything in it.   |
+|---------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
 
 ### Exceptions
 
@@ -29598,10 +29589,6 @@ Bases: [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueEr
 
 A source whose rights do not allow it into a broadcast bed (refused, fail-closed).
 
-### foley.weave.broadcast.COMPRESSOR_DETECTOR_S *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.02*
-
-Time constant of the compressor’s RMS level detector (s).
-
 ### foley.weave.broadcast.ClipLike
 
 an array at `sr`, `(samples, its_sr)`, encoded bytes, or a file path.
@@ -29615,14 +29602,6 @@ alias of `ndarray` | [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#
 
 The device a broadcast is heard through when none is named.
 
-### foley.weave.broadcast.DETECTOR_FLOOR_DB *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= -120.0*
-
-Floor of the compressor’s level detector, so silence has a finite level (dBFS).
-
-### foley.weave.broadcast.FILTER_ORDER *: [int](https://docs.python.org/3/builtins/functions.html#int)* *= 4*
-
-Butterworth order of the treatment’s band-pass (per edge).
-
 ### foley.weave.broadcast.LINE_GAP_S *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.6*
 
 Silence after each spoken line (s); the 0.6 s that read naturally in the #108 starter.
@@ -29631,124 +29610,17 @@ Silence after each spoken line (s); the 0.6 s that read naturally in the #108 st
 
 Equal-power crossfade at each loop seam of the speech and the bed (s).
 
-### foley.weave.broadcast.MAX_CUTOFF_NYQUIST_FRACTION *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.95*
-
-The band-pass’s upper edge is held under this fraction of Nyquist (a low `sr`).
-
 ### foley.weave.broadcast.STORE_OWNED_INGEST_KWARGS *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= frozenset({'allow_ai_training_forbidden', 'library', 'license', 'restamp_duplicate', 'sound_id', 'store'})*
 
 The `ingest_one` keywords `store=True` sets itself (not `ingest_options`).
 
-### foley.weave.broadcast.TREATMENTS *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [TreatmentPreset](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.TreatmentPreset)]* *= {'am_radio': TreatmentPreset(name='am_radio', highpass_hz=450.0, lowpass_hz=3200.0, threshold_db=-24.0, ratio=4.0, makeup_db=6.0, filter_order=4, detector_s=0.02, ceiling_db=-1.0), 'pa': TreatmentPreset(name='pa', highpass_hz=400.0, lowpass_hz=4000.0, threshold_db=-26.0, ratio=6.0, makeup_db=8.0, filter_order=4, detector_s=0.02, ceiling_db=-1.0), 'phone': TreatmentPreset(name='phone', highpass_hz=300.0, lowpass_hz=3400.0, threshold_db=-22.0, ratio=4.0, makeup_db=6.0, filter_order=4, detector_s=0.02, ceiling_db=-1.0), 'tv': TreatmentPreset(name='tv', highpass_hz=150.0, lowpass_hz=7000.0, threshold_db=-20.0, ratio=3.0, makeup_db=4.0, filter_order=4, detector_s=0.02, ceiling_db=-1.0)}*
-
-`am_radio` is the #108 starter’s chain (highpass 450,
-lowpass 3200); `phone` is the narrowband telephone channel (300-3400 Hz, ITU-T
-G.712); `tv` a small TV speaker; `pa` a horn loudspeaker, squashed hardest.
-
-* **Type:**
-  The named devices. Passbands
-
 ### foley.weave.broadcast.TREATMENT_CEILING_DB *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= -1.0*
 
-The treatment’s peak ceiling (dBFS) after make-up gain.
-
-### foley.weave.broadcast.Treatment
-
-a [`TREATMENTS`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.TREATMENTS) name, a [`TreatmentPreset`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.TreatmentPreset),
-any `(samples, sr) -> samples` callable, or `None` (dry, no device).
-
-* **Type:**
-  What `treatment=` takes
-
-alias of [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`TreatmentPreset`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.TreatmentPreset) | `Callable`[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], `ndarray`] | [`None`](https://docs.python.org/3/builtins/constants.html#None)
-
-### *class* foley.weave.broadcast.TreatmentPreset(name, highpass_hz, lowpass_hz, threshold_db, ratio, makeup_db=0.0, filter_order=4, detector_s=0.02, ceiling_db=-1.0)
-
-Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
-
-A diegetic-source colouring: band-pass -> RMS compressor -> make-up -> limiter.
-
-Callable as `preset(samples, sample_rate)`, so a preset is just one value of the
-`treatment=` strategy (any `(samples, sr) -> samples` callable is another).
-
-#### name
-
-The preset’s name (recorded on the result’s licence).
-
-* **Type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
-#### highpass_hz
-
-Lower edge of the device’s passband (Hz).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### lowpass_hz
-
-Upper edge of the device’s passband (Hz).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### threshold_db
-
-Compressor threshold (dBFS of the RMS detector).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### ratio
-
-Compressor ratio above the threshold (`1` = none).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### makeup_db
-
-Gain after the compressor (dB).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### filter_order
-
-Butterworth order of the band-pass.
-
-* **Type:**
-  [`int`](https://docs.python.org/3/builtins/functions.html#int)
-
-#### detector_s
-
-RMS detector time constant (s).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### ceiling_db
-
-Peak ceiling of the final limiter (dBFS).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+The treatment’s peak ceiling (dBFS) after make-up gain (the same as mixing.treatment’s default).
 
 ### foley.weave.broadcast.UNKNOWN_LICENSE_ID *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= 'unknown'*
 
 The licence id of rights that were not given (fail-closed, never refused).
-
-### foley.weave.broadcast.apply_treatment(samples, sample_rate, preset)
-
-Colour `samples` as heard through `preset`’s device (mono or `(n, ch)`).
-
-Band-pass -> RMS compressor with make-up gain -> lookahead peak limiter
-(`mixing.loudness.limit_peaks()`). Returns `float32`, same shape.
-
-Lazy dependencies: numpy, scipy, `mixing[loudness]` (all in `foley[audio]`).
-
-* **Return type:**
-  `ndarray`
 
 ### foley.weave.broadcast.as_clip(item, sample_rate)
 
@@ -29788,8 +29660,8 @@ then is the text spoken.
   * **bed** – The bed: a library sound id, or its audio (any `lines` form).
   * **bed_prompt** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Instead of `bed`: a prompt for [`foley.generate()`](_autosummary/foley.html.md#foley.generate) (its budget,
     paid-generation consent and licence gate apply unchanged).
-  * **treatment** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`TreatmentPreset`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.TreatmentPreset), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], `ndarray`], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – The device: a [`TREATMENTS`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.TREATMENTS) name (`'am_radio'` default,
-    `'tv'`, `'pa'`, `'phone'`), a [`TreatmentPreset`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.TreatmentPreset), any
+  * **treatment** (`Treatment`) – The device: a `TREATMENTS` name (`'am_radio'` default,
+    `'tv'`, `'pa'`, `'phone'`), a `TreatmentPreset`, any
     `(samples, sr) -> samples` callable (e.g. the fleet’s, once `mixing` has
     it), or `None` for dry. Applied to the whole program, crowd included.
   * **gap_s** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Silence after each line (s).
@@ -29950,20 +29822,6 @@ True
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
-
-### foley.weave.broadcast.resolve_treatment(treatment)
-
-`treatment=` as a `(samples, sr) -> samples` callable (`None`: dry).
-
-```pycon
->>> resolve_treatment("phone").name
-'phone'
->>> resolve_treatment(None)(1, 2)
-1
-```
-
-* **Return type:**
-  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], `ndarray`]
 
 ### foley.weave.broadcast.speech_activity(clips, sample_rate, , gap_s=0.6)
 
@@ -30253,7 +30111,6 @@ signed + embedded C2PA manifest are best-effort no-ops when their extras/cert ar
 | [`MasterProfile`](_autosummary/foley.weave.html.md#foley.weave.MasterProfile)([target_lufs, true_peak_db, ...])  | Loudness master target — the delivery spec as data, not code (report 06 §5.2).                                                     |
 | [`MasterReport`](_autosummary/foley.weave.html.md#foley.weave.MasterReport)(target_lufs, input_lufs, ...)       | What the master stage did — a JSON-serialisable audit row for the run-artifact.                                                    |
 | [`BroadcastBed`](_autosummary/foley.weave.html.md#foley.weave.BroadcastBed)(audio, sr, license, sources, ...)   | A rendered broadcast bed: the audio and the rights of everything in it.                                                            |
-| [`TreatmentPreset`](_autosummary/foley.weave.html.md#foley.weave.TreatmentPreset)(name, highpass_hz, ...[, ...])   | A diegetic-source colouring: band-pass -> RMS compressor -> make-up -> limiter.                                                    |
 
 ### Exceptions
 
@@ -30575,78 +30432,6 @@ Align each segment on its own slice of `audio`; timings in whole-file seconds.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
-### *class* foley.weave.TreatmentPreset(name, highpass_hz, lowpass_hz, threshold_db, ratio, makeup_db=0.0, filter_order=4, detector_s=0.02, ceiling_db=-1.0)
-
-Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
-
-A diegetic-source colouring: band-pass -> RMS compressor -> make-up -> limiter.
-
-Callable as `preset(samples, sample_rate)`, so a preset is just one value of the
-`treatment=` strategy (any `(samples, sr) -> samples` callable is another).
-
-#### name
-
-The preset’s name (recorded on the result’s licence).
-
-* **Type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
-#### highpass_hz
-
-Lower edge of the device’s passband (Hz).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### lowpass_hz
-
-Upper edge of the device’s passband (Hz).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### threshold_db
-
-Compressor threshold (dBFS of the RMS detector).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### ratio
-
-Compressor ratio above the threshold (`1` = none).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### makeup_db
-
-Gain after the compressor (dB).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### filter_order
-
-Butterworth order of the band-pass.
-
-* **Type:**
-  [`int`](https://docs.python.org/3/builtins/functions.html#int)
-
-#### detector_s
-
-RMS detector time constant (s).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
-#### ceiling_db
-
-Peak ceiling of the final limiter (dBFS).
-
-* **Type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
 ### *class* foley.weave.WeaveResult(audio, sr, timeline, credits, captions_vtt, captions_srt, master_report, run_manifest_ref=None, content_credential=None, watermark=None, notes=list(), alignment=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
@@ -30708,8 +30493,8 @@ then is the text spoken.
   * **bed** – The bed: a library sound id, or its audio (any `lines` form).
   * **bed_prompt** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Instead of `bed`: a prompt for [`foley.generate()`](_autosummary/foley.html.md#foley.generate) (its budget,
     paid-generation consent and licence gate apply unchanged).
-  * **treatment** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`TreatmentPreset`](_autosummary/foley.weave.broadcast.html.md#foley.weave.broadcast.TreatmentPreset), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], `ndarray`], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – The device: a `TREATMENTS` name (`'am_radio'` default,
-    `'tv'`, `'pa'`, `'phone'`), a [`TreatmentPreset`](_autosummary/foley.weave.html.md#foley.weave.TreatmentPreset), any
+  * **treatment** (`Treatment`) – The device: a `TREATMENTS` name (`'am_radio'` default,
+    `'tv'`, `'pa'`, `'phone'`), a `TreatmentPreset`, any
     `(samples, sr) -> samples` callable (e.g. the fleet’s, once `mixing` has
     it), or `None` for dry. Applied to the whole program, crowd included.
   * **gap_s** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Silence after each line (s).
@@ -31848,7 +31633,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-22 08:10 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/2712e61fe96b4df7cbe1c5ae52dc1244ae66b101"><code>2712e61</code></a> on branch <code>main</code>, for **foley 0.0.143** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-22 08:21 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/163a31fcfef7e581df15982ce370168df8194a0c"><code>163a31f</code></a> on branch <code>main</code>, for **foley 0.0.144** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -31857,7 +31642,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/2712e61fe96b4df7cbe1c5ae52dc1244ae66b101"><code>2712e61fe96b4df7cbe1c5ae52dc1244ae66b101</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/163a31fcfef7e581df15982ce370168df8194a0c"><code>163a31fcfef7e581df15982ce370168df8194a0c</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -31868,9 +31653,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/45001079602">45001079602</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/45002214142">45002214142</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>2712e61fe96b4df7cbe1c5ae52dc1244ae66b101</code> (in the history of the built commit) |
+| Event commit | <code>812dc8ca250dba6f25eee831b78b3a24534d4da9</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -31895,13 +31680,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.143/">0.0.143</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.144/">0.0.144</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 2712e61fe96b4df7cbe1c5ae52dc1244ae66b101
+git checkout 163a31fcfef7e581df15982ce370168df8194a0c
 pip install "epythet==0.2.23"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

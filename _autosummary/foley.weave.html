@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=df9b7052"></script>
+    <script src="../_static/documentation_options.js?v=1412e09f"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.143" />
+  <meta name="docsearch:version" content="0.0.144" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -650,9 +650,6 @@ signed + embedded C2PA manifest are best-effort no-ops when their extras/cert ar
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.BroadcastBed" title="foley.weave.BroadcastBed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BroadcastBed</span></code></a>(audio, sr, license, sources, ...)</p></td>
 <td><p>A rendered broadcast bed: the audio and the rights of everything in it.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.TreatmentPreset" title="foley.weave.TreatmentPreset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TreatmentPreset</span></code></a>(name, highpass_hz, ...[, ...])</p></td>
-<td><p>A diegetic-source colouring: band-pass -&gt; RMS compressor -&gt; make-up -&gt; limiter.</p></td>
-</tr>
 </tbody>
 </table>
 </div>
@@ -1083,116 +1080,6 @@ if a segment with words starts at or past the end, or spans no sample).</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="foley.weave.TreatmentPreset">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">TreatmentPreset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">highpass_hz</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lowpass_hz</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_db</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ratio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">makeup_db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">detector_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.02</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ceiling_db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/broadcast.html#TreatmentPreset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.TreatmentPreset" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>A diegetic-source colouring: band-pass -&gt; RMS compressor -&gt; make-up -&gt; limiter.</p>
-<p>Callable as <code class="docutils literal notranslate"><span class="pre">preset(samples,</span> <span class="pre">sample_rate)</span></code>, so a preset is just one value of the
-<code class="docutils literal notranslate"><span class="pre">treatment=</span></code> strategy (any <code class="docutils literal notranslate"><span class="pre">(samples,</span> <span class="pre">sr)</span> <span class="pre">-&gt;</span> <span class="pre">samples</span></code> callable is another).</p>
-<dl class="field-list simple">
-</dl>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="foley.weave.TreatmentPreset.name">
-<span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#foley.weave.TreatmentPreset.name" title="Link to this definition">#</a></dt>
-<dd><p>The preset’s name (recorded on the result’s licence).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="foley.weave.TreatmentPreset.highpass_hz">
-<span class="sig-name descname"><span class="pre">highpass_hz</span></span><a class="headerlink" href="#foley.weave.TreatmentPreset.highpass_hz" title="Link to this definition">#</a></dt>
-<dd><p>Lower edge of the device’s passband (Hz).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="foley.weave.TreatmentPreset.lowpass_hz">
-<span class="sig-name descname"><span class="pre">lowpass_hz</span></span><a class="headerlink" href="#foley.weave.TreatmentPreset.lowpass_hz" title="Link to this definition">#</a></dt>
-<dd><p>Upper edge of the device’s passband (Hz).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="foley.weave.TreatmentPreset.threshold_db">
-<span class="sig-name descname"><span class="pre">threshold_db</span></span><a class="headerlink" href="#foley.weave.TreatmentPreset.threshold_db" title="Link to this definition">#</a></dt>
-<dd><p>Compressor threshold (dBFS of the RMS detector).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="foley.weave.TreatmentPreset.ratio">
-<span class="sig-name descname"><span class="pre">ratio</span></span><a class="headerlink" href="#foley.weave.TreatmentPreset.ratio" title="Link to this definition">#</a></dt>
-<dd><p>Compressor ratio above the threshold (<code class="docutils literal notranslate"><span class="pre">1</span></code> = none).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="foley.weave.TreatmentPreset.makeup_db">
-<span class="sig-name descname"><span class="pre">makeup_db</span></span><a class="headerlink" href="#foley.weave.TreatmentPreset.makeup_db" title="Link to this definition">#</a></dt>
-<dd><p>Gain after the compressor (dB).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="foley.weave.TreatmentPreset.filter_order">
-<span class="sig-name descname"><span class="pre">filter_order</span></span><a class="headerlink" href="#foley.weave.TreatmentPreset.filter_order" title="Link to this definition">#</a></dt>
-<dd><p>Butterworth order of the band-pass.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="foley.weave.TreatmentPreset.detector_s">
-<span class="sig-name descname"><span class="pre">detector_s</span></span><a class="headerlink" href="#foley.weave.TreatmentPreset.detector_s" title="Link to this definition">#</a></dt>
-<dd><p>RMS detector time constant (s).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="foley.weave.TreatmentPreset.ceiling_db">
-<span class="sig-name descname"><span class="pre">ceiling_db</span></span><a class="headerlink" href="#foley.weave.TreatmentPreset.ceiling_db" title="Link to this definition">#</a></dt>
-<dd><p>Peak ceiling of the final limiter (dBFS).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
 <dt class="sig sig-object py" id="foley.weave.WeaveResult">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">WeaveResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">audio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">credits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">captions_vtt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">captions_srt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">master_report</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_manifest_ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">content_credential</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">watermark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">notes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">list()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alignment</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave.html#WeaveResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.WeaveResult" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
@@ -1270,8 +1157,8 @@ through <code class="docutils literal notranslate"><span class="pre">tts=</span>
 <li><p><strong>bed</strong> – The bed: a library sound id, or its audio (any <code class="docutils literal notranslate"><span class="pre">lines</span></code> form).</p></li>
 <li><p><strong>bed_prompt</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – Instead of <code class="docutils literal notranslate"><span class="pre">bed</span></code>: a prompt for <a class="reference internal" href="foley.html#foley.generate" title="foley.generate"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.generate()</span></code></a> (its budget,
 paid-generation consent and licence gate apply unchanged).</p></li>
-<li><p><strong>treatment</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference internal" href="foley.weave.broadcast.html#foley.weave.broadcast.TreatmentPreset" title="foley.weave.broadcast.TreatmentPreset"><code class="xref py py-class docutils literal notranslate"><span class="pre">TreatmentPreset</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span>]</span>) – The device: a <code class="xref py py-data docutils literal notranslate"><span class="pre">TREATMENTS</span></code> name (<code class="docutils literal notranslate"><span class="pre">'am_radio'</span></code> default,
-<code class="docutils literal notranslate"><span class="pre">'tv'</span></code>, <code class="docutils literal notranslate"><span class="pre">'pa'</span></code>, <code class="docutils literal notranslate"><span class="pre">'phone'</span></code>), a <a class="reference internal" href="#foley.weave.TreatmentPreset" title="foley.weave.TreatmentPreset"><code class="xref py py-class docutils literal notranslate"><span class="pre">TreatmentPreset</span></code></a>, any
+<li><p><strong>treatment</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Treatment</span></code></span>) – The device: a <code class="xref py py-data docutils literal notranslate"><span class="pre">TREATMENTS</span></code> name (<code class="docutils literal notranslate"><span class="pre">'am_radio'</span></code> default,
+<code class="docutils literal notranslate"><span class="pre">'tv'</span></code>, <code class="docutils literal notranslate"><span class="pre">'pa'</span></code>, <code class="docutils literal notranslate"><span class="pre">'phone'</span></code>), a <code class="xref py py-class docutils literal notranslate"><span class="pre">TreatmentPreset</span></code>, any
 <code class="docutils literal notranslate"><span class="pre">(samples,</span> <span class="pre">sr)</span> <span class="pre">-&gt;</span> <span class="pre">samples</span></code> callable (e.g. the fleet’s, once <code class="docutils literal notranslate"><span class="pre">mixing</span></code> has
 it), or <code class="docutils literal notranslate"><span class="pre">None</span></code> for dry. Applied to the whole program, crowd included.</p></li>
 <li><p><strong>gap_s</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Silence after each line (s).</p></li>
@@ -1891,18 +1778,6 @@ release gates by default.</p></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.SegmentedAligner.spans"><code class="docutils literal notranslate"><span class="pre">SegmentedAligner.spans()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.SegmentedAligner.split"><code class="docutils literal notranslate"><span class="pre">SegmentedAligner.split()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.SegmentedAligner.word_timeline"><code class="docutils literal notranslate"><span class="pre">SegmentedAligner.word_timeline()</span></code></a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.TreatmentPreset"><code class="docutils literal notranslate"><span class="pre">TreatmentPreset</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.TreatmentPreset.name"><code class="docutils literal notranslate"><span class="pre">TreatmentPreset.name</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.TreatmentPreset.highpass_hz"><code class="docutils literal notranslate"><span class="pre">TreatmentPreset.highpass_hz</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.TreatmentPreset.lowpass_hz"><code class="docutils literal notranslate"><span class="pre">TreatmentPreset.lowpass_hz</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.TreatmentPreset.threshold_db"><code class="docutils literal notranslate"><span class="pre">TreatmentPreset.threshold_db</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.TreatmentPreset.ratio"><code class="docutils literal notranslate"><span class="pre">TreatmentPreset.ratio</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.TreatmentPreset.makeup_db"><code class="docutils literal notranslate"><span class="pre">TreatmentPreset.makeup_db</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.TreatmentPreset.filter_order"><code class="docutils literal notranslate"><span class="pre">TreatmentPreset.filter_order</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.TreatmentPreset.detector_s"><code class="docutils literal notranslate"><span class="pre">TreatmentPreset.detector_s</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.TreatmentPreset.ceiling_db"><code class="docutils literal notranslate"><span class="pre">TreatmentPreset.ceiling_db</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.WeaveResult"><code class="docutils literal notranslate"><span class="pre">WeaveResult</span></code></a><ul class="nav section-nav flex-column">
