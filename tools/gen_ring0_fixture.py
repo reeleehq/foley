@@ -92,21 +92,21 @@ CLIPS = [
         door_slam,
         "a heavy wooden door slams shut",
         ["door", "slam", "wood"],
-        "DOORSlam",
+        "DOORWood",
     ),
     (
         "rain_on_window.wav",
         rain_on_window,
         "steady rain falling on a window pane",
         ["rain", "window", "weather"],
-        "RAINGnrl",
+        "RAIN",
     ),
     (
         "footsteps.wav",
         footsteps,
         "footsteps walking on a hard floor",
         ["footsteps", "walking", "foot"],
-        "FOOTHard",
+        "FEETHmn",
     ),
     (
         "water_drip.wav",
@@ -120,7 +120,7 @@ CLIPS = [
         glass_clink,
         "two glasses clink together in a toast",
         ["glass", "clink", "toast"],
-        "GLASClink",
+        "GLASImpt",
     ),
     (
         "wind_gust.wav",

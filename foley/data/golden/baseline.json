@@ -10,12 +10,12 @@
   },
   "corpus": {
     "name": "ring0",
-    "manifest_sha256": "96425592d301e762d840dd9d8aa23688cea14835d44714e6385387bd69a7185a"
+    "manifest_sha256": "5f8b2b9f42cc60c8e56ebbf8a34d0f985627af3f5246323f17d389bb95e17d78"
   },
   "golden": {
-    "revision": "gld-v2",
+    "revision": "gld-v3",
     "n_items": 156,
-    "seed_sha256": "ff5fb77a59650ff0c085f8011345bd30c3412073aff0158f95df3d1ce2cd88ce"
+    "seed_sha256": "ca6c4fa9a49676a231397d19074f7fd1fb5bd969bbd7e2917e6a123ec172d504"
   },
-  "updated_at": "2026-11-02"
+  "updated_at": "2026-11-22"
 }

@@ -7,7 +7,7 @@
       "slam",
       "wood"
     ],
-    "ucs_catid": "DOORSlam",
+    "ucs_catid": "DOORWood",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -19,7 +19,7 @@
       "window",
       "weather"
     ],
-    "ucs_catid": "RAINGnrl",
+    "ucs_catid": "RAIN",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -31,7 +31,7 @@
       "walking",
       "foot"
     ],
-    "ucs_catid": "FOOTHard",
+    "ucs_catid": "FEETHmn",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -55,7 +55,7 @@
       "clink",
       "toast"
     ],
-    "ucs_catid": "GLASClink",
+    "ucs_catid": "GLASImpt",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -80,7 +80,7 @@
       "creak",
       "open"
     ],
-    "ucs_catid": "DoorWood",
+    "ucs_catid": "DOORWood",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -93,7 +93,7 @@
       "knock",
       "rap"
     ],
-    "ucs_catid": "DoorWood",
+    "ucs_catid": "DOORWood",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -106,7 +106,7 @@
       "click",
       "shut"
     ],
-    "ucs_catid": "DoorWood",
+    "ucs_catid": "DOORWood",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -119,7 +119,7 @@
       "slam",
       "bang"
     ],
-    "ucs_catid": "DoorWood",
+    "ucs_catid": "DOORWood",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -132,7 +132,7 @@
       "patter",
       "leaves"
     ],
-    "ucs_catid": "RainWx",
+    "ucs_catid": "RAINVege",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -145,7 +145,7 @@
       "downpour",
       "roar"
     ],
-    "ucs_catid": "RainWx",
+    "ucs_catid": "RAINVege",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -158,7 +158,7 @@
       "drip",
       "water"
     ],
-    "ucs_catid": "RainWx",
+    "ucs_catid": "RAINVege",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -171,7 +171,7 @@
       "patter",
       "tap"
     ],
-    "ucs_catid": "RainWx",
+    "ucs_catid": "RAINVege",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -184,7 +184,7 @@
       "trees",
       "winter"
     ],
-    "ucs_catid": "WindWx",
+    "ucs_catid": "WINDTonl",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -197,7 +197,7 @@
       "gap",
       "draft"
     ],
-    "ucs_catid": "WindWx",
+    "ucs_catid": "WINDTonl",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -210,7 +210,7 @@
       "rustle",
       "breeze"
     ],
-    "ucs_catid": "WindWx",
+    "ucs_catid": "WINDTonl",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -223,7 +223,7 @@
       "moan",
       "creak"
     ],
-    "ucs_catid": "WindWx",
+    "ucs_catid": "WINDTonl",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -236,7 +236,7 @@
       "hearth",
       "pop"
     ],
-    "ucs_catid": "FireElem",
+    "ucs_catid": "FIRECrkl",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -249,7 +249,7 @@
       "snap",
       "spark"
     ],
-    "ucs_catid": "FireElem",
+    "ucs_catid": "FIRECrkl",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -262,7 +262,7 @@
       "chimney",
       "flame"
     ],
-    "ucs_catid": "FireElem",
+    "ucs_catid": "FIRECrkl",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -275,7 +275,7 @@
       "flare",
       "flame"
     ],
-    "ucs_catid": "FireElem",
+    "ucs_catid": "FIRECrkl",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -288,7 +288,7 @@
       "stack",
       "ceramic"
     ],
-    "ucs_catid": "DishKit",
+    "ucs_catid": "CERMImpt",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -301,7 +301,7 @@
       "set",
       "thud"
     ],
-    "ucs_catid": "DishKit",
+    "ucs_catid": "CERMImpt",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -314,7 +314,7 @@
       "rattle",
       "open"
     ],
-    "ucs_catid": "DishKit",
+    "ucs_catid": "CERMImpt",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -327,7 +327,7 @@
       "splash",
       "water"
     ],
-    "ucs_catid": "DishKit",
+    "ucs_catid": "CERMImpt",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -340,7 +340,7 @@
       "strike",
       "hit"
     ],
-    "ucs_catid": "ToolWork",
+    "ucs_catid": "TOOLHand",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -353,7 +353,7 @@
       "cut",
       "rasp"
     ],
-    "ucs_catid": "ToolWork",
+    "ucs_catid": "TOOLHand",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -366,7 +366,7 @@
       "whir",
       "motor"
     ],
-    "ucs_catid": "ToolWork",
+    "ucs_catid": "TOOLHand",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -379,7 +379,7 @@
       "bolt",
       "click"
     ],
-    "ucs_catid": "ToolWork",
+    "ucs_catid": "TOOLHand",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -392,7 +392,7 @@
       "alert",
       "alarm"
     ],
-    "ucs_catid": "DogAnml",
+    "ucs_catid": "ANMLDog",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -405,7 +405,7 @@
       "low",
       "threat"
     ],
-    "ucs_catid": "DogAnml",
+    "ucs_catid": "ANMLDog",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -418,7 +418,7 @@
       "breath",
       "heavy"
     ],
-    "ucs_catid": "DogAnml",
+    "ucs_catid": "ANMLDog",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -431,7 +431,7 @@
       "beg",
       "soft"
     ],
-    "ucs_catid": "DogAnml",
+    "ucs_catid": "ANMLDog",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -444,7 +444,7 @@
       "start",
       "ignition"
     ],
-    "ucs_catid": "CarVeh",
+    "ucs_catid": "VEHCar",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -457,7 +457,7 @@
       "shut",
       "thud"
     ],
-    "ucs_catid": "CarVeh",
+    "ucs_catid": "VEHCar",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -470,7 +470,7 @@
       "honk",
       "blare"
     ],
-    "ucs_catid": "CarVeh",
+    "ucs_catid": "VEHCar",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -483,7 +483,7 @@
       "screech",
       "brake"
     ],
-    "ucs_catid": "CarVeh",
+    "ucs_catid": "VEHCar",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -496,7 +496,7 @@
       "cafe",
       "voices"
     ],
-    "ucs_catid": "CrowdHum",
+    "ucs_catid": "CRWDWalla",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -509,7 +509,7 @@
       "clap",
       "burst"
     ],
-    "ucs_catid": "CrowdHum",
+    "ucs_catid": "CRWDWalla",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -522,7 +522,7 @@
       "stadium",
       "roar"
     ],
-    "ucs_catid": "CrowdHum",
+    "ucs_catid": "CRWDWalla",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -535,7 +535,7 @@
       "shock",
       "surprise"
     ],
-    "ucs_catid": "CrowdHum",
+    "ucs_catid": "CRWDWalla",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -548,7 +548,7 @@
       "fast",
       "transition"
     ],
-    "ucs_catid": "StingFX",
+    "ucs_catid": "DSGNWhsh",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -561,7 +561,7 @@
       "hit",
       "deep"
     ],
-    "ucs_catid": "StingFX",
+    "ucs_catid": "DSGNWhsh",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -574,7 +574,7 @@
       "swell",
       "build"
     ],
-    "ucs_catid": "StingFX",
+    "ucs_catid": "DSGNWhsh",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -587,7 +587,7 @@
       "hit",
       "accent"
     ],
-    "ucs_catid": "StingFX",
+    "ucs_catid": "DSGNWhsh",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -600,7 +600,7 @@
       "squeak",
       "hinge"
     ],
-    "ucs_catid": "DoorMetal",
+    "ucs_catid": "DOORMetl",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -613,7 +613,7 @@
       "clang",
       "shut"
     ],
-    "ucs_catid": "DoorMetal",
+    "ucs_catid": "DOORMetl",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -626,7 +626,7 @@
       "bang",
       "echo"
     ],
-    "ucs_catid": "DoorMetal",
+    "ucs_catid": "DOORMetl",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -639,7 +639,7 @@
       "floor",
       "walk"
     ],
-    "ucs_catid": "FootWood",
+    "ucs_catid": "FEETHmn",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -652,7 +652,7 @@
       "wood",
       "climb"
     ],
-    "ucs_catid": "FootWood",
+    "ucs_catid": "FEETHmn",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -665,7 +665,7 @@
       "boards",
       "floor"
     ],
-    "ucs_catid": "FootWood",
+    "ucs_catid": "FEETHmn",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -678,7 +678,7 @@
       "crunch",
       "path"
     ],
-    "ucs_catid": "FootGrvl",
+    "ucs_catid": "FEETHmn",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -691,7 +691,7 @@
       "crunch",
       "boots"
     ],
-    "ucs_catid": "FootGrvl",
+    "ucs_catid": "FEETHmn",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -704,7 +704,7 @@
       "shuffle",
       "dry"
     ],
-    "ucs_catid": "FootGrvl",
+    "ucs_catid": "FEETHmn",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -717,7 +717,7 @@
       "concrete",
       "click"
     ],
-    "ucs_catid": "FootConc",
+    "ucs_catid": "FEETHmn",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -730,7 +730,7 @@
       "splash",
       "wet"
     ],
-    "ucs_catid": "FootConc",
+    "ucs_catid": "FEETHmn",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -743,7 +743,7 @@
       "pavement",
       "fast"
     ],
-    "ucs_catid": "FootConc",
+    "ucs_catid": "FEETHmn",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -756,7 +756,7 @@
       "rumble",
       "storm"
     ],
-    "ucs_catid": "ThndrWx",
+    "ucs_catid": "THUN",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -769,7 +769,7 @@
       "close",
       "loud"
     ],
-    "ucs_catid": "ThndrWx",
+    "ucs_catid": "THUN",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -782,7 +782,7 @@
       "storm",
       "rumble"
     ],
-    "ucs_catid": "ThndrWx",
+    "ucs_catid": "THUN",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -795,7 +795,7 @@
       "babble",
       "water"
     ],
-    "ucs_catid": "WtrStrm",
+    "ucs_catid": "WATRFlow",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -808,7 +808,7 @@
       "water",
       "steady"
     ],
-    "ucs_catid": "WtrStrm",
+    "ucs_catid": "WATRFlow",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -821,7 +821,7 @@
       "water",
       "distant"
     ],
-    "ucs_catid": "WtrStrm",
+    "ucs_catid": "WATRFlow",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -834,7 +834,7 @@
       "shore",
       "wash"
     ],
-    "ucs_catid": "WtrWave",
+    "ucs_catid": "WATRWave",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -847,7 +847,7 @@
       "rocks",
       "sea"
     ],
-    "ucs_catid": "WtrWave",
+    "ucs_catid": "WATRWave",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -860,7 +860,7 @@
       "dock",
       "water"
     ],
-    "ucs_catid": "WtrWave",
+    "ucs_catid": "WATRWave",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -873,7 +873,7 @@
       "boil",
       "steam"
     ],
-    "ucs_catid": "Kettle",
+    "ucs_catid": "FOODKware",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -886,7 +886,7 @@
       "boil",
       "bubble"
     ],
-    "ucs_catid": "Kettle",
+    "ucs_catid": "FOODKware",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -899,7 +899,7 @@
       "sizzle",
       "fry"
     ],
-    "ucs_catid": "Kettle",
+    "ucs_catid": "FOODKware",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -912,7 +912,7 @@
       "scrape",
       "plate"
     ],
-    "ucs_catid": "Cutlery",
+    "ucs_catid": "FOODTware",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -925,7 +925,7 @@
       "mug",
       "clink"
     ],
-    "ucs_catid": "Cutlery",
+    "ucs_catid": "FOODTware",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -938,7 +938,7 @@
       "board",
       "cut"
     ],
-    "ucs_catid": "Cutlery",
+    "ucs_catid": "FOODTware",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -951,7 +951,7 @@
       "done",
       "timer"
     ],
-    "ucs_catid": "Applnce",
+    "ucs_catid": "BEEPAppl",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -964,7 +964,7 @@
       "grind",
       "motor"
     ],
-    "ucs_catid": "Applnce",
+    "ucs_catid": "BEEPAppl",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -977,7 +977,7 @@
       "toast",
       "click"
     ],
-    "ucs_catid": "Applnce",
+    "ucs_catid": "BEEPAppl",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -990,7 +990,7 @@
       "turn",
       "book"
     ],
-    "ucs_catid": "PaperDoc",
+    "ucs_catid": "OBJBook",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1003,7 +1003,7 @@
       "ball",
       "crush"
     ],
-    "ucs_catid": "PaperDoc",
+    "ucs_catid": "OBJBook",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1016,7 +1016,7 @@
       "rip",
       "split"
     ],
-    "ucs_catid": "PaperDoc",
+    "ucs_catid": "OBJBook",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1029,7 +1029,7 @@
       "write",
       "note"
     ],
-    "ucs_catid": "WritImpl",
+    "ucs_catid": "OBJWrite",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1042,7 +1042,7 @@
       "scratch",
       "draw"
     ],
-    "ucs_catid": "WritImpl",
+    "ucs_catid": "OBJWrite",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1055,7 +1055,7 @@
       "clack",
       "type"
     ],
-    "ucs_catid": "WritImpl",
+    "ucs_catid": "OBJWrite",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1068,7 +1068,7 @@
       "glass",
       "glug"
     ],
-    "ucs_catid": "GlassPour",
+    "ucs_catid": "FOODPour",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1081,7 +1081,7 @@
       "pop",
       "uncork"
     ],
-    "ucs_catid": "GlassPour",
+    "ucs_catid": "FOODPour",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1094,7 +1094,7 @@
       "pour",
       "hiss"
     ],
-    "ucs_catid": "GlassPour",
+    "ucs_catid": "FOODPour",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1107,7 +1107,7 @@
       "clang",
       "hit"
     ],
-    "ucs_catid": "MetalImp",
+    "ucs_catid": "METLImpt",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1120,7 +1120,7 @@
       "ring",
       "forge"
     ],
-    "ucs_catid": "MetalImp",
+    "ucs_catid": "METLImpt",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1133,7 +1133,7 @@
       "wobble",
       "warble"
     ],
-    "ucs_catid": "MetalImp",
+    "ucs_catid": "METLImpt",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1146,7 +1146,7 @@
       "fold",
       "fabric"
     ],
-    "ucs_catid": "ClothFab",
+    "ucs_catid": "CLOTHMvmt",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1159,7 +1159,7 @@
       "tear",
       "cloth"
     ],
-    "ucs_catid": "ClothFab",
+    "ucs_catid": "CLOTHMvmt",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1172,7 +1172,7 @@
       "zip",
       "close"
     ],
-    "ucs_catid": "ClothFab",
+    "ucs_catid": "CLOTHMvmt",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1185,7 +1185,7 @@
       "soft",
       "call"
     ],
-    "ucs_catid": "CatAnml",
+    "ucs_catid": "ANMLCat",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1198,7 +1198,7 @@
       "rumble",
       "content"
     ],
-    "ucs_catid": "CatAnml",
+    "ucs_catid": "ANMLCat",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1211,7 +1211,7 @@
       "warn",
       "startle"
     ],
-    "ucs_catid": "CatAnml",
+    "ucs_catid": "ANMLCat",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1224,7 +1224,7 @@
       "morning",
       "song"
     ],
-    "ucs_catid": "BirdAnml",
+    "ucs_catid": "BIRDSong",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1237,7 +1237,7 @@
       "harsh",
       "call"
     ],
-    "ucs_catid": "BirdAnml",
+    "ucs_catid": "BIRDSong",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1250,7 +1250,7 @@
       "night",
       "woods"
     ],
-    "ucs_catid": "BirdAnml",
+    "ucs_catid": "BIRDSong",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1263,7 +1263,7 @@
       "dirt",
       "hooves"
     ],
-    "ucs_catid": "HorseAnml",
+    "ucs_catid": "FEETHors",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1276,7 +1276,7 @@
       "whinny",
       "call"
     ],
-    "ucs_catid": "HorseAnml",
+    "ucs_catid": "FEETHors",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1289,7 +1289,7 @@
       "trot",
       "clop"
     ],
-    "ucs_catid": "HorseAnml",
+    "ucs_catid": "FEETHors",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1302,7 +1302,7 @@
       "night",
       "insects"
     ],
-    "ucs_catid": "InsctAnml",
+    "ucs_catid": "ANMLInsc",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1315,7 +1315,7 @@
       "flower",
       "insect"
     ],
-    "ucs_catid": "InsctAnml",
+    "ucs_catid": "ANMLInsc",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1328,7 +1328,7 @@
       "ear",
       "insect"
     ],
-    "ucs_catid": "InsctAnml",
+    "ucs_catid": "ANMLInsc",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1341,7 +1341,7 @@
       "distant",
       "signal"
     ],
-    "ucs_catid": "TrainVeh",
+    "ucs_catid": "TRNHorn",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1354,7 +1354,7 @@
       "clatter",
       "rails"
     ],
-    "ucs_catid": "TrainVeh",
+    "ucs_catid": "TRNHorn",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1367,7 +1367,7 @@
       "screech",
       "stop"
     ],
-    "ucs_catid": "TrainVeh",
+    "ucs_catid": "TRNHorn",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1380,7 +1380,7 @@
       "ring",
       "ding"
     ],
-    "ucs_catid": "BikeVeh",
+    "ucs_catid": "BELLHand",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1393,7 +1393,7 @@
       "spin",
       "whir"
     ],
-    "ucs_catid": "BikeVeh",
+    "ucs_catid": "BELLHand",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1406,7 +1406,7 @@
       "chug",
       "engine"
     ],
-    "ucs_catid": "BoatVeh",
+    "ucs_catid": "BOATMotr",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1419,7 +1419,7 @@
       "water",
       "dip"
     ],
-    "ucs_catid": "BoatVeh",
+    "ucs_catid": "BOATMotr",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1432,7 +1432,7 @@
       "horn",
       "mist"
     ],
-    "ucs_catid": "BoatVeh",
+    "ucs_catid": "BOATMotr",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1445,7 +1445,7 @@
       "pulse",
       "body"
     ],
-    "ucs_catid": "BodyHum",
+    "ucs_catid": "HMNHart",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1458,7 +1458,7 @@
       "breath",
       "run"
     ],
-    "ucs_catid": "BodyHum",
+    "ucs_catid": "HMNHart",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1471,7 +1471,7 @@
       "snap",
       "single"
     ],
-    "ucs_catid": "BodyHum",
+    "ucs_catid": "HMNHart",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1484,7 +1484,7 @@
       "toll",
       "deep"
     ],
-    "ucs_catid": "BellsChm",
+    "ucs_catid": "BELLLrg",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1497,7 +1497,7 @@
       "ring",
       "crisp"
     ],
-    "ucs_catid": "BellsChm",
+    "ucs_catid": "BELLLrg",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1510,7 +1510,7 @@
       "tinkle",
       "breeze"
     ],
-    "ucs_catid": "BellsChm",
+    "ucs_catid": "BELLLrg",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1523,7 +1523,7 @@
       "wall",
       "time"
     ],
-    "ucs_catid": "ClockTck",
+    "ucs_catid": "CLOCKTick",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1536,7 +1536,7 @@
       "ring",
       "wake"
     ],
-    "ucs_catid": "ClockTck",
+    "ucs_catid": "CLOCKTick",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1549,7 +1549,7 @@
       "hour",
       "grandfather"
     ],
-    "ucs_catid": "ClockTck",
+    "ucs_catid": "CLOCKTick",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1562,7 +1562,7 @@
       "vintage",
       "bell"
     ],
-    "ucs_catid": "PhoneEl",
+    "ucs_catid": "COMTelph",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1575,7 +1575,7 @@
       "buzz",
       "table"
     ],
-    "ucs_catid": "PhoneEl",
+    "ucs_catid": "COMTelph",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1588,7 +1588,7 @@
       "ping",
       "message"
     ],
-    "ucs_catid": "PhoneEl",
+    "ucs_catid": "COMTelph",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1601,7 +1601,7 @@
       "ambience",
       "nature"
     ],
-    "ucs_catid": "ForstAmb",
+    "ucs_catid": "AMBForst",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1614,7 +1614,7 @@
       "crickets",
       "ambience"
     ],
-    "ucs_catid": "ForstAmb",
+    "ucs_catid": "AMBForst",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1627,7 +1627,7 @@
       "canopy",
       "sigh"
     ],
-    "ucs_catid": "ForstAmb",
+    "ucs_catid": "AMBForst",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1640,7 +1640,7 @@
       "ambience",
       "sea"
     ],
-    "ucs_catid": "OceanAmb",
+    "ucs_catid": "AMBSea",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1653,7 +1653,7 @@
       "cry",
       "birds"
     ],
-    "ucs_catid": "OceanAmb",
+    "ucs_catid": "AMBSea",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1666,7 +1666,7 @@
       "harbor",
       "clang"
     ],
-    "ucs_catid": "OceanAmb",
+    "ucs_catid": "AMBSea",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1679,7 +1679,7 @@
       "wood",
       "rasp"
     ],
-    "ucs_catid": "Sanding",
+    "ucs_catid": "WOODFric",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1692,7 +1692,7 @@
       "rasp",
       "grind"
     ],
-    "ucs_catid": "Sanding",
+    "ucs_catid": "WOODFric",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1705,7 +1705,7 @@
       "thud",
       "drop"
     ],
-    "ucs_catid": "WoodImp",
+    "ucs_catid": "WOODImpt",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1718,7 +1718,7 @@
       "snap",
       "break"
     ],
-    "ucs_catid": "WoodImp",
+    "ucs_catid": "WOODImpt",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1731,7 +1731,7 @@
       "metal",
       "scrape"
     ],
-    "ucs_catid": "MetlChn",
+    "ucs_catid": "CHAINMvmt",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1744,7 +1744,7 @@
       "pocket",
       "metal"
     ],
-    "ucs_catid": "MetlChn",
+    "ucs_catid": "CHAINMvmt",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1757,7 +1757,7 @@
       "ring",
       "bell"
     ],
-    "ucs_catid": "Doorbell",
+    "ucs_catid": "BELLDoor",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1770,7 +1770,7 @@
       "knuckle",
       "rap"
     ],
-    "ucs_catid": "Doorbell",
+    "ucs_catid": "BELLDoor",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1783,7 +1783,7 @@
       "open",
       "suction"
     ],
-    "ucs_catid": "Fridge",
+    "ucs_catid": "DOORAppl",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1796,7 +1796,7 @@
       "steady",
       "kitchen"
     ],
-    "ucs_catid": "Fridge",
+    "ucs_catid": "DOORAppl",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1809,7 +1809,7 @@
       "scrape",
       "clear"
     ],
-    "ucs_catid": "SnowWx",
+    "ucs_catid": "SNOWFric",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1822,7 +1822,7 @@
       "blizzard",
       "roar"
     ],
-    "ucs_catid": "SnowWx",
+    "ucs_catid": "SNOWFric",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1835,7 +1835,7 @@
       "throw",
       "pack"
     ],
-    "ucs_catid": "SnowWx",
+    "ucs_catid": "SNOWFric",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1848,7 +1848,7 @@
       "pool",
       "water"
     ],
-    "ucs_catid": "WtrSplsh",
+    "ucs_catid": "WATRSplsh",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1861,7 +1861,7 @@
       "running",
       "sink"
     ],
-    "ucs_catid": "WtrSplsh",
+    "ucs_catid": "WATRSplsh",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1874,7 +1874,7 @@
       "ambience",
       "calm"
     ],
-    "ucs_catid": "NightAmb",
+    "ucs_catid": "AMBInsc",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1887,7 +1887,7 @@
       "distant",
       "call"
     ],
-    "ucs_catid": "NightAmb",
+    "ucs_catid": "AMBInsc",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1900,7 +1900,7 @@
       "pond",
       "chorus"
     ],
-    "ucs_catid": "NightAmb",
+    "ucs_catid": "AMBInsc",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1913,7 +1913,7 @@
       "close",
       "voice"
     ],
-    "ucs_catid": "Whisper",
+    "ucs_catid": "VOXWhsp",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1926,7 +1926,7 @@
       "murmur",
       "quiet"
     ],
-    "ucs_catid": "Whisper",
+    "ucs_catid": "VOXWhsp",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1939,7 +1939,7 @@
       "break",
       "floor"
     ],
-    "ucs_catid": "GlassBrk",
+    "ucs_catid": "GLASBrk",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1952,7 +1952,7 @@
       "crash",
       "glass"
     ],
-    "ucs_catid": "GlassBrk",
+    "ucs_catid": "GLASBrk",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1965,7 +1965,7 @@
       "split",
       "glass"
     ],
-    "ucs_catid": "GlassBrk",
+    "ucs_catid": "GLASBrk",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1978,7 +1978,7 @@
       "rip",
       "tear"
     ],
-    "ucs_catid": "Clothing",
+    "ucs_catid": "CLOTHRip",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -1991,7 +1991,7 @@
       "creak",
       "shift"
     ],
-    "ucs_catid": "Clothing",
+    "ucs_catid": "CLOTHRip",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -2004,7 +2004,7 @@
       "overhead",
       "roar"
     ],
-    "ucs_catid": "PlaneVeh",
+    "ucs_catid": "AEROJet",
     "audioset": [],
     "license_id": "CC0-1.0"
   },
@@ -2017,7 +2017,7 @@
       "drone",
       "engine"
     ],
-    "ucs_catid": "PlaneVeh",
+    "ucs_catid": "AEROJet",
     "audioset": [],
     "license_id": "CC0-1.0"
   }

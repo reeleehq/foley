@@ -268,3 +268,26 @@ def test_eval_import_purity():
     )
     r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
+
+
+def test_golden_catids_are_ucs_master_catids_and_the_family_is_the_table_category():
+    """#287: every golden ucs_catid is a real CatID; strata read the table's category."""
+    import json
+
+    from foley.eval.fit import _event_from_golden, _strata_key
+    from foley.eval.golden import DEFAULT_GOLDEN_PATH, RING0_CORPUS_PATH
+    from foley.index.taxonomy import load_ucs_master
+
+    master = {r.catid for r in load_ucs_master()}
+    for path in (DEFAULT_GOLDEN_PATH, RING0_CORPUS_PATH):
+        rows = json.loads(open(path, encoding="utf-8").read())
+        catids = {
+            e["ucs_catid"]
+            for r in rows
+            for e in (r.get("expected_events") or [r])
+        }
+        assert catids <= master, sorted(catids - master)
+    ev = _event_from_golden({"query": "q", "ucs_catid": "DOORWood"})
+    assert _strata_key(ev, ("family",)) == ("DOORS",)
+    ev = _event_from_golden({"query": "q", "ucs_catid": "AIRBlow"})
+    assert _strata_key(ev, ("family",)) == ("AIR",)
