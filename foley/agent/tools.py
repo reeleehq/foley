@@ -415,20 +415,17 @@ def _find_stream(
         # budget in force (#57's acceptance), else nothing is spent. A check, not a
         # reservation: each call reserves its own cost when it is made.
         check(
-            estimate_find_usd(
+            find_upper_bound(
+                context,
                 max_events=max_events,
                 backend=backend,
                 llm=llm,
                 k=k,
                 verify=verify,
-                max_refine_loops=budget.max_refine_loops,
-                max_generations=budget.max_generations if budget.allow_generate else 0,
-                context_chars=len(context),
-                injected={
-                    "decomposer": decomposer is not None,
-                    "refiner": refiner is not None,
-                    "judge": judge is not None,
-                },
+                budget=budget,
+                decomposer=decomposer,
+                refiner=refiner,
+                judge=judge,
             ),
             what=f"this find run (upper bound for {max_events} events)",
         )
@@ -452,6 +449,45 @@ def _find_stream(
 
     # The budget is in force only while the stream runs, never between items.
     yield from scoped_iter(run, budget)
+
+
+def find_upper_bound(
+    context: str,
+    *,
+    max_events: int = 6,
+    backend: str = "auto",
+    llm: "Optional[str]" = None,
+    k: int = 10,
+    verify: "Union[str, VerifyLevel]" = "listen",
+    max_refine_loops: int = 1,
+    budget: "Optional[Budget]" = None,
+    decomposer=None,
+    refiner=None,
+    judge=None,
+) -> "Optional[float]":
+    """What ``find(context, ...)`` with these arguments can spend at most, or ``None``.
+
+    The number :func:`find` checks against every budget in force before its first
+    paid call, from the same arguments (``budget`` gives the loop counts and whether
+    generation is allowed; default ``Budget(max_refine_loops=max_refine_loops)``), so
+    a caller (``score``, deciding what a segment can afford) asks the same question.
+    """
+    budget = budget or Budget(max_refine_loops=max_refine_loops)
+    return estimate_find_usd(
+        max_events=max_events,
+        backend=backend,
+        llm=llm,
+        k=k,
+        verify=verify,
+        max_refine_loops=budget.max_refine_loops,
+        max_generations=budget.max_generations if budget.allow_generate else 0,
+        context_chars=len(context),
+        injected={
+            "decomposer": decomposer is not None,
+            "refiner": refiner is not None,
+            "judge": judge is not None,
+        },
+    )
 
 
 def estimate_find_usd(

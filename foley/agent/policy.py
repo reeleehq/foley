@@ -134,6 +134,15 @@ class Budget:
         return self._spent_usd
 
     @property
+    def unknown_cost_calls(self) -> int:
+        """How many calls this run made whose cost is still unknown (not in :attr:`spent_usd`).
+
+        Each one was approved (``approve_unknown_cost``); ``spent_usd`` is then a
+        lower bound, never the whole cost.
+        """
+        return self._unknown_calls
+
+    @property
     def overshoot_usd(self) -> float:
         """Dollars spent above ``max_usd`` (``0.0`` while within the cap) (#293).
 
