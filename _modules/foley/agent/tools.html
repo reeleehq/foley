@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=7be3f44b"></script>
+    <script src="../../../_static/documentation_options.js?v=df9b7052"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.142" />
+  <meta name="docsearch:version" content="0.0.143" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -736,7 +736,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">asdict</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">Candidate</span><span class="p">,</span>
@@ -1046,6 +1046,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">judge</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">refiner</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">llm</span><span class="p">:</span> <span class="s2">"Optional[str]"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">layers</span><span class="p">:</span> <span class="s2">"Optional[Iterable[Union[str, Layer]]]"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Union[list[Candidate], Iterator[Candidate]]"</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The headline: a narrative context → verified, license-clean sound candidates.</span>
 
@@ -1085,6 +1086,11 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            ``'fake'`` | ``'local'`` | ``'anthropic'``. ``None`` reads ``$FOLEY_LLM``,</span>
 <span class="sd">            then falls back to the free default (a configured local endpoint, else the</span>
 <span class="sd">            deterministic fake). A key being present never opts in to paid calls.</span>
+<span class="sd">        layers: Keep only the decomposed events on these mix layers (``Layer`` members</span>
+<span class="sd">            or their names: ``'ambience'``, ``'sfx_fg'``, ``'stinger'``, ``'music'``);</span>
+<span class="sd">            ``None`` keeps all. The filter applies to the ``max_events`` the decomposer</span>
+<span class="sd">            returned, so a host wanting a bed asks for ``layers={'ambience'}`` and may</span>
+<span class="sd">            get fewer events than ``max_events``.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        ``list[Candidate]`` (``stream=False``) or an ``Iterator[Candidate]``</span>
@@ -1107,6 +1113,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">judge</span><span class="o">=</span><span class="n">judge</span><span class="p">,</span>
         <span class="n">refiner</span><span class="o">=</span><span class="n">refiner</span><span class="p">,</span>
         <span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">,</span>
+        <span class="n">layers</span><span class="o">=</span><span class="n">layers</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">gen</span> <span class="k">if</span> <span class="n">stream</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">gen</span><span class="p">)</span></div>
 
@@ -1130,6 +1137,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">judge</span><span class="p">,</span>
     <span class="n">refiner</span><span class="p">,</span>
     <span class="n">llm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">layers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Iterator[Candidate]"</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The streaming body of :func:`find` (``find(stream=False)`` == ``list(_find_stream(...))``)."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..cost</span><span class="w"> </span><span class="kn">import</span> <span class="n">check</span><span class="p">,</span> <span class="n">default_max_usd</span><span class="p">,</span> <span class="n">scoped_iter</span>
@@ -1174,6 +1182,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">judge</span><span class="o">=</span><span class="n">judge</span><span class="p">,</span>
             <span class="n">refiner</span><span class="o">=</span><span class="n">refiner</span><span class="p">,</span>
             <span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">,</span>
+            <span class="n">layers</span><span class="o">=</span><span class="n">layers</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="c1"># The budget is in force only while the stream runs, never between items.</span>
@@ -1299,6 +1308,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">judge</span><span class="p">,</span>
     <span class="n">refiner</span><span class="p">,</span>
     <span class="n">llm</span><span class="p">,</span>
+    <span class="n">layers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Iterator[Candidate]"</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The per-event loop of :func:`find`, run inside the run's spend scope."""</span>
     <span class="n">library</span> <span class="o">=</span> <span class="n">library</span> <span class="k">if</span> <span class="n">library</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">default_library</span><span class="p">()</span>
@@ -1327,6 +1337,9 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">decomposer</span><span class="o">=</span><span class="n">decomposer</span><span class="p">,</span>
                 <span class="n">_span</span><span class="o">=</span><span class="n">sp</span><span class="p">,</span>
             <span class="p">)</span>
+            <span class="k">if</span> <span class="n">layers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># a host's bed: ambience only, sfx only, ...</span>
+                <span class="n">keep</span> <span class="o">=</span> <span class="p">{</span><span class="n">Layer</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">layers</span><span class="p">}</span>
+                <span class="n">events</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">events</span> <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">layer</span> <span class="ow">in</span> <span class="n">keep</span><span class="p">]</span>
             <span class="n">_emit_step</span><span class="p">(</span><span class="n">run</span><span class="p">,</span> <span class="s2">"decompose"</span><span class="p">,</span> <span class="n">span</span><span class="o">=</span><span class="n">sp</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="p">{</span><span class="s2">"n_events"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">events</span><span class="p">)})</span>
 
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">event</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">events</span><span class="p">):</span>

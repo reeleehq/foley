@@ -450,7 +450,7 @@ span on the real path (the fake’s `last_response` is `None` → no-op).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SoundEvent`](foley.base.html.md#foley.base.SoundEvent)]
 
-### foley.agent.find(context, , max_events=6, seconds=None, intended_use=None, backend='auto', verify='listen', stream=False, k=10, tau_retrieve=0.5, tau_clap=0.35, max_refine_loops=1, budget=None, library=None, decomposer=None, judge=None, refiner=None, llm=None)
+### foley.agent.find(context, , max_events=6, seconds=None, intended_use=None, backend='auto', verify='listen', stream=False, k=10, tau_retrieve=0.5, tau_clap=0.35, max_refine_loops=1, budget=None, library=None, decomposer=None, judge=None, refiner=None, llm=None, layers=None)
 
 The headline: a narrative context → verified, license-clean sound candidates.
 
@@ -490,6 +490,11 @@ deterministic defaults; every model / threshold / seam is an optional keyword.
     `'fake'` | `'local'` | `'anthropic'`. `None` reads `$FOLEY_LLM`,
     then falls back to the free default (a configured local endpoint, else the
     deterministic fake). A key being present never opts in to paid calls.
+  * **layers** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Iterable`](https://docs.python.org/3/library/typing.html#typing.Iterable)[[`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Layer`](foley.base.html.md#foley.base.Layer)]]]) – Keep only the decomposed events on these mix layers (`Layer` members
+    or their names: `'ambience'`, `'sfx_fg'`, `'stinger'`, `'music'`);
+    `None` keeps all. The filter applies to the `max_events` the decomposer
+    returned, so a host wanting a bed asks for `layers={'ambience'}` and may
+    get fewer events than `max_events`.
 * **Return type:**
   [`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](foley.base.html.md#foley.base.Candidate)], [`Iterator`](https://docs.python.org/3/library/typing.html#typing.Iterator)[[`Candidate`](foley.base.html.md#foley.base.Candidate)]]
 * **Returns:**

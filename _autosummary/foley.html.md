@@ -2928,7 +2928,7 @@ out-ramps never overlap on tiny inputs.
 
 Lazy dependency: `numpy`.
 
-### foley.find(context, , max_events=6, seconds=None, intended_use=None, backend='auto', verify='listen', stream=False, k=10, tau_retrieve=0.5, tau_clap=0.35, max_refine_loops=1, budget=None, library=None, decomposer=None, judge=None, refiner=None, llm=None)
+### foley.find(context, , max_events=6, seconds=None, intended_use=None, backend='auto', verify='listen', stream=False, k=10, tau_retrieve=0.5, tau_clap=0.35, max_refine_loops=1, budget=None, library=None, decomposer=None, judge=None, refiner=None, llm=None, layers=None)
 
 The headline: a narrative context → verified, license-clean sound candidates.
 
@@ -2968,6 +2968,11 @@ deterministic defaults; every model / threshold / seam is an optional keyword.
     `'fake'` | `'local'` | `'anthropic'`. `None` reads `$FOLEY_LLM`,
     then falls back to the free default (a configured local endpoint, else the
     deterministic fake). A key being present never opts in to paid calls.
+  * **layers** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Iterable`](https://docs.python.org/3/library/typing.html#typing.Iterable)[[`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Layer`](foley.base.html.md#foley.base.Layer)]]]) – Keep only the decomposed events on these mix layers (`Layer` members
+    or their names: `'ambience'`, `'sfx_fg'`, `'stinger'`, `'music'`);
+    `None` keeps all. The filter applies to the `max_events` the decomposer
+    returned, so a host wanting a bed asks for `layers={'ambience'}` and may
+    get fewer events than `max_events`.
 * **Return type:**
   [`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](foley.base.html.md#foley.base.Candidate)], [`Iterator`](https://docs.python.org/3/library/typing.html#typing.Iterator)[[`Candidate`](foley.base.html.md#foley.base.Candidate)]]
 * **Returns:**
@@ -3854,7 +3859,7 @@ Resample `samples` to `target_sr` (a no-op when already there).
 
 Lazy dependency: `soxr`.
 
-### foley.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'am', 'for', 'more', 'i', 'under', 'from', 'here', 'not', 'the', 'which', 'few', 'also', 'there', 'our', 'that', 'as', 'his', 'each', 'if', 'be', 'very', 'are', 'so', 'in', 'me', 'other', 'or', 'they', 'must', 'own', 'could', 'just', 'do', 'into', 'why', 'he', 'is', 'who', 'may', 'them', 'how', 'too', 'been', 'she', 'would', 'by', 'about', 'us', 'onto', 'does', 'did', 'most', 'only', 'of', 'all', 'my', 'and', 'then', 'with', 'your', 'him', 'where', 'might', 'these', 'what', 'you', 'those', 'was', 'had', 'such', 'every', 'any', 'can', 'its', 'a', 'some', 'at', 'on', 'her', 'should', 'has', 'an', 'without', 'nor', 'than', 'to', 'when', 'but', 'their', 'no', 'being', 'will', 'were', 'it', 'same', 'we', 'have', 'this'}), ambiguous_words=frozenset({'drop', 'hit', 'quiet', 'catch', 'person', 'misc', 'part', 'break', 'off', 'fall', 'day', 'run', 'way', 'sound', 'arc', 'meeting', 'down', 'set', 'heavy', 'piece', 'blue', 'place', 'side', 'small', 'beat', 'time', 'open', 'big', 'out', 'shot', 'bang', 'night', 'work', 'little', 'up', 'handle', 'tone', 'release', 'long', 'thing', 'light', 'large', 'over', 'hold', 'general'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### foley.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'it', 'us', 'too', 'have', 'or', 'when', 'a', 'so', 'just', 'such', 'those', 'are', 'only', 'with', 'that', 'for', 'same', 'do', 'has', 'what', 'will', 'by', 'other', 'they', 'them', 'there', 'we', 'on', 'his', 'was', 'then', 'not', 'but', 'this', 'some', 'under', 'you', 'into', 'all', 'why', 'very', 'the', 'no', 'can', 'being', 'she', 'few', 'and', 'these', 'my', 'how', 'without', 'its', 'also', 'who', 'is', 'does', 'nor', 'here', 'i', 'more', 'at', 'did', 'any', 'he', 'be', 'had', 'if', 'may', 'onto', 'which', 'been', 'could', 'as', 'him', 'an', 'own', 'were', 'each', 'might', 'where', 'their', 'our', 'most', 'am', 'than', 'should', 'from', 'of', 'your', 'me', 'her', 'would', 'about', 'every', 'must', 'in', 'to'}), ambiguous_words=frozenset({'way', 'open', 'down', 'general', 'set', 'heavy', 'work', 'over', 'blue', 'big', 'fall', 'large', 'night', 'long', 'hold', 'quiet', 'misc', 'hit', 'drop', 'break', 'person', 'arc', 'part', 'beat', 'time', 'out', 'small', 'off', 'day', 'bang', 'light', 'sound', 'piece', 'thing', 'side', 'shot', 'meeting', 'release', 'place', 'up', 'tone', 'handle', 'little', 'catch', 'run'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -3979,7 +3984,7 @@ Write `samples` to `dst` as `fmt`/`subtype` (default = FLAC archive).
 
 Lazy dependency: `soundfile`.
 
-### foley.score(segments, , audio=None, transcript=None, segment_starts=None, library=None, intended_use=None, commercial_ok=None, max_events=6, verify='listen', backend='auto', allow_generate=True, master='podcast', weave=None, llm=None, budget=None, max_usd=None, \*\*weave_kwargs)
+### foley.score(segments, , audio=None, transcript=None, segment_starts=None, library=None, intended_use=None, commercial_ok=None, max_events=6, verify='listen', backend='auto', allow_generate=True, master='podcast', weave=None, llm=None, budget=None, max_usd=None, layers=None, \*\*weave_kwargs)
 
 Choose sounds for narration text and (optionally) weave them into the narration audio.
 
@@ -4039,6 +4044,11 @@ editable [`SoundDesignTimeline`](foley.base.html.md#foley.base.SoundDesignTimeli
     to mean is in this module’s docstring.
   * **max_usd** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Shorthand for `budget=Budget(max_usd=max_usd)` (#283); passing both
     is a `TypeError`.
+  * **layers** – Restrict the chosen (and so woven) events to these mix layers
+    ([`Layer`](foley.base.html.md#foley.base.Layer) members or names), e.g. `{'ambience'}` for a
+    bed, `{'sfx_fg', 'stinger'}` for effects, `{'music'}` (#285). `None`
+    keeps every layer. Applied to the events the decomposer returns (see
+    [`foley.find()`](#foley.find)), so fewer than `max_events` may come back.
   * **\*\*weave_kwargs** – Forwarded to [`foley.weave()`](foley.weave.html.md#module-foley.weave) (e.g. `language`, `aligner`,
     `sign_cert`, `watermark`). Checked against `weave`’s signature before
     anything runs, so a typo costs nothing.
