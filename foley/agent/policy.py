@@ -133,6 +133,23 @@ class Budget:
         """Dollars charged so far this run (calls of unknown cost count as 0 here)."""
         return self._spent_usd
 
+    @property
+    def overshoot_usd(self) -> float:
+        """Dollars spent above ``max_usd`` (``0.0`` while within the cap) (#293).
+
+        The cap is checked before each call against its *estimate*; :meth:`settle`
+        then records the actual cost, which can be higher, so a run can end above the
+        cap. This is that excess, so a host can say "at most the cap, plus this" and
+        clamp a quote honestly. Once it is above zero every further paid call is refused
+        (:meth:`check` sees ``spent_usd`` over the cap).
+
+        >>> b = Budget(max_usd=0.5)
+        >>> b.reserve(0.4, what="x"); b.settle(0.4, 0.7)
+        >>> round(b.overshoot_usd, 10), round(b.spent_usd, 10)
+        (0.2, 0.7)
+        """
+        return max(0.0, self._spent_usd - self.max_usd)
+
     def _approves_unknown(self) -> bool:
         if self.approve_unknown_cost is not None:
             return bool(self.approve_unknown_cost)
@@ -168,7 +185,9 @@ class Budget:
         A reservation of unknown cost (``None`` reserved, counted as an unknown call)
         settled with a known actual becomes that actual: it is summed, and no longer
         counted as unknown (#186: a source billed per compute second, priced after).
-        Settling a known reservation with an equal actual changes nothing.
+        Settling a known reservation with an equal actual changes nothing. An actual
+        above the reservation can take the run over ``max_usd``: it is still recorded
+        (never hidden), shows as :attr:`overshoot_usd`, and the next paid call is refused.
 
         >>> b = Budget(approve_unknown_cost=True)
         >>> b.reserve(None, what="x"); b.settle(None, 0.0425)
