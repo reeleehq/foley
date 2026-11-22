@@ -25,10 +25,11 @@ one shared RRF, so ranking is identical across backends.
 
 ### Functions
 
-| [`default_index`](#foley.index.indexes.default_index)(\*, data_dir, dim)   | Build the best available persistent index for a library.               |
-|-------------------------------------------------------------------------------------|------------------------------------------------------------------------|
-| [`lancedb_available`](#foley.index.indexes.lancedb_available)()                | True if `lancedb` is importable (the `foley[index]` extra is present). |
-| [`sqlite_vec_loadable`](#foley.index.indexes.sqlite_vec_loadable)()              | True if `sqlite_vec` is installed AND this interpreter can load it.    |
+| [`bm25_idf`](#foley.index.indexes.bm25_idf)(n_docs, df)             | Okapi BM25's inverse document frequency of a term in `df` of `n_docs` documents (the `+1` form, so never negative).   |
+|-----------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
+| [`default_index`](#foley.index.indexes.default_index)(\*, data_dir, dim) | Build the best available persistent index for a library.                                                              |
+| [`lancedb_available`](#foley.index.indexes.lancedb_available)()              | True if `lancedb` is importable (the `foley[index]` extra is present).                                                |
+| [`sqlite_vec_loadable`](#foley.index.indexes.sqlite_vec_loadable)()            | True if `sqlite_vec` is installed AND this interpreter can load it.                                                   |
 
 ### Classes
 
@@ -228,6 +229,21 @@ Insert or replace the vector for `id` in the `vec0` table.
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### foley.index.indexes.bm25_idf(n_docs, df)
+
+Okapi BM25’s inverse document frequency of a term in `df` of `n_docs`
+documents (the `+1` form, so never negative). The one IDF of foley’s keyword
+scoring: [`MemoryIndex`](#foley.index.indexes.MemoryIndex) ranks with it, and the UCS keyword stage can weigh
+a shared synonym by it (`foley.index.taxonomy.resolver.idf_share`).
+
+```pycon
+>>> round(bm25_idf(753, 1), 3), round(bm25_idf(753, 32), 3)
+(6.22, 3.144)
+```
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
 
 ### foley.index.indexes.default_index(, data_dir, dim)
 

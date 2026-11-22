@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=b06a6486"></script>
+    <script src="../_static/documentation_options.js?v=8792eeec"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.145" />
+  <meta name="docsearch:version" content="0.0.146" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -537,13 +537,16 @@ one shared RRF, so ranking is identical across backends.</p>
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.index.indexes.default_index" title="foley.index.indexes.default_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">default_index</span></code></a>(*, data_dir, dim)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.index.indexes.bm25_idf" title="foley.index.indexes.bm25_idf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bm25_idf</span></code></a>(n_docs, df)</p></td>
+<td><p>Okapi BM25's inverse document frequency of a term in <code class="docutils literal notranslate"><span class="pre">df</span></code> of <code class="docutils literal notranslate"><span class="pre">n_docs</span></code> documents (the <code class="docutils literal notranslate"><span class="pre">+1</span></code> form, so never negative).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.index.indexes.default_index" title="foley.index.indexes.default_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">default_index</span></code></a>(*, data_dir, dim)</p></td>
 <td><p>Build the best available persistent index for a library.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.index.indexes.lancedb_available" title="foley.index.indexes.lancedb_available"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lancedb_available</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.index.indexes.lancedb_available" title="foley.index.indexes.lancedb_available"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lancedb_available</span></code></a>()</p></td>
 <td><p>True if <code class="docutils literal notranslate"><span class="pre">lancedb</span></code> is importable (the <code class="docutils literal notranslate"><span class="pre">foley[index]</span></code> extra is present).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.index.indexes.sqlite_vec_loadable" title="foley.index.indexes.sqlite_vec_loadable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sqlite_vec_loadable</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.index.indexes.sqlite_vec_loadable" title="foley.index.indexes.sqlite_vec_loadable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sqlite_vec_loadable</span></code></a>()</p></td>
 <td><p>True if <code class="docutils literal notranslate"><span class="pre">sqlite_vec</span></code> is installed AND this interpreter can load it.</p></td>
 </tr>
 </tbody>
@@ -840,6 +843,24 @@ score is larger-is-better (consistent with the other backends).</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.index.indexes.bm25_idf">
+<span class="sig-prename descclassname"><span class="pre">foley.index.indexes.</span></span><span class="sig-name descname"><span class="pre">bm25_idf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_docs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/index/indexes.html#bm25_idf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.index.indexes.bm25_idf" title="Link to this definition">#</a></dt>
+<dd><p>Okapi BM25’s inverse document frequency of a term in <code class="docutils literal notranslate"><span class="pre">df</span></code> of <code class="docutils literal notranslate"><span class="pre">n_docs</span></code>
+documents (the <code class="docutils literal notranslate"><span class="pre">+1</span></code> form, so never negative). The one IDF of foley’s keyword
+scoring: <a class="reference internal" href="#foley.index.indexes.MemoryIndex" title="foley.index.indexes.MemoryIndex"><code class="xref py py-class docutils literal notranslate"><span class="pre">MemoryIndex</span></code></a> ranks with it, and the UCS keyword stage can weigh
+a shared synonym by it (<code class="docutils literal notranslate"><span class="pre">foley.index.taxonomy.resolver.idf_share</span></code>).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">round</span><span class="p">(</span><span class="n">bm25_idf</span><span class="p">(</span><span class="mi">753</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">3</span><span class="p">),</span> <span class="nb">round</span><span class="p">(</span><span class="n">bm25_idf</span><span class="p">(</span><span class="mi">753</span><span class="p">,</span> <span class="mi">32</span><span class="p">),</span> <span class="mi">3</span><span class="p">)</span>
+<span class="go">(6.22, 3.144)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.index.indexes.default_index">
 <span class="sig-prename descclassname"><span class="pre">foley.index.indexes.</span></span><span class="sig-name descname"><span class="pre">default_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/index/indexes.html#default_index"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.index.indexes.default_index" title="Link to this definition">#</a></dt>
 <dd><p>Build the best available persistent index for a library.</p>
@@ -967,6 +988,7 @@ sqlite-vec cannot be used even when <a href="#id1"><span class="problematic" id=
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.indexes.SqliteVecIndex.upsert"><code class="docutils literal notranslate"><span class="pre">SqliteVecIndex.upsert()</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.indexes.bm25_idf"><code class="docutils literal notranslate"><span class="pre">bm25_idf()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.indexes.default_index"><code class="docutils literal notranslate"><span class="pre">default_index()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.indexes.lancedb_available"><code class="docutils literal notranslate"><span class="pre">lancedb_available()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.indexes.sqlite_vec_loadable"><code class="docutils literal notranslate"><span class="pre">sqlite_vec_loadable()</span></code></a></li>

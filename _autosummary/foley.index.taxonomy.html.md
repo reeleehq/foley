@@ -38,15 +38,15 @@ with no logic change.
 
 ### Classes
 
-| [`UcsRow`](#foley.index.taxonomy.UcsRow)(catid, category, subcategory[, ...])        | One Universal Category System entry.                                                                          |
-|-----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
-| [`UcsName`](#foley.index.taxonomy.UcsName)(catid, category, subcategory[, ...])       | Every field of a UCS filename (`foley.index.taxonomy.ucs.parse_ucs_name`).                                    |
-| [`UcsTable`](#foley.index.taxonomy.UcsTable)([by_catid, order, \_ci_index, legacy])    | A loaded UCS lookup by CatID: exact, case-insensitive, or a legacy CatID.                                     |
-| [`AudioSetUcsMap`](#foley.index.taxonomy.AudioSetUcsMap)([by_name, by_mid])                  | AudioSet-label -> UCS-CatID overlap map (report 04 §5.3).                                                     |
-| [`CatIdResolution`](#foley.index.taxonomy.CatIdResolution)([catid, category, ...])            | The result of resolving free tags/caption/labels to a UCS CatID.                                              |
-| [`TaxonomyResolver`](#foley.index.taxonomy.TaxonomyResolver)(\*args, \*\*kwargs)               | Resolve a [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord) to a UCS CatID. |
-| [`KeywordResolver`](#foley.index.taxonomy.KeywordResolver)(\*[, table, audioset_map, policy]) | The default stdlib resolver — staged keyword/synonym/AudioSet resolution.                                     |
-| [`MatchPolicy`](#foley.index.taxonomy.MatchPolicy)([stop_words, ambiguous_words, ...])    | How the keyword stage matches, ranks and bands (one strategy object).                                         |
+| [`UcsRow`](#foley.index.taxonomy.UcsRow)(catid, category, subcategory[, ...])     | One Universal Category System entry.                                                                          |
+|--------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| [`UcsName`](#foley.index.taxonomy.UcsName)(catid, category, subcategory[, ...])    | Every field of a UCS filename (`foley.index.taxonomy.ucs.parse_ucs_name`).                                    |
+| [`UcsTable`](#foley.index.taxonomy.UcsTable)([by_catid, order, \_ci_index, legacy]) | A loaded UCS lookup by CatID: exact, case-insensitive, or a legacy CatID.                                     |
+| [`AudioSetUcsMap`](#foley.index.taxonomy.AudioSetUcsMap)([by_name, by_mid])               | AudioSet-label -> UCS-CatID overlap map (report 04 §5.3).                                                     |
+| [`CatIdResolution`](#foley.index.taxonomy.CatIdResolution)([catid, category, ...])         | The result of resolving free tags/caption/labels to a UCS CatID.                                              |
+| [`TaxonomyResolver`](#foley.index.taxonomy.TaxonomyResolver)(\*args, \*\*kwargs)            | Resolve a [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord) to a UCS CatID. |
+| [`KeywordResolver`](#foley.index.taxonomy.KeywordResolver)(\*[, table, audioset_map, ...]) | The default stdlib resolver — staged keyword/synonym/AudioSet resolution.                                     |
+| [`MatchPolicy`](#foley.index.taxonomy.MatchPolicy)([stop_words, ambiguous_words, ...]) | How the keyword stage matches, ranks and bands (one strategy object).                                         |
 
 ### *class* foley.index.taxonomy.AudioSetUcsMap(by_name=dict(), by_mid=dict())
 
@@ -75,7 +75,7 @@ The result of resolving free tags/caption/labels to a UCS CatID.
 `subcategory` feeds `ucs_subcategory` on
 ingest, and `ucs_catid` on the query side.
 
-### *class* foley.index.taxonomy.KeywordResolver(, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'that', 'too', 'no', 'any', 'did', 'not', 'those', 'am', 'he', 'under', 'were', 'same', 'where', 'could', 'him', 'should', 'such', 'so', 'most', 'in', 'also', 'had', 'about', 'very', 'his', 'own', 'be', 'our', 'was', 'has', 'at', 'being', 'to', 'with', 'can', 'only', 'when', 'might', 'few', 'them', 'more', 'there', 'have', 'but', 'a', 'why', 'all', 'onto', 'by', 'her', 'this', 'your', 'its', 'would', 'then', 'for', 'me', 'how', 'other', 'is', 'we', 'us', 'what', 'does', 'their', 'do', 'been', 'an', 'than', 'they', 'from', 'these', 'each', 'she', 'who', 'some', 'without', 'just', 'are', 'you', 'into', 'may', 'as', 'of', 'and', 'every', 'nor', 'will', 'or', 'on', 'i', 'which', 'it', 'must', 'my', 'if', 'here', 'the'}), ambiguous_words=frozenset({'fall', 'time', 'piece', 'part', 'small', 'run', 'long', 'drop', 'large', 'meeting', 'night', 'sound', 'tone', 'hit', 'general', 'bang', 'beat', 'set', 'hold', 'down', 'person', 'misc', 'release', 'quiet', 'out', 'side', 'handle', 'up', 'arc', 'shot', 'way', 'heavy', 'work', 'big', 'over', 'blue', 'thing', 'open', 'place', 'light', 'catch', 'day', 'off', 'break', 'little'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### *class* foley.index.taxonomy.KeywordResolver(\*, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'about', 'have', 'so', 'some', 'you', 'should', 'by', 'when', 'then', 'no', 'my', 'or', 'does', 'a', 'will', 'this', 'could', 'every', 'under', 'am', 'how', 'we', 'him', 'are', 'but', 'its', 'too', 'of', 'were', 'any', 'their', 'few', 'without', 'also', 'which', 'what', 'all', 'not', 'is', 'these', 'us', 'he', 'to', 'here', 'they', 'if', 'same', 'on', 'from', 'me', 'being', 'she', 'such', 'has', 'and', 'as', 'an', 'onto', 'more', 'in', 'may', 'each', 'where', 'them', 'be', 'why', 'who', 'do', 'would', 'there', 'might', 'was', 'the', 'very', 'for', 'his', 'most', 'only', 'been', 'nor', 'it', 'just', 'our', 'own', 'i', 'other', 'her', 'than', 'those', 'at', 'your', 'into', 'must', 'can', 'did', 'with', 'had', 'that'}), ambiguous_words=frozenset({'quiet', 'break', 'blue', 'light', 'out', 'open', 'release', 'drop', 'run', 'sound', 'heavy', 'big', 'long', 'general', 'way', 'tone', 'off', 'hold', 'small', 'down', 'fall', 'beat', 'hit', 'night', 'set', 'place', 'catch', 'over', 'bang', 'misc', 'person', 'handle', 'little', 'arc', 'day', 'time', 'side', 'part', 'up', 'shot', 'large', 'meeting', 'work', 'thing', 'piece'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -91,7 +91,7 @@ Resolve a [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord)’s tags/ca
 * **Return type:**
   [`CatIdResolution`](foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.CatIdResolution)
 
-### *class* foley.index.taxonomy.MatchPolicy(stop_words=frozenset({'a', 'about', 'all', 'also', 'am', 'an', 'and', 'any', 'are', 'as', 'at', 'be', 'been', 'being', 'but', 'by', 'can', 'could', 'did', 'do', 'does', 'each', 'every', 'few', 'for', 'from', 'had', 'has', 'have', 'he', 'her', 'here', 'him', 'his', 'how', 'i', 'if', 'in', 'into', 'is', 'it', 'its', 'just', 'may', 'me', 'might', 'more', 'most', 'must', 'my', 'no', 'nor', 'not', 'of', 'on', 'only', 'onto', 'or', 'other', 'our', 'own', 'same', 'she', 'should', 'so', 'some', 'such', 'than', 'that', 'the', 'their', 'them', 'then', 'there', 'these', 'they', 'this', 'those', 'to', 'too', 'under', 'us', 'very', 'was', 'we', 'were', 'what', 'when', 'where', 'which', 'who', 'why', 'will', 'with', 'without', 'would', 'you', 'your'}), ambiguous_words=frozenset({'arc', 'bang', 'beat', 'big', 'blue', 'break', 'catch', 'day', 'down', 'drop', 'fall', 'general', 'handle', 'heavy', 'hit', 'hold', 'large', 'light', 'little', 'long', 'meeting', 'misc', 'night', 'off', 'open', 'out', 'over', 'part', 'person', 'piece', 'place', 'quiet', 'release', 'run', 'set', 'shot', 'side', 'small', 'sound', 'thing', 'time', 'tone', 'up', 'way', 'work'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5)
+### *class* foley.index.taxonomy.MatchPolicy(stop_words=frozenset({'a', 'about', 'all', 'also', 'am', 'an', 'and', 'any', 'are', 'as', 'at', 'be', 'been', 'being', 'but', 'by', 'can', 'could', 'did', 'do', 'does', 'each', 'every', 'few', 'for', 'from', 'had', 'has', 'have', 'he', 'her', 'here', 'him', 'his', 'how', 'i', 'if', 'in', 'into', 'is', 'it', 'its', 'just', 'may', 'me', 'might', 'more', 'most', 'must', 'my', 'no', 'nor', 'not', 'of', 'on', 'only', 'onto', 'or', 'other', 'our', 'own', 'same', 'she', 'should', 'so', 'some', 'such', 'than', 'that', 'the', 'their', 'them', 'then', 'there', 'these', 'they', 'this', 'those', 'to', 'too', 'under', 'us', 'very', 'was', 'we', 'were', 'what', 'when', 'where', 'which', 'who', 'why', 'will', 'with', 'without', 'would', 'you', 'your'}), ambiguous_words=frozenset({'arc', 'bang', 'beat', 'big', 'blue', 'break', 'catch', 'day', 'down', 'drop', 'fall', 'general', 'handle', 'heavy', 'hit', 'hold', 'large', 'light', 'little', 'long', 'meeting', 'misc', 'night', 'off', 'open', 'out', 'over', 'part', 'person', 'piece', 'place', 'quiet', 'release', 'run', 'set', 'shot', 'side', 'small', 'sound', 'thing', 'time', 'tone', 'up', 'way', 'work'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -133,6 +133,17 @@ Added per content word past the first of a multi-word term.
 
 * **Type:**
   [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+#### synonym_weight
+
+`(rows listing the synonym, rows in the table) -> factor` on a
+synonym hit’s weight: `inverse_sqrt_share()` (default) or
+`idf_share()` (foley#290).
+
+* **Type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`int`](https://docs.python.org/3/builtins/functions.html#int), [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
+* **Return type:**
+  [*float*](https://docs.python.org/3/builtins/functions.html#float)
 
 #### strong_confidence
 
@@ -177,6 +188,14 @@ The band of evidence of `strength`; an unverified row drops one.
 #### *property* bands *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[float](https://docs.python.org/3/builtins/functions.html#float), [float](https://docs.python.org/3/builtins/functions.html#float), [float](https://docs.python.org/3/builtins/functions.html#float)]*
 
 The keyword bands, by `STRONG`, `SINGLE`, `WEAK`.
+
+#### synonym_weight(n_rows)
+
+A synonym listed by `shared_by` rows weighs `1/sqrt(shared_by)` of its kind’s
+weight: “car” (32 rows) a sixth, “doorknob” (one row) all of it.
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
 
 ### *class* foley.index.taxonomy.TaxonomyResolver(\*args, \*\*kwargs)
 
@@ -439,7 +458,7 @@ True
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsName`](foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName)]
 
-### foley.index.taxonomy.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'that', 'too', 'no', 'any', 'did', 'not', 'those', 'am', 'he', 'under', 'were', 'same', 'where', 'could', 'him', 'should', 'such', 'so', 'most', 'in', 'also', 'had', 'about', 'very', 'his', 'own', 'be', 'our', 'was', 'has', 'at', 'being', 'to', 'with', 'can', 'only', 'when', 'might', 'few', 'them', 'more', 'there', 'have', 'but', 'a', 'why', 'all', 'onto', 'by', 'her', 'this', 'your', 'its', 'would', 'then', 'for', 'me', 'how', 'other', 'is', 'we', 'us', 'what', 'does', 'their', 'do', 'been', 'an', 'than', 'they', 'from', 'these', 'each', 'she', 'who', 'some', 'without', 'just', 'are', 'you', 'into', 'may', 'as', 'of', 'and', 'every', 'nor', 'will', 'or', 'on', 'i', 'which', 'it', 'must', 'my', 'if', 'here', 'the'}), ambiguous_words=frozenset({'fall', 'time', 'piece', 'part', 'small', 'run', 'long', 'drop', 'large', 'meeting', 'night', 'sound', 'tone', 'hit', 'general', 'bang', 'beat', 'set', 'hold', 'down', 'person', 'misc', 'release', 'quiet', 'out', 'side', 'handle', 'up', 'arc', 'shot', 'way', 'heavy', 'work', 'big', 'over', 'blue', 'thing', 'open', 'place', 'light', 'catch', 'day', 'off', 'break', 'little'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### foley.index.taxonomy.resolve_catid(\*, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'about', 'have', 'so', 'some', 'you', 'should', 'by', 'when', 'then', 'no', 'my', 'or', 'does', 'a', 'will', 'this', 'could', 'every', 'under', 'am', 'how', 'we', 'him', 'are', 'but', 'its', 'too', 'of', 'were', 'any', 'their', 'few', 'without', 'also', 'which', 'what', 'all', 'not', 'is', 'these', 'us', 'he', 'to', 'here', 'they', 'if', 'same', 'on', 'from', 'me', 'being', 'she', 'such', 'has', 'and', 'as', 'an', 'onto', 'more', 'in', 'may', 'each', 'where', 'them', 'be', 'why', 'who', 'do', 'would', 'there', 'might', 'was', 'the', 'very', 'for', 'his', 'most', 'only', 'been', 'nor', 'it', 'just', 'our', 'own', 'i', 'other', 'her', 'than', 'those', 'at', 'your', 'into', 'must', 'can', 'did', 'with', 'had', 'that'}), ambiguous_words=frozenset({'quiet', 'break', 'blue', 'light', 'out', 'open', 'release', 'drop', 'run', 'sound', 'heavy', 'big', 'long', 'general', 'way', 'tone', 'off', 'hold', 'small', 'down', 'fall', 'beat', 'hit', 'night', 'set', 'place', 'catch', 'over', 'bang', 'misc', 'person', 'handle', 'little', 'arc', 'day', 'time', 'side', 'part', 'up', 'shot', 'large', 'meeting', 'work', 'thing', 'piece'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 

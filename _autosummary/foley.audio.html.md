@@ -33,37 +33,94 @@ a file-like object).
 
 ### Module Attributes
 
-| [`TRANSCODE_DTYPE`](#foley.audio.TRANSCODE_DTYPE)    | wide enough that PCM up to 24 bits survives a decode/encode round trip sample-exact (FLAC archive -> WAV export keeps the samples).                                             |
-|---------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`AudioSource`](#foley.audio.AudioSource)        | a filesystem path, raw encoded bytes, or an already-open binary file-like object (e.g. `io.BytesIO`).                                                                           |
-| [`PCM_BITS`](#foley.audio.PCM_BITS)           | The PCM subtypes, with their bit depths (what [`is_lossless_conversion()`](#foley.audio.is_lossless_conversion) reads).                                                 |
-| [`EXPORT_PCM_SUBTYPE`](#foley.audio.EXPORT_PCM_SUBTYPE) | consumers of an export (`an`) take PCM only, and 24 bits is the archive's own depth.                                                                                            |
-| [`Meter`](#foley.audio.Meter)              | a name from `mixing.loudness.METERS` (`"numpy"`, the default; `"ffmpeg_ebur128"`; `"pyloudnorm"`) or any `(samples, sample_rate) -> integrated LUFS` callable (time on axis 0). |
-| [`DEFAULT_METER`](#foley.audio.DEFAULT_METER)      | the shared component's numpy BS.1770-4 meter (foley#91), so foley needs no meter library of its own.                                                                            |
+| [`TRANSCODE_DTYPE`](#foley.audio.TRANSCODE_DTYPE)          | wide enough that PCM up to 24 bits survives a decode/encode round trip sample-exact (FLAC archive -> WAV export keeps the samples).                                             |
+|---------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`AudioSource`](#foley.audio.AudioSource)              | a filesystem path, raw encoded bytes, or an already-open binary file-like object (e.g. `io.BytesIO`).                                                                           |
+| [`PCM_BITS`](#foley.audio.PCM_BITS)                 | The PCM subtypes, with their bit depths (what [`is_lossless_conversion()`](#foley.audio.is_lossless_conversion) reads).                                                 |
+| [`EXPORT_PCM_SUBTYPE`](#foley.audio.EXPORT_PCM_SUBTYPE)       | consumers of an export (`an`) take PCM only, and 24 bits is the archive's own depth.                                                                                            |
+| [`Meter`](#foley.audio.Meter)                    | a name from `mixing.loudness.METERS` (`"numpy"`, the default; `"ffmpeg_ebur128"`; `"pyloudnorm"`) or any `(samples, sample_rate) -> integrated LUFS` callable (time on axis 0). |
+| [`DEFAULT_METER`](#foley.audio.DEFAULT_METER)            | the shared component's numpy BS.1770-4 meter (foley#91), so foley needs no meter library of its own.                                                                            |
+| [`ACCENT_TARGET_LUFS`](#foley.audio.ACCENT_TARGET_LUFS)       | a sound effect that punctuates, under dialogue and music.                                                                                                                       |
+| [`ACCENT_START_DB`](#foley.audio.ACCENT_START_DB)          | The clip starts at the first sample within this many dB of its loudest window.                                                                                                  |
+| [`ACCENT_TAIL_DB`](#foley.audio.ACCENT_TAIL_DB)           | The clip keeps its decay down to this many dB under its loudest window.                                                                                                         |
+| [`ACCENT_WINDOW_S`](#foley.audio.ACCENT_WINDOW_S)          | The window the start and the tail are judged on (a transient's scale).                                                                                                          |
+| [`ACCENT_FADE_IN_S`](#foley.audio.ACCENT_FADE_IN_S)         | A declick at the start, short enough to keep the transient.                                                                                                                     |
+| [`ACCENT_FADE_OUT_S`](#foley.audio.ACCENT_FADE_OUT_S)        | The fade that ends the kept decay.                                                                                                                                              |
+| [`ACCENT_PEAK_CEILING_DBFS`](#foley.audio.ACCENT_PEAK_CEILING_DBFS) | The sample-peak ceiling an accent is levelled under (dBFS).                                                                                                                     |
 
 ### Functions
 
-| [`container_of`](#foley.audio.container_of)(data)                                | The `(format, subtype)` of encoded `data`, as lowercase / libsndfile names.                                                 |
-|----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
-| [`duration_s`](#foley.audio.duration_s)(src)                                   | `src`'s duration in seconds, read from its header (nothing is decoded).                                                     |
-| [`encode`](#foley.audio.encode)(samples, sample_rate, \*[, fmt, subtype])  | Encode `samples` fully in memory and return the container bytes.                                                            |
-| [`ensure_channels`](#foley.audio.ensure_channels)(samples, \*, channels)            | Coerce `samples` to exactly `channels` channels.                                                                            |
-| [`export_subtype`](#foley.audio.export_subtype)(fmt, src_subtype)                  | The PCM subtype an export as `fmt` uses for `src_subtype` samples.                                                          |
-| [`fade`](#foley.audio.fade)(samples, sample_rate, \*[, fade_in_s, ...])  | Apply in/out gain ramps to `samples` (a short declick by default).                                                          |
-| [`integrated_lufs`](#foley.audio.integrated_lufs)(samples, sample_rate, \*[, ...])  | Integrated loudness (LUFS, BS.1770-4) of `samples`; `-inf` when too short to gate.                                          |
-| [`is_lossless_conversion`](#foley.audio.is_lossless_conversion)(src_subtype, dst_subtype)  | Whether re-encoding `src_subtype` samples as `dst_subtype` keeps them exactly.                                              |
-| [`limit_true_peak`](#foley.audio.limit_true_peak)(samples, sample_rate, \*[, ...])  | Attenuate `samples` so their inter-sample true peak sits at or below `ceiling_dbtp`.                                        |
-| [`load`](#foley.audio.load)(src, \*[, target_sr, mono, dtype])           | Decode audio into a float working array.                                                                                    |
-| [`loudness_component`](#foley.audio.loudness_component)()                              | The shared loudness component, `mixing.loudness` (foley#91).                                                                |
-| [`loudness_gain_db`](#foley.audio.loudness_gain_db)(samples, sample_rate, \*, ...)   | The one loudness-gain rule: `(gain_db, measured_lufs)` to bring a clip to a target.                                         |
-| [`loudness_normalize`](#foley.audio.loudness_normalize)(samples, sample_rate, \*)      | Loudness-normalize to `target_lufs`, then keep it peak-safe.                                                                |
-| [`resample`](#foley.audio.resample)(samples, sample_rate, \*[, ...])         | Resample `samples` to `target_sr` (a no-op when already there).                                                             |
-| [`resolve_meter`](#foley.audio.resolve_meter)([meter])                            | `meter`, or [`DEFAULT_METER`](#foley.audio.DEFAULT_METER) for `None`; an unknown name raises `ValueError`. |
-| [`save`](#foley.audio.save)(samples, sample_rate, dst, \*[, fmt, ...])   | Write `samples` to `dst` as `fmt`/`subtype` (default = FLAC archive).                                                       |
-| [`to_mono`](#foley.audio.to_mono)(samples)                                  | Down-mix to mono by averaging channels; 1-D input passes through.                                                           |
-| [`to_working`](#foley.audio.to_working)(samples, sample_rate, \*[, mono, ...]) | Produce the canonical CLAP/QC working array from an arbitrary clip.                                                         |
-| [`transcode`](#foley.audio.transcode)(data, \*, fmt[, subtype, dtype])        | Re-encode `data` as `fmt` with `subtype` (default: [`export_subtype()`](#foley.audio.export_subtype)).      |
-| [`trim_silence`](#foley.audio.trim_silence)(samples, sample_rate, \*[, top_db])  | Strip leading/trailing silence, returning the clip and its kept span.                                                       |
+| [`accent`](#foley.audio.accent)(samples, sample_rate, \*[, ...])           | An accent-ready clip: its transient at t=0, its decay kept, its level set.                                                         |
+|----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| [`container_of`](#foley.audio.container_of)(data)                                | The `(format, subtype)` of encoded `data`, as lowercase / libsndfile names.                                                        |
+| [`duration_s`](#foley.audio.duration_s)(src)                                   | `src`'s duration in seconds, read from its header (nothing is decoded).                                                            |
+| [`encode`](#foley.audio.encode)(samples, sample_rate, \*[, fmt, subtype])  | Encode `samples` fully in memory and return the container bytes.                                                                   |
+| [`ensure_channels`](#foley.audio.ensure_channels)(samples, \*, channels)            | Coerce `samples` to exactly `channels` channels.                                                                                   |
+| [`export_subtype`](#foley.audio.export_subtype)(fmt, src_subtype)                  | The PCM subtype an export as `fmt` uses for `src_subtype` samples.                                                                 |
+| [`fade`](#foley.audio.fade)(samples, sample_rate, \*[, fade_in_s, ...])  | Apply in/out gain ramps to `samples` (a short declick by default).                                                                 |
+| [`integrated_lufs`](#foley.audio.integrated_lufs)(samples, sample_rate, \*[, ...])  | Integrated loudness (LUFS, BS.1770-4) of `samples`; `-inf` when too short to gate.                                                 |
+| [`is_lossless_conversion`](#foley.audio.is_lossless_conversion)(src_subtype, dst_subtype)  | Whether re-encoding `src_subtype` samples as `dst_subtype` keeps them exactly.                                                     |
+| [`limit_true_peak`](#foley.audio.limit_true_peak)(samples, sample_rate, \*[, ...])  | Attenuate `samples` so their inter-sample true peak sits at or below `ceiling_dbtp`.                                               |
+| [`load`](#foley.audio.load)(src, \*[, target_sr, mono, dtype])           | Decode audio into a float working array.                                                                                           |
+| [`loudness_component`](#foley.audio.loudness_component)()                              | The shared loudness component, `mixing.loudness` (foley#91).                                                                       |
+| [`loudness_gain_db`](#foley.audio.loudness_gain_db)(samples, sample_rate, \*, ...)   | The one loudness-gain rule: `(gain_db, measured_lufs)` to bring a clip to a target.                                                |
+| [`loudness_normalize`](#foley.audio.loudness_normalize)(samples, sample_rate, \*)      | Loudness-normalize to `target_lufs`, then keep it peak-safe.                                                                       |
+| [`onset_offset_s`](#foley.audio.onset_offset_s)(samples, sample_rate, \*[, ...])   | Seconds to the first sample within `within_db` of the clip's loudest window: where its transient starts (`0.0` for a silent clip). |
+| [`resample`](#foley.audio.resample)(samples, sample_rate, \*[, ...])         | Resample `samples` to `target_sr` (a no-op when already there).                                                                    |
+| [`resolve_meter`](#foley.audio.resolve_meter)([meter])                            | `meter`, or [`DEFAULT_METER`](#foley.audio.DEFAULT_METER) for `None`; an unknown name raises `ValueError`.        |
+| [`save`](#foley.audio.save)(samples, sample_rate, dst, \*[, fmt, ...])   | Write `samples` to `dst` as `fmt`/`subtype` (default = FLAC archive).                                                              |
+| [`to_mono`](#foley.audio.to_mono)(samples)                                  | Down-mix to mono by averaging channels; 1-D input passes through.                                                                  |
+| [`to_working`](#foley.audio.to_working)(samples, sample_rate, \*[, mono, ...]) | Produce the canonical CLAP/QC working array from an arbitrary clip.                                                                |
+| [`transcode`](#foley.audio.transcode)(data, \*, fmt[, subtype, dtype])        | Re-encode `data` as `fmt` with `subtype` (default: [`export_subtype()`](#foley.audio.export_subtype)).             |
+| [`trim_silence`](#foley.audio.trim_silence)(samples, sample_rate, \*[, top_db])  | Strip leading/trailing silence, returning the clip and its kept span.                                                              |
+
+### Classes
+
+| [`AccentReport`](#foley.audio.AccentReport)(duration_s, lufs, lufs_padded, ...)   | What [`accent()`](#foley.audio.accent) made, measured on the clip it returns.   |
+|-----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
+
+### foley.audio.ACCENT_FADE_IN_S *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.003*
+
+A declick at the start, short enough to keep the transient.
+
+### foley.audio.ACCENT_FADE_OUT_S *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.04*
+
+The fade that ends the kept decay.
+
+### foley.audio.ACCENT_PEAK_CEILING_DBFS *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= -3.0*
+
+The sample-peak ceiling an accent is levelled under (dBFS).
+
+### foley.audio.ACCENT_START_DB *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 35.0*
+
+The clip starts at the first sample within this many dB of its loudest window.
+
+### foley.audio.ACCENT_TAIL_DB *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 50.0*
+
+The clip keeps its decay down to this many dB under its loudest window.
+
+### foley.audio.ACCENT_TARGET_LUFS *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= -30.0*
+
+a sound effect that punctuates, under dialogue and music.
+
+* **Type:**
+  An accent’s level
+
+### foley.audio.ACCENT_WINDOW_S *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.002*
+
+The window the start and the tail are judged on (a transient’s scale).
+
+### *class* foley.audio.AccentReport(duration_s, lufs, lufs_padded, peak_dbfs, onset_s, trimmed_start_s, gain_db)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+What [`accent()`](#foley.audio.accent) made, measured on the clip it returns.
+
+`lufs` of a clip shorter than one BS.1770 block (0.4 s) is measured with the
+clip padded with silence to one block (`lufs_padded`): a convention that lets
+a one-shot be levelled at all, not a BS.1770 measurement. `onset_s` is where
+the transient lands in the clip (`0.0` unless `pre_s` kept a lead-in);
+`trimmed_start_s` is how much lead-in was cut from the source.
 
 ### foley.audio.AudioSource
 
@@ -113,6 +170,35 @@ decode/encode round trip sample-exact (FLAC archive -> WAV export keeps the samp
 
 * **Type:**
   The decode dtype of [`transcode()`](#foley.audio.transcode)
+
+### foley.audio.accent(samples, sample_rate, , target_lufs=-30.0, start_db=35.0, tail_db=50.0, window_s=0.002, pre_s=0.0, fade_in_s=0.003, fade_out_s=0.04, max_len_s=None, peak_ceiling_dbfs=-3.0, min_block_s=0.4, meter=None)
+
+An accent-ready clip: its transient at t=0, its decay kept, its level set.
+
+A late transient makes a sound feel late on its cue, a trim that cuts the decay
+makes it clipped, and a one-shot shorter than one BS.1770 block is left unlevelled
+by [`loudness_normalize()`](#foley.audio.loudness_normalize). In order:
+
+1. **start**: the first sample within `start_db` of the loudest `window_s`
+   window ([`onset_offset_s()`](#foley.audio.onset_offset_s)), keeping `pre_s` before it;
+2. **tail**: up to the last window within `tail_db` of the loudest, so the decay
+   stays; then at most `max_len_s`;
+3. **fades**: `fade_in_s` (a declick) and `fade_out_s`;
+4. **level**: to `target_lufs` by [`loudness_gain_db()`](#foley.audio.loudness_gain_db) (silent and near-silent
+   clips are not amplified; the sample peak stays under `peak_ceiling_dbfs`); a
+   clip shorter than `min_block_s` is measured padded with silence to one block,
+   and the report says so (`lufs_padded`).
+
+* **Parameters:**
+  * **samples** (`ndarray`) – Working array (mono or multichannel, time on axis 0).
+  * **sample_rate** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Sample rate in Hz.
+* **Returns:**
+  the clip in `samples`’ dtype, and an [`AccentReport`](#foley.audio.AccentReport)
+  measured on it. A silent clip comes back unchanged with `gain_db` 0.
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[`ndarray`, [`AccentReport`](#foley.audio.AccentReport)]
+
+Lazy dependencies: `numpy`, `mixing.loudness` (the meter).
 
 ### foley.audio.container_of(data)
 
@@ -351,6 +437,23 @@ BS.1770 gating block (`min_block_s`) — which a gated meter cannot measure
   the too-short case).
 
 Lazy dependencies: `mixing.loudness` (+ `numpy`).
+
+### foley.audio.onset_offset_s(samples, sample_rate, , within_db=35.0, window_s=0.002)
+
+Seconds to the first sample within `within_db` of the clip’s loudest window:
+where its transient starts (`0.0` for a silent clip).
+
+Sample-exact, unlike a hop-based trim (librosa’s starts up to a hop early).
+
+```pycon
+>>> import numpy as np
+>>> x = np.zeros(1000); x[250:] = 0.5
+>>> onset_offset_s(x, 1000)
+0.25
+```
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
 
 ### foley.audio.resample(samples, sample_rate, , target_sr=48000, quality='HQ')
 

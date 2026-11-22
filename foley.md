@@ -1,4 +1,4 @@
-> built 2026-11-22 08:24 UTC from 8788e3e (main) · foley 0.0.145. Details: build_info.json
+> built 2026-11-22 17:14 UTC from d8be0ab (main) · foley 0.0.146. Details: build_info.json
 
 # index.html.md
 
@@ -2748,37 +2748,94 @@ a file-like object).
 
 ### Module Attributes
 
-| [`TRANSCODE_DTYPE`](_autosummary/foley.audio.html.md#foley.audio.TRANSCODE_DTYPE)    | wide enough that PCM up to 24 bits survives a decode/encode round trip sample-exact (FLAC archive -> WAV export keeps the samples).                                             |
-|---------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`AudioSource`](_autosummary/foley.audio.html.md#foley.audio.AudioSource)        | a filesystem path, raw encoded bytes, or an already-open binary file-like object (e.g. `io.BytesIO`).                                                                           |
-| [`PCM_BITS`](_autosummary/foley.audio.html.md#foley.audio.PCM_BITS)           | The PCM subtypes, with their bit depths (what [`is_lossless_conversion()`](_autosummary/foley.audio.html.md#foley.audio.is_lossless_conversion) reads).                                                 |
-| [`EXPORT_PCM_SUBTYPE`](_autosummary/foley.audio.html.md#foley.audio.EXPORT_PCM_SUBTYPE) | consumers of an export (`an`) take PCM only, and 24 bits is the archive's own depth.                                                                                            |
-| [`Meter`](_autosummary/foley.audio.html.md#foley.audio.Meter)              | a name from `mixing.loudness.METERS` (`"numpy"`, the default; `"ffmpeg_ebur128"`; `"pyloudnorm"`) or any `(samples, sample_rate) -> integrated LUFS` callable (time on axis 0). |
-| [`DEFAULT_METER`](_autosummary/foley.audio.html.md#foley.audio.DEFAULT_METER)      | the shared component's numpy BS.1770-4 meter (foley#91), so foley needs no meter library of its own.                                                                            |
+| [`TRANSCODE_DTYPE`](_autosummary/foley.audio.html.md#foley.audio.TRANSCODE_DTYPE)          | wide enough that PCM up to 24 bits survives a decode/encode round trip sample-exact (FLAC archive -> WAV export keeps the samples).                                             |
+|---------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`AudioSource`](_autosummary/foley.audio.html.md#foley.audio.AudioSource)              | a filesystem path, raw encoded bytes, or an already-open binary file-like object (e.g. `io.BytesIO`).                                                                           |
+| [`PCM_BITS`](_autosummary/foley.audio.html.md#foley.audio.PCM_BITS)                 | The PCM subtypes, with their bit depths (what [`is_lossless_conversion()`](_autosummary/foley.audio.html.md#foley.audio.is_lossless_conversion) reads).                                                 |
+| [`EXPORT_PCM_SUBTYPE`](_autosummary/foley.audio.html.md#foley.audio.EXPORT_PCM_SUBTYPE)       | consumers of an export (`an`) take PCM only, and 24 bits is the archive's own depth.                                                                                            |
+| [`Meter`](_autosummary/foley.audio.html.md#foley.audio.Meter)                    | a name from `mixing.loudness.METERS` (`"numpy"`, the default; `"ffmpeg_ebur128"`; `"pyloudnorm"`) or any `(samples, sample_rate) -> integrated LUFS` callable (time on axis 0). |
+| [`DEFAULT_METER`](_autosummary/foley.audio.html.md#foley.audio.DEFAULT_METER)            | the shared component's numpy BS.1770-4 meter (foley#91), so foley needs no meter library of its own.                                                                            |
+| [`ACCENT_TARGET_LUFS`](_autosummary/foley.audio.html.md#foley.audio.ACCENT_TARGET_LUFS)       | a sound effect that punctuates, under dialogue and music.                                                                                                                       |
+| [`ACCENT_START_DB`](_autosummary/foley.audio.html.md#foley.audio.ACCENT_START_DB)          | The clip starts at the first sample within this many dB of its loudest window.                                                                                                  |
+| [`ACCENT_TAIL_DB`](_autosummary/foley.audio.html.md#foley.audio.ACCENT_TAIL_DB)           | The clip keeps its decay down to this many dB under its loudest window.                                                                                                         |
+| [`ACCENT_WINDOW_S`](_autosummary/foley.audio.html.md#foley.audio.ACCENT_WINDOW_S)          | The window the start and the tail are judged on (a transient's scale).                                                                                                          |
+| [`ACCENT_FADE_IN_S`](_autosummary/foley.audio.html.md#foley.audio.ACCENT_FADE_IN_S)         | A declick at the start, short enough to keep the transient.                                                                                                                     |
+| [`ACCENT_FADE_OUT_S`](_autosummary/foley.audio.html.md#foley.audio.ACCENT_FADE_OUT_S)        | The fade that ends the kept decay.                                                                                                                                              |
+| [`ACCENT_PEAK_CEILING_DBFS`](_autosummary/foley.audio.html.md#foley.audio.ACCENT_PEAK_CEILING_DBFS) | The sample-peak ceiling an accent is levelled under (dBFS).                                                                                                                     |
 
 ### Functions
 
-| [`container_of`](_autosummary/foley.audio.html.md#foley.audio.container_of)(data)                                | The `(format, subtype)` of encoded `data`, as lowercase / libsndfile names.                                                 |
-|----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
-| [`duration_s`](_autosummary/foley.audio.html.md#foley.audio.duration_s)(src)                                   | `src`'s duration in seconds, read from its header (nothing is decoded).                                                     |
-| [`encode`](_autosummary/foley.audio.html.md#foley.audio.encode)(samples, sample_rate, \*[, fmt, subtype])  | Encode `samples` fully in memory and return the container bytes.                                                            |
-| [`ensure_channels`](_autosummary/foley.audio.html.md#foley.audio.ensure_channels)(samples, \*, channels)            | Coerce `samples` to exactly `channels` channels.                                                                            |
-| [`export_subtype`](_autosummary/foley.audio.html.md#foley.audio.export_subtype)(fmt, src_subtype)                  | The PCM subtype an export as `fmt` uses for `src_subtype` samples.                                                          |
-| [`fade`](_autosummary/foley.audio.html.md#foley.audio.fade)(samples, sample_rate, \*[, fade_in_s, ...])  | Apply in/out gain ramps to `samples` (a short declick by default).                                                          |
-| [`integrated_lufs`](_autosummary/foley.audio.html.md#foley.audio.integrated_lufs)(samples, sample_rate, \*[, ...])  | Integrated loudness (LUFS, BS.1770-4) of `samples`; `-inf` when too short to gate.                                          |
-| [`is_lossless_conversion`](_autosummary/foley.audio.html.md#foley.audio.is_lossless_conversion)(src_subtype, dst_subtype)  | Whether re-encoding `src_subtype` samples as `dst_subtype` keeps them exactly.                                              |
-| [`limit_true_peak`](_autosummary/foley.audio.html.md#foley.audio.limit_true_peak)(samples, sample_rate, \*[, ...])  | Attenuate `samples` so their inter-sample true peak sits at or below `ceiling_dbtp`.                                        |
-| [`load`](_autosummary/foley.audio.html.md#foley.audio.load)(src, \*[, target_sr, mono, dtype])           | Decode audio into a float working array.                                                                                    |
-| [`loudness_component`](_autosummary/foley.audio.html.md#foley.audio.loudness_component)()                              | The shared loudness component, `mixing.loudness` (foley#91).                                                                |
-| [`loudness_gain_db`](_autosummary/foley.audio.html.md#foley.audio.loudness_gain_db)(samples, sample_rate, \*, ...)   | The one loudness-gain rule: `(gain_db, measured_lufs)` to bring a clip to a target.                                         |
-| [`loudness_normalize`](_autosummary/foley.audio.html.md#foley.audio.loudness_normalize)(samples, sample_rate, \*)      | Loudness-normalize to `target_lufs`, then keep it peak-safe.                                                                |
-| [`resample`](_autosummary/foley.audio.html.md#foley.audio.resample)(samples, sample_rate, \*[, ...])         | Resample `samples` to `target_sr` (a no-op when already there).                                                             |
-| [`resolve_meter`](_autosummary/foley.audio.html.md#foley.audio.resolve_meter)([meter])                            | `meter`, or [`DEFAULT_METER`](_autosummary/foley.audio.html.md#foley.audio.DEFAULT_METER) for `None`; an unknown name raises `ValueError`. |
-| [`save`](_autosummary/foley.audio.html.md#foley.audio.save)(samples, sample_rate, dst, \*[, fmt, ...])   | Write `samples` to `dst` as `fmt`/`subtype` (default = FLAC archive).                                                       |
-| [`to_mono`](_autosummary/foley.audio.html.md#foley.audio.to_mono)(samples)                                  | Down-mix to mono by averaging channels; 1-D input passes through.                                                           |
-| [`to_working`](_autosummary/foley.audio.html.md#foley.audio.to_working)(samples, sample_rate, \*[, mono, ...]) | Produce the canonical CLAP/QC working array from an arbitrary clip.                                                         |
-| [`transcode`](_autosummary/foley.audio.html.md#foley.audio.transcode)(data, \*, fmt[, subtype, dtype])        | Re-encode `data` as `fmt` with `subtype` (default: [`export_subtype()`](_autosummary/foley.audio.html.md#foley.audio.export_subtype)).      |
-| [`trim_silence`](_autosummary/foley.audio.html.md#foley.audio.trim_silence)(samples, sample_rate, \*[, top_db])  | Strip leading/trailing silence, returning the clip and its kept span.                                                       |
+| [`accent`](_autosummary/foley.audio.html.md#foley.audio.accent)(samples, sample_rate, \*[, ...])           | An accent-ready clip: its transient at t=0, its decay kept, its level set.                                                         |
+|----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| [`container_of`](_autosummary/foley.audio.html.md#foley.audio.container_of)(data)                                | The `(format, subtype)` of encoded `data`, as lowercase / libsndfile names.                                                        |
+| [`duration_s`](_autosummary/foley.audio.html.md#foley.audio.duration_s)(src)                                   | `src`'s duration in seconds, read from its header (nothing is decoded).                                                            |
+| [`encode`](_autosummary/foley.audio.html.md#foley.audio.encode)(samples, sample_rate, \*[, fmt, subtype])  | Encode `samples` fully in memory and return the container bytes.                                                                   |
+| [`ensure_channels`](_autosummary/foley.audio.html.md#foley.audio.ensure_channels)(samples, \*, channels)            | Coerce `samples` to exactly `channels` channels.                                                                                   |
+| [`export_subtype`](_autosummary/foley.audio.html.md#foley.audio.export_subtype)(fmt, src_subtype)                  | The PCM subtype an export as `fmt` uses for `src_subtype` samples.                                                                 |
+| [`fade`](_autosummary/foley.audio.html.md#foley.audio.fade)(samples, sample_rate, \*[, fade_in_s, ...])  | Apply in/out gain ramps to `samples` (a short declick by default).                                                                 |
+| [`integrated_lufs`](_autosummary/foley.audio.html.md#foley.audio.integrated_lufs)(samples, sample_rate, \*[, ...])  | Integrated loudness (LUFS, BS.1770-4) of `samples`; `-inf` when too short to gate.                                                 |
+| [`is_lossless_conversion`](_autosummary/foley.audio.html.md#foley.audio.is_lossless_conversion)(src_subtype, dst_subtype)  | Whether re-encoding `src_subtype` samples as `dst_subtype` keeps them exactly.                                                     |
+| [`limit_true_peak`](_autosummary/foley.audio.html.md#foley.audio.limit_true_peak)(samples, sample_rate, \*[, ...])  | Attenuate `samples` so their inter-sample true peak sits at or below `ceiling_dbtp`.                                               |
+| [`load`](_autosummary/foley.audio.html.md#foley.audio.load)(src, \*[, target_sr, mono, dtype])           | Decode audio into a float working array.                                                                                           |
+| [`loudness_component`](_autosummary/foley.audio.html.md#foley.audio.loudness_component)()                              | The shared loudness component, `mixing.loudness` (foley#91).                                                                       |
+| [`loudness_gain_db`](_autosummary/foley.audio.html.md#foley.audio.loudness_gain_db)(samples, sample_rate, \*, ...)   | The one loudness-gain rule: `(gain_db, measured_lufs)` to bring a clip to a target.                                                |
+| [`loudness_normalize`](_autosummary/foley.audio.html.md#foley.audio.loudness_normalize)(samples, sample_rate, \*)      | Loudness-normalize to `target_lufs`, then keep it peak-safe.                                                                       |
+| [`onset_offset_s`](_autosummary/foley.audio.html.md#foley.audio.onset_offset_s)(samples, sample_rate, \*[, ...])   | Seconds to the first sample within `within_db` of the clip's loudest window: where its transient starts (`0.0` for a silent clip). |
+| [`resample`](_autosummary/foley.audio.html.md#foley.audio.resample)(samples, sample_rate, \*[, ...])         | Resample `samples` to `target_sr` (a no-op when already there).                                                                    |
+| [`resolve_meter`](_autosummary/foley.audio.html.md#foley.audio.resolve_meter)([meter])                            | `meter`, or [`DEFAULT_METER`](_autosummary/foley.audio.html.md#foley.audio.DEFAULT_METER) for `None`; an unknown name raises `ValueError`.        |
+| [`save`](_autosummary/foley.audio.html.md#foley.audio.save)(samples, sample_rate, dst, \*[, fmt, ...])   | Write `samples` to `dst` as `fmt`/`subtype` (default = FLAC archive).                                                              |
+| [`to_mono`](_autosummary/foley.audio.html.md#foley.audio.to_mono)(samples)                                  | Down-mix to mono by averaging channels; 1-D input passes through.                                                                  |
+| [`to_working`](_autosummary/foley.audio.html.md#foley.audio.to_working)(samples, sample_rate, \*[, mono, ...]) | Produce the canonical CLAP/QC working array from an arbitrary clip.                                                                |
+| [`transcode`](_autosummary/foley.audio.html.md#foley.audio.transcode)(data, \*, fmt[, subtype, dtype])        | Re-encode `data` as `fmt` with `subtype` (default: [`export_subtype()`](_autosummary/foley.audio.html.md#foley.audio.export_subtype)).             |
+| [`trim_silence`](_autosummary/foley.audio.html.md#foley.audio.trim_silence)(samples, sample_rate, \*[, top_db])  | Strip leading/trailing silence, returning the clip and its kept span.                                                              |
+
+### Classes
+
+| [`AccentReport`](_autosummary/foley.audio.html.md#foley.audio.AccentReport)(duration_s, lufs, lufs_padded, ...)   | What [`accent()`](_autosummary/foley.audio.html.md#foley.audio.accent) made, measured on the clip it returns.   |
+|-----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
+
+### foley.audio.ACCENT_FADE_IN_S *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.003*
+
+A declick at the start, short enough to keep the transient.
+
+### foley.audio.ACCENT_FADE_OUT_S *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.04*
+
+The fade that ends the kept decay.
+
+### foley.audio.ACCENT_PEAK_CEILING_DBFS *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= -3.0*
+
+The sample-peak ceiling an accent is levelled under (dBFS).
+
+### foley.audio.ACCENT_START_DB *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 35.0*
+
+The clip starts at the first sample within this many dB of its loudest window.
+
+### foley.audio.ACCENT_TAIL_DB *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 50.0*
+
+The clip keeps its decay down to this many dB under its loudest window.
+
+### foley.audio.ACCENT_TARGET_LUFS *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= -30.0*
+
+a sound effect that punctuates, under dialogue and music.
+
+* **Type:**
+  An accent’s level
+
+### foley.audio.ACCENT_WINDOW_S *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.002*
+
+The window the start and the tail are judged on (a transient’s scale).
+
+### *class* foley.audio.AccentReport(duration_s, lufs, lufs_padded, peak_dbfs, onset_s, trimmed_start_s, gain_db)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+What [`accent()`](_autosummary/foley.audio.html.md#foley.audio.accent) made, measured on the clip it returns.
+
+`lufs` of a clip shorter than one BS.1770 block (0.4 s) is measured with the
+clip padded with silence to one block (`lufs_padded`): a convention that lets
+a one-shot be levelled at all, not a BS.1770 measurement. `onset_s` is where
+the transient lands in the clip (`0.0` unless `pre_s` kept a lead-in);
+`trimmed_start_s` is how much lead-in was cut from the source.
 
 ### foley.audio.AudioSource
 
@@ -2828,6 +2885,35 @@ decode/encode round trip sample-exact (FLAC archive -> WAV export keeps the samp
 
 * **Type:**
   The decode dtype of [`transcode()`](_autosummary/foley.audio.html.md#foley.audio.transcode)
+
+### foley.audio.accent(samples, sample_rate, , target_lufs=-30.0, start_db=35.0, tail_db=50.0, window_s=0.002, pre_s=0.0, fade_in_s=0.003, fade_out_s=0.04, max_len_s=None, peak_ceiling_dbfs=-3.0, min_block_s=0.4, meter=None)
+
+An accent-ready clip: its transient at t=0, its decay kept, its level set.
+
+A late transient makes a sound feel late on its cue, a trim that cuts the decay
+makes it clipped, and a one-shot shorter than one BS.1770 block is left unlevelled
+by [`loudness_normalize()`](_autosummary/foley.audio.html.md#foley.audio.loudness_normalize). In order:
+
+1. **start**: the first sample within `start_db` of the loudest `window_s`
+   window ([`onset_offset_s()`](_autosummary/foley.audio.html.md#foley.audio.onset_offset_s)), keeping `pre_s` before it;
+2. **tail**: up to the last window within `tail_db` of the loudest, so the decay
+   stays; then at most `max_len_s`;
+3. **fades**: `fade_in_s` (a declick) and `fade_out_s`;
+4. **level**: to `target_lufs` by [`loudness_gain_db()`](_autosummary/foley.audio.html.md#foley.audio.loudness_gain_db) (silent and near-silent
+   clips are not amplified; the sample peak stays under `peak_ceiling_dbfs`); a
+   clip shorter than `min_block_s` is measured padded with silence to one block,
+   and the report says so (`lufs_padded`).
+
+* **Parameters:**
+  * **samples** (`ndarray`) – Working array (mono or multichannel, time on axis 0).
+  * **sample_rate** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Sample rate in Hz.
+* **Returns:**
+  the clip in `samples`’ dtype, and an [`AccentReport`](_autosummary/foley.audio.html.md#foley.audio.AccentReport)
+  measured on it. A silent clip comes back unchanged with `gain_db` 0.
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[`ndarray`, [`AccentReport`](_autosummary/foley.audio.html.md#foley.audio.AccentReport)]
+
+Lazy dependencies: `numpy`, `mixing.loudness` (the meter).
 
 ### foley.audio.container_of(data)
 
@@ -3066,6 +3152,23 @@ BS.1770 gating block (`min_block_s`) — which a gated meter cannot measure
   the too-short case).
 
 Lazy dependencies: `mixing.loudness` (+ `numpy`).
+
+### foley.audio.onset_offset_s(samples, sample_rate, , within_db=35.0, window_s=0.002)
+
+Seconds to the first sample within `within_db` of the clip’s loudest window:
+where its transient starts (`0.0` for a silent clip).
+
+Sample-exact, unlike a hop-based trim (librosa’s starts up to a hop early).
+
+```pycon
+>>> import numpy as np
+>>> x = np.zeros(1000); x[250:] = 0.5
+>>> onset_offset_s(x, 1000)
+0.25
+```
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
 
 ### foley.audio.resample(samples, sample_rate, , target_sr=48000, quality='HQ')
 
@@ -7977,6 +8080,8 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`trim_silence`](_autosummary/foley.html.md#foley.trim_silence)(samples, sample_rate, \*[, top_db])    | Strip leading/trailing silence, returning the clip and its kept span.                                                                                                          |
 | [`fade`](_autosummary/foley.html.md#foley.fade)(samples, sample_rate, \*[, fade_in_s, ...])    | Apply in/out gain ramps to `samples` (a short declick by default).                                                                                                             |
 | [`loudness_normalize`](_autosummary/foley.html.md#foley.loudness_normalize)(samples, sample_rate, \*)        | Loudness-normalize to `target_lufs`, then keep it peak-safe.                                                                                                                   |
+| [`accent`](_autosummary/foley.html.md#foley.accent)(samples, sample_rate, \*[, ...])             | An accent-ready clip: its transient at t=0, its decay kept, its level set.                                                                                                     |
+| [`onset_offset_s`](_autosummary/foley.html.md#foley.onset_offset_s)(samples, sample_rate, \*[, ...])     | Seconds to the first sample within `within_db` of the clip's loudest window: where its transient starts (`0.0` for a silent clip).                                             |
 | [`to_working`](_autosummary/foley.html.md#foley.to_working)(samples, sample_rate, \*[, mono, ...])   | Produce the canonical CLAP/QC working array from an arbitrary clip.                                                                                                            |
 | [`default_library`](_autosummary/foley.html.md#foley.default_library)()                                   | The process-wide default library (local stores + CLAP + best index).                                                                                                           |
 | [`search`](_autosummary/foley.html.md#foley.search)(query, \*[, k, filters, ...])                | Hybrid (CLAP vector ⊕ BM25) search of the default library.                                                                                                                     |
@@ -8074,6 +8179,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`QCStatus`](_autosummary/foley.html.md#foley.QCStatus)(\*values)                                | Overall verdict for a clip (subclasses `str` so it is JSON-safe).                                                                    |
 | [`QCThresholds`](_autosummary/foley.html.md#foley.QCThresholds)([clip_full_scale, ...])              | All Tier-0 QC defaults (report 08 §3 table), each an explicit field.                                                                 |
 | [`QCReport`](_autosummary/foley.html.md#foley.QCReport)(duration_s, sample_rate, channels, ...)  | Per-clip Tier-0 QC result.                                                                                                           |
+| [`AccentReport`](_autosummary/foley.html.md#foley.AccentReport)(duration_s, lufs, lufs_padded, ...)  | What [`accent()`](_autosummary/foley.html.md#foley.accent) made, measured on the clip it returns.                                |
 | [`SoundLibrary`](_autosummary/foley.html.md#foley.SoundLibrary)(\*[, sounds, meta, vindex, ...])     | A searchable, license-aware library of sounds (the foley INDEX façade).                                                              |
 | [`Embedder`](_autosummary/foley.html.md#foley.Embedder)(\*args, \*\*kwargs)                      | A joint text<->audio embedding space (CLAP by default).                                                                              |
 | [`ClapEmbedder`](_autosummary/foley.html.md#foley.ClapEmbedder)([model_id, device, ...])             | LAION-CLAP text<->audio embedder (the default retrieval engine).                                                                     |
@@ -8115,6 +8221,18 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`TrademarkRefusal`](_autosummary/foley.html.md#foley.TrademarkRefusal)(message, \*, hits, report)      | A [`SafetyRefusal`](_autosummary/foley.html.md#foley.SafetyRefusal) for a prompt naming a trademarked audio logo (report 07 §7.2).                                                                                                                                                                                                 |
 | [`RecognizableVoiceRefusal`](_autosummary/foley.html.md#foley.RecognizableVoiceRefusal)(message, \*, hits, ...) | A [`SafetyRefusal`](_autosummary/foley.html.md#foley.SafetyRefusal) for a prompt requesting a recognizable / cloned voice (report 07 §7.1).                                                                                                                                                                                        |
 | [`BroadcastRefusal`](_autosummary/foley.html.md#foley.BroadcastRefusal)                                 | A source whose rights do not allow it into a broadcast bed (refused, fail-closed).                                                                                                                                                                                                                                              |
+
+### *class* foley.AccentReport(duration_s, lufs, lufs_padded, peak_dbfs, onset_s, trimmed_start_s, gain_db)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+What [`accent()`](_autosummary/foley.html.md#foley.accent) made, measured on the clip it returns.
+
+`lufs` of a clip shorter than one BS.1770 block (0.4 s) is measured with the
+clip padded with silence to one block (`lufs_padded`): a convention that lets
+a one-shot be levelled at all, not a BS.1770 measurement. `onset_s` is where
+the transient lands in the clip (`0.0` unless `pre_s` kept a lead-in);
+`trimmed_start_s` is how much lead-in was cut from the source.
 
 ### *class* foley.AcquisitionMethod(\*values)
 
@@ -10020,6 +10138,35 @@ estimates, `whisperx`, `mfa`, …) or `cached` (the timeline already had them).
 What the caller should know about how the mix was made, e.g. that word timings
 are estimates because no forced aligner is installed (#65).
 
+### foley.accent(samples, sample_rate, , target_lufs=-30.0, start_db=35.0, tail_db=50.0, window_s=0.002, pre_s=0.0, fade_in_s=0.003, fade_out_s=0.04, max_len_s=None, peak_ceiling_dbfs=-3.0, min_block_s=0.4, meter=None)
+
+An accent-ready clip: its transient at t=0, its decay kept, its level set.
+
+A late transient makes a sound feel late on its cue, a trim that cuts the decay
+makes it clipped, and a one-shot shorter than one BS.1770 block is left unlevelled
+by [`loudness_normalize()`](_autosummary/foley.html.md#foley.loudness_normalize). In order:
+
+1. **start**: the first sample within `start_db` of the loudest `window_s`
+   window ([`onset_offset_s()`](_autosummary/foley.html.md#foley.onset_offset_s)), keeping `pre_s` before it;
+2. **tail**: up to the last window within `tail_db` of the loudest, so the decay
+   stays; then at most `max_len_s`;
+3. **fades**: `fade_in_s` (a declick) and `fade_out_s`;
+4. **level**: to `target_lufs` by `loudness_gain_db()` (silent and near-silent
+   clips are not amplified; the sample peak stays under `peak_ceiling_dbfs`); a
+   clip shorter than `min_block_s` is measured padded with silence to one block,
+   and the report says so (`lufs_padded`).
+
+* **Parameters:**
+  * **samples** (`ndarray`) – Working array (mono or multichannel, time on axis 0).
+  * **sample_rate** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Sample rate in Hz.
+* **Returns:**
+  the clip in `samples`’ dtype, and an [`AccentReport`](_autosummary/foley.html.md#foley.AccentReport)
+  measured on it. A silent clip comes back unchanged with `gain_db` 0.
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[`ndarray`, [`AccentReport`](_autosummary/foley.audio.html.md#foley.audio.AccentReport)]
+
+Lazy dependencies: `numpy`, `mixing.loudness` (the meter).
+
 ### foley.add_from(source, , query, license='source-default', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, provider_params=None, \*\*affordances)
 
 Search a live `source` and ingest its license-clean hits into `library`.
@@ -11592,6 +11739,23 @@ narration and needs a short fade.
 
 Alias of `offline_scope()` — `with foley.offline(): ...` for local-first runs.
 
+### foley.onset_offset_s(samples, sample_rate, , within_db=35.0, window_s=0.002)
+
+Seconds to the first sample within `within_db` of the clip’s loudest window:
+where its transient starts (`0.0` for a silent clip).
+
+Sample-exact, unlike a hop-based trim (librosa’s starts up to a hop early).
+
+```pycon
+>>> import numpy as np
+>>> x = np.zeros(1000); x[250:] = 0.5
+>>> onset_offset_s(x, 1000)
+0.25
+```
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
 ### foley.parse_ucs_filename(filename, , table=None)
 
 Parse a UCS-conformant filename to `(ucs_category, ucs_subcategory)`.
@@ -11740,7 +11904,7 @@ Resample `samples` to `target_sr` (a no-op when already there).
 
 Lazy dependency: `soxr`.
 
-### foley.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'that', 'too', 'no', 'any', 'did', 'not', 'those', 'am', 'he', 'under', 'were', 'same', 'where', 'could', 'him', 'should', 'such', 'so', 'most', 'in', 'also', 'had', 'about', 'very', 'his', 'own', 'be', 'our', 'was', 'has', 'at', 'being', 'to', 'with', 'can', 'only', 'when', 'might', 'few', 'them', 'more', 'there', 'have', 'but', 'a', 'why', 'all', 'onto', 'by', 'her', 'this', 'your', 'its', 'would', 'then', 'for', 'me', 'how', 'other', 'is', 'we', 'us', 'what', 'does', 'their', 'do', 'been', 'an', 'than', 'they', 'from', 'these', 'each', 'she', 'who', 'some', 'without', 'just', 'are', 'you', 'into', 'may', 'as', 'of', 'and', 'every', 'nor', 'will', 'or', 'on', 'i', 'which', 'it', 'must', 'my', 'if', 'here', 'the'}), ambiguous_words=frozenset({'fall', 'time', 'piece', 'part', 'small', 'run', 'long', 'drop', 'large', 'meeting', 'night', 'sound', 'tone', 'hit', 'general', 'bang', 'beat', 'set', 'hold', 'down', 'person', 'misc', 'release', 'quiet', 'out', 'side', 'handle', 'up', 'arc', 'shot', 'way', 'heavy', 'work', 'big', 'over', 'blue', 'thing', 'open', 'place', 'light', 'catch', 'day', 'off', 'break', 'little'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### foley.resolve_catid(\*, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'about', 'have', 'so', 'some', 'you', 'should', 'by', 'when', 'then', 'no', 'my', 'or', 'does', 'a', 'will', 'this', 'could', 'every', 'under', 'am', 'how', 'we', 'him', 'are', 'but', 'its', 'too', 'of', 'were', 'any', 'their', 'few', 'without', 'also', 'which', 'what', 'all', 'not', 'is', 'these', 'us', 'he', 'to', 'here', 'they', 'if', 'same', 'on', 'from', 'me', 'being', 'she', 'such', 'has', 'and', 'as', 'an', 'onto', 'more', 'in', 'may', 'each', 'where', 'them', 'be', 'why', 'who', 'do', 'would', 'there', 'might', 'was', 'the', 'very', 'for', 'his', 'most', 'only', 'been', 'nor', 'it', 'just', 'our', 'own', 'i', 'other', 'her', 'than', 'those', 'at', 'your', 'into', 'must', 'can', 'did', 'with', 'had', 'that'}), ambiguous_words=frozenset({'quiet', 'break', 'blue', 'light', 'out', 'open', 'release', 'drop', 'run', 'sound', 'heavy', 'big', 'long', 'general', 'way', 'tone', 'off', 'hold', 'small', 'down', 'fall', 'beat', 'hit', 'night', 'set', 'place', 'catch', 'over', 'bang', 'misc', 'person', 'handle', 'little', 'arc', 'day', 'time', 'side', 'part', 'up', 'shot', 'large', 'meeting', 'work', 'thing', 'piece'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -13611,7 +13775,7 @@ Fuse several ranked id lists into one, by reciprocal rank.
   `[(id, fused_score), ...]` sorted by fused score descending, ties
   broken by `id` ascending (so the fusion is fully deterministic).
 
-### foley.index.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'that', 'too', 'no', 'any', 'did', 'not', 'those', 'am', 'he', 'under', 'were', 'same', 'where', 'could', 'him', 'should', 'such', 'so', 'most', 'in', 'also', 'had', 'about', 'very', 'his', 'own', 'be', 'our', 'was', 'has', 'at', 'being', 'to', 'with', 'can', 'only', 'when', 'might', 'few', 'them', 'more', 'there', 'have', 'but', 'a', 'why', 'all', 'onto', 'by', 'her', 'this', 'your', 'its', 'would', 'then', 'for', 'me', 'how', 'other', 'is', 'we', 'us', 'what', 'does', 'their', 'do', 'been', 'an', 'than', 'they', 'from', 'these', 'each', 'she', 'who', 'some', 'without', 'just', 'are', 'you', 'into', 'may', 'as', 'of', 'and', 'every', 'nor', 'will', 'or', 'on', 'i', 'which', 'it', 'must', 'my', 'if', 'here', 'the'}), ambiguous_words=frozenset({'fall', 'time', 'piece', 'part', 'small', 'run', 'long', 'drop', 'large', 'meeting', 'night', 'sound', 'tone', 'hit', 'general', 'bang', 'beat', 'set', 'hold', 'down', 'person', 'misc', 'release', 'quiet', 'out', 'side', 'handle', 'up', 'arc', 'shot', 'way', 'heavy', 'work', 'big', 'over', 'blue', 'thing', 'open', 'place', 'light', 'catch', 'day', 'off', 'break', 'little'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### foley.index.resolve_catid(\*, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'about', 'have', 'so', 'some', 'you', 'should', 'by', 'when', 'then', 'no', 'my', 'or', 'does', 'a', 'will', 'this', 'could', 'every', 'under', 'am', 'how', 'we', 'him', 'are', 'but', 'its', 'too', 'of', 'were', 'any', 'their', 'few', 'without', 'also', 'which', 'what', 'all', 'not', 'is', 'these', 'us', 'he', 'to', 'here', 'they', 'if', 'same', 'on', 'from', 'me', 'being', 'she', 'such', 'has', 'and', 'as', 'an', 'onto', 'more', 'in', 'may', 'each', 'where', 'them', 'be', 'why', 'who', 'do', 'would', 'there', 'might', 'was', 'the', 'very', 'for', 'his', 'most', 'only', 'been', 'nor', 'it', 'just', 'our', 'own', 'i', 'other', 'her', 'than', 'those', 'at', 'your', 'into', 'must', 'can', 'did', 'with', 'had', 'that'}), ambiguous_words=frozenset({'quiet', 'break', 'blue', 'light', 'out', 'open', 'release', 'drop', 'run', 'sound', 'heavy', 'big', 'long', 'general', 'way', 'tone', 'off', 'hold', 'small', 'down', 'fall', 'beat', 'hit', 'night', 'set', 'place', 'catch', 'over', 'bang', 'misc', 'person', 'handle', 'little', 'arc', 'day', 'time', 'side', 'part', 'up', 'shot', 'large', 'meeting', 'work', 'thing', 'piece'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -13797,10 +13961,11 @@ one shared RRF, so ranking is identical across backends.
 
 ### Functions
 
-| [`default_index`](_autosummary/foley.index.indexes.html.md#foley.index.indexes.default_index)(\*, data_dir, dim)   | Build the best available persistent index for a library.               |
-|-------------------------------------------------------------------------------------|------------------------------------------------------------------------|
-| [`lancedb_available`](_autosummary/foley.index.indexes.html.md#foley.index.indexes.lancedb_available)()                | True if `lancedb` is importable (the `foley[index]` extra is present). |
-| [`sqlite_vec_loadable`](_autosummary/foley.index.indexes.html.md#foley.index.indexes.sqlite_vec_loadable)()              | True if `sqlite_vec` is installed AND this interpreter can load it.    |
+| [`bm25_idf`](_autosummary/foley.index.indexes.html.md#foley.index.indexes.bm25_idf)(n_docs, df)             | Okapi BM25's inverse document frequency of a term in `df` of `n_docs` documents (the `+1` form, so never negative).   |
+|-----------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
+| [`default_index`](_autosummary/foley.index.indexes.html.md#foley.index.indexes.default_index)(\*, data_dir, dim) | Build the best available persistent index for a library.                                                              |
+| [`lancedb_available`](_autosummary/foley.index.indexes.html.md#foley.index.indexes.lancedb_available)()              | True if `lancedb` is importable (the `foley[index]` extra is present).                                                |
+| [`sqlite_vec_loadable`](_autosummary/foley.index.indexes.html.md#foley.index.indexes.sqlite_vec_loadable)()            | True if `sqlite_vec` is installed AND this interpreter can load it.                                                   |
 
 ### Classes
 
@@ -14000,6 +14165,21 @@ Insert or replace the vector for `id` in the `vec0` table.
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### foley.index.indexes.bm25_idf(n_docs, df)
+
+Okapi BM25’s inverse document frequency of a term in `df` of `n_docs`
+documents (the `+1` form, so never negative). The one IDF of foley’s keyword
+scoring: [`MemoryIndex`](_autosummary/foley.index.indexes.html.md#foley.index.indexes.MemoryIndex) ranks with it, and the UCS keyword stage can weigh
+a shared synonym by it (`foley.index.taxonomy.resolver.idf_share`).
+
+```pycon
+>>> round(bm25_idf(753, 1), 3), round(bm25_idf(753, 32), 3)
+(6.22, 3.144)
+```
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
 
 ### foley.index.indexes.default_index(, data_dir, dim)
 
@@ -15690,15 +15870,15 @@ with no logic change.
 
 ### Classes
 
-| [`UcsRow`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.UcsRow)(catid, category, subcategory[, ...])        | One Universal Category System entry.                                                                          |
-|-----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
-| [`UcsName`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.UcsName)(catid, category, subcategory[, ...])       | Every field of a UCS filename (`foley.index.taxonomy.ucs.parse_ucs_name`).                                    |
-| [`UcsTable`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.UcsTable)([by_catid, order, \_ci_index, legacy])    | A loaded UCS lookup by CatID: exact, case-insensitive, or a legacy CatID.                                     |
-| [`AudioSetUcsMap`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.AudioSetUcsMap)([by_name, by_mid])                  | AudioSet-label -> UCS-CatID overlap map (report 04 §5.3).                                                     |
-| [`CatIdResolution`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.CatIdResolution)([catid, category, ...])            | The result of resolving free tags/caption/labels to a UCS CatID.                                              |
-| [`TaxonomyResolver`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.TaxonomyResolver)(\*args, \*\*kwargs)               | Resolve a [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord) to a UCS CatID. |
-| [`KeywordResolver`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.KeywordResolver)(\*[, table, audioset_map, policy]) | The default stdlib resolver — staged keyword/synonym/AudioSet resolution.                                     |
-| [`MatchPolicy`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.MatchPolicy)([stop_words, ambiguous_words, ...])    | How the keyword stage matches, ranks and bands (one strategy object).                                         |
+| [`UcsRow`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.UcsRow)(catid, category, subcategory[, ...])     | One Universal Category System entry.                                                                          |
+|--------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| [`UcsName`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.UcsName)(catid, category, subcategory[, ...])    | Every field of a UCS filename (`foley.index.taxonomy.ucs.parse_ucs_name`).                                    |
+| [`UcsTable`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.UcsTable)([by_catid, order, \_ci_index, legacy]) | A loaded UCS lookup by CatID: exact, case-insensitive, or a legacy CatID.                                     |
+| [`AudioSetUcsMap`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.AudioSetUcsMap)([by_name, by_mid])               | AudioSet-label -> UCS-CatID overlap map (report 04 §5.3).                                                     |
+| [`CatIdResolution`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.CatIdResolution)([catid, category, ...])         | The result of resolving free tags/caption/labels to a UCS CatID.                                              |
+| [`TaxonomyResolver`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.TaxonomyResolver)(\*args, \*\*kwargs)            | Resolve a [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord) to a UCS CatID. |
+| [`KeywordResolver`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.KeywordResolver)(\*[, table, audioset_map, ...]) | The default stdlib resolver — staged keyword/synonym/AudioSet resolution.                                     |
+| [`MatchPolicy`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.MatchPolicy)([stop_words, ambiguous_words, ...]) | How the keyword stage matches, ranks and bands (one strategy object).                                         |
 
 ### *class* foley.index.taxonomy.AudioSetUcsMap(by_name=dict(), by_mid=dict())
 
@@ -15727,7 +15907,7 @@ The result of resolving free tags/caption/labels to a UCS CatID.
 `subcategory` feeds `ucs_subcategory` on
 ingest, and `ucs_catid` on the query side.
 
-### *class* foley.index.taxonomy.KeywordResolver(, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'that', 'too', 'no', 'any', 'did', 'not', 'those', 'am', 'he', 'under', 'were', 'same', 'where', 'could', 'him', 'should', 'such', 'so', 'most', 'in', 'also', 'had', 'about', 'very', 'his', 'own', 'be', 'our', 'was', 'has', 'at', 'being', 'to', 'with', 'can', 'only', 'when', 'might', 'few', 'them', 'more', 'there', 'have', 'but', 'a', 'why', 'all', 'onto', 'by', 'her', 'this', 'your', 'its', 'would', 'then', 'for', 'me', 'how', 'other', 'is', 'we', 'us', 'what', 'does', 'their', 'do', 'been', 'an', 'than', 'they', 'from', 'these', 'each', 'she', 'who', 'some', 'without', 'just', 'are', 'you', 'into', 'may', 'as', 'of', 'and', 'every', 'nor', 'will', 'or', 'on', 'i', 'which', 'it', 'must', 'my', 'if', 'here', 'the'}), ambiguous_words=frozenset({'fall', 'time', 'piece', 'part', 'small', 'run', 'long', 'drop', 'large', 'meeting', 'night', 'sound', 'tone', 'hit', 'general', 'bang', 'beat', 'set', 'hold', 'down', 'person', 'misc', 'release', 'quiet', 'out', 'side', 'handle', 'up', 'arc', 'shot', 'way', 'heavy', 'work', 'big', 'over', 'blue', 'thing', 'open', 'place', 'light', 'catch', 'day', 'off', 'break', 'little'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### *class* foley.index.taxonomy.KeywordResolver(\*, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'about', 'have', 'so', 'some', 'you', 'should', 'by', 'when', 'then', 'no', 'my', 'or', 'does', 'a', 'will', 'this', 'could', 'every', 'under', 'am', 'how', 'we', 'him', 'are', 'but', 'its', 'too', 'of', 'were', 'any', 'their', 'few', 'without', 'also', 'which', 'what', 'all', 'not', 'is', 'these', 'us', 'he', 'to', 'here', 'they', 'if', 'same', 'on', 'from', 'me', 'being', 'she', 'such', 'has', 'and', 'as', 'an', 'onto', 'more', 'in', 'may', 'each', 'where', 'them', 'be', 'why', 'who', 'do', 'would', 'there', 'might', 'was', 'the', 'very', 'for', 'his', 'most', 'only', 'been', 'nor', 'it', 'just', 'our', 'own', 'i', 'other', 'her', 'than', 'those', 'at', 'your', 'into', 'must', 'can', 'did', 'with', 'had', 'that'}), ambiguous_words=frozenset({'quiet', 'break', 'blue', 'light', 'out', 'open', 'release', 'drop', 'run', 'sound', 'heavy', 'big', 'long', 'general', 'way', 'tone', 'off', 'hold', 'small', 'down', 'fall', 'beat', 'hit', 'night', 'set', 'place', 'catch', 'over', 'bang', 'misc', 'person', 'handle', 'little', 'arc', 'day', 'time', 'side', 'part', 'up', 'shot', 'large', 'meeting', 'work', 'thing', 'piece'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -15743,7 +15923,7 @@ Resolve a [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord
 * **Return type:**
   [`CatIdResolution`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.CatIdResolution)
 
-### *class* foley.index.taxonomy.MatchPolicy(stop_words=frozenset({'a', 'about', 'all', 'also', 'am', 'an', 'and', 'any', 'are', 'as', 'at', 'be', 'been', 'being', 'but', 'by', 'can', 'could', 'did', 'do', 'does', 'each', 'every', 'few', 'for', 'from', 'had', 'has', 'have', 'he', 'her', 'here', 'him', 'his', 'how', 'i', 'if', 'in', 'into', 'is', 'it', 'its', 'just', 'may', 'me', 'might', 'more', 'most', 'must', 'my', 'no', 'nor', 'not', 'of', 'on', 'only', 'onto', 'or', 'other', 'our', 'own', 'same', 'she', 'should', 'so', 'some', 'such', 'than', 'that', 'the', 'their', 'them', 'then', 'there', 'these', 'they', 'this', 'those', 'to', 'too', 'under', 'us', 'very', 'was', 'we', 'were', 'what', 'when', 'where', 'which', 'who', 'why', 'will', 'with', 'without', 'would', 'you', 'your'}), ambiguous_words=frozenset({'arc', 'bang', 'beat', 'big', 'blue', 'break', 'catch', 'day', 'down', 'drop', 'fall', 'general', 'handle', 'heavy', 'hit', 'hold', 'large', 'light', 'little', 'long', 'meeting', 'misc', 'night', 'off', 'open', 'out', 'over', 'part', 'person', 'piece', 'place', 'quiet', 'release', 'run', 'set', 'shot', 'side', 'small', 'sound', 'thing', 'time', 'tone', 'up', 'way', 'work'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5)
+### *class* foley.index.taxonomy.MatchPolicy(stop_words=frozenset({'a', 'about', 'all', 'also', 'am', 'an', 'and', 'any', 'are', 'as', 'at', 'be', 'been', 'being', 'but', 'by', 'can', 'could', 'did', 'do', 'does', 'each', 'every', 'few', 'for', 'from', 'had', 'has', 'have', 'he', 'her', 'here', 'him', 'his', 'how', 'i', 'if', 'in', 'into', 'is', 'it', 'its', 'just', 'may', 'me', 'might', 'more', 'most', 'must', 'my', 'no', 'nor', 'not', 'of', 'on', 'only', 'onto', 'or', 'other', 'our', 'own', 'same', 'she', 'should', 'so', 'some', 'such', 'than', 'that', 'the', 'their', 'them', 'then', 'there', 'these', 'they', 'this', 'those', 'to', 'too', 'under', 'us', 'very', 'was', 'we', 'were', 'what', 'when', 'where', 'which', 'who', 'why', 'will', 'with', 'without', 'would', 'you', 'your'}), ambiguous_words=frozenset({'arc', 'bang', 'beat', 'big', 'blue', 'break', 'catch', 'day', 'down', 'drop', 'fall', 'general', 'handle', 'heavy', 'hit', 'hold', 'large', 'light', 'little', 'long', 'meeting', 'misc', 'night', 'off', 'open', 'out', 'over', 'part', 'person', 'piece', 'place', 'quiet', 'release', 'run', 'set', 'shot', 'side', 'small', 'sound', 'thing', 'time', 'tone', 'up', 'way', 'work'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -15785,6 +15965,17 @@ Added per content word past the first of a multi-word term.
 
 * **Type:**
   [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+#### synonym_weight
+
+`(rows listing the synonym, rows in the table) -> factor` on a
+synonym hit’s weight: `inverse_sqrt_share()` (default) or
+`idf_share()` (foley#290).
+
+* **Type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`int`](https://docs.python.org/3/builtins/functions.html#int), [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
+* **Return type:**
+  [*float*](https://docs.python.org/3/builtins/functions.html#float)
 
 #### strong_confidence
 
@@ -15829,6 +16020,14 @@ The band of evidence of `strength`; an unverified row drops one.
 #### *property* bands *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[float](https://docs.python.org/3/builtins/functions.html#float), [float](https://docs.python.org/3/builtins/functions.html#float), [float](https://docs.python.org/3/builtins/functions.html#float)]*
 
 The keyword bands, by `STRONG`, `SINGLE`, `WEAK`.
+
+#### synonym_weight(n_rows)
+
+A synonym listed by `shared_by` rows weighs `1/sqrt(shared_by)` of its kind’s
+weight: “car” (32 rows) a sixth, “doorknob” (one row) all of it.
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
 
 ### *class* foley.index.taxonomy.TaxonomyResolver(\*args, \*\*kwargs)
 
@@ -16091,7 +16290,7 @@ True
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName)]
 
-### foley.index.taxonomy.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'that', 'too', 'no', 'any', 'did', 'not', 'those', 'am', 'he', 'under', 'were', 'same', 'where', 'could', 'him', 'should', 'such', 'so', 'most', 'in', 'also', 'had', 'about', 'very', 'his', 'own', 'be', 'our', 'was', 'has', 'at', 'being', 'to', 'with', 'can', 'only', 'when', 'might', 'few', 'them', 'more', 'there', 'have', 'but', 'a', 'why', 'all', 'onto', 'by', 'her', 'this', 'your', 'its', 'would', 'then', 'for', 'me', 'how', 'other', 'is', 'we', 'us', 'what', 'does', 'their', 'do', 'been', 'an', 'than', 'they', 'from', 'these', 'each', 'she', 'who', 'some', 'without', 'just', 'are', 'you', 'into', 'may', 'as', 'of', 'and', 'every', 'nor', 'will', 'or', 'on', 'i', 'which', 'it', 'must', 'my', 'if', 'here', 'the'}), ambiguous_words=frozenset({'fall', 'time', 'piece', 'part', 'small', 'run', 'long', 'drop', 'large', 'meeting', 'night', 'sound', 'tone', 'hit', 'general', 'bang', 'beat', 'set', 'hold', 'down', 'person', 'misc', 'release', 'quiet', 'out', 'side', 'handle', 'up', 'arc', 'shot', 'way', 'heavy', 'work', 'big', 'over', 'blue', 'thing', 'open', 'place', 'light', 'catch', 'day', 'off', 'break', 'little'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### foley.index.taxonomy.resolve_catid(\*, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'about', 'have', 'so', 'some', 'you', 'should', 'by', 'when', 'then', 'no', 'my', 'or', 'does', 'a', 'will', 'this', 'could', 'every', 'under', 'am', 'how', 'we', 'him', 'are', 'but', 'its', 'too', 'of', 'were', 'any', 'their', 'few', 'without', 'also', 'which', 'what', 'all', 'not', 'is', 'these', 'us', 'he', 'to', 'here', 'they', 'if', 'same', 'on', 'from', 'me', 'being', 'she', 'such', 'has', 'and', 'as', 'an', 'onto', 'more', 'in', 'may', 'each', 'where', 'them', 'be', 'why', 'who', 'do', 'would', 'there', 'might', 'was', 'the', 'very', 'for', 'his', 'most', 'only', 'been', 'nor', 'it', 'just', 'our', 'own', 'i', 'other', 'her', 'than', 'those', 'at', 'your', 'into', 'must', 'can', 'did', 'with', 'had', 'that'}), ambiguous_words=frozenset({'quiet', 'break', 'blue', 'light', 'out', 'open', 'release', 'drop', 'run', 'sound', 'heavy', 'big', 'long', 'general', 'way', 'tone', 'off', 'hold', 'small', 'down', 'fall', 'beat', 'hit', 'night', 'set', 'place', 'catch', 'over', 'bang', 'misc', 'person', 'handle', 'little', 'arc', 'day', 'time', 'side', 'part', 'up', 'shot', 'large', 'meeting', 'work', 'thing', 'piece'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -16301,19 +16500,21 @@ be dropped in behind the same [`TaxonomyResolver`](_autosummary/foley.index.taxo
 
 ### Functions
 
-| [`keyword_resolution`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.keyword_resolution)([tags, caption, table, ...])   | The keyword stage alone: the best row for `tags`/`caption`, banded.                                                                  |
-|----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-| [`resolve_catid`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.resolve_catid)(\*[, tags, caption, ...])           | Resolve inputs to a best UCS CatID by the staged precedence.                                                                         |
-| [`term_index`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.term_index)(table)                                 | The [`TermIndex`](_autosummary/foley.index.taxonomy.text.html.md#foley.index.taxonomy.text.TermIndex) of `table`, built once per table. |
+| [`idf_share`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.idf_share)(shared_by, n_rows)                    | A synonym weighs its BM25 IDF over the `n_rows` UCS rows (each row a document), relative to a synonym only one row lists ([`foley.index.indexes.bm25_idf()`](_autosummary/foley.index.indexes.html.md#foley.index.indexes.bm25_idf), the IDF `MemoryIndex` ranks with).   |
+|--------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`inverse_sqrt_share`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.inverse_sqrt_share)(shared_by, n_rows)           | A synonym listed by `shared_by` rows weighs `1/sqrt(shared_by)` of its kind's weight: "car" (32 rows) a sixth, "doorknob" (one row) all of it.                                                                                                                               |
+| [`keyword_resolution`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.keyword_resolution)([tags, caption, table, ...]) | The keyword stage alone: the best row for `tags`/`caption`, banded.                                                                                                                                                                                                          |
+| [`resolve_catid`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.resolve_catid)(\*[, tags, caption, ...])         | Resolve inputs to a best UCS CatID by the staged precedence.                                                                                                                                                                                                                 |
+| [`term_index`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.term_index)(table)                               | The [`TermIndex`](_autosummary/foley.index.taxonomy.text.html.md#foley.index.taxonomy.text.TermIndex) of `table`, built once per table.                                                                                                                                         |
 
 ### Classes
 
-| [`Evidence`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.Evidence)(catid, score, matched, words, ...)        | Everything the input says for one CatID: the folded [`Hit`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.Hit) s.   |
-|-----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
-| [`Hit`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.Hit)(catid, kind, text, words, weight, shared_by)   | One term of a row found in the input.                                                                         |
-| [`KeywordResolver`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.KeywordResolver)(\*[, table, audioset_map, policy]) | The default stdlib resolver — staged keyword/synonym/AudioSet resolution.                                     |
-| [`MatchPolicy`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.MatchPolicy)([stop_words, ambiguous_words, ...])    | How the keyword stage matches, ranks and bands (one strategy object).                                         |
-| [`TaxonomyResolver`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.TaxonomyResolver)(\*args, \*\*kwargs)               | Resolve a [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord) to a UCS CatID. |
+| [`Evidence`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.Evidence)(catid, score, matched, words, ...)      | Everything the input says for one CatID: the folded [`Hit`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.Hit) s.   |
+|---------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| [`Hit`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.Hit)(catid, kind, text, words, weight, shared_by) | One term of a row found in the input.                                                                         |
+| [`KeywordResolver`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.KeywordResolver)(\*[, table, audioset_map, ...])  | The default stdlib resolver — staged keyword/synonym/AudioSet resolution.                                     |
+| [`MatchPolicy`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.MatchPolicy)([stop_words, ambiguous_words, ...])  | How the keyword stage matches, ranks and bands (one strategy object).                                         |
+| [`TaxonomyResolver`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.TaxonomyResolver)(\*args, \*\*kwargs)             | Resolve a [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord) to a UCS CatID. |
 
 ### foley.index.taxonomy.resolver.DEFAULT_AMBIGUOUS_WORDS *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)* *= frozenset({'arc', 'bang', 'beat', 'big', 'blue', 'break', 'catch', 'day', 'down', 'drop', 'fall', 'general', 'handle', 'heavy', 'hit', 'hold', 'large', 'light', 'little', 'long', 'meeting', 'misc', 'night', 'off', 'open', 'out', 'over', 'part', 'person', 'piece', 'place', 'quiet', 'release', 'run', 'set', 'shot', 'side', 'small', 'sound', 'thing', 'time', 'tone', 'up', 'way', 'work'})*
 
@@ -16365,7 +16566,7 @@ One term of a row found in the input.
 `words` are the term’s content lemmas (stop words dropped); `shared_by` is how
 many rows list the term.
 
-### *class* foley.index.taxonomy.resolver.KeywordResolver(, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'that', 'too', 'no', 'any', 'did', 'not', 'those', 'am', 'he', 'under', 'were', 'same', 'where', 'could', 'him', 'should', 'such', 'so', 'most', 'in', 'also', 'had', 'about', 'very', 'his', 'own', 'be', 'our', 'was', 'has', 'at', 'being', 'to', 'with', 'can', 'only', 'when', 'might', 'few', 'them', 'more', 'there', 'have', 'but', 'a', 'why', 'all', 'onto', 'by', 'her', 'this', 'your', 'its', 'would', 'then', 'for', 'me', 'how', 'other', 'is', 'we', 'us', 'what', 'does', 'their', 'do', 'been', 'an', 'than', 'they', 'from', 'these', 'each', 'she', 'who', 'some', 'without', 'just', 'are', 'you', 'into', 'may', 'as', 'of', 'and', 'every', 'nor', 'will', 'or', 'on', 'i', 'which', 'it', 'must', 'my', 'if', 'here', 'the'}), ambiguous_words=frozenset({'fall', 'time', 'piece', 'part', 'small', 'run', 'long', 'drop', 'large', 'meeting', 'night', 'sound', 'tone', 'hit', 'general', 'bang', 'beat', 'set', 'hold', 'down', 'person', 'misc', 'release', 'quiet', 'out', 'side', 'handle', 'up', 'arc', 'shot', 'way', 'heavy', 'work', 'big', 'over', 'blue', 'thing', 'open', 'place', 'light', 'catch', 'day', 'off', 'break', 'little'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### *class* foley.index.taxonomy.resolver.KeywordResolver(\*, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'about', 'have', 'so', 'some', 'you', 'should', 'by', 'when', 'then', 'no', 'my', 'or', 'does', 'a', 'will', 'this', 'could', 'every', 'under', 'am', 'how', 'we', 'him', 'are', 'but', 'its', 'too', 'of', 'were', 'any', 'their', 'few', 'without', 'also', 'which', 'what', 'all', 'not', 'is', 'these', 'us', 'he', 'to', 'here', 'they', 'if', 'same', 'on', 'from', 'me', 'being', 'she', 'such', 'has', 'and', 'as', 'an', 'onto', 'more', 'in', 'may', 'each', 'where', 'them', 'be', 'why', 'who', 'do', 'would', 'there', 'might', 'was', 'the', 'very', 'for', 'his', 'most', 'only', 'been', 'nor', 'it', 'just', 'our', 'own', 'i', 'other', 'her', 'than', 'those', 'at', 'your', 'into', 'must', 'can', 'did', 'with', 'had', 'that'}), ambiguous_words=frozenset({'quiet', 'break', 'blue', 'light', 'out', 'open', 'release', 'drop', 'run', 'sound', 'heavy', 'big', 'long', 'general', 'way', 'tone', 'off', 'hold', 'small', 'down', 'fall', 'beat', 'hit', 'night', 'set', 'place', 'catch', 'over', 'bang', 'misc', 'person', 'handle', 'little', 'arc', 'day', 'time', 'side', 'part', 'up', 'shot', 'large', 'meeting', 'work', 'thing', 'piece'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -16381,7 +16582,7 @@ Resolve a [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord
 * **Return type:**
   [`CatIdResolution`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.CatIdResolution)
 
-### *class* foley.index.taxonomy.resolver.MatchPolicy(stop_words=frozenset({'a', 'about', 'all', 'also', 'am', 'an', 'and', 'any', 'are', 'as', 'at', 'be', 'been', 'being', 'but', 'by', 'can', 'could', 'did', 'do', 'does', 'each', 'every', 'few', 'for', 'from', 'had', 'has', 'have', 'he', 'her', 'here', 'him', 'his', 'how', 'i', 'if', 'in', 'into', 'is', 'it', 'its', 'just', 'may', 'me', 'might', 'more', 'most', 'must', 'my', 'no', 'nor', 'not', 'of', 'on', 'only', 'onto', 'or', 'other', 'our', 'own', 'same', 'she', 'should', 'so', 'some', 'such', 'than', 'that', 'the', 'their', 'them', 'then', 'there', 'these', 'they', 'this', 'those', 'to', 'too', 'under', 'us', 'very', 'was', 'we', 'were', 'what', 'when', 'where', 'which', 'who', 'why', 'will', 'with', 'without', 'would', 'you', 'your'}), ambiguous_words=frozenset({'arc', 'bang', 'beat', 'big', 'blue', 'break', 'catch', 'day', 'down', 'drop', 'fall', 'general', 'handle', 'heavy', 'hit', 'hold', 'large', 'light', 'little', 'long', 'meeting', 'misc', 'night', 'off', 'open', 'out', 'over', 'part', 'person', 'piece', 'place', 'quiet', 'release', 'run', 'set', 'shot', 'side', 'small', 'sound', 'thing', 'time', 'tone', 'up', 'way', 'work'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5)
+### *class* foley.index.taxonomy.resolver.MatchPolicy(stop_words=frozenset({'a', 'about', 'all', 'also', 'am', 'an', 'and', 'any', 'are', 'as', 'at', 'be', 'been', 'being', 'but', 'by', 'can', 'could', 'did', 'do', 'does', 'each', 'every', 'few', 'for', 'from', 'had', 'has', 'have', 'he', 'her', 'here', 'him', 'his', 'how', 'i', 'if', 'in', 'into', 'is', 'it', 'its', 'just', 'may', 'me', 'might', 'more', 'most', 'must', 'my', 'no', 'nor', 'not', 'of', 'on', 'only', 'onto', 'or', 'other', 'our', 'own', 'same', 'she', 'should', 'so', 'some', 'such', 'than', 'that', 'the', 'their', 'them', 'then', 'there', 'these', 'they', 'this', 'those', 'to', 'too', 'under', 'us', 'very', 'was', 'we', 'were', 'what', 'when', 'where', 'which', 'who', 'why', 'will', 'with', 'without', 'would', 'you', 'your'}), ambiguous_words=frozenset({'arc', 'bang', 'beat', 'big', 'blue', 'break', 'catch', 'day', 'down', 'drop', 'fall', 'general', 'handle', 'heavy', 'hit', 'hold', 'large', 'light', 'little', 'long', 'meeting', 'misc', 'night', 'off', 'open', 'out', 'over', 'part', 'person', 'piece', 'place', 'quiet', 'release', 'run', 'set', 'shot', 'side', 'small', 'sound', 'thing', 'time', 'tone', 'up', 'way', 'work'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -16423,6 +16624,17 @@ Added per content word past the first of a multi-word term.
 
 * **Type:**
   [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+#### synonym_weight
+
+`(rows listing the synonym, rows in the table) -> factor` on a
+synonym hit’s weight: [`inverse_sqrt_share()`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.inverse_sqrt_share) (default) or
+[`idf_share()`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.idf_share) (foley#290).
+
+* **Type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`int`](https://docs.python.org/3/builtins/functions.html#int), [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
+* **Return type:**
+  [*float*](https://docs.python.org/3/builtins/functions.html#float)
 
 #### strong_confidence
 
@@ -16468,6 +16680,14 @@ The band of evidence of `strength`; an unverified row drops one.
 
 The keyword bands, by [`STRONG`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.STRONG), [`SINGLE`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.SINGLE), [`WEAK`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.WEAK).
 
+#### synonym_weight(n_rows)
+
+A synonym listed by `shared_by` rows weighs `1/sqrt(shared_by)` of its kind’s
+weight: “car” (32 rows) a sixth, “doorknob” (one row) all of it.
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
 ### foley.index.taxonomy.resolver.RECORD_MIN_CONFIDENCE *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.5*
 
 an AudioSet-map hit’s. A weak
@@ -16508,7 +16728,25 @@ Return the CatID resolution for `record`.
 
 Evidence strengths, strongest first (indices into [`MatchPolicy.bands`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.MatchPolicy.bands)).
 
-### foley.index.taxonomy.resolver.keyword_resolution(tags=(), caption=None, , table=None, policy=MatchPolicy(stop_words=frozenset({'that', 'too', 'no', 'any', 'did', 'not', 'those', 'am', 'he', 'under', 'were', 'same', 'where', 'could', 'him', 'should', 'such', 'so', 'most', 'in', 'also', 'had', 'about', 'very', 'his', 'own', 'be', 'our', 'was', 'has', 'at', 'being', 'to', 'with', 'can', 'only', 'when', 'might', 'few', 'them', 'more', 'there', 'have', 'but', 'a', 'why', 'all', 'onto', 'by', 'her', 'this', 'your', 'its', 'would', 'then', 'for', 'me', 'how', 'other', 'is', 'we', 'us', 'what', 'does', 'their', 'do', 'been', 'an', 'than', 'they', 'from', 'these', 'each', 'she', 'who', 'some', 'without', 'just', 'are', 'you', 'into', 'may', 'as', 'of', 'and', 'every', 'nor', 'will', 'or', 'on', 'i', 'which', 'it', 'must', 'my', 'if', 'here', 'the'}), ambiguous_words=frozenset({'fall', 'time', 'piece', 'part', 'small', 'run', 'long', 'drop', 'large', 'meeting', 'night', 'sound', 'tone', 'hit', 'general', 'bang', 'beat', 'set', 'hold', 'down', 'person', 'misc', 'release', 'quiet', 'out', 'side', 'handle', 'up', 'arc', 'shot', 'way', 'heavy', 'work', 'big', 'over', 'blue', 'thing', 'open', 'place', 'light', 'catch', 'day', 'off', 'break', 'little'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### foley.index.taxonomy.resolver.idf_share(shared_by, n_rows)
+
+A synonym weighs its BM25 IDF over the `n_rows` UCS rows (each row a document),
+relative to a synonym only one row lists ([`foley.index.indexes.bm25_idf()`](_autosummary/foley.index.indexes.html.md#foley.index.indexes.bm25_idf), the
+IDF `MemoryIndex` ranks with). Gentler on shared words than
+[`inverse_sqrt_share()`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.inverse_sqrt_share): “car” (32 of 753 rows) keeps about half its weight.
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+### foley.index.taxonomy.resolver.inverse_sqrt_share(shared_by, n_rows)
+
+A synonym listed by `shared_by` rows weighs `1/sqrt(shared_by)` of its kind’s
+weight: “car” (32 rows) a sixth, “doorknob” (one row) all of it.
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+### foley.index.taxonomy.resolver.keyword_resolution(tags=(), caption=None, \*, table=None, policy=MatchPolicy(stop_words=frozenset({'about', 'have', 'so', 'some', 'you', 'should', 'by', 'when', 'then', 'no', 'my', 'or', 'does', 'a', 'will', 'this', 'could', 'every', 'under', 'am', 'how', 'we', 'him', 'are', 'but', 'its', 'too', 'of', 'were', 'any', 'their', 'few', 'without', 'also', 'which', 'what', 'all', 'not', 'is', 'these', 'us', 'he', 'to', 'here', 'they', 'if', 'same', 'on', 'from', 'me', 'being', 'she', 'such', 'has', 'and', 'as', 'an', 'onto', 'more', 'in', 'may', 'each', 'where', 'them', 'be', 'why', 'who', 'do', 'would', 'there', 'might', 'was', 'the', 'very', 'for', 'his', 'most', 'only', 'been', 'nor', 'it', 'just', 'our', 'own', 'i', 'other', 'her', 'than', 'those', 'at', 'your', 'into', 'must', 'can', 'did', 'with', 'had', 'that'}), ambiguous_words=frozenset({'quiet', 'break', 'blue', 'light', 'out', 'open', 'release', 'drop', 'run', 'sound', 'heavy', 'big', 'long', 'general', 'way', 'tone', 'off', 'hold', 'small', 'down', 'fall', 'beat', 'hit', 'night', 'set', 'place', 'catch', 'over', 'bang', 'misc', 'person', 'handle', 'little', 'arc', 'day', 'time', 'side', 'part', 'up', 'shot', 'large', 'meeting', 'work', 'thing', 'piece'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 The keyword stage alone: the best row for `tags`/`caption`, banded.
 
@@ -16523,7 +16761,7 @@ The keyword stage alone: the best row for `tags`/`caption`, banded.
 * **Return type:**
   [`CatIdResolution`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.CatIdResolution)
 
-### foley.index.taxonomy.resolver.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'that', 'too', 'no', 'any', 'did', 'not', 'those', 'am', 'he', 'under', 'were', 'same', 'where', 'could', 'him', 'should', 'such', 'so', 'most', 'in', 'also', 'had', 'about', 'very', 'his', 'own', 'be', 'our', 'was', 'has', 'at', 'being', 'to', 'with', 'can', 'only', 'when', 'might', 'few', 'them', 'more', 'there', 'have', 'but', 'a', 'why', 'all', 'onto', 'by', 'her', 'this', 'your', 'its', 'would', 'then', 'for', 'me', 'how', 'other', 'is', 'we', 'us', 'what', 'does', 'their', 'do', 'been', 'an', 'than', 'they', 'from', 'these', 'each', 'she', 'who', 'some', 'without', 'just', 'are', 'you', 'into', 'may', 'as', 'of', 'and', 'every', 'nor', 'will', 'or', 'on', 'i', 'which', 'it', 'must', 'my', 'if', 'here', 'the'}), ambiguous_words=frozenset({'fall', 'time', 'piece', 'part', 'small', 'run', 'long', 'drop', 'large', 'meeting', 'night', 'sound', 'tone', 'hit', 'general', 'bang', 'beat', 'set', 'hold', 'down', 'person', 'misc', 'release', 'quiet', 'out', 'side', 'handle', 'up', 'arc', 'shot', 'way', 'heavy', 'work', 'big', 'over', 'blue', 'thing', 'open', 'place', 'light', 'catch', 'day', 'off', 'break', 'little'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### foley.index.taxonomy.resolver.resolve_catid(\*, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'about', 'have', 'so', 'some', 'you', 'should', 'by', 'when', 'then', 'no', 'my', 'or', 'does', 'a', 'will', 'this', 'could', 'every', 'under', 'am', 'how', 'we', 'him', 'are', 'but', 'its', 'too', 'of', 'were', 'any', 'their', 'few', 'without', 'also', 'which', 'what', 'all', 'not', 'is', 'these', 'us', 'he', 'to', 'here', 'they', 'if', 'same', 'on', 'from', 'me', 'being', 'she', 'such', 'has', 'and', 'as', 'an', 'onto', 'more', 'in', 'may', 'each', 'where', 'them', 'be', 'why', 'who', 'do', 'would', 'there', 'might', 'was', 'the', 'very', 'for', 'his', 'most', 'only', 'been', 'nor', 'it', 'just', 'our', 'own', 'i', 'other', 'her', 'than', 'those', 'at', 'your', 'into', 'must', 'can', 'did', 'with', 'had', 'that'}), ambiguous_words=frozenset({'quiet', 'break', 'blue', 'light', 'out', 'open', 'release', 'drop', 'run', 'sound', 'heavy', 'big', 'long', 'general', 'way', 'tone', 'off', 'hold', 'small', 'down', 'fall', 'beat', 'hit', 'night', 'set', 'place', 'catch', 'over', 'bang', 'misc', 'person', 'handle', 'little', 'arc', 'day', 'time', 'side', 'part', 'up', 'shot', 'large', 'meeting', 'work', 'thing', 'piece'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -19728,7 +19966,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix chime', 'tudum', 'netflix intro', 'ta-dum', 'ta dum', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel inside', 'intel bong', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer doh', 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta-dum', 'ta dum', 'tudum', 'netflix chime', 'netflix sound', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel jingle', 'intel chime', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', 'homer doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -31633,16 +31871,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-22 08:24 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/8788e3e97ae331383a51eb899ab143a17c8bc525"><code>8788e3e</code></a> on branch <code>main</code>, for **foley 0.0.145** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-22 17:14 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/d8be0abb898d5e040638988df7c37eddb1e4ebd4"><code>d8be0ab</code></a> on branch <code>main</code>, for **foley 0.0.146** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.146) is behind the latest release on PyPI (0.0.147): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/8788e3e97ae331383a51eb899ab143a17c8bc525"><code>8788e3e97ae331383a51eb899ab143a17c8bc525</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/d8be0abb898d5e040638988df7c37eddb1e4ebd4"><code>d8be0abb898d5e040638988df7c37eddb1e4ebd4</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -31653,9 +31893,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/45002272364">45002272364</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/45048039342">45048039342</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>163a31fcfef7e581df15982ce370168df8194a0c</code> (in the history of the built commit) |
+| Event commit | <code>88da3481c202bd09fe684da47113461b911bae23</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -31680,13 +31920,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.145/">0.0.145</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.147/">0.0.147</a>, newer than the documented version (0.0.146).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 8788e3e97ae331383a51eb899ab143a17c8bc525
+git checkout d8be0abb898d5e040638988df7c37eddb1e4ebd4
 pip install "epythet==0.2.23"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

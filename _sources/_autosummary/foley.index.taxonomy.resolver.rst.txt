@@ -21,6 +21,8 @@ foley.index.taxonomy.resolver
 
    .. autosummary::
    
+      idf_share
+      inverse_sqrt_share
       keyword_resolution
       resolve_catid
       term_index

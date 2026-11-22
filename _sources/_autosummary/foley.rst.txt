@@ -40,6 +40,8 @@
       trim_silence
       fade
       loudness_normalize
+      accent
+      onset_offset_s
       to_working
       default_library
       search
@@ -138,6 +140,7 @@
       QCStatus
       QCThresholds
       QCReport
+      AccentReport
       SoundLibrary
       Embedder
       ClapEmbedder

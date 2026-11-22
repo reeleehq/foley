@@ -96,6 +96,8 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`trim_silence`](#foley.trim_silence)(samples, sample_rate, \*[, top_db])    | Strip leading/trailing silence, returning the clip and its kept span.                                                                                                          |
 | [`fade`](#foley.fade)(samples, sample_rate, \*[, fade_in_s, ...])    | Apply in/out gain ramps to `samples` (a short declick by default).                                                                                                             |
 | [`loudness_normalize`](#foley.loudness_normalize)(samples, sample_rate, \*)        | Loudness-normalize to `target_lufs`, then keep it peak-safe.                                                                                                                   |
+| [`accent`](#foley.accent)(samples, sample_rate, \*[, ...])             | An accent-ready clip: its transient at t=0, its decay kept, its level set.                                                                                                     |
+| [`onset_offset_s`](#foley.onset_offset_s)(samples, sample_rate, \*[, ...])     | Seconds to the first sample within `within_db` of the clip's loudest window: where its transient starts (`0.0` for a silent clip).                                             |
 | [`to_working`](#foley.to_working)(samples, sample_rate, \*[, mono, ...])   | Produce the canonical CLAP/QC working array from an arbitrary clip.                                                                                                            |
 | [`default_library`](#foley.default_library)()                                   | The process-wide default library (local stores + CLAP + best index).                                                                                                           |
 | [`search`](#foley.search)(query, \*[, k, filters, ...])                | Hybrid (CLAP vector ⊕ BM25) search of the default library.                                                                                                                     |
@@ -193,6 +195,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`QCStatus`](#foley.QCStatus)(\*values)                                | Overall verdict for a clip (subclasses `str` so it is JSON-safe).                                                                    |
 | [`QCThresholds`](#foley.QCThresholds)([clip_full_scale, ...])              | All Tier-0 QC defaults (report 08 §3 table), each an explicit field.                                                                 |
 | [`QCReport`](#foley.QCReport)(duration_s, sample_rate, channels, ...)  | Per-clip Tier-0 QC result.                                                                                                           |
+| [`AccentReport`](#foley.AccentReport)(duration_s, lufs, lufs_padded, ...)  | What [`accent()`](#foley.accent) made, measured on the clip it returns.                                |
 | [`SoundLibrary`](#foley.SoundLibrary)(\*[, sounds, meta, vindex, ...])     | A searchable, license-aware library of sounds (the foley INDEX façade).                                                              |
 | [`Embedder`](#foley.Embedder)(\*args, \*\*kwargs)                      | A joint text<->audio embedding space (CLAP by default).                                                                              |
 | [`ClapEmbedder`](#foley.ClapEmbedder)([model_id, device, ...])             | LAION-CLAP text<->audio embedder (the default retrieval engine).                                                                     |
@@ -234,6 +237,18 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`TrademarkRefusal`](#foley.TrademarkRefusal)(message, \*, hits, report)      | A [`SafetyRefusal`](#foley.SafetyRefusal) for a prompt naming a trademarked audio logo (report 07 §7.2).                                                                                                                                                                                                 |
 | [`RecognizableVoiceRefusal`](#foley.RecognizableVoiceRefusal)(message, \*, hits, ...) | A [`SafetyRefusal`](#foley.SafetyRefusal) for a prompt requesting a recognizable / cloned voice (report 07 §7.1).                                                                                                                                                                                        |
 | [`BroadcastRefusal`](#foley.BroadcastRefusal)                                 | A source whose rights do not allow it into a broadcast bed (refused, fail-closed).                                                                                                                                                                                                                                              |
+
+### *class* foley.AccentReport(duration_s, lufs, lufs_padded, peak_dbfs, onset_s, trimmed_start_s, gain_db)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+What [`accent()`](#foley.accent) made, measured on the clip it returns.
+
+`lufs` of a clip shorter than one BS.1770 block (0.4 s) is measured with the
+clip padded with silence to one block (`lufs_padded`): a convention that lets
+a one-shot be levelled at all, not a BS.1770 measurement. `onset_s` is where
+the transient lands in the clip (`0.0` unless `pre_s` kept a lead-in);
+`trimmed_start_s` is how much lead-in was cut from the source.
 
 ### *class* foley.AcquisitionMethod(\*values)
 
@@ -2139,6 +2154,35 @@ estimates, `whisperx`, `mfa`, …) or `cached` (the timeline already had them).
 What the caller should know about how the mix was made, e.g. that word timings
 are estimates because no forced aligner is installed (#65).
 
+### foley.accent(samples, sample_rate, , target_lufs=-30.0, start_db=35.0, tail_db=50.0, window_s=0.002, pre_s=0.0, fade_in_s=0.003, fade_out_s=0.04, max_len_s=None, peak_ceiling_dbfs=-3.0, min_block_s=0.4, meter=None)
+
+An accent-ready clip: its transient at t=0, its decay kept, its level set.
+
+A late transient makes a sound feel late on its cue, a trim that cuts the decay
+makes it clipped, and a one-shot shorter than one BS.1770 block is left unlevelled
+by [`loudness_normalize()`](#foley.loudness_normalize). In order:
+
+1. **start**: the first sample within `start_db` of the loudest `window_s`
+   window ([`onset_offset_s()`](#foley.onset_offset_s)), keeping `pre_s` before it;
+2. **tail**: up to the last window within `tail_db` of the loudest, so the decay
+   stays; then at most `max_len_s`;
+3. **fades**: `fade_in_s` (a declick) and `fade_out_s`;
+4. **level**: to `target_lufs` by `loudness_gain_db()` (silent and near-silent
+   clips are not amplified; the sample peak stays under `peak_ceiling_dbfs`); a
+   clip shorter than `min_block_s` is measured padded with silence to one block,
+   and the report says so (`lufs_padded`).
+
+* **Parameters:**
+  * **samples** (`ndarray`) – Working array (mono or multichannel, time on axis 0).
+  * **sample_rate** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Sample rate in Hz.
+* **Returns:**
+  the clip in `samples`’ dtype, and an [`AccentReport`](#foley.AccentReport)
+  measured on it. A silent clip comes back unchanged with `gain_db` 0.
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[`ndarray`, [`AccentReport`](foley.audio.html.md#foley.audio.AccentReport)]
+
+Lazy dependencies: `numpy`, `mixing.loudness` (the meter).
+
 ### foley.add_from(source, , query, license='source-default', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, provider_params=None, \*\*affordances)
 
 Search a live `source` and ingest its license-clean hits into `library`.
@@ -3711,6 +3755,23 @@ narration and needs a short fade.
 
 Alias of `offline_scope()` — `with foley.offline(): ...` for local-first runs.
 
+### foley.onset_offset_s(samples, sample_rate, , within_db=35.0, window_s=0.002)
+
+Seconds to the first sample within `within_db` of the clip’s loudest window:
+where its transient starts (`0.0` for a silent clip).
+
+Sample-exact, unlike a hop-based trim (librosa’s starts up to a hop early).
+
+```pycon
+>>> import numpy as np
+>>> x = np.zeros(1000); x[250:] = 0.5
+>>> onset_offset_s(x, 1000)
+0.25
+```
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
 ### foley.parse_ucs_filename(filename, , table=None)
 
 Parse a UCS-conformant filename to `(ucs_category, ucs_subcategory)`.
@@ -3859,7 +3920,7 @@ Resample `samples` to `target_sr` (a no-op when already there).
 
 Lazy dependency: `soxr`.
 
-### foley.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'that', 'too', 'no', 'any', 'did', 'not', 'those', 'am', 'he', 'under', 'were', 'same', 'where', 'could', 'him', 'should', 'such', 'so', 'most', 'in', 'also', 'had', 'about', 'very', 'his', 'own', 'be', 'our', 'was', 'has', 'at', 'being', 'to', 'with', 'can', 'only', 'when', 'might', 'few', 'them', 'more', 'there', 'have', 'but', 'a', 'why', 'all', 'onto', 'by', 'her', 'this', 'your', 'its', 'would', 'then', 'for', 'me', 'how', 'other', 'is', 'we', 'us', 'what', 'does', 'their', 'do', 'been', 'an', 'than', 'they', 'from', 'these', 'each', 'she', 'who', 'some', 'without', 'just', 'are', 'you', 'into', 'may', 'as', 'of', 'and', 'every', 'nor', 'will', 'or', 'on', 'i', 'which', 'it', 'must', 'my', 'if', 'here', 'the'}), ambiguous_words=frozenset({'fall', 'time', 'piece', 'part', 'small', 'run', 'long', 'drop', 'large', 'meeting', 'night', 'sound', 'tone', 'hit', 'general', 'bang', 'beat', 'set', 'hold', 'down', 'person', 'misc', 'release', 'quiet', 'out', 'side', 'handle', 'up', 'arc', 'shot', 'way', 'heavy', 'work', 'big', 'over', 'blue', 'thing', 'open', 'place', 'light', 'catch', 'day', 'off', 'break', 'little'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### foley.resolve_catid(\*, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'about', 'have', 'so', 'some', 'you', 'should', 'by', 'when', 'then', 'no', 'my', 'or', 'does', 'a', 'will', 'this', 'could', 'every', 'under', 'am', 'how', 'we', 'him', 'are', 'but', 'its', 'too', 'of', 'were', 'any', 'their', 'few', 'without', 'also', 'which', 'what', 'all', 'not', 'is', 'these', 'us', 'he', 'to', 'here', 'they', 'if', 'same', 'on', 'from', 'me', 'being', 'she', 'such', 'has', 'and', 'as', 'an', 'onto', 'more', 'in', 'may', 'each', 'where', 'them', 'be', 'why', 'who', 'do', 'would', 'there', 'might', 'was', 'the', 'very', 'for', 'his', 'most', 'only', 'been', 'nor', 'it', 'just', 'our', 'own', 'i', 'other', 'her', 'than', 'those', 'at', 'your', 'into', 'must', 'can', 'did', 'with', 'had', 'that'}), ambiguous_words=frozenset({'quiet', 'break', 'blue', 'light', 'out', 'open', 'release', 'drop', 'run', 'sound', 'heavy', 'big', 'long', 'general', 'way', 'tone', 'off', 'hold', 'small', 'down', 'fall', 'beat', 'hit', 'night', 'set', 'place', 'catch', 'over', 'bang', 'misc', 'person', 'handle', 'little', 'arc', 'day', 'time', 'side', 'part', 'up', 'shot', 'large', 'meeting', 'work', 'thing', 'piece'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 

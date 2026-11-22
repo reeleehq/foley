@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../_static/documentation_options.js?v=b06a6486"></script>
+    <script src="../../../../_static/documentation_options.js?v=8792eeec"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.145" />
+  <meta name="docsearch:version" content="0.0.146" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -752,7 +752,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">replace</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">MappingProxyType</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">runtime_checkable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">runtime_checkable</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">...analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">tokenize</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.audioset</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_audioset_ucs_map</span>
@@ -803,6 +803,28 @@ window.runMermaid = runMermaid;</script>
     <span class="p">{</span><span class="s2">"subcategory"</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">,</span> <span class="s2">"category"</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">,</span> <span class="s2">"synonym"</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">}</span>
 <span class="p">)</span>
 
+<div class="viewcode-block" id="inverse_sqrt_share">
+<a class="viewcode-back" href="../../../../_autosummary/foley.index.taxonomy.resolver.html#foley.inverse_sqrt_share">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">inverse_sqrt_share</span><span class="p">(</span><span class="n">shared_by</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">n_rows</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>  <span class="c1"># noqa: ARG001</span>
+<span class="w">    </span><span class="sd">"""A synonym listed by ``shared_by`` rows weighs ``1/sqrt(shared_by)`` of its kind's</span>
+<span class="sd">    weight: "car" (32 rows) a sixth, "doorknob" (one row) all of it."""</span>
+    <span class="k">return</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">shared_by</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="idf_share">
+<a class="viewcode-back" href="../../../../_autosummary/foley.index.taxonomy.resolver.html#foley.idf_share">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">idf_share</span><span class="p">(</span><span class="n">shared_by</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">n_rows</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A synonym weighs its BM25 IDF over the ``n_rows`` UCS rows (each row a document),</span>
+<span class="sd">    relative to a synonym only one row lists (:func:`foley.index.indexes.bm25_idf`, the</span>
+<span class="sd">    IDF ``MemoryIndex`` ranks with). Gentler on shared words than</span>
+<span class="sd">    :func:`inverse_sqrt_share`: "car" (32 of 753 rows) keeps about half its weight."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">foley.index.indexes</span><span class="w"> </span><span class="kn">import</span> <span class="n">bm25_idf</span>
+
+    <span class="k">return</span> <span class="n">bm25_idf</span><span class="p">(</span><span class="n">n_rows</span><span class="p">,</span> <span class="n">shared_by</span><span class="p">)</span> <span class="o">/</span> <span class="n">bm25_idf</span><span class="p">(</span><span class="n">n_rows</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span></div>
+
+
+
 <span class="c1">#: Evidence strengths, strongest first (indices into :attr:`MatchPolicy.bands`).</span>
 <span class="n">STRONG</span><span class="p">,</span> <span class="n">SINGLE</span><span class="p">,</span> <span class="n">WEAK</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
 
@@ -821,6 +843,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        kind_weights: Base weight of a hit by term kind (``subcategory``,</span>
 <span class="sd">            ``category``, ``synonym``).</span>
 <span class="sd">        phrase_bonus: Added per content word past the first of a multi-word term.</span>
+<span class="sd">        synonym_weight: ``(rows listing the synonym, rows in the table) -&gt; factor`` on a</span>
+<span class="sd">            synonym hit's weight: :func:`inverse_sqrt_share` (default) or</span>
+<span class="sd">            :func:`idf_share` (foley#290).</span>
 <span class="sd">        strong_confidence: Band of strong evidence: a subcategory hit, a multi-word</span>
 <span class="sd">            phrase, or two distinct content words on the row (a category name plus</span>
 <span class="sd">            another word counts).</span>
@@ -837,6 +862,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">skip_categories</span><span class="p">:</span> <span class="nb">frozenset</span> <span class="o">=</span> <span class="n">NON_SOUND_CATEGORIES</span>
     <span class="n">kind_weights</span><span class="p">:</span> <span class="s2">"Mapping[str, float]"</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">DEFAULT_KIND_WEIGHTS</span><span class="p">)</span>
     <span class="n">phrase_bonus</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">synonym_weight</span><span class="p">:</span> <span class="s2">"Callable[[int, int], float]"</span> <span class="o">=</span> <span class="n">inverse_sqrt_share</span>
     <span class="n">strong_confidence</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.8</span>
     <span class="n">single_confidence</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.6</span>
     <span class="n">weak_confidence</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.4</span>
@@ -1008,6 +1034,7 @@ window.runMermaid = runMermaid;</script>
             <span class="k">return</span> <span class="kc">None</span>
         <span class="k">return</span> <span class="n">words</span>
 
+    <span class="n">n_rows</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">by_catid</span><span class="p">)</span>
     <span class="n">found</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># id(term) -&gt; (term, content); a term counts once</span>
     <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
         <span class="n">present</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">()</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="o">*</span><span class="n">f</span><span class="p">)</span>
@@ -1022,7 +1049,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">shared_by</span> <span class="o">=</span> <span class="n">index</span><span class="o">.</span><span class="n">row_count</span><span class="p">[</span><span class="n">term</span><span class="o">.</span><span class="n">lemmas</span><span class="p">]</span>
         <span class="n">weight</span> <span class="o">=</span> <span class="n">policy</span><span class="o">.</span><span class="n">kind_weights</span><span class="p">[</span><span class="n">term</span><span class="o">.</span><span class="n">kind</span><span class="p">]</span> <span class="o">+</span> <span class="n">policy</span><span class="o">.</span><span class="n">phrase_bonus</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">term</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"synonym"</span><span class="p">:</span>  <span class="c1"># "car" is a synonym of 32 rows, "doorknob" of one</span>
-            <span class="n">weight</span> <span class="o">/=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">shared_by</span><span class="p">)</span>
+            <span class="n">weight</span> <span class="o">*=</span> <span class="n">policy</span><span class="o">.</span><span class="n">synonym_weight</span><span class="p">(</span><span class="n">shared_by</span><span class="p">,</span> <span class="n">n_rows</span><span class="p">)</span>
         <span class="k">yield</span> <span class="n">Hit</span><span class="p">(</span><span class="n">term</span><span class="o">.</span><span class="n">catid</span><span class="p">,</span> <span class="n">term</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span> <span class="n">term</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">weight</span><span class="p">,</span> <span class="n">shared_by</span><span class="p">)</span>
 
 

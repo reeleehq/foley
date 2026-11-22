@@ -8,6 +8,7 @@ foley.index.indexes
 
    .. autosummary::
    
+      bm25_idf
       default_index
       lancedb_available
       sqlite_vec_loadable

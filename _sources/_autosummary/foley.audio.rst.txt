@@ -14,11 +14,19 @@ foley.audio
       EXPORT_PCM_SUBTYPE
       Meter
       DEFAULT_METER
+      ACCENT_TARGET_LUFS
+      ACCENT_START_DB
+      ACCENT_TAIL_DB
+      ACCENT_WINDOW_S
+      ACCENT_FADE_IN_S
+      ACCENT_FADE_OUT_S
+      ACCENT_PEAK_CEILING_DBFS
    
    .. rubric:: Functions
 
    .. autosummary::
    
+      accent
       container_of
       duration_s
       encode
@@ -32,6 +40,7 @@ foley.audio
       loudness_component
       loudness_gain_db
       loudness_normalize
+      onset_offset_s
       resample
       resolve_meter
       save
@@ -39,4 +48,10 @@ foley.audio
       to_working
       transcode
       trim_silence
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      AccentReport
    
