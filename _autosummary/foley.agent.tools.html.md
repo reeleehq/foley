@@ -22,6 +22,7 @@ generation-error hierarchy are imported lazily inside the functions that call th
 | [`estimate_find_usd`](#foley.agent.tools.estimate_find_usd)(\*[, max_events, backend, ...])   | An upper bound on what one [`find()`](#foley.agent.tools.find) run can spend, or `None` if unknown.   |
 |------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
 | [`find`](#foley.agent.tools.find)(context, \*[, max_events, seconds, ...])       | The headline: a narrative context → verified, license-clean sound candidates.                                             |
+| [`find_upper_bound`](#foley.agent.tools.find_upper_bound)(context, \*[, max_events, ...])    | What `find(context, ...)` with these arguments can spend at most, or `None`.                                              |
 | [`generate_sound`](#foley.agent.tools.generate_sound)(query, \*[, backend, library, ...])  | Generate a clip for `query` (the fallback tool) — a thin wrapper over `foley.generate`.                                   |
 | [`place_in_timeline`](#foley.agent.tools.place_in_timeline)(clip, \*[, onset, gain, ...])     | Emit the SPARSE per-item plan subset (`clip_ref·onset·gain·layer·loop`) — no more.                                        |
 | [`plan`](#foley.agent.tools.plan)(candidates, \*[, transcript, ...])             | Fold verified candidates into the SPARSE `SoundDesignTimeline` (the SELECT→WEAVE bridge).                                 |
@@ -85,6 +86,18 @@ deterministic defaults; every model / threshold / seam is an optional keyword.
 * **Returns:**
   `list[Candidate]` (`stream=False`) or an `Iterator[Candidate]`
   (`stream=True`) — one verified, license-clean candidate per resolved event.
+
+### foley.agent.tools.find_upper_bound(context, , max_events=6, backend='auto', llm=None, k=10, verify='listen', max_refine_loops=1, budget=None, decomposer=None, refiner=None, judge=None)
+
+What `find(context, ...)` with these arguments can spend at most, or `None`.
+
+The number [`find()`](#foley.agent.tools.find) checks against every budget in force before its first
+paid call, from the same arguments (`budget` gives the loop counts and whether
+generation is allowed; default `Budget(max_refine_loops=max_refine_loops)`), so
+a caller (`score`, deciding what a segment can afford) asks the same question.
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 ### foley.agent.tools.generate_sound(query, , backend='auto', library=None, intended_use=None)
 

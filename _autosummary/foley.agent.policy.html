@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=e863fa38"></script>
+    <script src="../_static/documentation_options.js?v=7be3f44b"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.140" />
+  <meta name="docsearch:version" content="0.0.142" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -729,6 +729,14 @@ above the reservation can take the run over <code class="docutils literal notran
 <dd><p>Dollars charged so far this run (calls of unknown cost count as 0 here).</p>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="foley.agent.policy.Budget.unknown_cost_calls">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">unknown_cost_calls</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a></span><a class="headerlink" href="#foley.agent.policy.Budget.unknown_cost_calls" title="Link to this definition">#</a></dt>
+<dd><p>How many calls this run made whose cost is still unknown (not in <a class="reference internal" href="#foley.agent.policy.Budget.spent_usd" title="foley.agent.policy.Budget.spent_usd"><code class="xref py py-attr docutils literal notranslate"><span class="pre">spent_usd</span></code></a>).</p>
+<p>Each one was approved (<code class="docutils literal notranslate"><span class="pre">approve_unknown_cost</span></code>); <code class="docutils literal notranslate"><span class="pre">spent_usd</span></code> is then a
+lower bound, never the whole cost.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="foley.agent.policy.Budget.without_generation">
 <span class="sig-name descname"><span class="pre">without_generation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/agent/policy.html#Budget.without_generation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.agent.policy.Budget.without_generation" title="Link to this definition">#</a></dt>
@@ -887,6 +895,7 @@ survivors are license-clean.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.policy.Budget.spend_gen"><code class="docutils literal notranslate"><span class="pre">Budget.spend_gen()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.policy.Budget.spend_refine"><code class="docutils literal notranslate"><span class="pre">Budget.spend_refine()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.policy.Budget.spent_usd"><code class="docutils literal notranslate"><span class="pre">Budget.spent_usd</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.policy.Budget.unknown_cost_calls"><code class="docutils literal notranslate"><span class="pre">Budget.unknown_cost_calls</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.policy.Budget.without_generation"><code class="docutils literal notranslate"><span class="pre">Budget.without_generation()</span></code></a></li>
 </ul>
 </li>

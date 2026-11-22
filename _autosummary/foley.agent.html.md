@@ -263,6 +263,13 @@ Charge one refine loop.
 
 Dollars charged so far this run (calls of unknown cost count as 0 here).
 
+#### *property* unknown_cost_calls *: [int](https://docs.python.org/3/builtins/functions.html#int)*
+
+How many calls this run made whose cost is still unknown (not in [`spent_usd`](#foley.agent.Budget.spent_usd)).
+
+Each one was approved (`approve_unknown_cost`); `spent_usd` is then a
+lower bound, never the whole cost.
+
 #### without_generation()
 
 A fresh budget with these limits and the generation fallback off.

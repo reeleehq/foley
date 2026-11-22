@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=e863fa38"></script>
+    <script src="../_static/documentation_options.js?v=7be3f44b"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.140" />
+  <meta name="docsearch:version" content="0.0.142" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -533,16 +533,19 @@ generation-error hierarchy are imported lazily inside the functions that call th
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.agent.tools.find" title="foley.agent.tools.find"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find</span></code></a>(context, *[, max_events, seconds, ...])</p></td>
 <td><p>The headline: a narrative context → verified, license-clean sound candidates.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.agent.tools.generate_sound" title="foley.agent.tools.generate_sound"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_sound</span></code></a>(query, *[, backend, library, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.agent.tools.find_upper_bound" title="foley.agent.tools.find_upper_bound"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_upper_bound</span></code></a>(context, *[, max_events, ...])</p></td>
+<td><p>What <code class="docutils literal notranslate"><span class="pre">find(context,</span> <span class="pre">...)</span></code> with these arguments can spend at most, or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.agent.tools.generate_sound" title="foley.agent.tools.generate_sound"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_sound</span></code></a>(query, *[, backend, library, ...])</p></td>
 <td><p>Generate a clip for <code class="docutils literal notranslate"><span class="pre">query</span></code> (the fallback tool) — a thin wrapper over <code class="docutils literal notranslate"><span class="pre">foley.generate</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.agent.tools.place_in_timeline" title="foley.agent.tools.place_in_timeline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">place_in_timeline</span></code></a>(clip, *[, onset, gain, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.agent.tools.place_in_timeline" title="foley.agent.tools.place_in_timeline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">place_in_timeline</span></code></a>(clip, *[, onset, gain, ...])</p></td>
 <td><p>Emit the SPARSE per-item plan subset (<code class="docutils literal notranslate"><span class="pre">clip_ref·onset·gain·layer·loop</span></code>) — no more.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.agent.tools.plan" title="foley.agent.tools.plan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plan</span></code></a>(candidates, *[, transcript, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.agent.tools.plan" title="foley.agent.tools.plan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plan</span></code></a>(candidates, *[, transcript, ...])</p></td>
 <td><p>Fold verified candidates into the SPARSE <code class="xref py py-class docutils literal notranslate"><span class="pre">SoundDesignTimeline</span></code> (the SELECT→WEAVE bridge).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.agent.tools.search_sounds" title="foley.agent.tools.search_sounds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">search_sounds</span></code></a>(queries, *[, k, library, filters])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.agent.tools.search_sounds" title="foley.agent.tools.search_sounds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">search_sounds</span></code></a>(queries, *[, k, library, filters])</p></td>
 <td><p>Hybrid search for one query, or a multi-query RRF-merge (the SELECT retrieval tool).</p></td>
 </tr>
 </tbody>
@@ -613,6 +616,21 @@ deterministic fake). A key being present never opts in to paid calls.</p></li>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">list[Candidate]</span></code> (<code class="docutils literal notranslate"><span class="pre">stream=False</span></code>) or an <code class="docutils literal notranslate"><span class="pre">Iterator[Candidate]</span></code>
 (<code class="docutils literal notranslate"><span class="pre">stream=True</span></code>) — one verified, license-clean candidate per resolved event.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.agent.tools.find_upper_bound">
+<span class="sig-prename descclassname"><span class="pre">foley.agent.tools.</span></span><span class="sig-name descname"><span class="pre">find_upper_bound</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">context</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_events</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">llm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verify</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'listen'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_refine_loops</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">budget</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decomposer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refiner</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">judge</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/agent/tools.html#find_upper_bound"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.agent.tools.find_upper_bound" title="Link to this definition">#</a></dt>
+<dd><p>What <code class="docutils literal notranslate"><span class="pre">find(context,</span> <span class="pre">...)</span></code> with these arguments can spend at most, or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<p>The number <a class="reference internal" href="#foley.agent.tools.find" title="foley.agent.tools.find"><code class="xref py py-func docutils literal notranslate"><span class="pre">find()</span></code></a> checks against every budget in force before its first
+paid call, from the same arguments (<code class="docutils literal notranslate"><span class="pre">budget</span></code> gives the loop counts and whether
+generation is allowed; default <code class="docutils literal notranslate"><span class="pre">Budget(max_refine_loops=max_refine_loops)</span></code>), so
+a caller (<code class="docutils literal notranslate"><span class="pre">score</span></code>, deciding what a segment can afford) asks the same question.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -753,6 +771,7 @@ refine pass.</p>
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.tools.estimate_find_usd"><code class="docutils literal notranslate"><span class="pre">estimate_find_usd()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.tools.find"><code class="docutils literal notranslate"><span class="pre">find()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.tools.find_upper_bound"><code class="docutils literal notranslate"><span class="pre">find_upper_bound()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.tools.generate_sound"><code class="docutils literal notranslate"><span class="pre">generate_sound()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.tools.place_in_timeline"><code class="docutils literal notranslate"><span class="pre">place_in_timeline()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.tools.plan"><code class="docutils literal notranslate"><span class="pre">plan()</span></code></a></li>

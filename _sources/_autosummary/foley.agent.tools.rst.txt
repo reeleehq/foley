@@ -10,6 +10,7 @@ foley.agent.tools
    
       estimate_find_usd
       find
+      find_upper_bound
       generate_sound
       place_in_timeline
       plan

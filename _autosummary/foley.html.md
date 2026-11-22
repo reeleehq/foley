@@ -217,7 +217,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`Decision`](#foley.Decision)(action[, candidate, reason])             | The tiny result of [`decide()`](#foley.decide); `reason` feeds the refine hint + the audit Step.       |
 | [`WeaveResult`](#foley.WeaveResult)(audio, sr, timeline, credits, ...)    | The output of [`weave()`](foley.weave.html.md#module-foley.weave) — the v1 Definition-of-Done deliverable.   |
 | [`BroadcastBed`](#foley.BroadcastBed)(audio, sr, license, sources, ...)    | A rendered broadcast bed: the audio and the rights of everything in it.                                                              |
-| [`ScoreResult`](#foley.ScoreResult)(timeline, events[, weave])            | The output of [`score()`](#foley.score) — the editable plan + per-event rationale (+ mix when woven). |
+| [`ScoreResult`](#foley.ScoreResult)(timeline, events[, weave, ...])       | The output of [`score()`](#foley.score) — the editable plan + per-event rationale (+ mix when woven). |
 | [`ScoredEvent`](#foley.ScoredEvent)(segment, query, sound_id, ...)        | One chosen sound placed for a narration event (a JSON-friendly rationale row).                                                       |
 | [`SessionStore`](#foley.SessionStore)([session_id, candidates, ...])       | Three namespaced stores for one audition session (candidates / picks / rejects).                                                     |
 | [`RuntimeConfig`](#foley.RuntimeConfig)([offline, data_egress_allow, ...])  | A frozen runtime posture — the local-first / offline contract as data.                                                               |
@@ -538,6 +538,13 @@ Charge one refine loop.
 #### *property* spent_usd *: [float](https://docs.python.org/3/builtins/functions.html#float)*
 
 Dollars charged so far this run (calls of unknown cost count as 0 here).
+
+#### *property* unknown_cost_calls *: [int](https://docs.python.org/3/builtins/functions.html#int)*
+
+How many calls this run made whose cost is still unknown (not in [`spent_usd`](#foley.Budget.spent_usd)).
+
+Each one was approved (`approve_unknown_cost`); `spent_usd` is then a
+lower bound, never the whole cost.
 
 #### without_generation()
 
@@ -1560,19 +1567,39 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 How prominent a sound event is within a passage.
 
-### *class* foley.ScoreResult(timeline, events, weave=None)
+### *class* foley.ScoreResult(timeline, events, weave=None, spent_usd=0.0, unknown_cost_calls=0, notes=list())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 The output of [`score()`](#foley.score) — the editable plan + per-event rationale (+ mix when woven).
 
+#### *property* has_unknown_costs *: [bool](https://docs.python.org/3/builtins/functions.html#bool)*
+
+Whether [`spent_usd`](#foley.ScoreResult.spent_usd) leaves out calls of unknown cost (never read as free).
+
 #### *property* n_sounds *: [int](https://docs.python.org/3/builtins/functions.html#int)*
 
 How many sounds were placed (the restraint check — fewer than one-per-sentence).
 
+#### notes *: [list](https://docs.python.org/3/builtins/stdtypes.html#list)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]*
+
+run retrieval-only, or skipped (#281).
+
+* **Type:**
+  Segments the spend cap degraded
+
 #### *property* rationale *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
 
 A short, agent/human-readable summary of what was chosen and why.
+
+#### spent_usd *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.0*
+
+What the run spent on calls of known cost, in USD (a lower bound when
+[`unknown_cost_calls`](#foley.ScoreResult.unknown_cost_calls) is not zero).
+
+#### unknown_cost_calls *: [int](https://docs.python.org/3/builtins/functions.html#int)* *= 0*
+
+Calls this run made whose cost is unknown (approved, counted, not in `spent_usd`).
 
 ### *class* foley.ScoredEvent(segment, query, sound_id, origin, confidence, reason)
 
@@ -3827,7 +3854,7 @@ Resample `samples` to `target_sr` (a no-op when already there).
 
 Lazy dependency: `soxr`.
 
-### foley.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'no', 'have', 'few', 'who', 'his', 'such', 'every', 'the', 'be', 'in', 'their', 'nor', 'to', 'here', 'which', 'our', 'any', 'may', 'more', 'own', 'very', 'all', 'why', 'being', 'under', 'you', 'must', 'an', 'are', 'then', 'those', 'she', 'was', 'other', 'only', 'this', 'for', 'would', 'am', 'them', 'into', 'he', 'your', 'my', 'we', 'should', 'too', 'i', 'is', 'us', 'from', 'had', 'just', 'each', 'that', 'what', 'these', 'where', 'onto', 'do', 'by', 'has', 'without', 'does', 'did', 'will', 'how', 'as', 'been', 'on', 'could', 'me', 'same', 'about', 'but', 'with', 'its', 'when', 'him', 'it', 'there', 'if', 'at', 'most', 'and', 'a', 'or', 'so', 'were', 'they', 'some', 'of', 'also', 'her', 'not', 'than', 'might', 'can'}), ambiguous_words=frozenset({'work', 'set', 'fall', 'blue', 'long', 'misc', 'part', 'general', 'large', 'break', 'tone', 'off', 'arc', 'down', 'hit', 'light', 'piece', 'open', 'meeting', 'hold', 'shot', 'place', 'little', 'day', 'side', 'way', 'person', 'over', 'heavy', 'drop', 'handle', 'beat', 'small', 'release', 'catch', 'sound', 'bang', 'out', 'quiet', 'big', 'up', 'night', 'run', 'thing', 'time'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### foley.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'am', 'for', 'more', 'i', 'under', 'from', 'here', 'not', 'the', 'which', 'few', 'also', 'there', 'our', 'that', 'as', 'his', 'each', 'if', 'be', 'very', 'are', 'so', 'in', 'me', 'other', 'or', 'they', 'must', 'own', 'could', 'just', 'do', 'into', 'why', 'he', 'is', 'who', 'may', 'them', 'how', 'too', 'been', 'she', 'would', 'by', 'about', 'us', 'onto', 'does', 'did', 'most', 'only', 'of', 'all', 'my', 'and', 'then', 'with', 'your', 'him', 'where', 'might', 'these', 'what', 'you', 'those', 'was', 'had', 'such', 'every', 'any', 'can', 'its', 'a', 'some', 'at', 'on', 'her', 'should', 'has', 'an', 'without', 'nor', 'than', 'to', 'when', 'but', 'their', 'no', 'being', 'will', 'were', 'it', 'same', 'we', 'have', 'this'}), ambiguous_words=frozenset({'drop', 'hit', 'quiet', 'catch', 'person', 'misc', 'part', 'break', 'off', 'fall', 'day', 'run', 'way', 'sound', 'arc', 'meeting', 'down', 'set', 'heavy', 'piece', 'blue', 'place', 'side', 'small', 'beat', 'time', 'open', 'big', 'out', 'shot', 'bang', 'night', 'work', 'little', 'up', 'handle', 'tone', 'release', 'long', 'thing', 'light', 'large', 'over', 'hold', 'general'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -3952,7 +3979,7 @@ Write `samples` to `dst` as `fmt`/`subtype` (default = FLAC archive).
 
 Lazy dependency: `soundfile`.
 
-### foley.score(segments, , audio=None, transcript=None, segment_starts=None, library=None, intended_use=None, commercial_ok=None, max_events=6, verify='listen', backend='auto', allow_generate=True, master='podcast', weave=None, llm=None, budget=None, \*\*weave_kwargs)
+### foley.score(segments, , audio=None, transcript=None, segment_starts=None, library=None, intended_use=None, commercial_ok=None, max_events=6, verify='listen', backend='auto', allow_generate=True, master='podcast', weave=None, llm=None, budget=None, max_usd=None, \*\*weave_kwargs)
 
 Choose sounds for narration text and (optionally) weave them into the narration audio.
 
@@ -4008,7 +4035,10 @@ editable [`SoundDesignTimeline`](foley.base.html.md#foley.base.SoundDesignTimeli
   * **budget** – The run’s [`Budget`](foley.agent.policy.html.md#foley.agent.policy.Budget) — one spend cap
     (`max_usd`) across every segment’s paid calls (#57). Default: $1, or $3
     when `llm` (or `$FOLEY_LLM`) is `'anthropic'`
-    ([`foley.cost.default_max_usd()`](foley.cost.html.md#foley.cost.default_max_usd), #88).
+    ([`foley.cost.default_max_usd()`](foley.cost.html.md#foley.cost.default_max_usd), #88). What a host can rely on the cap
+    to mean is in this module’s docstring.
+  * **max_usd** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Shorthand for `budget=Budget(max_usd=max_usd)` (#283); passing both
+    is a `TypeError`.
   * **\*\*weave_kwargs** – Forwarded to [`foley.weave()`](foley.weave.html.md#module-foley.weave) (e.g. `language`, `aligner`,
     `sign_cert`, `watermark`). Checked against `weave`’s signature before
     anything runs, so a typo costs nothing.
@@ -4018,7 +4048,10 @@ editable [`SoundDesignTimeline`](foley.base.html.md#foley.base.SoundDesignTimeli
   A [`ScoreResult`](#foley.ScoreResult) (`timeline` + `events` rationale; `weave` when woven).
 * **Raises:**
   * [**TypeError**](https://docs.python.org/3/builtins/exceptions.html#TypeError) – If a `weave_kwargs` key is not a [`foley.weave()`](foley.weave.html.md#module-foley.weave) option (raised
-        before any find, verify or generation call).
+        before any find, verify or generation call), or if both `budget` and
+        `max_usd` are given.
+  * [**BudgetExceeded**](foley.cost.html.md#foley.cost.BudgetExceeded) – If the first segment cannot afford even a retrieval-only run
+        (nothing has been spent).
   * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `master` is an unknown profile name, or `segment_starts` does
         not fit the segments, the transcript or (for a path, bytes or an array) the
         audio’s duration, all raised just as early. For a library ref or a file-like

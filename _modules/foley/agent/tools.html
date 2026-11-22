@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=e863fa38"></script>
+    <script src="../../../_static/documentation_options.js?v=7be3f44b"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.140" />
+  <meta name="docsearch:version" content="0.0.142" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -1144,20 +1144,17 @@ window.runMermaid = runMermaid;</script>
         <span class="c1"># budget in force (#57's acceptance), else nothing is spent. A check, not a</span>
         <span class="c1"># reservation: each call reserves its own cost when it is made.</span>
         <span class="n">check</span><span class="p">(</span>
-            <span class="n">estimate_find_usd</span><span class="p">(</span>
+            <span class="n">find_upper_bound</span><span class="p">(</span>
+                <span class="n">context</span><span class="p">,</span>
                 <span class="n">max_events</span><span class="o">=</span><span class="n">max_events</span><span class="p">,</span>
                 <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">,</span>
                 <span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">,</span>
                 <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
                 <span class="n">verify</span><span class="o">=</span><span class="n">verify</span><span class="p">,</span>
-                <span class="n">max_refine_loops</span><span class="o">=</span><span class="n">budget</span><span class="o">.</span><span class="n">max_refine_loops</span><span class="p">,</span>
-                <span class="n">max_generations</span><span class="o">=</span><span class="n">budget</span><span class="o">.</span><span class="n">max_generations</span> <span class="k">if</span> <span class="n">budget</span><span class="o">.</span><span class="n">allow_generate</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
-                <span class="n">context_chars</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">context</span><span class="p">),</span>
-                <span class="n">injected</span><span class="o">=</span><span class="p">{</span>
-                    <span class="s2">"decomposer"</span><span class="p">:</span> <span class="n">decomposer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
-                    <span class="s2">"refiner"</span><span class="p">:</span> <span class="n">refiner</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
-                    <span class="s2">"judge"</span><span class="p">:</span> <span class="n">judge</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
-                <span class="p">},</span>
+                <span class="n">budget</span><span class="o">=</span><span class="n">budget</span><span class="p">,</span>
+                <span class="n">decomposer</span><span class="o">=</span><span class="n">decomposer</span><span class="p">,</span>
+                <span class="n">refiner</span><span class="o">=</span><span class="n">refiner</span><span class="p">,</span>
+                <span class="n">judge</span><span class="o">=</span><span class="n">judge</span><span class="p">,</span>
             <span class="p">),</span>
             <span class="n">what</span><span class="o">=</span><span class="sa">f</span><span class="s2">"this find run (upper bound for </span><span class="si">{</span><span class="n">max_events</span><span class="si">}</span><span class="s2"> events)"</span><span class="p">,</span>
         <span class="p">)</span>
@@ -1181,6 +1178,48 @@ window.runMermaid = runMermaid;</script>
 
     <span class="c1"># The budget is in force only while the stream runs, never between items.</span>
     <span class="k">yield from</span> <span class="n">scoped_iter</span><span class="p">(</span><span class="n">run</span><span class="p">,</span> <span class="n">budget</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="find_upper_bound">
+<a class="viewcode-back" href="../../../_autosummary/foley.agent.tools.html#foley.find_upper_bound">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">find_upper_bound</span><span class="p">(</span>
+    <span class="n">context</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">max_events</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span>
+    <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"auto"</span><span class="p">,</span>
+    <span class="n">llm</span><span class="p">:</span> <span class="s2">"Optional[str]"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="n">verify</span><span class="p">:</span> <span class="s2">"Union[str, VerifyLevel]"</span> <span class="o">=</span> <span class="s2">"listen"</span><span class="p">,</span>
+    <span class="n">max_refine_loops</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">budget</span><span class="p">:</span> <span class="s2">"Optional[Budget]"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">decomposer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">refiner</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">judge</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Optional[float]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""What ``find(context, ...)`` with these arguments can spend at most, or ``None``.</span>
+
+<span class="sd">    The number :func:`find` checks against every budget in force before its first</span>
+<span class="sd">    paid call, from the same arguments (``budget`` gives the loop counts and whether</span>
+<span class="sd">    generation is allowed; default ``Budget(max_refine_loops=max_refine_loops)``), so</span>
+<span class="sd">    a caller (``score``, deciding what a segment can afford) asks the same question.</span>
+<span class="sd">    """</span>
+    <span class="n">budget</span> <span class="o">=</span> <span class="n">budget</span> <span class="ow">or</span> <span class="n">Budget</span><span class="p">(</span><span class="n">max_refine_loops</span><span class="o">=</span><span class="n">max_refine_loops</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">estimate_find_usd</span><span class="p">(</span>
+        <span class="n">max_events</span><span class="o">=</span><span class="n">max_events</span><span class="p">,</span>
+        <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">,</span>
+        <span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">,</span>
+        <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+        <span class="n">verify</span><span class="o">=</span><span class="n">verify</span><span class="p">,</span>
+        <span class="n">max_refine_loops</span><span class="o">=</span><span class="n">budget</span><span class="o">.</span><span class="n">max_refine_loops</span><span class="p">,</span>
+        <span class="n">max_generations</span><span class="o">=</span><span class="n">budget</span><span class="o">.</span><span class="n">max_generations</span> <span class="k">if</span> <span class="n">budget</span><span class="o">.</span><span class="n">allow_generate</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">context_chars</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">context</span><span class="p">),</span>
+        <span class="n">injected</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">"decomposer"</span><span class="p">:</span> <span class="n">decomposer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"refiner"</span><span class="p">:</span> <span class="n">refiner</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"judge"</span><span class="p">:</span> <span class="n">judge</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">)</span></div>
+
 
 
 <div class="viewcode-block" id="estimate_find_usd">

@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../_static/documentation_options.js?v=e863fa38"></script>
+    <script src="../../_static/documentation_options.js?v=7be3f44b"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.140" />
+  <meta name="docsearch:version" content="0.0.142" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -729,13 +729,27 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">runs before verification, and the verify ladder (clap → listen → judge) guards fit — so a</span>
 <span class="sd">one-call ``foley.score(segments, audio=...)`` yields a restrained, license-clean result.</span>
 
+<span class="sd">**What the spend cap means** (``max_usd=`` / ``budget=Budget(max_usd=...)``, #281): no</span>
+<span class="sd">call of known cost is made that would take the run past the cap. Before each segment, its</span>
+<span class="sd">worst case (:func:`foley.agent.tools.find_upper_bound`) is checked against what is left:</span>
+
+<span class="sd">* if it does not fit, the segment runs **retrieval-only** (no generation fallback);</span>
+<span class="sd">* if even that does not fit (paid LLM rungs), the segment is **skipped** — unless nothing</span>
+<span class="sd">  has been spent yet, in which case ``score`` raises before spending anything, as</span>
+<span class="sd">  ``find`` does.</span>
+
+<span class="sd">Each degraded segment is named in :attr:`ScoreResult.notes`. A call of *unknown* cost</span>
+<span class="sd">runs only when approved (``approve_unknown_cost``) and is counted, not summed:</span>
+<span class="sd">:attr:`ScoreResult.spent_usd` is then a lower bound, which</span>
+<span class="sd">:attr:`ScoreResult.unknown_cost_calls` says (#280).</span>
+
 <span class="sd">Stdlib-only at import (numpy/torch/whisperx stay lazy inside ``find``/``weave``), so importing</span>
 <span class="sd">this keeps ``import foley`` dol-only.</span>
 <span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>  <span class="c1"># pragma: no cover - typing only</span>
@@ -781,6 +795,18 @@ window.runMermaid = runMermaid;</script>
     <span class="n">timeline</span><span class="p">:</span> <span class="s2">"SoundDesignTimeline"</span>
     <span class="n">events</span><span class="p">:</span> <span class="s2">"list[ScoredEvent]"</span>
     <span class="n">weave</span><span class="p">:</span> <span class="s2">"Optional[WeaveResult]"</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1">#: What the run spent on calls of known cost, in USD (a lower bound when</span>
+    <span class="c1">#: :attr:`unknown_cost_calls` is not zero).</span>
+    <span class="n">spent_usd</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="c1">#: Calls this run made whose cost is unknown (approved, counted, not in ``spent_usd``).</span>
+    <span class="n">unknown_cost_calls</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="c1">#: Segments the spend cap degraded: run retrieval-only, or skipped (#281).</span>
+    <span class="n">notes</span><span class="p">:</span> <span class="s2">"list[str]"</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">has_unknown_costs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Whether :attr:`spent_usd` leaves out calls of unknown cost (never read as free)."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">unknown_cost_calls</span> <span class="o">&gt;</span> <span class="mi">0</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">n_sounds</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
@@ -821,6 +847,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">weave</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">llm</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">budget</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">max_usd</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">weave_kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScoreResult</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Choose sounds for narration text and (optionally) weave them into the narration audio.</span>
@@ -875,7 +902,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        budget: The run's :class:`~foley.agent.policy.Budget` — one spend cap</span>
 <span class="sd">            (``max_usd``) across every segment's paid calls (#57). Default: $1, or $3</span>
 <span class="sd">            when ``llm`` (or ``$FOLEY_LLM``) is ``'anthropic'``</span>
-<span class="sd">            (:func:`foley.cost.default_max_usd`, #88).</span>
+<span class="sd">            (:func:`foley.cost.default_max_usd`, #88). What a host can rely on the cap</span>
+<span class="sd">            to mean is in this module's docstring.</span>
+<span class="sd">        max_usd: Shorthand for ``budget=Budget(max_usd=max_usd)`` (#283); passing both</span>
+<span class="sd">            is a ``TypeError``.</span>
 <span class="sd">        **weave_kwargs: Forwarded to :func:`foley.weave` (e.g. ``language``, ``aligner``,</span>
 <span class="sd">            ``sign_cert``, ``watermark``). Checked against ``weave``'s signature before</span>
 <span class="sd">            anything runs, so a typo costs nothing.</span>
@@ -885,7 +915,10 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        TypeError: If a ``weave_kwargs`` key is not a :func:`foley.weave` option (raised</span>
-<span class="sd">            before any find, verify or generation call).</span>
+<span class="sd">            before any find, verify or generation call), or if both ``budget`` and</span>
+<span class="sd">            ``max_usd`` are given.</span>
+<span class="sd">        BudgetExceeded: If the first segment cannot afford even a retrieval-only run</span>
+<span class="sd">            (nothing has been spent).</span>
 <span class="sd">        ValueError: If ``master`` is an unknown profile name, or ``segment_starts`` does</span>
 <span class="sd">            not fit the segments, the transcript or (for a path, bytes or an array) the</span>
 <span class="sd">            audio's duration, all raised just as early. For a library ref or a file-like</span>
@@ -899,6 +932,7 @@ window.runMermaid = runMermaid;</script>
 
     <span class="c1"># fail fast: a typo raises before any find/verify/generation spend</span>
     <span class="n">_check_weave_kwargs</span><span class="p">(</span><span class="n">weave_kwargs</span><span class="p">)</span>
+    <span class="n">budget</span> <span class="o">=</span> <span class="n">_budget_from</span><span class="p">(</span><span class="n">budget</span><span class="p">,</span> <span class="n">max_usd</span><span class="p">)</span>
     <span class="n">master</span> <span class="o">=</span> <span class="n">resolve_master</span><span class="p">(</span><span class="n">master</span><span class="p">)</span>
     <span class="n">segs</span> <span class="o">=</span> <span class="p">[</span><span class="n">segments</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">segments</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">segments</span><span class="p">)</span>
     <span class="n">use</span> <span class="o">=</span> <span class="n">intended_use_for</span><span class="p">(</span><span class="n">intended_use</span><span class="p">,</span> <span class="n">commercial_ok</span><span class="o">=</span><span class="n">commercial_ok</span><span class="p">)</span>
@@ -943,14 +977,19 @@ window.runMermaid = runMermaid;</script>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.agent.policy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Budget</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.cost</span><span class="w"> </span><span class="kn">import</span> <span class="n">active_budget</span><span class="p">,</span> <span class="n">default_max_usd</span><span class="p">,</span> <span class="n">spend_scope</span>
 
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">allow_generate</span><span class="p">:</span>
-        <span class="c1"># find's loop budget turns the fallback off (its pre-flight then counts no</span>
-        <span class="c1"># generation); the run's spend is still capped by the scope below.</span>
-        <span class="n">base</span> <span class="o">=</span> <span class="n">budget</span> <span class="k">if</span> <span class="n">budget</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">Budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="n">default_max_usd</span><span class="p">(</span><span class="n">llm</span><span class="p">))</span>
-        <span class="n">find_kw</span><span class="p">[</span><span class="s2">"budget"</span><span class="p">]</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">without_generation</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">budget</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">active_budget</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="c1"># One cap for the whole score run, sized to the LLM the caller chose (#88).</span>
         <span class="n">budget</span> <span class="o">=</span> <span class="n">Budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="n">default_max_usd</span><span class="p">(</span><span class="n">llm</span><span class="p">))</span>
+    <span class="c1"># find's loop budget turns the fallback off (its pre-flight then counts no</span>
+    <span class="c1"># generation); the run's spend is still capped by the scope below.</span>
+    <span class="n">loop_budget</span> <span class="o">=</span> <span class="n">find_kw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"budget"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">budget</span> <span class="ow">or</span> <span class="n">active_budget</span><span class="p">()</span>
+    <span class="n">find_kw</span><span class="p">[</span><span class="s2">"budget"</span><span class="p">]</span> <span class="o">=</span> <span class="n">loop_budget</span>  <span class="c1"># the budget that is checked is the one that runs</span>
+    <span class="n">retrieval_only_kw</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">find_kw</span><span class="p">,</span> <span class="s2">"budget"</span><span class="p">:</span> <span class="n">loop_budget</span><span class="o">.</span><span class="n">without_generation</span><span class="p">()}</span>
+    <span class="c1"># What each segment may run, fullest first (#281: degrade, do not raise mid-run).</span>
+    <span class="n">find_options</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">(</span><span class="n">find_kw</span><span class="p">,</span> <span class="n">retrieval_only_kw</span><span class="p">)</span> <span class="k">if</span> <span class="n">allow_generate</span> <span class="k">else</span> <span class="p">(</span><span class="n">retrieval_only_kw</span><span class="p">,)</span>
+    <span class="p">)</span>
+    <span class="n">notes</span><span class="p">:</span> <span class="s2">"list[str]"</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">with</span> <span class="p">(</span>
         <span class="n">obs</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
             <span class="s2">"score"</span><span class="p">,</span>
@@ -961,10 +1000,24 @@ window.runMermaid = runMermaid;</script>
                 <span class="s2">"allow_generate"</span><span class="p">:</span> <span class="n">allow_generate</span><span class="p">,</span>
             <span class="p">},</span>
         <span class="p">),</span>
-        <span class="n">spend_scope</span><span class="p">(</span><span class="n">budget</span><span class="p">),</span>
+        <span class="n">spend_scope</span><span class="p">(</span><span class="n">budget</span><span class="p">)</span> <span class="k">as</span> <span class="n">run_budget</span><span class="p">,</span>
     <span class="p">):</span>
+        <span class="n">spent0</span><span class="p">,</span> <span class="n">unknown0</span> <span class="o">=</span> <span class="n">run_budget</span><span class="o">.</span><span class="n">spent_usd</span><span class="p">,</span> <span class="n">run_budget</span><span class="o">.</span><span class="n">unknown_cost_calls</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">seg</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">segs</span><span class="p">):</span>
-            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">find</span><span class="p">(</span><span class="n">seg</span><span class="p">,</span> <span class="o">**</span><span class="n">find_kw</span><span class="p">):</span>
+            <span class="n">seg_kw</span> <span class="o">=</span> <span class="n">_affordable_find_kw</span><span class="p">(</span>
+                <span class="n">seg</span><span class="p">,</span>
+                <span class="n">i</span><span class="p">,</span>
+                <span class="n">find_options</span><span class="p">,</span>
+                <span class="n">notes</span><span class="o">=</span><span class="n">notes</span><span class="p">,</span>
+                <span class="n">nothing_spent</span><span class="o">=</span><span class="p">(</span>
+                    <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span>  <span class="c1"># a later segment's refusal must not discard earlier results</span>
+                    <span class="ow">and</span> <span class="n">run_budget</span><span class="o">.</span><span class="n">spent_usd</span> <span class="o">==</span> <span class="n">spent0</span>
+                    <span class="ow">and</span> <span class="n">run_budget</span><span class="o">.</span><span class="n">unknown_cost_calls</span> <span class="o">==</span> <span class="n">unknown0</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">seg_kw</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">find</span><span class="p">(</span><span class="n">seg</span><span class="p">,</span> <span class="o">**</span><span class="n">seg_kw</span><span class="p">):</span>
                 <span class="n">all_candidates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
                 <span class="n">v</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">verdict</span>
                 <span class="n">events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
@@ -995,8 +1048,62 @@ window.runMermaid = runMermaid;</script>
             <span class="n">wk</span><span class="p">[</span><span class="s2">"library"</span><span class="p">]</span> <span class="o">=</span> <span class="n">library</span> <span class="k">if</span> <span class="n">library</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">default_library</span><span class="p">()</span>
             <span class="n">woven</span> <span class="o">=</span> <span class="n">_weave</span><span class="p">(</span><span class="n">audio</span><span class="p">,</span> <span class="n">timeline</span><span class="p">,</span> <span class="o">**</span><span class="n">wk</span><span class="p">)</span>
             <span class="n">timeline</span> <span class="o">=</span> <span class="n">woven</span><span class="o">.</span><span class="n">timeline</span>
-    <span class="k">return</span> <span class="n">ScoreResult</span><span class="p">(</span><span class="n">timeline</span><span class="o">=</span><span class="n">timeline</span><span class="p">,</span> <span class="n">events</span><span class="o">=</span><span class="n">events</span><span class="p">,</span> <span class="n">weave</span><span class="o">=</span><span class="n">woven</span><span class="p">)</span></div>
+        <span class="n">spent</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">run_budget</span><span class="o">.</span><span class="n">spent_usd</span> <span class="o">-</span> <span class="n">spent0</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+        <span class="n">unknown</span> <span class="o">=</span> <span class="n">run_budget</span><span class="o">.</span><span class="n">unknown_cost_calls</span> <span class="o">-</span> <span class="n">unknown0</span>
+    <span class="k">return</span> <span class="n">ScoreResult</span><span class="p">(</span>
+        <span class="n">timeline</span><span class="o">=</span><span class="n">timeline</span><span class="p">,</span>
+        <span class="n">events</span><span class="o">=</span><span class="n">events</span><span class="p">,</span>
+        <span class="n">weave</span><span class="o">=</span><span class="n">woven</span><span class="p">,</span>
+        <span class="n">spent_usd</span><span class="o">=</span><span class="n">spent</span><span class="p">,</span>
+        <span class="n">unknown_cost_calls</span><span class="o">=</span><span class="n">unknown</span><span class="p">,</span>
+        <span class="n">notes</span><span class="o">=</span><span class="n">notes</span><span class="p">,</span>
+    <span class="p">)</span></div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_budget_from</span><span class="p">(</span><span class="n">budget</span><span class="p">,</span> <span class="n">max_usd</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">"""``budget``, or ``Budget(max_usd=max_usd)`` for the shorthand (never both)."""</span>
+    <span class="k">if</span> <span class="n">max_usd</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">budget</span>
+    <span class="k">if</span> <span class="n">budget</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="s2">"pass budget= or max_usd=, not both (max_usd is shorthand for "</span>
+            <span class="s2">"budget=Budget(max_usd=...))"</span>
+        <span class="p">)</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.agent.policy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Budget</span>
+
+    <span class="k">return</span> <span class="n">Budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="n">max_usd</span><span class="p">)</span>
+
+
+<span class="c1">#: The arguments of :func:`foley.find` that size its worst case (``find_upper_bound``).</span>
+<span class="n">_BOUND_KEYS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"max_events"</span><span class="p">,</span> <span class="s2">"backend"</span><span class="p">,</span> <span class="s2">"llm"</span><span class="p">,</span> <span class="s2">"verify"</span><span class="p">,</span> <span class="s2">"budget"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_affordable_find_kw</span><span class="p">(</span><span class="n">seg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">nothing_spent</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""The first of ``options`` (``find`` keywords, fullest first) whose worst case fits</span>
+<span class="sd">    every budget in force, else ``None`` (skip the segment); a fallback is noted.</span>
+
+<span class="sd">    Raises the refusal when nothing fits and nothing has been spent yet: the run then</span>
+<span class="sd">    fails before spending, as ``find``'s own pre-flight does.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.agent.tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">find_upper_bound</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.cost</span><span class="w"> </span><span class="kn">import</span> <span class="n">BudgetExceeded</span><span class="p">,</span> <span class="n">check</span>
+
+    <span class="n">refusals</span><span class="p">:</span> <span class="s2">"list[BudgetExceeded]"</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">kw</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+        <span class="n">bound</span> <span class="o">=</span> <span class="n">find_upper_bound</span><span class="p">(</span><span class="n">seg</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">kw</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">_BOUND_KEYS</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">kw</span><span class="p">})</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">check</span><span class="p">(</span><span class="n">bound</span><span class="p">,</span> <span class="n">what</span><span class="o">=</span><span class="sa">f</span><span class="s2">"segment </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> (upper bound)"</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">BudgetExceeded</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">refusals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">refusals</span><span class="p">:</span>
+            <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"segment </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">: retrieval-only: </span><span class="si">{</span><span class="n">refusals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">kw</span>
+    <span class="k">if</span> <span class="n">nothing_spent</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">refusals</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"segment </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">: skipped: </span><span class="si">{</span><span class="n">refusals</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">None</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_weave_option</span><span class="p">(</span><span class="n">weave_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
