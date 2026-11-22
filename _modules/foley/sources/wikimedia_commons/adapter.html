@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../_static/documentation_options.js?v=c6f45d68"></script>
+    <script src="../../../../_static/documentation_options.js?v=2eeefeaa"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.137" />
+  <meta name="docsearch:version" content="0.0.138" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -826,6 +826,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span>
         <span class="n">page</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">provider_params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">include_pronunciations</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kw</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[Candidate]"</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Search Commons audio for ``query``; return licence-checked candidates.</span>
@@ -838,6 +839,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            page: The results page (1-based, ``k`` per page), sent as an offset.</span>
 <span class="sd">            provider_params: Native search params merged over the translated ones</span>
 <span class="sd">                (#61); the per-item licence check still applies.</span>
+<span class="sd">            include_pronunciations: Keep recordings of a person saying a word</span>
+<span class="sd">                (Lingua Libre, ``&lt;lang&gt;-&lt;word&gt;.ogg``); dropped by default (#295).</span>
 <span class="sd">        """</span>
         <span class="n">wanted</span> <span class="o">=</span> <span class="n">wanted_license_ids</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">license</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">wanted</span> <span class="o">==</span> <span class="p">[]:</span>  <span class="c1"># a licence this source does not accept: nothing can match</span>
@@ -848,7 +851,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">gsrnamespace</span><span class="o">=</span><span class="n">api</span><span class="p">[</span><span class="s2">"namespace_file"</span><span class="p">],</span>
             <span class="n">gsrsearch</span><span class="o">=</span><span class="n">query</span> <span class="o">+</span> <span class="n">api</span><span class="p">[</span><span class="s2">"search_suffix"</span><span class="p">],</span>
             <span class="n">gsrlimit</span><span class="o">=</span><span class="n">page_size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">k</span><span class="p">),</span>
-            <span class="n">prop</span><span class="o">=</span><span class="s2">"imageinfo"</span><span class="p">,</span>
+            <span class="n">prop</span><span class="o">=</span><span class="s2">"imageinfo|categories"</span><span class="p">,</span>
+            <span class="n">cllimit</span><span class="o">=</span><span class="s2">"max"</span><span class="p">,</span>
             <span class="n">iiprop</span><span class="o">=</span><span class="n">_IMAGEINFO</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">paging_params</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">page</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"gsrlimit"</span><span class="p">]))</span>
@@ -863,6 +867,8 @@ window.runMermaid = runMermaid;</script>
         <span class="p">)</span>
         <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="n">pages</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">include_pronunciations</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_pronunciation</span><span class="p">(</span><span class="n">page</span><span class="p">):</span>
+                <span class="k">continue</span>
             <span class="n">cand</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_candidate</span><span class="p">(</span><span class="n">page</span><span class="p">,</span> <span class="n">only</span><span class="o">=</span><span class="n">wanted</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">cand</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cand</span><span class="p">)</span>
@@ -909,6 +915,16 @@ window.runMermaid = runMermaid;</script>
 
 
     <span class="c1"># -- page -&gt; licence-checked Candidate ----------------------------------</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_is_pronunciation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Whether a hit is a person saying a word, not a sound effect (#295)."""</span>
+        <span class="n">rule</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"exclude"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="n">rule</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pronunciation_title"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pattern</span> <span class="ow">and</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">page</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"title"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="n">words</span> <span class="o">=</span> <span class="p">[</span><span class="n">w</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">rule</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pronunciation_category_words"</span><span class="p">,</span> <span class="p">())]</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"title"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">page</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"categories"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">())</span>
+        <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">w</span> <span class="ow">in</span> <span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">words</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_candidate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">only</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Candidate</span><span class="p">]:</span>
         <span class="n">infos</span> <span class="o">=</span> <span class="n">page</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"imageinfo"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>

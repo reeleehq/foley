@@ -71,7 +71,7 @@ It bypasses the licence filter and the per-item licence check that
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-#### search(query, , license='cc0', k=15, page=1, provider_params=None, \*\*kw)
+#### search(query, , license='cc0', k=15, page=1, provider_params=None, include_pronunciations=False, \*\*kw)
 
 Search Commons audio for `query`; return licence-checked candidates.
 
@@ -83,5 +83,7 @@ Search Commons audio for `query`; return licence-checked candidates.
   * **page** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – The results page (1-based, `k` per page), sent as an offset.
   * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native search params merged over the translated ones
     (#61); the per-item licence check still applies.
+  * **include_pronunciations** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Keep recordings of a person saying a word
+    (Lingua Libre, `<lang>-<word>.ogg`); dropped by default (#295).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](foley.base.html.md#foley.base.Candidate)]

@@ -1,4 +1,4 @@
-> built 2026-11-21 18:56 UTC from f850080 (main) · foley 0.0.137. Details: build_info.json
+> built 2026-11-22 07:42 UTC from 37087f1 (main) · foley 0.0.138. Details: build_info.json
 
 # index.html.md
 
@@ -18984,7 +18984,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'tudum', 'ta-dum', 'ta dum', 'netflix intro', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel jingle', 'intel chime', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'ta dum', 'netflix chime', 'ta-dum', 'netflix intro', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel inside', 'intel chime', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -27874,7 +27874,7 @@ It bypasses the licence filter and the per-item licence check that
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-#### search(query, , license='cc0', k=15, page=1, provider_params=None, \*\*kw)
+#### search(query, , license='cc0', k=15, page=1, provider_params=None, include_pronunciations=False, \*\*kw)
 
 Search Commons audio for `query`; return licence-checked candidates.
 
@@ -27886,6 +27886,8 @@ Search Commons audio for `query`; return licence-checked candidates.
   * **page** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – The results page (1-based, `k` per page), sent as an offset.
   * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native search params merged over the translated ones
     (#61); the per-item licence check still applies.
+  * **include_pronunciations** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Keep recordings of a person saying a word
+    (Lingua Libre, `<lang>-<word>.ogg`); dropped by default (#295).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)]
 
@@ -31091,18 +31093,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-21 18:56 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/f8500804cf0589470f71eaa3092f4471f95c300c"><code>f850080</code></a> on branch <code>main</code>, for **foley 0.0.137** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-22 07:42 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/37087f15dda669d6721e8a9744dd15761465ca65"><code>37087f1</code></a> on branch <code>main</code>, for **foley 0.0.138** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.137) is behind the latest release on PyPI (0.0.138): `pip install foley` gives newer code than these docs describe.
+- The documented version (0.0.138) is behind the latest release on PyPI (0.0.139): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/f8500804cf0589470f71eaa3092f4471f95c300c"><code>f8500804cf0589470f71eaa3092f4471f95c300c</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/37087f15dda669d6721e8a9744dd15761465ca65"><code>37087f15dda669d6721e8a9744dd15761465ca65</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -31113,9 +31115,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/44938034300">44938034300</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/44999229475">44999229475</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>f8500804cf0589470f71eaa3092f4471f95c300c</code> (in the history of the built commit) |
+| Event commit | <code>37087f15dda669d6721e8a9744dd15761465ca65</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -31140,13 +31142,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.138/">0.0.138</a>, newer than the documented version (0.0.137).
+Latest release: <a href="https://pypi.org/project/foley/0.0.139/">0.0.139</a>, newer than the documented version (0.0.138).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout f8500804cf0589470f71eaa3092f4471f95c300c
+git checkout 37087f15dda669d6721e8a9744dd15761465ca65
 pip install "epythet==0.2.23"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
