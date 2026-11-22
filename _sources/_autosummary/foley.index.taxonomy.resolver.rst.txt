@@ -4,16 +4,34 @@ foley.index.taxonomy.resolver
 .. automodule:: foley.index.taxonomy.resolver
 
    
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      STATED_CONFIDENCE
+      DEFAULT_STOP_WORDS
+      DEFAULT_AMBIGUOUS_WORDS
+      DEFAULT_KIND_WEIGHTS
+      STRONG
+      SINGLE
+      WEAK
+      RECORD_MIN_CONFIDENCE
+   
    .. rubric:: Functions
 
    .. autosummary::
    
+      keyword_resolution
       resolve_catid
+      term_index
    
    .. rubric:: Classes
 
    .. autosummary::
    
+      Evidence
+      Hit
       KeywordResolver
+      MatchPolicy
       TaxonomyResolver
    

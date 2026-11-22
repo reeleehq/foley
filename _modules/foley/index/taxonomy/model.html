@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../_static/documentation_options.js?v=8a967ab3"></script>
+    <script src="../../../../_static/documentation_options.js?v=e863fa38"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.139" />
+  <meta name="docsearch:version" content="0.0.140" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -730,6 +730,14 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
 
+<span class="c1">#: Subcategories that name no particular sound (``RAIN``/``GENERAL``, ``AIR``/``MISC``).</span>
+<span class="n">GENERIC_SUBCATEGORIES</span><span class="p">:</span> <span class="nb">frozenset</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">"general"</span><span class="p">,</span> <span class="s2">"misc"</span><span class="p">})</span>
+
+<span class="c1">#: Categories whose rows are production bookkeeping (``TMARK``, ``WIP``, ``SCNE``),</span>
+<span class="c1">#: not kinds of sound: a filename may name them, a tagger or keyword match never does.</span>
+<span class="n">NON_SOUND_CATEGORIES</span><span class="p">:</span> <span class="nb">frozenset</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">"ARCHIVED"</span><span class="p">})</span>
+
+
 <div class="viewcode-block" id="UcsRow">
 <a class="viewcode-back" href="../../../../_autosummary/foley.index.taxonomy.model.html#foley.UcsRow">[docs]</a>
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -739,9 +747,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    A ``catid`` (e.g. ``'DOORWood'``) is an OPAQUE key — the category prefix is</span>
 <span class="sd">    variable-length and not reliably splittable — so ``catid -&gt; (category,</span>
 <span class="sd">    subcategory)`` is always a table lookup, never a string split (report</span>
-<span class="sd">    04 §5.2). ``confident=False`` marks an APPROXIMATE CatID reconstructed for the</span>
-<span class="sd">    seed table; verify it against the UCS master before treating it as</span>
-<span class="sd">    authoritative.</span>
+<span class="sd">    04 §5.2). ``confident=False`` marks an unverified row (a house drop's); the</span>
+<span class="sd">    keyword resolver bands its matches one notch lower.</span>
 <span class="sd">    """</span>
 
     <span class="n">catid</span><span class="p">:</span> <span class="nb">str</span>
@@ -749,7 +756,12 @@ window.runMermaid = runMermaid;</script>
     <span class="n">subcategory</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">synonyms</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
     <span class="n">confident</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
-    <span class="n">explanation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span></div>
+    <span class="n">explanation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_generic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Whether the subcategory names no particular sound (``GENERAL``, ``MISC``)."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">subcategory</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">GENERIC_SUBCATEGORIES</span></div>
 
 
 
@@ -780,27 +792,35 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="UcsTable">
 <a class="viewcode-back" href="../../../../_autosummary/foley.index.taxonomy.model.html#foley.UcsTable">[docs]</a>
-<span class="nd">@dataclass</span>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">eq</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UcsTable</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""A loaded UCS lookup: by CatID (exact + case-insensitive) and by synonym.</span>
+<span class="w">    </span><span class="sd">"""A loaded UCS lookup by CatID: exact, case-insensitive, or a legacy CatID.</span>
+
+<span class="sd">    Plain data, compared by identity (a matcher caches its index per table).</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        by_catid: ``CatID -&gt; UcsRow`` (case-sensitive primary key).</span>
 <span class="sd">        order: The CatIDs in stable insertion order (deterministic tie-breaking).</span>
+<span class="sd">        legacy: ``lower(old CatID) -&gt; CatID`` for CatIDs foley once stamped that are</span>
+<span class="sd">            not UCS (``weathrain`` -&gt; ``RAIN``), so a stored record still finds its row.</span>
 <span class="sd">    """</span>
 
     <span class="n">by_catid</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UcsRow</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
     <span class="n">order</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
-    <span class="n">_ci_index</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>  <span class="c1"># lower(catid) -&gt; catid</span>
+    <span class="c1"># lower(catid) -&gt; catid, for mixed-case CatIDs only: ``doorwood`` finds</span>
+    <span class="c1"># ``DOORWood``, but ``rain`` (a word) never finds ``RAIN``.</span>
+    <span class="n">_ci_index</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">legacy</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
 
 <div class="viewcode-block" id="UcsTable.get">
 <a class="viewcode-back" href="../../../../_autosummary/foley.index.taxonomy.model.html#foley.UcsTable.get">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">catid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UcsRow</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">"""Look up a row by CatID: exact first, then case-insensitive."""</span>
+<span class="w">        </span><span class="sd">"""Look up a row by CatID: exact, then case-insensitive, then a legacy CatID."""</span>
         <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">by_catid</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">catid</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">row</span>
-        <span class="n">canonical</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ci_index</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">catid</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">catid</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">canonical</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ci_index</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">legacy</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">by_catid</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">canonical</span><span class="p">)</span> <span class="k">if</span> <span class="n">canonical</span> <span class="k">else</span> <span class="kc">None</span></div>
 
 

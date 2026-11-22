@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=8a967ab3"></script>
+    <script src="../../../_static/documentation_options.js?v=e863fa38"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.139" />
+  <meta name="docsearch:version" content="0.0.140" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -767,7 +767,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">run_qc</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">content_key</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.taxonomy</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_catid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.taxonomy</span><span class="w"> </span><span class="kn">import</span> <span class="n">RECORD_MIN_CONFIDENCE</span><span class="p">,</span> <span class="n">CatIdResolution</span><span class="p">,</span> <span class="n">resolve_catid</span>
 
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>  <span class="c1"># pragma: no cover - typing only</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">ndarray</span>
@@ -1114,6 +1114,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">ucs_catid</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">restamp_duplicate</span><span class="p">:</span> <span class="s1">'bool | Literal["remade"]'</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">commercial</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">catid_min_confidence</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">RECORD_MIN_CONFIDENCE</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IngestResult</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Ingest one clip into ``library`` and return an :class:`IngestResult`.</span>
 
@@ -1190,6 +1191,11 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        commercial: Whether the AI use is for a commercial purpose (decides a</span>
 <span class="sd">            ``nc_open_source_only`` scope, #69). ``None`` (default) means</span>
 <span class="sd">            :data:`~foley.licensing.DEFAULT_INTENDED_USE`'s (commercial).</span>
+<span class="sd">        catid_min_confidence: The least resolution confidence stamped as the</span>
+<span class="sd">            record's UCS CatID (default</span>
+<span class="sd">            :data:`~foley.index.taxonomy.RECORD_MIN_CONFIDENCE`, an AudioSet-map</span>
+<span class="sd">            hit's). A weaker keyword brush (a category name alone, a synonym many</span>
+<span class="sd">            rows share) is left off the record, with a note; ``0`` stamps any.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        An :class:`IngestResult`; its ``record`` is ``None`` when quarantined, a</span>
@@ -1319,6 +1325,13 @@ window.runMermaid = runMermaid;</script>
         <span class="n">filename</span><span class="o">=</span><span class="n">_src_name</span><span class="p">(</span><span class="n">src</span><span class="p">),</span>
         <span class="n">catid</span><span class="o">=</span><span class="n">ucs_catid</span><span class="p">,</span>
     <span class="p">)</span>
+    <span class="k">if</span> <span class="n">resolution</span> <span class="ow">and</span> <span class="n">resolution</span><span class="o">.</span><span class="n">confidence</span> <span class="o">&lt;</span> <span class="n">catid_min_confidence</span><span class="p">:</span>
+        <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"UCS CatID </span><span class="si">{</span><span class="n">resolution</span><span class="o">.</span><span class="n">catid</span><span class="si">}</span><span class="s2"> not stamped: confidence "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">resolution</span><span class="o">.</span><span class="n">confidence</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> &lt; </span><span class="si">{</span><span class="n">catid_min_confidence</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> "</span>
+            <span class="sa">f</span><span class="s2">"(from </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">resolution</span><span class="o">.</span><span class="n">matched_terms</span><span class="p">)</span><span class="si">}</span><span class="s2">)"</span>
+        <span class="p">)</span>
+        <span class="n">resolution</span> <span class="o">=</span> <span class="n">CatIdResolution</span><span class="p">()</span>
 
     <span class="c1"># `format` is the DELIVERED format (what library.audio() serves): the FLAC</span>
     <span class="c1"># archive when cached by-value, else the untouched source container. (`lic`</span>

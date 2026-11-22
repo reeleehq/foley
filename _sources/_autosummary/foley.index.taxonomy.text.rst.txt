@@ -1,0 +1,28 @@
+foley.index.taxonomy.text
+=========================
+
+.. automodule:: foley.index.taxonomy.text
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      MIN_INFLECTED_LENGTH
+      NOT_INFLECTIONS
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      build_term_index
+      category_rows
+      inflections
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Term
+      TermIndex
+   

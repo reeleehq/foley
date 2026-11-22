@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../_static/documentation_options.js?v=8a967ab3"></script>
+    <script src="../../../../_static/documentation_options.js?v=e863fa38"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.139" />
+  <meta name="docsearch:version" content="0.0.140" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -726,21 +726,27 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">:func:`parse_ucs_name` returns every block (:class:`~.model.UcsName`);</span>
 <span class="sd">:func:`parse_ucs_filename` just the category pair; :func:`format_ucs_name` is the</span>
 <span class="sd">inverse of :func:`parse_ucs_name` (it sanitises each block so the name parses back). The</span>
-<span class="sd">loader merges the in-code seed with an optional full-table JSON drop under</span>
-<span class="sd">``taxonomy/data/ucs_full.json`` (JSON wins on CatID collision) — open/closed.</span>
+<span class="sd">default table is the shipped UCS v8.2.1 master with the seed's curated phrases added,</span>
+<span class="sd">and an optional house drop under ``taxonomy/data/ucs_full.json`` on top (it wins on</span>
+<span class="sd">CatID collision) — open/closed. A CatID matches case-insensitively only when it is</span>
+<span class="sd">mixed-case (``doorwood`` is ``DOORWood``). An all-capitals one (``RAIN``, ``MIX``,</span>
+<span class="sd">``RAW``, ``REF``) must be written as such, and counts only in a name with every</span>
+<span class="sd">mandatory block (:data:`UCS_MANDATORY_BLOCKS`), since ``RAW_01.wav`` and</span>
+<span class="sd">``MIX_final.wav`` are ordinary names.</span>
 <span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">fields</span> <span class="k">as</span> <span class="n">dataclass_fields</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">fields</span> <span class="k">as</span> <span class="n">dataclass_fields</span><span class="p">,</span> <span class="n">replace</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">lru_cache</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">MappingProxyType</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">UcsName</span><span class="p">,</span> <span class="n">UcsRow</span><span class="p">,</span> <span class="n">UcsTable</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.seed</span><span class="w"> </span><span class="kn">import</span> <span class="n">SEED_UCS_TABLE</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.seed</span><span class="w"> </span><span class="kn">import</span> <span class="n">LEGACY_CATIDS</span><span class="p">,</span> <span class="n">SEED_UCS_TABLE</span>
 
 <span class="n">_DATA_DIR</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">"data"</span>
 <span class="n">_UCS_FULL_FILE</span> <span class="o">=</span> <span class="s2">"ucs_full.json"</span>
@@ -765,36 +771,89 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="n">doc</span><span class="p">[</span><span class="s2">"rows"</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="n">doc</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_table</span><span class="p">(</span><span class="n">rows</span><span class="p">:</span> <span class="s2">"dict[str, UcsRow]"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UcsTable</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_table</span><span class="p">(</span>
+    <span class="n">rows</span><span class="p">:</span> <span class="s2">"dict[str, UcsRow]"</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">legacy_catids</span><span class="p">:</span> <span class="s2">"Mapping[str, str]"</span> <span class="o">=</span> <span class="n">MappingProxyType</span><span class="p">({}),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UcsTable</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A :class:`UcsTable` of ``rows``; each legacy CatID whose target is a row (and</span>
+<span class="sd">    that is not a row itself) resolves to it."""</span>
     <span class="k">return</span> <span class="n">UcsTable</span><span class="p">(</span>
-        <span class="n">by_catid</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">rows</span><span class="p">),</span> <span class="n">order</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">rows</span><span class="p">),</span> <span class="n">_ci_index</span><span class="o">=</span><span class="p">{</span><span class="n">c</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span> <span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">}</span>
+        <span class="n">by_catid</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">rows</span><span class="p">),</span>
+        <span class="n">order</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">rows</span><span class="p">),</span>
+        <span class="n">_ci_index</span><span class="o">=</span><span class="p">{</span><span class="n">c</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span> <span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">rows</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">c</span><span class="o">.</span><span class="n">isupper</span><span class="p">()},</span>
+        <span class="n">legacy</span><span class="o">=</span><span class="p">{</span>
+            <span class="n">old</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span> <span class="n">new</span>
+            <span class="k">for</span> <span class="n">old</span><span class="p">,</span> <span class="n">new</span> <span class="ow">in</span> <span class="n">legacy_catids</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">new</span> <span class="ow">in</span> <span class="n">rows</span> <span class="ow">and</span> <span class="n">old</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">rows</span>
+        <span class="p">},</span>
     <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_with_phrases</span><span class="p">(</span><span class="n">row</span><span class="p">:</span> <span class="n">UcsRow</span><span class="p">,</span> <span class="n">phrases</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UcsRow</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``row`` with ``phrases`` appended to its synonyms (order kept, no repeats)."""</span>
+    <span class="n">extra</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+        <span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">phrases</span><span class="p">)</span> <span class="k">if</span> <span class="n">p</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">row</span><span class="o">.</span><span class="n">synonyms</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">synonyms</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">synonyms</span> <span class="o">+</span> <span class="n">extra</span><span class="p">)</span> <span class="k">if</span> <span class="n">extra</span> <span class="k">else</span> <span class="n">row</span>
 
 
 <div class="viewcode-block" id="load_ucs_table">
 <a class="viewcode-back" href="../../../../_autosummary/foley.index.taxonomy.ucs.html#foley.load_ucs_table">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">load_ucs_table</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">data_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include_seed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UcsTable</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Build the UCS lookup: the seed rows, overridden/extended by a JSON drop.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_ucs_table</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">data_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">master</span><span class="o">=</span><span class="n">UCS_MASTER_FILE</span><span class="p">,</span>
+    <span class="n">include_seed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">legacy_catids</span><span class="p">:</span> <span class="s2">"Mapping[str, str]"</span> <span class="o">=</span> <span class="n">LEGACY_CATIDS</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UcsTable</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Build the UCS lookup: the v8.2.1 master, the seed's phrases, then a JSON drop.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data_dir: Directory to look for ``ucs_full.json`` in (defaults to the</span>
-<span class="sd">            package's ``taxonomy/data/``). When present, its rows override the</span>
-<span class="sd">            seed on CatID collision and add the rest of the ~750-row master.</span>
-<span class="sd">        include_seed: Start from the in-code seed table (default ``True``).</span>
+<span class="sd">            package's ``taxonomy/data/``). Its rows override any row on CatID</span>
+<span class="sd">            collision and add new ones (a house extension of UCS).</span>
+<span class="sd">        master: The UCS master JSON (default: the shipped v8.2.1 table). ``None``,</span>
+<span class="sd">            or a path that does not exist, falls back to the seed rows alone.</span>
+<span class="sd">        include_seed: Add the seed's curated phrases to their master rows (default</span>
+<span class="sd">            ``True``); with no master, the seed rows are the table.</span>
+<span class="sd">        legacy_catids: Old CatIDs a stored record may carry, mapped to real ones</span>
+<span class="sd">            (default :data:`~foley.index.taxonomy.seed.LEGACY_CATIDS`); the table's</span>
+<span class="sd">            ``get`` resolves them.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A ready :class:`~foley.index.taxonomy.model.UcsTable`.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: no master and ``include_seed=False``: there would be no rows.</span>
+
+<span class="sd">    &gt;&gt;&gt; t = load_ucs_table()</span>
+<span class="sd">    &gt;&gt;&gt; len(t), t.get("RAIN").category, "rain on window" in t.get("RAIN").synonyms</span>
+<span class="sd">    (753, 'RAIN', True)</span>
 <span class="sd">    """</span>
+    <span class="n">master_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">master</span><span class="p">)</span> <span class="k">if</span> <span class="n">master</span> <span class="k">else</span> <span class="kc">None</span>
     <span class="n">rows</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UcsRow</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">master_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">master_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="p">{</span><span class="n">d</span><span class="p">[</span><span class="s2">"catid"</span><span class="p">]:</span> <span class="n">_row_from_dict</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">_json_rows</span><span class="p">(</span><span class="n">master_path</span><span class="p">)}</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">include_seed</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"no UCS master at </span><span class="si">{</span><span class="n">master</span><span class="si">!r}</span><span class="s2"> and include_seed=False: the table would be "</span>
+            <span class="s2">"empty (pass include_seed=True for the seed rows alone)"</span>
+        <span class="p">)</span>
     <span class="k">if</span> <span class="n">include_seed</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">SEED_UCS_TABLE</span><span class="p">:</span>
-            <span class="n">rows</span><span class="p">[</span><span class="n">d</span><span class="p">[</span><span class="s2">"catid"</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_row_from_dict</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+            <span class="n">known</span> <span class="o">=</span> <span class="n">rows</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s2">"catid"</span><span class="p">])</span>
+            <span class="n">rows</span><span class="p">[</span><span class="n">d</span><span class="p">[</span><span class="s2">"catid"</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">_with_phrases</span><span class="p">(</span><span class="n">known</span><span class="p">,</span> <span class="n">d</span><span class="p">[</span><span class="s2">"synonyms"</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">known</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="n">_row_from_dict</span><span class="p">({</span><span class="o">**</span><span class="n">d</span><span class="p">,</span> <span class="s2">"confident"</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+            <span class="p">)</span>
     <span class="n">search_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">data_dir</span><span class="p">)</span> <span class="k">if</span> <span class="n">data_dir</span> <span class="k">else</span> <span class="n">_DATA_DIR</span>
     <span class="n">full</span> <span class="o">=</span> <span class="n">search_dir</span> <span class="o">/</span> <span class="n">_UCS_FULL_FILE</span>
     <span class="k">if</span> <span class="n">full</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
         <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">_json_rows</span><span class="p">(</span><span class="n">full</span><span class="p">):</span>
             <span class="n">rows</span><span class="p">[</span><span class="n">d</span><span class="p">[</span><span class="s2">"catid"</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_row_from_dict</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">_table</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">_table</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">legacy_catids</span><span class="o">=</span><span class="n">legacy_catids</span><span class="p">)</span></div>
 
 
 
@@ -802,13 +861,11 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../../_autosummary/foley.index.taxonomy.ucs.html#foley.load_ucs_master">[docs]</a>
 <span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">load_ucs_master</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">UcsTable</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""The authoritative UCS v8.2.1 master (753 rows, 82 categories), without the seed.</span>
+<span class="w">    </span><span class="sd">"""The UCS v8.2.1 master as shipped (753 rows, 82 categories): no seed, no drop.</span>
 
-<span class="sd">    Opt-in for now: the default table (:func:`default_ucs_table`) is still the</span>
-<span class="sd">    in-code seed, whose CatIDs mostly predate the master. Pass it where a table is</span>
-<span class="sd">    taken (``parse_ucs_name(name, table=load_ucs_master())``). Row fields are the</span>
-<span class="sd">    master's, verbatim (``SubCategory`` in capitals: ``('DOORS', 'WOOD')``), with its</span>
-<span class="sd">    explanation and synonyms (lowercased).</span>
+<span class="sd">    Row fields are the master's, verbatim (``SubCategory`` in capitals:</span>
+<span class="sd">    ``('DOORS', 'WOOD')``), with its explanation and synonyms (lowercased). The</span>
+<span class="sd">    default table (:func:`default_ucs_table`) is this plus the seed's phrases.</span>
 
 <span class="sd">    &gt;&gt;&gt; t = load_ucs_master()</span>
 <span class="sd">    &gt;&gt;&gt; len(t), t.get("doorwood").subcategory, "WOODHndl" in t</span>
@@ -822,7 +879,7 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../../_autosummary/foley.index.taxonomy.ucs.html#foley.default_ucs_table">[docs]</a>
 <span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">default_ucs_table</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">UcsTable</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""The process-wide default UCS table (seed + any JSON drop), built once."""</span>
+<span class="w">    </span><span class="sd">"""The process-wide default UCS table (master + seed phrases + any drop), built once."""</span>
     <span class="k">return</span> <span class="n">load_ucs_table</span><span class="p">()</span></div>
 
 
@@ -831,6 +888,18 @@ window.runMermaid = runMermaid;</script>
 <span class="c1">#: UserCategory to the CatID and VendorCategory to the FXName.</span>
 <span class="n">BLOCK_SEP</span> <span class="o">=</span> <span class="s2">"_"</span>
 <span class="n">ATTACH_SEP</span> <span class="o">=</span> <span class="s2">"-"</span>
+
+<span class="c1">#: The blocks every UCS filename has (``CatID_FXName_CreatorID_SourceID``). A name</span>
+<span class="c1">#: whose CatID is all capitals (``RAW``, ``MIX``, ``RAIN``) must have all of them to</span>
+<span class="c1">#: read as UCS: with fewer, ``RAW_01.wav`` is just a name.</span>
+<span class="n">UCS_MANDATORY_BLOCKS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"catid"</span><span class="p">,</span> <span class="s2">"fx_name"</span><span class="p">,</span> <span class="s2">"creator_id"</span><span class="p">,</span> <span class="s2">"source_id"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_reads_as_word</span><span class="p">(</span><span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">row</span><span class="p">:</span> <span class="n">UcsRow</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether a filename's CatID ``token`` is an all-capitals CatID (``RAW``), as</span>
+<span class="sd">    written: an ordinary name may start with it too."""</span>
+    <span class="k">return</span> <span class="n">token</span> <span class="o">==</span> <span class="n">row</span><span class="o">.</span><span class="n">catid</span> <span class="ow">and</span> <span class="n">token</span><span class="o">.</span><span class="n">isupper</span><span class="p">()</span>
+
 
 <span class="c1">#: A filename extension: a short alphanumeric suffix (``.wav``, ``.flac``). A dot</span>
 <span class="c1">#: anywhere else (``Creak 5.1_JD``) belongs to the name.</span>
@@ -892,15 +961,17 @@ window.runMermaid = runMermaid;</script>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UcsName</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""Every block of a UCS filename as a :class:`~.model.UcsName`, else ``None``.</span>
 
-<span class="sd">    Fail-quiet like :func:`parse_ucs_filename`: ``None`` when the name has no ``_`` or</span>
-<span class="sd">    its CatID is not in the table. Blocks past SourceID are the UserData (rejoined</span>
-<span class="sd">    with ``_``); a block the name lacks is ``None``. The FXName block's head before a</span>
-<span class="sd">    hyphen is the VendorCategory only when ``is_vendor_tag`` accepts it</span>
-<span class="sd">    (:func:`looks_like_vendor_tag`), so ``Sci-Fi Door`` stays whole.</span>
+<span class="sd">    Fail-quiet like :func:`parse_ucs_filename`: ``None`` when the name has no ``_``,</span>
+<span class="sd">    its CatID is not in the table, or its CatID is all capitals (``RAW``, ``MIX``) and</span>
+<span class="sd">    it lacks a mandatory block (:data:`UCS_MANDATORY_BLOCKS`). Blocks past SourceID</span>
+<span class="sd">    are the UserData (rejoined with ``_``); a block the name lacks is ``None``. The</span>
+<span class="sd">    FXName block's head before a hyphen is the VendorCategory only when</span>
+<span class="sd">    ``is_vendor_tag`` accepts it (:func:`looks_like_vendor_tag`), so ``Sci-Fi Door``</span>
+<span class="sd">    stays whole.</span>
 
 <span class="sd">    &gt;&gt;&gt; n = parse_ucs_name("DOORWood-Gate_SCIFI-Creak Open_JD_NYC_take 2.wav")</span>
 <span class="sd">    &gt;&gt;&gt; (n.catid, n.category, n.subcategory, n.user_category)</span>
-<span class="sd">    ('DOORWood', 'DOORS', 'Wood', 'Gate')</span>
+<span class="sd">    ('DOORWood', 'DOORS', 'WOOD', 'Gate')</span>
 <span class="sd">    &gt;&gt;&gt; (n.vendor_category, n.fx_name, n.creator_id, n.source_id, n.user_data)</span>
 <span class="sd">    ('SCIFI', 'Creak Open', 'JD', 'NYC', 'take 2')</span>
 <span class="sd">    &gt;&gt;&gt; m = parse_ucs_name("DOORWood_Sci-Fi Slam 5.1_JD_NYC")</span>
@@ -910,13 +981,17 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    True</span>
 <span class="sd">    &gt;&gt;&gt; parse_ucs_name("NOTACAT_x_y_z.wav") is None, parse_ucs_name("plain.wav") is None</span>
 <span class="sd">    (True, True)</span>
+<span class="sd">    &gt;&gt;&gt; parse_ucs_name("MIX_final.wav") is None, parse_ucs_name("RAIN_Heavy_JD_NYC.wav").catid</span>
+<span class="sd">    (True, 'RAIN')</span>
 <span class="sd">    """</span>
     <span class="n">blocks</span> <span class="o">=</span> <span class="n">_ucs_blocks</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">blocks</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
     <span class="n">catid</span><span class="p">,</span> <span class="n">user_category</span> <span class="o">=</span> <span class="n">_split_attached</span><span class="p">(</span><span class="n">blocks</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-    <span class="n">row</span> <span class="o">=</span> <span class="p">(</span><span class="n">table</span> <span class="ow">or</span> <span class="n">default_ucs_table</span><span class="p">())</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">catid</span><span class="p">)</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="p">(</span><span class="n">table</span> <span class="k">if</span> <span class="n">table</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">default_ucs_table</span><span class="p">())</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">catid</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">_reads_as_word</span><span class="p">(</span><span class="n">catid</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">blocks</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">UCS_MANDATORY_BLOCKS</span><span class="p">):</span>
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">block</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
@@ -1043,7 +1118,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    ``format_ucs_name(parse_ucs_name(f))`` is ``f`` for any ``f`` this function made.</span>
 <span class="sd">    The CatID is looked up in ``table`` (default: :func:`default_ucs_table`) and</span>
 <span class="sd">    written in its canonical spelling; an unknown one raises, since the name would</span>
-<span class="sd">    not parse.</span>
+<span class="sd">    not parse. An all-capitals CatID keeps every mandatory block, empty if need be</span>
+<span class="sd">    (``RAIN_Heavy__``), so the name reads back as UCS.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The blocks to format (``category`` / ``subcategory`` are ignored).</span>
@@ -1115,8 +1191,9 @@ window.runMermaid = runMermaid;</script>
         <span class="p">]</span>
         <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">user_data</span><span class="p">):</span>
             <span class="n">parts</span> <span class="o">+=</span> <span class="n">user_data</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># an all-capitals CatID keeps its mandatory blocks, empty or not</span>
+            <span class="n">keep</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">UCS_MANDATORY_BLOCKS</span><span class="p">)</span> <span class="k">if</span> <span class="n">row</span><span class="o">.</span><span class="n">catid</span><span class="o">.</span><span class="n">isupper</span><span class="p">()</span> <span class="k">else</span> <span class="mi">2</span>
+            <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">keep</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
                 <span class="n">parts</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">BLOCK_SEP</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">+</span> <span class="n">suffix</span>
 

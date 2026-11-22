@@ -175,6 +175,23 @@ Whether a generation fallback is allowed and within budget.
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
+#### *property* overshoot_usd *: [float](https://docs.python.org/3/builtins/functions.html#float)*
+
+Dollars spent above `max_usd` (`0.0` while within the cap) (#293).
+
+The cap is checked before each call against its *estimate*; [`settle()`](#foley.agent.Budget.settle)
+then records the actual cost, which can be higher, so a run can end above the
+cap. This is that excess, so a host can say “at most the cap, plus this” and
+clamp a quote honestly. Once it is above zero every further paid call is refused
+([`check()`](#foley.agent.Budget.check) sees `spent_usd` over the cap).
+
+```pycon
+>>> b = Budget(max_usd=0.5)
+>>> b.reserve(0.4, what="x"); b.settle(0.4, 0.7)
+>>> round(b.overshoot_usd, 10), round(b.spent_usd, 10)
+(0.2, 0.7)
+```
+
 #### refine_ok()
 
 Whether another refine→re-retrieve pass is within budget.
@@ -211,7 +228,9 @@ Replace a reservation with the actual cost (`None` actual: keep the reservation)
 A reservation of unknown cost (`None` reserved, counted as an unknown call)
 settled with a known actual becomes that actual: it is summed, and no longer
 counted as unknown (#186: a source billed per compute second, priced after).
-Settling a known reservation with an equal actual changes nothing.
+Settling a known reservation with an equal actual changes nothing. An actual
+above the reservation can take the run over `max_usd`: it is still recorded
+(never hidden), shows as [`overshoot_usd`](#foley.agent.Budget.overshoot_usd), and the next paid call is refused.
 
 ```pycon
 >>> b = Budget(approve_unknown_cost=True)

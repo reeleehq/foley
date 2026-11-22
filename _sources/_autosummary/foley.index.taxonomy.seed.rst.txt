@@ -8,6 +8,7 @@ foley.index.taxonomy.seed
 
    .. autosummary::
    
+      LEGACY_CATIDS
       SEED_UCS_TABLE
       SEED_AUDIOSET_UCS_MAP
    

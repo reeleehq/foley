@@ -177,7 +177,9 @@ natural UCS `category subcategory` phrases).
 
 Natural multi-word phrases (`"weather rain"`, `"glass break"`) are far
 better CLAP prompts — and better BM25 tags / taxonomy-resolver input — than
-bare abstract subcategory words (`"Break"`, `"Buzz"`), which are a known
+bare abstract subcategory words (`"Break"`, `"Buzz"`); a generic
+subcategory (`GENERAL`, `MISC`) gives the bare category, and the
+`ARCHIVED` bookkeeping rows give none, which are a known
 zero-shot artifact (anomalously close to everything). Absolute tag-quality
 calibration (thresholds, label curation) is an eval-harness concern (#10).
 
@@ -1040,7 +1042,7 @@ Ingest a folder of owned packs, each file under its sidecar’s licence (module 
   * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `path` is not under `root`.
   * [**TypeError**](https://docs.python.org/3/builtins/exceptions.html#TypeError) – If a `REFUSED_KEYS` keyword is passed.
 
-### foley.index.ingest_one(src, , library=None, sound_id=None, source_uri=None, license=None, tagger=None, zeroshot_tagger=None, captioner=None, do_qc=True, min_status=QCStatus.warn, do_supervised=True, do_zeroshot=True, do_caption=True, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), store=True, allow_ai_training_forbidden=False, seed_tags=None, ucs_catid=None, restamp_duplicate=False, commercial=None)
+### foley.index.ingest_one(src, , library=None, sound_id=None, source_uri=None, license=None, tagger=None, zeroshot_tagger=None, captioner=None, do_qc=True, min_status=QCStatus.warn, do_supervised=True, do_zeroshot=True, do_caption=True, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), store=True, allow_ai_training_forbidden=False, seed_tags=None, ucs_catid=None, restamp_duplicate=False, commercial=None, catid_min_confidence=0.5)
 
 Ingest one clip into `library` and return an [`IngestResult`](#foley.index.IngestResult).
 
@@ -1117,6 +1119,11 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
   * **commercial** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`bool`](https://docs.python.org/3/builtins/functions.html#bool)]) – Whether the AI use is for a commercial purpose (decides a
     `nc_open_source_only` scope, #69). `None` (default) means
     [`DEFAULT_INTENDED_USE`](foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE)’s (commercial).
+  * **catid_min_confidence** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The least resolution confidence stamped as the
+    record’s UCS CatID (default
+    `RECORD_MIN_CONFIDENCE`, an AudioSet-map
+    hit’s). A weaker keyword brush (a category name alone, a synonym many
+    rows share) is left off the record, with a note; `0` stamps any.
 * **Return type:**
   [`IngestResult`](foley.index.ingest.html.md#foley.index.ingest.IngestResult)
 * **Returns:**
@@ -1172,7 +1179,7 @@ Fuse several ranked id lists into one, by reciprocal rank.
   `[(id, fused_score), ...]` sorted by fused score descending, ties
   broken by `id` ascending (so the fusion is fully deterministic).
 
-### foley.index.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None)
+### foley.index.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'no', 'have', 'few', 'who', 'his', 'such', 'every', 'the', 'be', 'in', 'their', 'nor', 'to', 'here', 'which', 'our', 'any', 'may', 'more', 'own', 'very', 'all', 'why', 'being', 'under', 'you', 'must', 'an', 'are', 'then', 'those', 'she', 'was', 'other', 'only', 'this', 'for', 'would', 'am', 'them', 'into', 'he', 'your', 'my', 'we', 'should', 'too', 'i', 'is', 'us', 'from', 'had', 'just', 'each', 'that', 'what', 'these', 'where', 'onto', 'do', 'by', 'has', 'without', 'does', 'did', 'will', 'how', 'as', 'been', 'on', 'could', 'me', 'same', 'about', 'but', 'with', 'its', 'when', 'him', 'it', 'there', 'if', 'at', 'most', 'and', 'a', 'or', 'so', 'were', 'they', 'some', 'of', 'also', 'her', 'not', 'than', 'might', 'can'}), ambiguous_words=frozenset({'work', 'set', 'fall', 'blue', 'long', 'misc', 'part', 'general', 'large', 'break', 'tone', 'off', 'arc', 'down', 'hit', 'light', 'piece', 'open', 'meeting', 'hold', 'shot', 'place', 'little', 'day', 'side', 'way', 'person', 'over', 'heavy', 'drop', 'handle', 'beat', 'small', 'release', 'catch', 'sound', 'bang', 'out', 'quiet', 'big', 'up', 'night', 'run', 'thing', 'time'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -1187,6 +1194,8 @@ Resolve inputs to a best UCS CatID by the staged precedence.
   * **table** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsTable`](foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)]) – UCS table (defaults to `default_ucs_table()`).
   * **audioset_map** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`AudioSetUcsMap`](foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.AudioSetUcsMap)]) – AudioSet->UCS map (defaults to
     [`default_audioset_ucs_map()`](foley.index.taxonomy.audioset.html.md#foley.index.taxonomy.audioset.default_audioset_ucs_map)).
+  * **policy** ([`MatchPolicy`](foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.MatchPolicy)) – How keywords match and band (default `DEFAULT_MATCH_POLICY`;
+    vary it with `dataclasses.replace`).
 * **Return type:**
   [`CatIdResolution`](foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.CatIdResolution)
 * **Returns:**

@@ -1,4 +1,4 @@
-> built 2026-11-22 07:46 UTC from 683d695 (main) · foley 0.0.139. Details: build_info.json
+> built 2026-11-22 07:55 UTC from b5d73e4 (main) · foley 0.0.140. Details: build_info.json
 
 # index.html.md
 
@@ -511,6 +511,23 @@ Whether a generation fallback is allowed and within budget.
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
+#### *property* overshoot_usd *: [float](https://docs.python.org/3/builtins/functions.html#float)*
+
+Dollars spent above `max_usd` (`0.0` while within the cap) (#293).
+
+The cap is checked before each call against its *estimate*; [`settle()`](_autosummary/foley.agent.html.md#foley.agent.Budget.settle)
+then records the actual cost, which can be higher, so a run can end above the
+cap. This is that excess, so a host can say “at most the cap, plus this” and
+clamp a quote honestly. Once it is above zero every further paid call is refused
+([`check()`](_autosummary/foley.agent.html.md#foley.agent.Budget.check) sees `spent_usd` over the cap).
+
+```pycon
+>>> b = Budget(max_usd=0.5)
+>>> b.reserve(0.4, what="x"); b.settle(0.4, 0.7)
+>>> round(b.overshoot_usd, 10), round(b.spent_usd, 10)
+(0.2, 0.7)
+```
+
 #### refine_ok()
 
 Whether another refine→re-retrieve pass is within budget.
@@ -547,7 +564,9 @@ Replace a reservation with the actual cost (`None` actual: keep the reservation)
 A reservation of unknown cost (`None` reserved, counted as an unknown call)
 settled with a known actual becomes that actual: it is summed, and no longer
 counted as unknown (#186: a source billed per compute second, priced after).
-Settling a known reservation with an equal actual changes nothing.
+Settling a known reservation with an equal actual changes nothing. An actual
+above the reservation can take the run over `max_usd`: it is still recorded
+(never hidden), shows as [`overshoot_usd`](_autosummary/foley.agent.html.md#foley.agent.Budget.overshoot_usd), and the next paid call is refused.
 
 ```pycon
 >>> b = Budget(approve_unknown_cost=True)
@@ -1385,6 +1404,23 @@ Whether a generation fallback is allowed and within budget.
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
+#### *property* overshoot_usd *: [float](https://docs.python.org/3/builtins/functions.html#float)*
+
+Dollars spent above `max_usd` (`0.0` while within the cap) (#293).
+
+The cap is checked before each call against its *estimate*; [`settle()`](_autosummary/foley.agent.policy.html.md#foley.agent.policy.Budget.settle)
+then records the actual cost, which can be higher, so a run can end above the
+cap. This is that excess, so a host can say “at most the cap, plus this” and
+clamp a quote honestly. Once it is above zero every further paid call is refused
+([`check()`](_autosummary/foley.agent.policy.html.md#foley.agent.policy.Budget.check) sees `spent_usd` over the cap).
+
+```pycon
+>>> b = Budget(max_usd=0.5)
+>>> b.reserve(0.4, what="x"); b.settle(0.4, 0.7)
+>>> round(b.overshoot_usd, 10), round(b.spent_usd, 10)
+(0.2, 0.7)
+```
+
 #### refine_ok()
 
 Whether another refine→re-retrieve pass is within budget.
@@ -1421,7 +1457,9 @@ Replace a reservation with the actual cost (`None` actual: keep the reservation)
 A reservation of unknown cost (`None` reserved, counted as an unknown call)
 settled with a known actual becomes that actual: it is summed, and no longer
 counted as unknown (#186: a source billed per compute second, priced after).
-Settling a known reservation with an equal actual changes nothing.
+Settling a known reservation with an equal actual changes nothing. An actual
+above the reservation can take the run over `max_usd`: it is still recorded
+(never hidden), shows as [`overshoot_usd`](_autosummary/foley.agent.policy.html.md#foley.agent.policy.Budget.overshoot_usd), and the next paid call is refused.
 
 ```pycon
 >>> b = Budget(approve_unknown_cost=True)
@@ -2593,6 +2631,47 @@ Installs:
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 * **Returns:**
   The list of installed paths (as strings) — empty entries that already existed are skipped.
+
+
+# _autosummary/foley.analysis.html.md
+
+# foley.analysis
+
+The one text analyzer foley’s keyword matchers share: lowercase `[a-z0-9]+` words.
+
+The stdlib BM25 ([`foley.index.indexes`](_autosummary/foley.index.indexes.html.md#module-foley.index.indexes)) and the UCS keyword resolver
+([`foley.index.taxonomy.text`](_autosummary/foley.index.taxonomy.text.html.md#module-foley.index.taxonomy.text)) both tokenise with [`tokenize()`](_autosummary/foley.analysis.html.md#foley.analysis.tokenize), so a word the
+keyword index sees is the word the taxonomy sees. Stdlib only, so any module can
+import it without a cycle.
+
+### Module Attributes
+
+| [`WORD_PATTERN`](_autosummary/foley.analysis.html.md#foley.analysis.WORD_PATTERN)   | a run of lowercase ASCII letters and digits (everything else separates).   |
+|-----------------------------------------------------------------|----------------------------------------------------------------------------|
+
+### Functions
+
+| [`tokenize`](_autosummary/foley.analysis.html.md#foley.analysis.tokenize)(text)   | The lowercase word/number tokens of `text`.   |
+|-------------------------------------------------------------------|-----------------------------------------------|
+
+### foley.analysis.WORD_PATTERN *= re.compile('[a-z0-9]+')*
+
+a run of lowercase ASCII letters and digits (everything else separates).
+
+* **Type:**
+  A word
+
+### foley.analysis.tokenize(text)
+
+The lowercase word/number tokens of `text`.
+
+```pycon
+>>> tokenize("  Door-Creak, (Heavy)! 5.1")
+['door', 'creak', 'heavy', '5', '1']
+```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 
 # _autosummary/foley.audio.html.md
@@ -8216,6 +8295,23 @@ Whether a generation fallback is allowed and within budget.
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
+#### *property* overshoot_usd *: [float](https://docs.python.org/3/builtins/functions.html#float)*
+
+Dollars spent above `max_usd` (`0.0` while within the cap) (#293).
+
+The cap is checked before each call against its *estimate*; [`settle()`](_autosummary/foley.html.md#foley.Budget.settle)
+then records the actual cost, which can be higher, so a run can end above the
+cap. This is that excess, so a host can say “at most the cap, plus this” and
+clamp a quote honestly. Once it is above zero every further paid call is refused
+([`check()`](_autosummary/foley.html.md#foley.Budget.check) sees `spent_usd` over the cap).
+
+```pycon
+>>> b = Budget(max_usd=0.5)
+>>> b.reserve(0.4, what="x"); b.settle(0.4, 0.7)
+>>> round(b.overshoot_usd, 10), round(b.spent_usd, 10)
+(0.2, 0.7)
+```
+
 #### refine_ok()
 
 Whether another refine→re-retrieve pass is within budget.
@@ -8252,7 +8348,9 @@ Replace a reservation with the actual cost (`None` actual: keep the reservation)
 A reservation of unknown cost (`None` reserved, counted as an unknown call)
 settled with a known actual becomes that actual: it is summed, and no longer
 counted as unknown (#186: a source billed per compute second, priced after).
-Settling a known reservation with an equal actual changes nothing.
+Settling a known reservation with an equal actual changes nothing. An actual
+above the reservation can take the run over `max_usd`: it is still recorded
+(never hidden), shows as [`overshoot_usd`](_autosummary/foley.html.md#foley.Budget.overshoot_usd), and the next paid call is refused.
 
 ```pycon
 >>> b = Budget(approve_unknown_cost=True)
@@ -8445,7 +8543,9 @@ natural UCS `category subcategory` phrases).
 
 Natural multi-word phrases (`"weather rain"`, `"glass break"`) are far
 better CLAP prompts — and better BM25 tags / taxonomy-resolver input — than
-bare abstract subcategory words (`"Break"`, `"Buzz"`), which are a known
+bare abstract subcategory words (`"Break"`, `"Buzz"`); a generic
+subcategory (`GENERAL`, `MISC`) gives the bare category, and the
+`ARCHIVED` bookkeeping rows give none, which are a known
 zero-shot artifact (anomalously close to everything). Absolute tag-quality
 calibration (thresholds, label curation) is an eval-harness concern (#10).
 
@@ -10964,7 +11064,7 @@ UCS filename. See [`foley.index.licensed_library.ingest_licensed_folder()`](_aut
   * **\*\*kw** – Forwarded to `ingest_licensed_folder` (`root`, `min_status`,
     taggers, …).
 
-### foley.ingest_one(src, , library=None, sound_id=None, source_uri=None, license=None, tagger=None, zeroshot_tagger=None, captioner=None, do_qc=True, min_status=QCStatus.warn, do_supervised=True, do_zeroshot=True, do_caption=True, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), store=True, allow_ai_training_forbidden=False, seed_tags=None, ucs_catid=None, restamp_duplicate=False, commercial=None)
+### foley.ingest_one(src, , library=None, sound_id=None, source_uri=None, license=None, tagger=None, zeroshot_tagger=None, captioner=None, do_qc=True, min_status=QCStatus.warn, do_supervised=True, do_zeroshot=True, do_caption=True, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), store=True, allow_ai_training_forbidden=False, seed_tags=None, ucs_catid=None, restamp_duplicate=False, commercial=None, catid_min_confidence=0.5)
 
 Ingest one clip into `library` and return an [`IngestResult`](_autosummary/foley.html.md#foley.IngestResult).
 
@@ -11041,6 +11141,11 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
   * **commercial** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`bool`](https://docs.python.org/3/builtins/functions.html#bool)]) – Whether the AI use is for a commercial purpose (decides a
     `nc_open_source_only` scope, #69). `None` (default) means
     [`DEFAULT_INTENDED_USE`](_autosummary/foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE)’s (commercial).
+  * **catid_min_confidence** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The least resolution confidence stamped as the
+    record’s UCS CatID (default
+    `RECORD_MIN_CONFIDENCE`, an AudioSet-map
+    hit’s). A weaker keyword brush (a category name alone, a synonym many
+    rows share) is left off the record, with a note; `0` stamps any.
 * **Return type:**
   [`IngestResult`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestResult)
 * **Returns:**
@@ -11566,7 +11671,7 @@ Resample `samples` to `target_sr` (a no-op when already there).
 
 Lazy dependency: `soxr`.
 
-### foley.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None)
+### foley.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'no', 'have', 'few', 'who', 'his', 'such', 'every', 'the', 'be', 'in', 'their', 'nor', 'to', 'here', 'which', 'our', 'any', 'may', 'more', 'own', 'very', 'all', 'why', 'being', 'under', 'you', 'must', 'an', 'are', 'then', 'those', 'she', 'was', 'other', 'only', 'this', 'for', 'would', 'am', 'them', 'into', 'he', 'your', 'my', 'we', 'should', 'too', 'i', 'is', 'us', 'from', 'had', 'just', 'each', 'that', 'what', 'these', 'where', 'onto', 'do', 'by', 'has', 'without', 'does', 'did', 'will', 'how', 'as', 'been', 'on', 'could', 'me', 'same', 'about', 'but', 'with', 'its', 'when', 'him', 'it', 'there', 'if', 'at', 'most', 'and', 'a', 'or', 'so', 'were', 'they', 'some', 'of', 'also', 'her', 'not', 'than', 'might', 'can'}), ambiguous_words=frozenset({'work', 'set', 'fall', 'blue', 'long', 'misc', 'part', 'general', 'large', 'break', 'tone', 'off', 'arc', 'down', 'hit', 'light', 'piece', 'open', 'meeting', 'hold', 'shot', 'place', 'little', 'day', 'side', 'way', 'person', 'over', 'heavy', 'drop', 'handle', 'beat', 'small', 'release', 'catch', 'sound', 'bang', 'out', 'quiet', 'big', 'up', 'night', 'run', 'thing', 'time'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -11581,6 +11686,8 @@ Resolve inputs to a best UCS CatID by the staged precedence.
   * **table** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)]) – UCS table (defaults to `default_ucs_table()`).
   * **audioset_map** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`AudioSetUcsMap`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.AudioSetUcsMap)]) – AudioSet->UCS map (defaults to
     [`default_audioset_ucs_map()`](_autosummary/foley.index.taxonomy.audioset.html.md#foley.index.taxonomy.audioset.default_audioset_ucs_map)).
+  * **policy** ([`MatchPolicy`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.MatchPolicy)) – How keywords match and band (default `DEFAULT_MATCH_POLICY`;
+    vary it with `dataclasses.replace`).
 * **Return type:**
   [`CatIdResolution`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.CatIdResolution)
 * **Returns:**
@@ -12092,6 +12199,7 @@ escalates to the injected/​default judge for that rung and returns *its* verdi
 | [`eval`](_autosummary/foley.eval.html.md#module-foley.eval)                           | Tier-1 retrieval evaluation — metrics, a frozen golden set, and the nDCG gate.                                                                       |
 | [`provenance`](_autosummary/foley.provenance.html.md#module-foley.provenance)               | Provenance layer for foley — attribution/credits (and, later, disclosure).                                                                           |
 | [`agent_kit`](_autosummary/foley.agent_kit.html.md#module-foley.agent_kit)                 | Install foley's shipped agent kit — the consumer skill + Claude slash command + subagent.                                                            |
+| [`analysis`](_autosummary/foley.analysis.html.md#module-foley.analysis)                   | The one text analyzer foley's keyword matchers share: lowercase `[a-z0-9]+` words.                                                                   |
 | [`base`](_autosummary/foley.base.html.md#module-foley.base)                           | Canonical data models for foley — the single source of truth (SSOT) types.                                                                           |
 | [`cli`](_autosummary/foley.cli.html.md#module-foley.cli)                             | The `foley` command-line interface (`argparse`, the verbs generated by `cw`).                                                                        |
 | [`cost`](_autosummary/foley.cost.html.md#module-foley.cost)                           | Cost: what a call will cost before it is made, and a cumulative cap on a run (#57).                                                                  |
@@ -12421,7 +12529,9 @@ natural UCS `category subcategory` phrases).
 
 Natural multi-word phrases (`"weather rain"`, `"glass break"`) are far
 better CLAP prompts — and better BM25 tags / taxonomy-resolver input — than
-bare abstract subcategory words (`"Break"`, `"Buzz"`), which are a known
+bare abstract subcategory words (`"Break"`, `"Buzz"`); a generic
+subcategory (`GENERAL`, `MISC`) gives the bare category, and the
+`ARCHIVED` bookkeeping rows give none, which are a known
 zero-shot artifact (anomalously close to everything). Absolute tag-quality
 calibration (thresholds, label curation) is an eval-harness concern (#10).
 
@@ -13284,7 +13394,7 @@ Ingest a folder of owned packs, each file under its sidecar’s licence (module 
   * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `path` is not under `root`.
   * [**TypeError**](https://docs.python.org/3/builtins/exceptions.html#TypeError) – If a `REFUSED_KEYS` keyword is passed.
 
-### foley.index.ingest_one(src, , library=None, sound_id=None, source_uri=None, license=None, tagger=None, zeroshot_tagger=None, captioner=None, do_qc=True, min_status=QCStatus.warn, do_supervised=True, do_zeroshot=True, do_caption=True, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), store=True, allow_ai_training_forbidden=False, seed_tags=None, ucs_catid=None, restamp_duplicate=False, commercial=None)
+### foley.index.ingest_one(src, , library=None, sound_id=None, source_uri=None, license=None, tagger=None, zeroshot_tagger=None, captioner=None, do_qc=True, min_status=QCStatus.warn, do_supervised=True, do_zeroshot=True, do_caption=True, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), store=True, allow_ai_training_forbidden=False, seed_tags=None, ucs_catid=None, restamp_duplicate=False, commercial=None, catid_min_confidence=0.5)
 
 Ingest one clip into `library` and return an [`IngestResult`](_autosummary/foley.index.html.md#foley.index.IngestResult).
 
@@ -13361,6 +13471,11 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
   * **commercial** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`bool`](https://docs.python.org/3/builtins/functions.html#bool)]) – Whether the AI use is for a commercial purpose (decides a
     `nc_open_source_only` scope, #69). `None` (default) means
     [`DEFAULT_INTENDED_USE`](_autosummary/foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE)’s (commercial).
+  * **catid_min_confidence** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The least resolution confidence stamped as the
+    record’s UCS CatID (default
+    `RECORD_MIN_CONFIDENCE`, an AudioSet-map
+    hit’s). A weaker keyword brush (a category name alone, a synonym many
+    rows share) is left off the record, with a note; `0` stamps any.
 * **Return type:**
   [`IngestResult`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestResult)
 * **Returns:**
@@ -13416,7 +13531,7 @@ Fuse several ranked id lists into one, by reciprocal rank.
   `[(id, fused_score), ...]` sorted by fused score descending, ties
   broken by `id` ascending (so the fusion is fully deterministic).
 
-### foley.index.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None)
+### foley.index.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'no', 'have', 'few', 'who', 'his', 'such', 'every', 'the', 'be', 'in', 'their', 'nor', 'to', 'here', 'which', 'our', 'any', 'may', 'more', 'own', 'very', 'all', 'why', 'being', 'under', 'you', 'must', 'an', 'are', 'then', 'those', 'she', 'was', 'other', 'only', 'this', 'for', 'would', 'am', 'them', 'into', 'he', 'your', 'my', 'we', 'should', 'too', 'i', 'is', 'us', 'from', 'had', 'just', 'each', 'that', 'what', 'these', 'where', 'onto', 'do', 'by', 'has', 'without', 'does', 'did', 'will', 'how', 'as', 'been', 'on', 'could', 'me', 'same', 'about', 'but', 'with', 'its', 'when', 'him', 'it', 'there', 'if', 'at', 'most', 'and', 'a', 'or', 'so', 'were', 'they', 'some', 'of', 'also', 'her', 'not', 'than', 'might', 'can'}), ambiguous_words=frozenset({'work', 'set', 'fall', 'blue', 'long', 'misc', 'part', 'general', 'large', 'break', 'tone', 'off', 'arc', 'down', 'hit', 'light', 'piece', 'open', 'meeting', 'hold', 'shot', 'place', 'little', 'day', 'side', 'way', 'person', 'over', 'heavy', 'drop', 'handle', 'beat', 'small', 'release', 'catch', 'sound', 'bang', 'out', 'quiet', 'big', 'up', 'night', 'run', 'thing', 'time'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -13431,6 +13546,8 @@ Resolve inputs to a best UCS CatID by the staged precedence.
   * **table** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)]) – UCS table (defaults to `default_ucs_table()`).
   * **audioset_map** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`AudioSetUcsMap`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.AudioSetUcsMap)]) – AudioSet->UCS map (defaults to
     [`default_audioset_ucs_map()`](_autosummary/foley.index.taxonomy.audioset.html.md#foley.index.taxonomy.audioset.default_audioset_ucs_map)).
+  * **policy** ([`MatchPolicy`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.MatchPolicy)) – How keywords match and band (default `DEFAULT_MATCH_POLICY`;
+    vary it with `dataclasses.replace`).
 * **Return type:**
   [`CatIdResolution`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.CatIdResolution)
 * **Returns:**
@@ -14109,7 +14226,7 @@ Ingest every audio file under `path` and return an [`IngestReport`](_autosummary
 * **Returns:**
   An [`IngestReport`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestReport) (with `.summary()` counts and per-file results).
 
-### foley.index.ingest.ingest_one(src, , library=None, sound_id=None, source_uri=None, license=None, tagger=None, zeroshot_tagger=None, captioner=None, do_qc=True, min_status=QCStatus.warn, do_supervised=True, do_zeroshot=True, do_caption=True, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), store=True, allow_ai_training_forbidden=False, seed_tags=None, ucs_catid=None, restamp_duplicate=False, commercial=None)
+### foley.index.ingest.ingest_one(src, , library=None, sound_id=None, source_uri=None, license=None, tagger=None, zeroshot_tagger=None, captioner=None, do_qc=True, min_status=QCStatus.warn, do_supervised=True, do_zeroshot=True, do_caption=True, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), store=True, allow_ai_training_forbidden=False, seed_tags=None, ucs_catid=None, restamp_duplicate=False, commercial=None, catid_min_confidence=0.5)
 
 Ingest one clip into `library` and return an [`IngestResult`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestResult).
 
@@ -14186,6 +14303,11 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
   * **commercial** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`bool`](https://docs.python.org/3/builtins/functions.html#bool)]) – Whether the AI use is for a commercial purpose (decides a
     `nc_open_source_only` scope, #69). `None` (default) means
     [`DEFAULT_INTENDED_USE`](_autosummary/foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE)’s (commercial).
+  * **catid_min_confidence** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The least resolution confidence stamped as the
+    record’s UCS CatID (default
+    `RECORD_MIN_CONFIDENCE`, an AudioSet-map
+    hit’s). A weaker keyword brush (a category name alone, a synonym many
+    rows share) is left off the record, with a note; `0` stamps any.
 * **Return type:**
   [`IngestResult`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestResult)
 * **Returns:**
@@ -15323,7 +15445,9 @@ natural UCS `category subcategory` phrases).
 
 Natural multi-word phrases (`"weather rain"`, `"glass break"`) are far
 better CLAP prompts — and better BM25 tags / taxonomy-resolver input — than
-bare abstract subcategory words (`"Break"`, `"Buzz"`), which are a known
+bare abstract subcategory words (`"Break"`, `"Buzz"`); a generic
+subcategory (`GENERAL`, `MISC`) gives the bare category, and the
+`ARCHIVED` bookkeeping rows give none, which are a known
 zero-shot artifact (anomalously close to everything). Absolute tag-quality
 calibration (thresholds, label curation) is an eval-harness concern (#10).
 
@@ -15465,15 +15589,17 @@ resolve_catid(caption="a heavy wooden door creaks open")   # -> CatIdResolution
 ```
 
 Everything else (the UCS table, the AudioSet map, a custom resolver) is optional
-keyword injection. The seed tables live in code; the full UCS master and the
-EnvSound-UCS mapping drop in later as JSON under `data/` with no logic change.
+keyword injection. The default UCS table is the shipped v8.2.1 master (753
+CatIDs, with their synonyms) plus the in-code seed’s curated phrases; a house
+extension and the EnvSound-UCS AudioSet mapping drop in as JSON under `data/`
+with no logic change.
 
 ### Functions
 
-| [`load_ucs_table`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.load_ucs_table)(\*[, data_dir, include_seed])      | Build the UCS lookup: the seed rows, overridden/extended by a JSON drop.                                                                                                                                                                                                                  |
+| [`load_ucs_table`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.load_ucs_table)(\*[, data_dir, master, ...])       | Build the UCS lookup: the v8.2.1 master, the seed's phrases, then a JSON drop.                                                                                                                                                                                                            |
 |----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`load_ucs_master`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.load_ucs_master)()                                 | The authoritative UCS v8.2.1 master (753 rows, 82 categories), without the seed.                                                                                                                                                                                                          |
-| [`default_ucs_table`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_ucs_table)()                               | The process-wide default UCS table (seed + any JSON drop), built once.                                                                                                                                                                                                                    |
+| [`load_ucs_master`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.load_ucs_master)()                                 | The UCS v8.2.1 master as shipped (753 rows, 82 categories): no seed, no drop.                                                                                                                                                                                                             |
+| [`default_ucs_table`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_ucs_table)()                               | The process-wide default UCS table (master + seed phrases + any drop), built once.                                                                                                                                                                                                        |
 | [`parse_ucs_filename`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_ucs_filename)(filename, \*[, table])         | Parse a UCS-conformant filename to `(ucs_category, ucs_subcategory)`.                                                                                                                                                                                                                     |
 | [`parse_ucs_name`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_ucs_name)(filename, \*[, table, ...])        | Every block of a UCS filename as a [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName), else `None`.                                                                                                                                              |
 | [`format_ucs_name`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.format_ucs_name)([name, ext, table, ...])          | The UCS filename of `name` (a [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName) or a mapping of its blocks), with `blocks` (`UCS_NAME_BLOCKS`) overriding it: the inverse of [`parse_ucs_name()`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_ucs_name). |
@@ -15484,14 +15610,15 @@ EnvSound-UCS mapping drop in later as JSON under `data/` with no logic change.
 
 ### Classes
 
-| [`UcsRow`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.UcsRow)(catid, category, subcategory[, ...])   | One Universal Category System entry.                                                                          |
-|------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
-| [`UcsName`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.UcsName)(catid, category, subcategory[, ...])  | Every field of a UCS filename (`foley.index.taxonomy.ucs.parse_ucs_name`).                                    |
-| [`UcsTable`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.UcsTable)([by_catid, order, \_ci_index])       | A loaded UCS lookup: by CatID (exact + case-insensitive) and by synonym.                                      |
-| [`AudioSetUcsMap`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.AudioSetUcsMap)([by_name, by_mid])             | AudioSet-label -> UCS-CatID overlap map (report 04 §5.3).                                                     |
-| [`CatIdResolution`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.CatIdResolution)([catid, category, ...])       | The result of resolving free tags/caption/labels to a UCS CatID.                                              |
-| [`TaxonomyResolver`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.TaxonomyResolver)(\*args, \*\*kwargs)          | Resolve a [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord) to a UCS CatID. |
-| [`KeywordResolver`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.KeywordResolver)(\*[, table, audioset_map])    | The default stdlib resolver — staged keyword/synonym/AudioSet resolution.                                     |
+| [`UcsRow`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.UcsRow)(catid, category, subcategory[, ...])        | One Universal Category System entry.                                                                          |
+|-----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| [`UcsName`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.UcsName)(catid, category, subcategory[, ...])       | Every field of a UCS filename (`foley.index.taxonomy.ucs.parse_ucs_name`).                                    |
+| [`UcsTable`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.UcsTable)([by_catid, order, \_ci_index, legacy])    | A loaded UCS lookup by CatID: exact, case-insensitive, or a legacy CatID.                                     |
+| [`AudioSetUcsMap`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.AudioSetUcsMap)([by_name, by_mid])                  | AudioSet-label -> UCS-CatID overlap map (report 04 §5.3).                                                     |
+| [`CatIdResolution`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.CatIdResolution)([catid, category, ...])            | The result of resolving free tags/caption/labels to a UCS CatID.                                              |
+| [`TaxonomyResolver`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.TaxonomyResolver)(\*args, \*\*kwargs)               | Resolve a [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord) to a UCS CatID. |
+| [`KeywordResolver`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.KeywordResolver)(\*[, table, audioset_map, policy]) | The default stdlib resolver — staged keyword/synonym/AudioSet resolution.                                     |
+| [`MatchPolicy`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.MatchPolicy)([stop_words, ambiguous_words, ...])    | How the keyword stage matches, ranks and bands (one strategy object).                                         |
 
 ### *class* foley.index.taxonomy.AudioSetUcsMap(by_name=dict(), by_mid=dict())
 
@@ -15520,7 +15647,7 @@ The result of resolving free tags/caption/labels to a UCS CatID.
 `subcategory` feeds `ucs_subcategory` on
 ingest, and `ucs_catid` on the query side.
 
-### *class* foley.index.taxonomy.KeywordResolver(, table=None, audioset_map=None)
+### *class* foley.index.taxonomy.KeywordResolver(, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'no', 'have', 'few', 'who', 'his', 'such', 'every', 'the', 'be', 'in', 'their', 'nor', 'to', 'here', 'which', 'our', 'any', 'may', 'more', 'own', 'very', 'all', 'why', 'being', 'under', 'you', 'must', 'an', 'are', 'then', 'those', 'she', 'was', 'other', 'only', 'this', 'for', 'would', 'am', 'them', 'into', 'he', 'your', 'my', 'we', 'should', 'too', 'i', 'is', 'us', 'from', 'had', 'just', 'each', 'that', 'what', 'these', 'where', 'onto', 'do', 'by', 'has', 'without', 'does', 'did', 'will', 'how', 'as', 'been', 'on', 'could', 'me', 'same', 'about', 'but', 'with', 'its', 'when', 'him', 'it', 'there', 'if', 'at', 'most', 'and', 'a', 'or', 'so', 'were', 'they', 'some', 'of', 'also', 'her', 'not', 'than', 'might', 'can'}), ambiguous_words=frozenset({'work', 'set', 'fall', 'blue', 'long', 'misc', 'part', 'general', 'large', 'break', 'tone', 'off', 'arc', 'down', 'hit', 'light', 'piece', 'open', 'meeting', 'hold', 'shot', 'place', 'little', 'day', 'side', 'way', 'person', 'over', 'heavy', 'drop', 'handle', 'beat', 'small', 'release', 'catch', 'sound', 'bang', 'out', 'quiet', 'big', 'up', 'night', 'run', 'thing', 'time'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -15535,6 +15662,93 @@ Resolve a [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord
 
 * **Return type:**
   [`CatIdResolution`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.CatIdResolution)
+
+### *class* foley.index.taxonomy.MatchPolicy(stop_words=frozenset({'a', 'about', 'all', 'also', 'am', 'an', 'and', 'any', 'are', 'as', 'at', 'be', 'been', 'being', 'but', 'by', 'can', 'could', 'did', 'do', 'does', 'each', 'every', 'few', 'for', 'from', 'had', 'has', 'have', 'he', 'her', 'here', 'him', 'his', 'how', 'i', 'if', 'in', 'into', 'is', 'it', 'its', 'just', 'may', 'me', 'might', 'more', 'most', 'must', 'my', 'no', 'nor', 'not', 'of', 'on', 'only', 'onto', 'or', 'other', 'our', 'own', 'same', 'she', 'should', 'so', 'some', 'such', 'than', 'that', 'the', 'their', 'them', 'then', 'there', 'these', 'they', 'this', 'those', 'to', 'too', 'under', 'us', 'very', 'was', 'we', 'were', 'what', 'when', 'where', 'which', 'who', 'why', 'will', 'with', 'without', 'would', 'you', 'your'}), ambiguous_words=frozenset({'arc', 'bang', 'beat', 'big', 'blue', 'break', 'catch', 'day', 'down', 'drop', 'fall', 'general', 'handle', 'heavy', 'hit', 'hold', 'large', 'light', 'little', 'long', 'meeting', 'misc', 'night', 'off', 'open', 'out', 'over', 'part', 'person', 'piece', 'place', 'quiet', 'release', 'run', 'set', 'shot', 'side', 'small', 'sound', 'thing', 'time', 'tone', 'up', 'way', 'work'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+How the keyword stage matches, ranks and bands (one strategy object).
+
+#### stop_words
+
+Words dropped from both sides before matching.
+
+* **Type:**
+  [`frozenset`](https://docs.python.org/3/builtins/stdtypes.html#frozenset)
+
+#### ambiguous_words
+
+Words that match only inside a multi-word term.
+
+* **Type:**
+  [`frozenset`](https://docs.python.org/3/builtins/stdtypes.html#frozenset)
+
+#### skip_categories
+
+UCS categories the keyword stage never picks (a filename or
+declared CatID still may).
+
+* **Type:**
+  [`frozenset`](https://docs.python.org/3/builtins/stdtypes.html#frozenset)
+
+#### kind_weights
+
+Base weight of a hit by term kind (`subcategory`,
+`category`, `synonym`).
+
+* **Type:**
+  [`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+#### phrase_bonus
+
+Added per content word past the first of a multi-word term.
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+#### strong_confidence
+
+Band of strong evidence: a subcategory hit, a multi-word
+phrase, or two distinct content words on the row (a category name plus
+another word counts).
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+#### single_confidence
+
+Band of one content word that only this row lists as a
+synonym.
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+#### weak_confidence
+
+Band of a brush: a category name alone, or a synonym many
+rows share. A `confident=False` row drops one band (floored here).
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+#### audioset_confidence
+
+Band of an AudioSet-map hit; a weaker keyword match
+yields to one.
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+#### band(strength, , confident=True)
+
+The band of evidence of `strength`; an unverified row drops one.
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+#### *property* bands *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[float](https://docs.python.org/3/builtins/functions.html#float), [float](https://docs.python.org/3/builtins/functions.html#float), [float](https://docs.python.org/3/builtins/functions.html#float)]*
+
+The keyword bands, by `STRONG`, `SINGLE`, `WEAK`.
 
 ### *class* foley.index.taxonomy.TaxonomyResolver(\*args, \*\*kwargs)
 
@@ -15570,15 +15784,20 @@ One Universal Category System entry.
 A `catid` (e.g. `'DOORWood'`) is an OPAQUE key — the category prefix is
 variable-length and not reliably splittable — so `catid -> (category,
 subcategory)` is always a table lookup, never a string split (report
-04 §5.2). `confident=False` marks an APPROXIMATE CatID reconstructed for the
-seed table; verify it against the UCS master before treating it as
-authoritative.
+04 §5.2). `confident=False` marks an unverified row (a house drop’s); the
+keyword resolver bands its matches one notch lower.
 
-### *class* foley.index.taxonomy.UcsTable(by_catid=dict(), order=list(), \_ci_index=dict())
+#### *property* is_generic *: [bool](https://docs.python.org/3/builtins/functions.html#bool)*
+
+Whether the subcategory names no particular sound (`GENERAL`, `MISC`).
+
+### *class* foley.index.taxonomy.UcsTable(by_catid=dict(), order=list(), \_ci_index=dict(), legacy=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
-A loaded UCS lookup: by CatID (exact + case-insensitive) and by synonym.
+A loaded UCS lookup by CatID: exact, case-insensitive, or a legacy CatID.
+
+Plain data, compared by identity (a matcher caches its index per table).
 
 #### by_catid
 
@@ -15594,9 +15813,17 @@ The CatIDs in stable insertion order (deterministic tie-breaking).
 * **Type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
+#### legacy
+
+`lower(old CatID) -> CatID` for CatIDs foley once stamped that are
+not UCS (`weathrain` -> `RAIN`), so a stored record still finds its row.
+
+* **Type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
 #### get(catid)
 
-Look up a row by CatID: exact first, then case-insensitive.
+Look up a row by CatID: exact, then case-insensitive, then a legacy CatID.
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsRow`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsRow)]
@@ -15610,7 +15837,7 @@ The process-wide default AudioSet->UCS map (seed + any JSON drop).
 
 ### foley.index.taxonomy.default_ucs_table()
 
-The process-wide default UCS table (seed + any JSON drop), built once.
+The process-wide default UCS table (master + seed phrases + any drop), built once.
 
 * **Return type:**
   [`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)
@@ -15630,7 +15857,8 @@ over `max_bytes` has its longest shortenable block
 `format_ucs_name(parse_ucs_name(f))` is `f` for any `f` this function made.
 The CatID is looked up in `table` (default: [`default_ucs_table()`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_ucs_table)) and
 written in its canonical spelling; an unknown one raises, since the name would
-not parse.
+not parse. An all-capitals CatID keeps every mandatory block, empty if need be
+(`RAIN_Heavy__`), so the name reads back as UCS.
 
 * **Parameters:**
   * **name** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName), [`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – The blocks to format (`category` / `subcategory` are ignored).
@@ -15679,13 +15907,11 @@ Build the AudioSet(name|MID) -> UCS-CatID map.
 
 ### foley.index.taxonomy.load_ucs_master()
 
-The authoritative UCS v8.2.1 master (753 rows, 82 categories), without the seed.
+The UCS v8.2.1 master as shipped (753 rows, 82 categories): no seed, no drop.
 
-Opt-in for now: the default table ([`default_ucs_table()`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_ucs_table)) is still the
-in-code seed, whose CatIDs mostly predate the master. Pass it where a table is
-taken (`parse_ucs_name(name, table=load_ucs_master())`). Row fields are the
-master’s, verbatim (`SubCategory` in capitals: `('DOORS', 'WOOD')`), with its
-explanation and synonyms (lowercased).
+Row fields are the master’s, verbatim (`SubCategory` in capitals:
+`('DOORS', 'WOOD')`), with its explanation and synonyms (lowercased). The
+default table ([`default_ucs_table()`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_ucs_table)) is this plus the seed’s phrases.
 
 ```pycon
 >>> t = load_ucs_master()
@@ -15696,19 +15922,33 @@ explanation and synonyms (lowercased).
 * **Return type:**
   [`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)
 
-### foley.index.taxonomy.load_ucs_table(, data_dir=None, include_seed=True)
+### foley.index.taxonomy.load_ucs_table(, data_dir=None, master=PosixPath('/home/runner/work/foley/foley/foley/index/taxonomy/data/ucs_master.json'), include_seed=True, legacy_catids={'AMBNature': 'AMBForst', 'AMBUrban': 'AMBUrbn', 'ANMLBird': 'BIRDSong', 'CLOTHMove': 'CLOTHMvmt', 'COMMPhone': 'COMTelph', 'DESTGeneral': 'DESTRCrsh', 'DOORKnob': 'DOORHdwr', 'DOORMetal': 'DOORMetl', 'EXPLGeneral': 'EXPLReal', 'FIREGeneral': 'FIREBurn', 'FIREWhoosh': 'FIREWhsh', 'FOOTConc': 'FEETHmn', 'FOOTGravel': 'FEETHmn', 'FOOTWood': 'FEETHmn', 'GLASBreak': 'GLASBrk', 'GUIBeep': 'UIBeep', 'GUIWhoosh': 'UIMvmt', 'GUNHandgun': 'GUNPis', 'LIQDPour': 'WATRPour', 'MACHGeneral': 'MACHMisc', 'PAPRHandle': 'PAPRHndl', 'VEHCarExt': 'VEHCar', 'VEHCarInt': 'VEHInt', 'WATRRun': 'WATRFlow', 'WATRSplash': 'WATRSplsh', 'WEATHRain': 'RAIN', 'WEATHThunder': 'THUN', 'WEATHWind': 'WIND'})
 
-Build the UCS lookup: the seed rows, overridden/extended by a JSON drop.
+Build the UCS lookup: the v8.2.1 master, the seed’s phrases, then a JSON drop.
 
 * **Parameters:**
   * **data_dir** – Directory to look for `ucs_full.json` in (defaults to the
-    package’s `taxonomy/data/`). When present, its rows override the
-    seed on CatID collision and add the rest of the ~750-row master.
-  * **include_seed** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Start from the in-code seed table (default `True`).
+    package’s `taxonomy/data/`). Its rows override any row on CatID
+    collision and add new ones (a house extension of UCS).
+  * **master** – The UCS master JSON (default: the shipped v8.2.1 table). `None`,
+    or a path that does not exist, falls back to the seed rows alone.
+  * **include_seed** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Add the seed’s curated phrases to their master rows (default
+    `True`); with no master, the seed rows are the table.
+  * **legacy_catids** ([`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Old CatIDs a stored record may carry, mapped to real ones
+    (default [`LEGACY_CATIDS`](_autosummary/foley.index.taxonomy.seed.html.md#foley.index.taxonomy.seed.LEGACY_CATIDS)); the table’s
+    `get` resolves them.
 * **Return type:**
   [`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)
 * **Returns:**
   A ready [`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable).
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – no master and `include_seed=False`: there would be no rows.
+
+```pycon
+>>> t = load_ucs_table()
+>>> len(t), t.get("RAIN").category, "rain on window" in t.get("RAIN").synonyms
+(753, 'RAIN', True)
+```
 
 ### foley.index.taxonomy.parse_catid_token(filename)
 
@@ -15743,16 +15983,18 @@ its CatID token is unknown (so a wrong subcategory is never emitted).
 
 Every block of a UCS filename as a [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName), else `None`.
 
-Fail-quiet like [`parse_ucs_filename()`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_ucs_filename): `None` when the name has no `_` or
-its CatID is not in the table. Blocks past SourceID are the UserData (rejoined
-with `_`); a block the name lacks is `None`. The FXName block’s head before a
-hyphen is the VendorCategory only when `is_vendor_tag` accepts it
-(`looks_like_vendor_tag()`), so `Sci-Fi Door` stays whole.
+Fail-quiet like [`parse_ucs_filename()`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.parse_ucs_filename): `None` when the name has no `_`,
+its CatID is not in the table, or its CatID is all capitals (`RAW`, `MIX`) and
+it lacks a mandatory block (`UCS_MANDATORY_BLOCKS`). Blocks past SourceID
+are the UserData (rejoined with `_`); a block the name lacks is `None`. The
+FXName block’s head before a hyphen is the VendorCategory only when
+`is_vendor_tag` accepts it (`looks_like_vendor_tag()`), so `Sci-Fi Door`
+stays whole.
 
 ```pycon
 >>> n = parse_ucs_name("DOORWood-Gate_SCIFI-Creak Open_JD_NYC_take 2.wav")
 >>> (n.catid, n.category, n.subcategory, n.user_category)
-('DOORWood', 'DOORS', 'Wood', 'Gate')
+('DOORWood', 'DOORS', 'WOOD', 'Gate')
 >>> (n.vendor_category, n.fx_name, n.creator_id, n.source_id, n.user_data)
 ('SCIFI', 'Creak Open', 'JD', 'NYC', 'take 2')
 >>> m = parse_ucs_name("DOORWood_Sci-Fi Slam 5.1_JD_NYC")
@@ -15762,12 +16004,14 @@ hyphen is the VendorCategory only when `is_vendor_tag` accepts it
 True
 >>> parse_ucs_name("NOTACAT_x_y_z.wav") is None, parse_ucs_name("plain.wav") is None
 (True, True)
+>>> parse_ucs_name("MIX_final.wav") is None, parse_ucs_name("RAIN_Heavy_JD_NYC.wav").catid
+(True, 'RAIN')
 ```
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName)]
 
-### foley.index.taxonomy.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None)
+### foley.index.taxonomy.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'no', 'have', 'few', 'who', 'his', 'such', 'every', 'the', 'be', 'in', 'their', 'nor', 'to', 'here', 'which', 'our', 'any', 'may', 'more', 'own', 'very', 'all', 'why', 'being', 'under', 'you', 'must', 'an', 'are', 'then', 'those', 'she', 'was', 'other', 'only', 'this', 'for', 'would', 'am', 'them', 'into', 'he', 'your', 'my', 'we', 'should', 'too', 'i', 'is', 'us', 'from', 'had', 'just', 'each', 'that', 'what', 'these', 'where', 'onto', 'do', 'by', 'has', 'without', 'does', 'did', 'will', 'how', 'as', 'been', 'on', 'could', 'me', 'same', 'about', 'but', 'with', 'its', 'when', 'him', 'it', 'there', 'if', 'at', 'most', 'and', 'a', 'or', 'so', 'were', 'they', 'some', 'of', 'also', 'her', 'not', 'than', 'might', 'can'}), ambiguous_words=frozenset({'work', 'set', 'fall', 'blue', 'long', 'misc', 'part', 'general', 'large', 'break', 'tone', 'off', 'arc', 'down', 'hit', 'light', 'piece', 'open', 'meeting', 'hold', 'shot', 'place', 'little', 'day', 'side', 'way', 'person', 'over', 'heavy', 'drop', 'handle', 'beat', 'small', 'release', 'catch', 'sound', 'bang', 'out', 'quiet', 'big', 'up', 'night', 'run', 'thing', 'time'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -15782,6 +16026,8 @@ Resolve inputs to a best UCS CatID by the staged precedence.
   * **table** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)]) – UCS table (defaults to [`default_ucs_table()`](_autosummary/foley.index.taxonomy.html.md#foley.index.taxonomy.default_ucs_table)).
   * **audioset_map** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`AudioSetUcsMap`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.AudioSetUcsMap)]) – AudioSet->UCS map (defaults to
     [`default_audioset_ucs_map()`](_autosummary/foley.index.taxonomy.audioset.html.md#foley.index.taxonomy.audioset.default_audioset_ucs_map)).
+  * **policy** ([`MatchPolicy`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.MatchPolicy)) – How keywords match and band (default `DEFAULT_MATCH_POLICY`;
+    vary it with `dataclasses.replace`).
 * **Return type:**
   [`CatIdResolution`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.CatIdResolution)
 * **Returns:**
@@ -15790,12 +16036,13 @@ Resolve inputs to a best UCS CatID by the staged precedence.
 
 ### Modules
 
-| [`audioset`](_autosummary/foley.index.taxonomy.audioset.html.md#module-foley.index.taxonomy.audioset)   | AudioSet-label -> UCS-CatID overlap map (report 04 §5.3, [11 §3.1]).             |
-|--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
-| [`model`](_autosummary/foley.index.taxonomy.model.html.md#module-foley.index.taxonomy.model)         | Data structures for the UCS/AudioSet taxonomy resolver (stdlib-only).            |
-| [`resolver`](_autosummary/foley.index.taxonomy.resolver.html.md#module-foley.index.taxonomy.resolver)   | Resolve free tags/caption/labels to a UCS CatID (the EnvSound-UCS pipeline).     |
-| [`seed`](_autosummary/foley.index.taxonomy.seed.html.md#module-foley.index.taxonomy.seed)           | Seed taxonomy data — a representative in-code UCS subset + AudioSet overlap map. |
-| [`ucs`](_autosummary/foley.index.taxonomy.ucs.html.md#module-foley.index.taxonomy.ucs)             | UCS table loading + the UCS-filename CatID parse (report 04 §5.2, §6.4).         |
+| [`audioset`](_autosummary/foley.index.taxonomy.audioset.html.md#module-foley.index.taxonomy.audioset)   | AudioSet-label -> UCS-CatID overlap map (report 04 §5.3, [11 §3.1]).                |
+|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
+| [`model`](_autosummary/foley.index.taxonomy.model.html.md#module-foley.index.taxonomy.model)         | Data structures for the UCS/AudioSet taxonomy resolver (stdlib-only).               |
+| [`resolver`](_autosummary/foley.index.taxonomy.resolver.html.md#module-foley.index.taxonomy.resolver)   | Resolve free tags/caption/labels to a UCS CatID (the EnvSound-UCS pipeline).        |
+| [`seed`](_autosummary/foley.index.taxonomy.seed.html.md#module-foley.index.taxonomy.seed)           | Seed taxonomy data: curated phrases on real UCS rows, and the AudioSet overlap map. |
+| [`text`](_autosummary/foley.index.taxonomy.text.html.md#module-foley.index.taxonomy.text)           | The UCS term index: every row's terms, with the vocabulary's inflections.           |
+| [`ucs`](_autosummary/foley.index.taxonomy.ucs.html.md#module-foley.index.taxonomy.ucs)             | UCS table loading + the UCS-filename CatID parse (report 04 §5.2, §6.4).            |
 
 
 # _autosummary/foley.index.taxonomy.model.html.md
@@ -15810,14 +16057,20 @@ These are plain, immutable-ish records — the resolver logic lives in
 whole taxonomy layer is a pure lookup over dicts (report 04 §5.3 — “taxonomies do
 faceting and browse”, the CLAP vector does the heavy retrieval).
 
+### Module Attributes
+
+| [`GENERIC_SUBCATEGORIES`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.GENERIC_SUBCATEGORIES)   | Subcategories that name no particular sound (`RAIN`/`GENERAL`, `AIR`/`MISC`).                                                                                  |
+|--------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`NON_SOUND_CATEGORIES`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.NON_SOUND_CATEGORIES)    | Categories whose rows are production bookkeeping (`TMARK`, `WIP`, `SCNE`), not kinds of sound: a filename may name them, a tagger or keyword match never does. |
+
 ### Classes
 
-| [`AudioSetUcsMap`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.AudioSetUcsMap)([by_name, by_mid])            | AudioSet-label -> UCS-CatID overlap map (report 04 §5.3).                  |
-|-----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
-| [`CatIdResolution`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.CatIdResolution)([catid, category, ...])      | The result of resolving free tags/caption/labels to a UCS CatID.           |
-| [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName)(catid, category, subcategory[, ...]) | Every field of a UCS filename (`foley.index.taxonomy.ucs.parse_ucs_name`). |
-| [`UcsRow`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsRow)(catid, category, subcategory[, ...])  | One Universal Category System entry.                                       |
-| [`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)([by_catid, order, \_ci_index])      | A loaded UCS lookup: by CatID (exact + case-insensitive) and by synonym.   |
+| [`AudioSetUcsMap`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.AudioSetUcsMap)([by_name, by_mid])               | AudioSet-label -> UCS-CatID overlap map (report 04 §5.3).                  |
+|--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| [`CatIdResolution`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.CatIdResolution)([catid, category, ...])         | The result of resolving free tags/caption/labels to a UCS CatID.           |
+| [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName)(catid, category, subcategory[, ...])    | Every field of a UCS filename (`foley.index.taxonomy.ucs.parse_ucs_name`). |
+| [`UcsRow`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsRow)(catid, category, subcategory[, ...])     | One Universal Category System entry.                                       |
+| [`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)([by_catid, order, \_ci_index, legacy]) | A loaded UCS lookup by CatID: exact, case-insensitive, or a legacy CatID.  |
 
 ### *class* foley.index.taxonomy.model.AudioSetUcsMap(by_name=dict(), by_mid=dict())
 
@@ -15846,6 +16099,15 @@ The result of resolving free tags/caption/labels to a UCS CatID.
 `subcategory` feeds `ucs_subcategory` on
 ingest, and `ucs_catid` on the query side.
 
+### foley.index.taxonomy.model.GENERIC_SUBCATEGORIES *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)* *= frozenset({'general', 'misc'})*
+
+Subcategories that name no particular sound (`RAIN`/`GENERAL`, `AIR`/`MISC`).
+
+### foley.index.taxonomy.model.NON_SOUND_CATEGORIES *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)* *= frozenset({'ARCHIVED'})*
+
+Categories whose rows are production bookkeeping (`TMARK`, `WIP`, `SCNE`),
+not kinds of sound: a filename may name them, a tagger or keyword match never does.
+
 ### *class* foley.index.taxonomy.model.UcsName(catid, category, subcategory, fx_name=None, creator_id=None, source_id=None, user_category=None, vendor_category=None, user_data=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
@@ -15867,15 +16129,20 @@ One Universal Category System entry.
 A `catid` (e.g. `'DOORWood'`) is an OPAQUE key — the category prefix is
 variable-length and not reliably splittable — so `catid -> (category,
 subcategory)` is always a table lookup, never a string split (report
-04 §5.2). `confident=False` marks an APPROXIMATE CatID reconstructed for the
-seed table; verify it against the UCS master before treating it as
-authoritative.
+04 §5.2). `confident=False` marks an unverified row (a house drop’s); the
+keyword resolver bands its matches one notch lower.
 
-### *class* foley.index.taxonomy.model.UcsTable(by_catid=dict(), order=list(), \_ci_index=dict())
+#### *property* is_generic *: [bool](https://docs.python.org/3/builtins/functions.html#bool)*
+
+Whether the subcategory names no particular sound (`GENERAL`, `MISC`).
+
+### *class* foley.index.taxonomy.model.UcsTable(by_catid=dict(), order=list(), \_ci_index=dict(), legacy=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
-A loaded UCS lookup: by CatID (exact + case-insensitive) and by synonym.
+A loaded UCS lookup by CatID: exact, case-insensitive, or a legacy CatID.
+
+Plain data, compared by identity (a matcher caches its index per table).
 
 #### by_catid
 
@@ -15891,9 +16158,17 @@ The CatIDs in stable insertion order (deterministic tie-breaking).
 * **Type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
+#### legacy
+
+`lower(old CatID) -> CatID` for CatIDs foley once stamped that are
+not UCS (`weathrain` -> `RAIN`), so a stored record still finds its row.
+
+* **Type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
 #### get(catid)
 
-Look up a row by CatID: exact first, then case-insensitive.
+Look up a row by CatID: exact, then case-insensitive, then a legacy CatID.
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsRow`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsRow)]
@@ -15912,27 +16187,105 @@ heterogeneous labels onto UCS via mapping/synonym tables):
 
 A *declared* CatID is one the file states about itself (the iXML `CATID` of a pro
 pack, [`foley.embedded_metadata`](_autosummary/foley.embedded_metadata.html.md#module-foley.embedded_metadata)); like a filename’s, it counts only when the
-table knows it.
+table knows it. A keyword match weaker than an AudioSet-map hit (its band is below
+[`MatchPolicy.audioset_confidence`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.MatchPolicy.audioset_confidence)) yields to one.
 
-Matching is word-boundary aware (so `"rain"` matches “heavy rain” but not
-“brainstorm”), a subcategory hit outranks a category-name hit, and multi-word
-phrases outrank single tokens — with a deterministic table-order final tiebreak.
-The always-available default is this stdlib [`KeywordResolver`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.KeywordResolver); a richer
-CLAP zero-shot resolver (embed once, argmax over UCS label prompts, report
-03 Part 2) can be dropped in behind the same [`TaxonomyResolver`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.TaxonomyResolver) protocol.
+The keyword stage, in three pure steps over the table’s
+[`TermIndex`](_autosummary/foley.index.taxonomy.text.html.md#foley.index.taxonomy.text.TermIndex) (built once per table):
+
+1. **collect** — each term (subcategory, category name, synonym) found in one field
+   of the input, word-boundary aware and across function words, becomes a
+   [`Hit`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.Hit); the hits of one CatID fold into its [`Evidence`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.Evidence);
+2. **pick** — the highest score wins (one word counts once, whatever it hits); on a
+   tie, the stronger evidence, with a category name as strong as a subcategory,
+   then the category’s generic (`GENERAL`/`MISC`) row, then table order;
+3. **band** — the confidence says how much evidence there is
+   ([`MatchPolicy.band()`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.MatchPolicy.band)), not which row won.
+
+Everything tunable is one frozen [`MatchPolicy`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.MatchPolicy) (`policy=`). The
+always-available default is this stdlib [`KeywordResolver`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.KeywordResolver); a richer CLAP
+zero-shot resolver (embed once, argmax over UCS label prompts, report 03 Part 2) can
+be dropped in behind the same [`TaxonomyResolver`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.TaxonomyResolver) protocol.
+
+### Module Attributes
+
+| [`STATED_CONFIDENCE`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.STATED_CONFIDENCE)       | the sound says what it is.                                                                                                                                                                                                                                         |
+|--------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`DEFAULT_STOP_WORDS`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.DEFAULT_STOP_WORDS)      | English function words, dropped from both sides before matching, so a phrase matches across them (`"rain on window"` in "rain on a window").                                                                                                                       |
+| [`DEFAULT_AMBIGUOUS_WORDS`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.DEFAULT_AMBIGUOUS_WORDS) | Common narration words that the UCS master also lists as a subcategory or synonym (`quiet` is `CRWDQuiet`, `release` an `AIR` synonym): they count inside a multi-word term (`"glass break"`, `"wind up"`), never alone (`"take a break"`, `"the price went up"`). |
+| [`DEFAULT_KIND_WEIGHTS`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.DEFAULT_KIND_WEIGHTS)    | Base weight of a matched term, by where it came from.                                                                                                                                                                                                              |
+| [`STRONG`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.STRONG)                  | Evidence strengths, strongest first (indices into [`MatchPolicy.bands`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.MatchPolicy.bands)).                                                                                                                                             |
+| [`SINGLE`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.SINGLE)                  | Evidence strengths, strongest first (indices into [`MatchPolicy.bands`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.MatchPolicy.bands)).                                                                                                                                             |
+| [`WEAK`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.WEAK)                    | Evidence strengths, strongest first (indices into [`MatchPolicy.bands`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.MatchPolicy.bands)).                                                                                                                                             |
+| [`RECORD_MIN_CONFIDENCE`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.RECORD_MIN_CONFIDENCE)   | an AudioSet-map hit's.                                                                                                                                                                                                                                             |
 
 ### Functions
 
-| [`resolve_catid`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.resolve_catid)(\*[, tags, caption, ...])   | Resolve inputs to a best UCS CatID by the staged precedence.   |
-|--------------------------------------------------------------------------------------------|----------------------------------------------------------------|
+| [`keyword_resolution`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.keyword_resolution)([tags, caption, table, ...])   | The keyword stage alone: the best row for `tags`/`caption`, banded.                                                                  |
+|----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| [`resolve_catid`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.resolve_catid)(\*[, tags, caption, ...])           | Resolve inputs to a best UCS CatID by the staged precedence.                                                                         |
+| [`term_index`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.term_index)(table)                                 | The [`TermIndex`](_autosummary/foley.index.taxonomy.text.html.md#foley.index.taxonomy.text.TermIndex) of `table`, built once per table. |
 
 ### Classes
 
-| [`KeywordResolver`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.KeywordResolver)(\*[, table, audioset_map])   | The default stdlib resolver — staged keyword/synonym/AudioSet resolution.                                     |
-|-----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
-| [`TaxonomyResolver`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.TaxonomyResolver)(\*args, \*\*kwargs)         | Resolve a [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord) to a UCS CatID. |
+| [`Evidence`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.Evidence)(catid, score, matched, words, ...)        | Everything the input says for one CatID: the folded [`Hit`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.Hit) s.   |
+|-----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| [`Hit`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.Hit)(catid, kind, text, words, weight, shared_by)   | One term of a row found in the input.                                                                         |
+| [`KeywordResolver`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.KeywordResolver)(\*[, table, audioset_map, policy]) | The default stdlib resolver — staged keyword/synonym/AudioSet resolution.                                     |
+| [`MatchPolicy`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.MatchPolicy)([stop_words, ambiguous_words, ...])    | How the keyword stage matches, ranks and bands (one strategy object).                                         |
+| [`TaxonomyResolver`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.TaxonomyResolver)(\*args, \*\*kwargs)               | Resolve a [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord) to a UCS CatID. |
 
-### *class* foley.index.taxonomy.resolver.KeywordResolver(, table=None, audioset_map=None)
+### foley.index.taxonomy.resolver.DEFAULT_AMBIGUOUS_WORDS *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)* *= frozenset({'arc', 'bang', 'beat', 'big', 'blue', 'break', 'catch', 'day', 'down', 'drop', 'fall', 'general', 'handle', 'heavy', 'hit', 'hold', 'large', 'light', 'little', 'long', 'meeting', 'misc', 'night', 'off', 'open', 'out', 'over', 'part', 'person', 'piece', 'place', 'quiet', 'release', 'run', 'set', 'shot', 'side', 'small', 'sound', 'thing', 'time', 'tone', 'up', 'way', 'work'})*
+
+Common narration words that the UCS master also lists as a subcategory or
+synonym (`quiet` is `CRWDQuiet`, `release` an `AIR` synonym): they count
+inside a multi-word term (`"glass break"`, `"wind up"`), never alone
+(`"take a break"`, `"the price went up"`).
+
+### foley.index.taxonomy.resolver.DEFAULT_KIND_WEIGHTS *: [Mapping](https://docs.python.org/3/library/typing.html#typing.Mapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [float](https://docs.python.org/3/builtins/functions.html#float)]* *= mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0})*
+
+Base weight of a matched term, by where it came from. A category name is its
+rows’ own name, as strong as a subcategory.
+
+### foley.index.taxonomy.resolver.DEFAULT_STOP_WORDS *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)* *= frozenset({'a', 'about', 'all', 'also', 'am', 'an', 'and', 'any', 'are', 'as', 'at', 'be', 'been', 'being', 'but', 'by', 'can', 'could', 'did', 'do', 'does', 'each', 'every', 'few', 'for', 'from', 'had', 'has', 'have', 'he', 'her', 'here', 'him', 'his', 'how', 'i', 'if', 'in', 'into', 'is', 'it', 'its', 'just', 'may', 'me', 'might', 'more', 'most', 'must', 'my', 'no', 'nor', 'not', 'of', 'on', 'only', 'onto', 'or', 'other', 'our', 'own', 'same', 'she', 'should', 'so', 'some', 'such', 'than', 'that', 'the', 'their', 'them', 'then', 'there', 'these', 'they', 'this', 'those', 'to', 'too', 'under', 'us', 'very', 'was', 'we', 'were', 'what', 'when', 'where', 'which', 'who', 'why', 'will', 'with', 'without', 'would', 'you', 'your'})*
+
+English function words, dropped from both sides before matching, so a phrase
+matches across them (`"rain on window"` in “rain on a window”). Particles that
+carry sound meaning (`up`, `down`, `out`, `off`, `over`: “wind up” is a
+toy, “the wind picked up” is weather) are not here but in the ambiguous words.
+
+### *class* foley.index.taxonomy.resolver.Evidence(catid, score, matched, words, kinds, phrase, unique_synonym)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Everything the input says for one CatID: the folded [`Hit`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.Hit) s.
+
+#### *property* rank_strength *: [int](https://docs.python.org/3/builtins/functions.html#int)*
+
+[`strength`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.Evidence.strength) for ranking, where a category name is as strong as a
+subcategory: it is the row’s own name (`"glass"` is the `GLASS`
+category before it is `DOORGlas`’s subcategory).
+
+#### *property* strength *: [int](https://docs.python.org/3/builtins/functions.html#int)*
+
+[`STRONG`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.STRONG), [`SINGLE`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.SINGLE) or [`WEAK`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.WEAK).
+
+A category name alone is a brush ([`WEAK`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.WEAK)): it says which category,
+not which row. See [`MatchPolicy`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.MatchPolicy) for the bands.
+
+* **Type:**
+  How much the input says
+
+### *class* foley.index.taxonomy.resolver.Hit(catid, kind, text, words, weight, shared_by)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One term of a row found in the input.
+
+`words` are the term’s content lemmas (stop words dropped); `shared_by` is how
+many rows list the term.
+
+### *class* foley.index.taxonomy.resolver.KeywordResolver(, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'no', 'have', 'few', 'who', 'his', 'such', 'every', 'the', 'be', 'in', 'their', 'nor', 'to', 'here', 'which', 'our', 'any', 'may', 'more', 'own', 'very', 'all', 'why', 'being', 'under', 'you', 'must', 'an', 'are', 'then', 'those', 'she', 'was', 'other', 'only', 'this', 'for', 'would', 'am', 'them', 'into', 'he', 'your', 'my', 'we', 'should', 'too', 'i', 'is', 'us', 'from', 'had', 'just', 'each', 'that', 'what', 'these', 'where', 'onto', 'do', 'by', 'has', 'without', 'does', 'did', 'will', 'how', 'as', 'been', 'on', 'could', 'me', 'same', 'about', 'but', 'with', 'its', 'when', 'him', 'it', 'there', 'if', 'at', 'most', 'and', 'a', 'or', 'so', 'were', 'they', 'some', 'of', 'also', 'her', 'not', 'than', 'might', 'can'}), ambiguous_words=frozenset({'work', 'set', 'fall', 'blue', 'long', 'misc', 'part', 'general', 'large', 'break', 'tone', 'off', 'arc', 'down', 'hit', 'light', 'piece', 'open', 'meeting', 'hold', 'shot', 'place', 'little', 'day', 'side', 'way', 'person', 'over', 'heavy', 'drop', 'handle', 'beat', 'small', 'release', 'catch', 'sound', 'bang', 'out', 'quiet', 'big', 'up', 'night', 'run', 'thing', 'time'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -15948,6 +16301,116 @@ Resolve a [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord
 * **Return type:**
   [`CatIdResolution`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.CatIdResolution)
 
+### *class* foley.index.taxonomy.resolver.MatchPolicy(stop_words=frozenset({'a', 'about', 'all', 'also', 'am', 'an', 'and', 'any', 'are', 'as', 'at', 'be', 'been', 'being', 'but', 'by', 'can', 'could', 'did', 'do', 'does', 'each', 'every', 'few', 'for', 'from', 'had', 'has', 'have', 'he', 'her', 'here', 'him', 'his', 'how', 'i', 'if', 'in', 'into', 'is', 'it', 'its', 'just', 'may', 'me', 'might', 'more', 'most', 'must', 'my', 'no', 'nor', 'not', 'of', 'on', 'only', 'onto', 'or', 'other', 'our', 'own', 'same', 'she', 'should', 'so', 'some', 'such', 'than', 'that', 'the', 'their', 'them', 'then', 'there', 'these', 'they', 'this', 'those', 'to', 'too', 'under', 'us', 'very', 'was', 'we', 'were', 'what', 'when', 'where', 'which', 'who', 'why', 'will', 'with', 'without', 'would', 'you', 'your'}), ambiguous_words=frozenset({'arc', 'bang', 'beat', 'big', 'blue', 'break', 'catch', 'day', 'down', 'drop', 'fall', 'general', 'handle', 'heavy', 'hit', 'hold', 'large', 'light', 'little', 'long', 'meeting', 'misc', 'night', 'off', 'open', 'out', 'over', 'part', 'person', 'piece', 'place', 'quiet', 'release', 'run', 'set', 'shot', 'side', 'small', 'sound', 'thing', 'time', 'tone', 'up', 'way', 'work'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+How the keyword stage matches, ranks and bands (one strategy object).
+
+#### stop_words
+
+Words dropped from both sides before matching.
+
+* **Type:**
+  [`frozenset`](https://docs.python.org/3/builtins/stdtypes.html#frozenset)
+
+#### ambiguous_words
+
+Words that match only inside a multi-word term.
+
+* **Type:**
+  [`frozenset`](https://docs.python.org/3/builtins/stdtypes.html#frozenset)
+
+#### skip_categories
+
+UCS categories the keyword stage never picks (a filename or
+declared CatID still may).
+
+* **Type:**
+  [`frozenset`](https://docs.python.org/3/builtins/stdtypes.html#frozenset)
+
+#### kind_weights
+
+Base weight of a hit by term kind (`subcategory`,
+`category`, `synonym`).
+
+* **Type:**
+  [`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+#### phrase_bonus
+
+Added per content word past the first of a multi-word term.
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+#### strong_confidence
+
+Band of strong evidence: a subcategory hit, a multi-word
+phrase, or two distinct content words on the row (a category name plus
+another word counts).
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+#### single_confidence
+
+Band of one content word that only this row lists as a
+synonym.
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+#### weak_confidence
+
+Band of a brush: a category name alone, or a synonym many
+rows share. A `confident=False` row drops one band (floored here).
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+#### audioset_confidence
+
+Band of an AudioSet-map hit; a weaker keyword match
+yields to one.
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+#### band(strength, , confident=True)
+
+The band of evidence of `strength`; an unverified row drops one.
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+#### *property* bands *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[float](https://docs.python.org/3/builtins/functions.html#float), [float](https://docs.python.org/3/builtins/functions.html#float), [float](https://docs.python.org/3/builtins/functions.html#float)]*
+
+The keyword bands, by [`STRONG`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.STRONG), [`SINGLE`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.SINGLE), [`WEAK`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.WEAK).
+
+### foley.index.taxonomy.resolver.RECORD_MIN_CONFIDENCE *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.5*
+
+an AudioSet-map hit’s. A weak
+keyword brush (a category name alone, a synonym many rows share) is below it.
+
+* **Type:**
+  The least confidence worth writing onto a record
+
+### foley.index.taxonomy.resolver.SINGLE *= 1*
+
+Evidence strengths, strongest first (indices into [`MatchPolicy.bands`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.MatchPolicy.bands)).
+
+### foley.index.taxonomy.resolver.STATED_CONFIDENCE *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 1.0*
+
+the sound says what it is.
+
+* **Type:**
+  A filename’s or the file’s own metadata’s CatID
+
+### foley.index.taxonomy.resolver.STRONG *= 0*
+
+Evidence strengths, strongest first (indices into [`MatchPolicy.bands`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.MatchPolicy.bands)).
+
 ### *class* foley.index.taxonomy.resolver.TaxonomyResolver(\*args, \*\*kwargs)
 
 Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
@@ -15961,7 +16424,26 @@ Return the CatID resolution for `record`.
 * **Return type:**
   [`CatIdResolution`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.CatIdResolution)
 
-### foley.index.taxonomy.resolver.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None)
+### foley.index.taxonomy.resolver.WEAK *= 2*
+
+Evidence strengths, strongest first (indices into [`MatchPolicy.bands`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.MatchPolicy.bands)).
+
+### foley.index.taxonomy.resolver.keyword_resolution(tags=(), caption=None, , table=None, policy=MatchPolicy(stop_words=frozenset({'no', 'have', 'few', 'who', 'his', 'such', 'every', 'the', 'be', 'in', 'their', 'nor', 'to', 'here', 'which', 'our', 'any', 'may', 'more', 'own', 'very', 'all', 'why', 'being', 'under', 'you', 'must', 'an', 'are', 'then', 'those', 'she', 'was', 'other', 'only', 'this', 'for', 'would', 'am', 'them', 'into', 'he', 'your', 'my', 'we', 'should', 'too', 'i', 'is', 'us', 'from', 'had', 'just', 'each', 'that', 'what', 'these', 'where', 'onto', 'do', 'by', 'has', 'without', 'does', 'did', 'will', 'how', 'as', 'been', 'on', 'could', 'me', 'same', 'about', 'but', 'with', 'its', 'when', 'him', 'it', 'there', 'if', 'at', 'most', 'and', 'a', 'or', 'so', 'were', 'they', 'some', 'of', 'also', 'her', 'not', 'than', 'might', 'can'}), ambiguous_words=frozenset({'work', 'set', 'fall', 'blue', 'long', 'misc', 'part', 'general', 'large', 'break', 'tone', 'off', 'arc', 'down', 'hit', 'light', 'piece', 'open', 'meeting', 'hold', 'shot', 'place', 'little', 'day', 'side', 'way', 'person', 'over', 'heavy', 'drop', 'handle', 'beat', 'small', 'release', 'catch', 'sound', 'bang', 'out', 'quiet', 'big', 'up', 'night', 'run', 'thing', 'time'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+
+The keyword stage alone: the best row for `tags`/`caption`, banded.
+
+```pycon
+>>> keyword_resolution(caption="a heavy wooden door creaks open").catid
+'DOORWood'
+>>> r = keyword_resolution(caption="the wind picked up")
+>>> r.catid, r.confidence
+('WIND', 0.4)
+```
+
+* **Return type:**
+  [`CatIdResolution`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.CatIdResolution)
+
+### foley.index.taxonomy.resolver.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'no', 'have', 'few', 'who', 'his', 'such', 'every', 'the', 'be', 'in', 'their', 'nor', 'to', 'here', 'which', 'our', 'any', 'may', 'more', 'own', 'very', 'all', 'why', 'being', 'under', 'you', 'must', 'an', 'are', 'then', 'those', 'she', 'was', 'other', 'only', 'this', 'for', 'would', 'am', 'them', 'into', 'he', 'your', 'my', 'we', 'should', 'too', 'i', 'is', 'us', 'from', 'had', 'just', 'each', 'that', 'what', 'these', 'where', 'onto', 'do', 'by', 'has', 'without', 'does', 'did', 'will', 'how', 'as', 'been', 'on', 'could', 'me', 'same', 'about', 'but', 'with', 'its', 'when', 'him', 'it', 'there', 'if', 'at', 'most', 'and', 'a', 'or', 'so', 'were', 'they', 'some', 'of', 'also', 'her', 'not', 'than', 'might', 'can'}), ambiguous_words=frozenset({'work', 'set', 'fall', 'blue', 'long', 'misc', 'part', 'general', 'large', 'break', 'tone', 'off', 'arc', 'down', 'hit', 'light', 'piece', 'open', 'meeting', 'hold', 'shot', 'place', 'little', 'day', 'side', 'way', 'person', 'over', 'heavy', 'drop', 'handle', 'beat', 'small', 'release', 'catch', 'sound', 'bang', 'out', 'quiet', 'big', 'up', 'night', 'run', 'thing', 'time'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -15976,49 +16458,202 @@ Resolve inputs to a best UCS CatID by the staged precedence.
   * **table** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)]) – UCS table (defaults to `default_ucs_table()`).
   * **audioset_map** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`AudioSetUcsMap`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.AudioSetUcsMap)]) – AudioSet->UCS map (defaults to
     [`default_audioset_ucs_map()`](_autosummary/foley.index.taxonomy.audioset.html.md#foley.index.taxonomy.audioset.default_audioset_ucs_map)).
+  * **policy** ([`MatchPolicy`](_autosummary/foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.MatchPolicy)) – How keywords match and band (default `DEFAULT_MATCH_POLICY`;
+    vary it with `dataclasses.replace`).
 * **Return type:**
   [`CatIdResolution`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.CatIdResolution)
 * **Returns:**
   A [`CatIdResolution`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.CatIdResolution) (falsy when
   nothing resolved).
 
+### foley.index.taxonomy.resolver.term_index(table)
+
+The [`TermIndex`](_autosummary/foley.index.taxonomy.text.html.md#foley.index.taxonomy.text.TermIndex) of `table`, built once per table.
+
+* **Return type:**
+  [`TermIndex`](_autosummary/foley.index.taxonomy.text.html.md#foley.index.taxonomy.text.TermIndex)
+
 
 # _autosummary/foley.index.taxonomy.seed.html.md
 
 # foley.index.taxonomy.seed
 
-Seed taxonomy data — a representative in-code UCS subset + AudioSet overlap map.
+Seed taxonomy data: curated phrases on real UCS rows, and the AudioSet overlap map.
 
-This is the OPEN/CLOSED seam (report 04 §5.3, [11 §3.1]): a small hand-curated
-seed lives here in code; the FULL UCS master (82 categories / ~750 subcategories)
-and the EnvSound-UCS AudioSet->UCS / FSD50K->UCS tables drop in later as JSON
-under `taxonomy/data/` and are merged OVER this seed with zero logic change.
+The default UCS table is the shipped v8.2.1 master (`data/ucs_master.json`; #227,
+#237). This seed is two things on top of it:
 
-Confidence: only `WEATHRain` and `DOORWood` are treated as authoritative CatIDs;
-every other row carries `confident=False` (\*\*APPROXIMATE — verify against the UCS
-master before shipping as authoritative\*\*). The seed is deliberately partial; it is
-NOT the 750-row master.
+- **Curated phrases.** Each row names a real master CatID and adds hand-written
+  multi-word phrases (`"rain on window"`, `"door creak"`) that the master’s
+  single-word synonyms lack; [`load_ucs_table()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.load_ucs_table) adds
+  them to the master row. `category`/`subcategory` are the master’s, verbatim
+  (a test pins that).
+- **The offline fallback.** When the master file is absent, these rows alone are
+  the table, so a resolution still lands on a real CatID.
+
+Every CatID here exists in UCS v8.2.1. The pre-master seed used invented ones
+(`WEATHRain`, `GLASBreak`); [`LEGACY_CATIDS`](_autosummary/foley.index.taxonomy.seed.html.md#foley.index.taxonomy.seed.LEGACY_CATIDS) says where each one went, so a
+record stamped with one still finds its row.
 
 ### Module Attributes
 
-| [`SEED_UCS_TABLE`](_autosummary/foley.index.taxonomy.seed.html.md#foley.index.taxonomy.seed.SEED_UCS_TABLE)        | catid, category, subcategory, synonyms (lowercased), confident.   |
-|------------------------------------------------------------------------|-------------------------------------------------------------------|
-| [`SEED_AUDIOSET_UCS_MAP`](_autosummary/foley.index.taxonomy.seed.html.md#foley.index.taxonomy.seed.SEED_AUDIOSET_UCS_MAP) | AudioSet label NAME (lowercased) -> UCS CatID.                    |
+| [`LEGACY_CATIDS`](_autosummary/foley.index.taxonomy.seed.html.md#foley.index.taxonomy.seed.LEGACY_CATIDS)         | The pre-master seed's invented CatIDs -> the real UCS v8.2.1 CatID that replaced each (#237).   |
+|------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| [`SEED_UCS_TABLE`](_autosummary/foley.index.taxonomy.seed.html.md#foley.index.taxonomy.seed.SEED_UCS_TABLE)        | catid, category, subcategory (the master's), and extra lowercased phrases.                      |
+| [`SEED_AUDIOSET_UCS_MAP`](_autosummary/foley.index.taxonomy.seed.html.md#foley.index.taxonomy.seed.SEED_AUDIOSET_UCS_MAP) | AudioSet label NAME (lowercased) -> UCS CatID.                                                  |
 
-### foley.index.taxonomy.seed.SEED_AUDIOSET_UCS_MAP *: [list](https://docs.python.org/3/builtins/stdtypes.html#list)[[dict](https://docs.python.org/3/builtins/stdtypes.html#dict)]* *= [{'catid': 'DOORWood', 'mid': '/m/02dgv', 'name': 'door'}, {'catid': 'DOORMetal', 'mid': '/m/02y_763', 'name': 'sliding door'}, {'catid': 'WEATHRain', 'mid': '/m/06mb1', 'name': 'rain'}, {'catid': 'WEATHRain', 'mid': '/m/07r10fb', 'name': 'raindrop'}, {'catid': 'WEATHThunder', 'mid': '/m/0ngt1', 'name': 'thunder'}, {'catid': 'WEATHThunder', 'mid': '/m/0jb2l', 'name': 'thunderstorm'}, {'catid': 'WEATHWind', 'mid': '/m/03m9d0z', 'name': 'wind'}, {'catid': 'FOOTConc', 'mid': '/m/07qann', 'name': 'walk, footsteps'}, {'catid': 'FIREGeneral', 'mid': '/m/0jbk', 'name': 'fire'}, {'catid': 'FIREGeneral', 'mid': '/m/07pc8k4', 'name': 'crackle'}, {'catid': 'WATRRun', 'mid': '/m/0838f', 'name': 'water'}, {'catid': 'WATRSplash', 'mid': '/m/07qlwh6', 'name': 'splash, splatter'}, {'catid': 'LIQDPour', 'mid': '/m/07q0yl5', 'name': 'pour'}, {'catid': 'GLASBreak', 'mid': '/m/039jq', 'name': 'glass'}, {'catid': 'GLASBreak', 'mid': '/m/07rjwbb', 'name': 'shatter'}, {'catid': 'EXPLGeneral', 'mid': '/m/014zdl', 'name': 'explosion'}, {'catid': 'GUNHandgun', 'mid': '/m/032s66', 'name': 'gunshot, gunfire'}, {'catid': 'VEHCarExt', 'mid': '/m/07yv9', 'name': 'vehicle'}, {'catid': 'VEHCarExt', 'mid': '/m/0k4j', 'name': 'car'}, {'catid': 'VEHHorn', 'mid': '/m/0912c9', 'name': 'vehicle horn, honk'}, {'catid': 'ANMLDog', 'mid': '/m/0bt9lr', 'name': 'dog'}, {'catid': 'ANMLDog', 'mid': '/m/05tny_', 'name': 'bark'}, {'catid': 'ANMLCat', 'mid': '/m/01yrx', 'name': 'cat'}, {'catid': 'ANMLBird', 'mid': '/m/015p6', 'name': 'bird'}, {'catid': 'COMMPhone', 'mid': '/m/07cx4', 'name': 'telephone'}]*
+### foley.index.taxonomy.seed.LEGACY_CATIDS *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= {'AMBNature': 'AMBForst', 'AMBUrban': 'AMBUrbn', 'ANMLBird': 'BIRDSong', 'CLOTHMove': 'CLOTHMvmt', 'COMMPhone': 'COMTelph', 'DESTGeneral': 'DESTRCrsh', 'DOORKnob': 'DOORHdwr', 'DOORMetal': 'DOORMetl', 'EXPLGeneral': 'EXPLReal', 'FIREGeneral': 'FIREBurn', 'FIREWhoosh': 'FIREWhsh', 'FOOTConc': 'FEETHmn', 'FOOTGravel': 'FEETHmn', 'FOOTWood': 'FEETHmn', 'GLASBreak': 'GLASBrk', 'GUIBeep': 'UIBeep', 'GUIWhoosh': 'UIMvmt', 'GUNHandgun': 'GUNPis', 'LIQDPour': 'WATRPour', 'MACHGeneral': 'MACHMisc', 'PAPRHandle': 'PAPRHndl', 'VEHCarExt': 'VEHCar', 'VEHCarInt': 'VEHInt', 'WATRRun': 'WATRFlow', 'WATRSplash': 'WATRSplsh', 'WEATHRain': 'RAIN', 'WEATHThunder': 'THUN', 'WEATHWind': 'WIND'}*
+
+The pre-master seed’s invented CatIDs -> the real UCS v8.2.1 CatID that replaced
+each (#237). `IMPTGeneral` has none: UCS has no generic impact row.
+[`get()`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable.get) resolves them.
+
+### foley.index.taxonomy.seed.SEED_AUDIOSET_UCS_MAP *: [list](https://docs.python.org/3/builtins/stdtypes.html#list)[[dict](https://docs.python.org/3/builtins/stdtypes.html#dict)]* *= [{'catid': 'DOORWood', 'mid': '/m/02dgv', 'name': 'door'}, {'catid': 'DOORMetl', 'mid': '/m/02y_763', 'name': 'sliding door'}, {'catid': 'BELLDoor', 'mid': '/m/03wwcy', 'name': 'doorbell'}, {'catid': 'RAIN', 'mid': '/m/06mb1', 'name': 'rain'}, {'catid': 'RAIN', 'mid': '/m/07r10fb', 'name': 'raindrop'}, {'catid': 'THUN', 'mid': '/m/0ngt1', 'name': 'thunder'}, {'catid': 'THUN', 'mid': '/m/0jb2l', 'name': 'thunderstorm'}, {'catid': 'WIND', 'mid': '/m/03m9d0z', 'name': 'wind'}, {'catid': 'FEETHmn', 'mid': '/m/07qann', 'name': 'walk, footsteps'}, {'catid': 'FIREBurn', 'mid': '/m/0jbk', 'name': 'fire'}, {'catid': 'FIREBurn', 'mid': '/m/07pc8k4', 'name': 'crackle'}, {'catid': 'WATRFlow', 'mid': '/m/0838f', 'name': 'water'}, {'catid': 'WATRSplsh', 'mid': '/m/07qlwh6', 'name': 'splash, splatter'}, {'catid': 'WATRPour', 'mid': '/m/07q0yl5', 'name': 'pour'}, {'catid': 'GLASBrk', 'mid': '/m/039jq', 'name': 'glass'}, {'catid': 'GLASBrk', 'mid': '/m/07rjwbb', 'name': 'shatter'}, {'catid': 'EXPLReal', 'mid': '/m/014zdl', 'name': 'explosion'}, {'catid': 'GUNPis', 'mid': '/m/032s66', 'name': 'gunshot, gunfire'}, {'catid': 'VEHCar', 'mid': '/m/07yv9', 'name': 'vehicle'}, {'catid': 'VEHCar', 'mid': '/m/0k4j', 'name': 'car'}, {'catid': 'VEHHorn', 'mid': '/m/0912c9', 'name': 'vehicle horn, honk'}, {'catid': 'ANMLDog', 'mid': '/m/0bt9lr', 'name': 'dog'}, {'catid': 'ANMLDog', 'mid': '/m/05tny_', 'name': 'bark'}, {'catid': 'ANMLCat', 'mid': '/m/01yrx', 'name': 'cat'}, {'catid': 'BIRDSong', 'mid': '/m/015p6', 'name': 'bird'}, {'catid': 'COMTelph', 'mid': '/m/07cx4', 'name': 'telephone'}]*
 
 AudioSet label NAME (lowercased) -> UCS CatID. `mid` is best-effort (verify
 against `audioset/ontology.json` before trusting). Every `catid` here MUST
-exist in [`SEED_UCS_TABLE`](_autosummary/foley.index.taxonomy.seed.html.md#foley.index.taxonomy.seed.SEED_UCS_TABLE) — [`load_audioset_ucs_map()`](_autosummary/foley.index.taxonomy.audioset.html.md#foley.index.taxonomy.audioset.load_audioset_ucs_map)
+exist in the UCS table: [`load_audioset_ucs_map()`](_autosummary/foley.index.taxonomy.audioset.html.md#foley.index.taxonomy.audioset.load_audioset_ucs_map)
 asserts this at load time.
 
-### foley.index.taxonomy.seed.SEED_UCS_TABLE *: [list](https://docs.python.org/3/builtins/stdtypes.html#list)[[dict](https://docs.python.org/3/builtins/stdtypes.html#dict)]* *= [{'category': 'DOORS', 'catid': 'DOORWood', 'confident': True, 'subcategory': 'Wood', 'synonyms': ['wooden door', 'oak door', 'door creak', 'door open', 'door close', 'door slam']}, {'category': 'DOORS', 'catid': 'DOORMetal', 'confident': False, 'subcategory': 'Metal', 'synonyms': ['metal door', 'steel door', 'hatch', 'cell door']}, {'category': 'DOORS', 'catid': 'DOORKnob', 'confident': False, 'subcategory': 'Knob', 'synonyms': ['doorknob', 'door handle', 'latch', 'handle turn']}, {'category': 'WEATHER', 'catid': 'WEATHRain', 'confident': True, 'subcategory': 'Rain', 'synonyms': ['rain', 'rainfall', 'raining', 'rain on window', 'downpour', 'drizzle']}, {'category': 'WEATHER', 'catid': 'WEATHWind', 'confident': False, 'subcategory': 'Wind', 'synonyms': ['wind', 'gust', 'breeze', 'howling wind', 'windy']}, {'category': 'WEATHER', 'catid': 'WEATHThunder', 'confident': False, 'subcategory': 'Thunder', 'synonyms': ['thunder', 'thunderclap', 'thunderstorm', 'thunder crack', 'rumble']}, {'category': 'FOOTSTEPS', 'catid': 'FOOTWood', 'confident': False, 'subcategory': 'Wood', 'synonyms': ['footsteps wood', 'walking wood floor', 'footfall wood']}, {'category': 'FOOTSTEPS', 'catid': 'FOOTConc', 'confident': False, 'subcategory': 'Concrete', 'synonyms': ['footsteps concrete', 'walking pavement', 'footsteps sidewalk']}, {'category': 'FOOTSTEPS', 'catid': 'FOOTGravel', 'confident': False, 'subcategory': 'Gravel', 'synonyms': ['footsteps gravel', 'walking gravel', 'crunch gravel']}, {'category': 'IMPACTS', 'catid': 'IMPTGeneral', 'confident': False, 'subcategory': 'General', 'synonyms': ['impact', 'hit', 'thud', 'bang', 'smash', 'crash']}, {'category': 'DESTRUCTION', 'catid': 'DESTGeneral', 'confident': False, 'subcategory': 'General', 'synonyms': ['destruction', 'collapse', 'debris', 'rubble', 'demolition']}, {'category': 'GLASS', 'catid': 'GLASBreak', 'confident': False, 'subcategory': 'Break', 'synonyms': ['glass break', 'glass shatter', 'shattering glass', 'broken glass']}, {'category': 'WATER', 'catid': 'WATRRun', 'confident': False, 'subcategory': 'Running', 'synonyms': ['running water', 'stream', 'faucet', 'tap water', 'flowing water']}, {'category': 'WATER', 'catid': 'WATRSplash', 'confident': False, 'subcategory': 'Splash', 'synonyms': ['splash', 'splashing', 'water splash', 'plop']}, {'category': 'LIQUID', 'catid': 'LIQDPour', 'confident': False, 'subcategory': 'Pour', 'synonyms': ['pour', 'pouring', 'glug', 'liquid pour']}, {'category': 'FIRE', 'catid': 'FIREGeneral', 'confident': False, 'subcategory': 'General', 'synonyms': ['fire', 'flames', 'campfire', 'crackling fire', 'burning']}, {'category': 'FIRE', 'catid': 'FIREWhoosh', 'confident': False, 'subcategory': 'Whoosh', 'synonyms': ['fire whoosh', 'flame burst', 'fireball', 'ignite whoosh']}, {'category': 'VEHICLES', 'catid': 'VEHCarInt', 'confident': False, 'subcategory': 'Car Interior', 'synonyms': ['car interior', 'in car', 'car cabin']}, {'category': 'VEHICLES', 'catid': 'VEHCarExt', 'confident': False, 'subcategory': 'Car Exterior', 'synonyms': ['car pass by', 'car exterior', 'car drive by', 'engine car']}, {'category': 'VEHICLES', 'catid': 'VEHHorn', 'confident': False, 'subcategory': 'Horn', 'synonyms': ['car horn', 'honk', 'vehicle horn', 'beep horn']}, {'category': 'AMBIENCE', 'catid': 'AMBUrban', 'confident': False, 'subcategory': 'Urban', 'synonyms': ['city ambience', 'street ambience', 'urban background', 'traffic ambience']}, {'category': 'AMBIENCE', 'catid': 'AMBNature', 'confident': False, 'subcategory': 'Nature', 'synonyms': ['nature ambience', 'forest ambience', 'outdoor ambience', 'birdsong bed']}, {'category': 'AMBIENCE', 'catid': 'AMBRoom', 'confident': False, 'subcategory': 'Room Tone', 'synonyms': ['room tone', 'roomtone', 'interior ambience', 'quiet room']}, {'category': 'USER INTERFACE', 'catid': 'GUIBeep', 'confident': False, 'subcategory': 'Beep', 'synonyms': ['ui beep', 'button', 'menu click', 'notification', 'ui blip']}, {'category': 'USER INTERFACE', 'catid': 'GUIWhoosh', 'confident': False, 'subcategory': 'Whoosh', 'synonyms': ['ui whoosh', 'swipe', 'ui swipe', 'transition whoosh']}, {'category': 'ANIMALS', 'catid': 'ANMLDog', 'confident': False, 'subcategory': 'Dog', 'synonyms': ['dog', 'bark', 'dog bark', 'growl', 'whine dog']}, {'category': 'ANIMALS', 'catid': 'ANMLCat', 'confident': False, 'subcategory': 'Cat', 'synonyms': ['cat', 'meow', 'purr', 'cat meow']}, {'category': 'ANIMALS', 'catid': 'ANMLBird', 'confident': False, 'subcategory': 'Bird', 'synonyms': ['bird', 'birdsong', 'chirp', 'tweet', 'bird call']}, {'category': 'GUNS', 'catid': 'GUNHandgun', 'confident': False, 'subcategory': 'Handgun', 'synonyms': ['gunshot', 'pistol', 'handgun', 'gun fire', 'shot']}, {'category': 'EXPLOSIONS', 'catid': 'EXPLGeneral', 'confident': False, 'subcategory': 'General', 'synonyms': ['explosion', 'blast', 'boom', 'detonation', 'explode']}, {'category': 'CLOTH', 'catid': 'CLOTHMove', 'confident': False, 'subcategory': 'Movement', 'synonyms': ['cloth', 'cloth movement', 'fabric', 'clothing rustle', 'cloth rustle']}, {'category': 'PAPER', 'catid': 'PAPRHandle', 'confident': False, 'subcategory': 'Handling', 'synonyms': ['paper', 'paper rustle', 'page turn', 'paper crumple']}, {'category': 'MACHINES', 'catid': 'MACHGeneral', 'confident': False, 'subcategory': 'General', 'synonyms': ['machine', 'motor', 'mechanism', 'machinery', 'servo']}, {'category': 'ELECTRICITY', 'catid': 'ELECBuzz', 'confident': False, 'subcategory': 'Buzz', 'synonyms': ['electric buzz', 'spark', 'zap', 'electricity', 'arc']}, {'category': 'COMMUNICATIONS', 'catid': 'COMMPhone', 'confident': False, 'subcategory': 'Phone', 'synonyms': ['phone ring', 'telephone', 'ringtone', 'cell phone', 'dial tone']}]*
+### foley.index.taxonomy.seed.SEED_UCS_TABLE *: [list](https://docs.python.org/3/builtins/stdtypes.html#list)[[dict](https://docs.python.org/3/builtins/stdtypes.html#dict)]* *= [{'category': 'DOORS', 'catid': 'DOORWood', 'subcategory': 'WOOD', 'synonyms': ['wooden door', 'oak door', 'door creak', 'door open', 'door close', 'door slam']}, {'category': 'DOORS', 'catid': 'DOORMetl', 'subcategory': 'METAL', 'synonyms': ['metal door', 'steel door', 'hatch', 'cell door']}, {'category': 'DOORS', 'catid': 'DOORHdwr', 'subcategory': 'HARDWARE', 'synonyms': ['doorknob', 'door handle', 'latch', 'handle turn']}, {'category': 'RAIN', 'catid': 'RAIN', 'subcategory': 'GENERAL', 'synonyms': ['rain', 'rainfall', 'raining', 'rain on window', 'downpour', 'drizzle']}, {'category': 'WIND', 'catid': 'WIND', 'subcategory': 'GENERAL', 'synonyms': ['wind', 'gust', 'breeze', 'howling wind', 'windy']}, {'category': 'WEATHER', 'catid': 'THUN', 'subcategory': 'THUNDER', 'synonyms': ['thunder', 'thunderclap', 'thunderstorm', 'thunder crack', 'rumble']}, {'category': 'FOOTSTEPS', 'catid': 'FEETHmn', 'subcategory': 'HUMAN', 'synonyms': ['footsteps wood', 'walking wood floor', 'footfall wood', 'footsteps concrete', 'walking pavement', 'footsteps sidewalk', 'footsteps gravel', 'walking gravel', 'crunch gravel']}, {'category': 'DESTRUCTION', 'catid': 'DESTRCrsh', 'subcategory': 'CRASH & DEBRIS', 'synonyms': ['destruction', 'collapse', 'debris', 'rubble', 'demolition']}, {'category': 'GLASS', 'catid': 'GLASBrk', 'subcategory': 'BREAK', 'synonyms': ['glass break', 'glass shatter', 'shattering glass', 'broken glass']}, {'category': 'WATER', 'catid': 'WATRFlow', 'subcategory': 'FLOW', 'synonyms': ['running water', 'stream', 'faucet', 'tap water', 'flowing water']}, {'category': 'WATER', 'catid': 'WATRSplsh', 'subcategory': 'SPLASH', 'synonyms': ['splash', 'splashing', 'water splash', 'plop']}, {'category': 'WATER', 'catid': 'WATRPour', 'subcategory': 'POUR', 'synonyms': ['pour', 'pouring', 'glug', 'liquid pour']}, {'category': 'FIRE', 'catid': 'FIREBurn', 'subcategory': 'BURNING', 'synonyms': ['fire', 'flames', 'campfire', 'crackling fire', 'burning']}, {'category': 'FIRE', 'catid': 'FIREWhsh', 'subcategory': 'WHOOSH', 'synonyms': ['fire whoosh', 'flame burst', 'fireball', 'ignite whoosh']}, {'category': 'VEHICLES', 'catid': 'VEHInt', 'subcategory': 'INTERIOR', 'synonyms': ['car interior', 'in car', 'car cabin']}, {'category': 'VEHICLES', 'catid': 'VEHCar', 'subcategory': 'CAR', 'synonyms': ['car pass by', 'car exterior', 'car drive by', 'engine car']}, {'category': 'VEHICLES', 'catid': 'VEHHorn', 'subcategory': 'HORN', 'synonyms': ['car horn', 'honk', 'vehicle horn', 'beep horn']}, {'category': 'AMBIENCE', 'catid': 'AMBUrbn', 'subcategory': 'URBAN', 'synonyms': ['city ambience', 'street ambience', 'urban background', 'traffic ambience']}, {'category': 'AMBIENCE', 'catid': 'AMBForst', 'subcategory': 'FOREST', 'synonyms': ['nature ambience', 'forest ambience', 'outdoor ambience', 'birdsong bed']}, {'category': 'AMBIENCE', 'catid': 'AMBRoom', 'subcategory': 'ROOM TONE', 'synonyms': ['room tone', 'roomtone', 'interior ambience', 'quiet room']}, {'category': 'USER INTERFACE', 'catid': 'UIBeep', 'subcategory': 'BEEP', 'synonyms': ['ui beep', 'button', 'menu click', 'notification', 'ui blip']}, {'category': 'USER INTERFACE', 'catid': 'UIMvmt', 'subcategory': 'MOTION', 'synonyms': ['ui whoosh', 'swipe', 'ui swipe', 'transition whoosh']}, {'category': 'ANIMALS', 'catid': 'ANMLDog', 'subcategory': 'DOG', 'synonyms': ['dog', 'bark', 'dog bark', 'growl', 'whine dog']}, {'category': 'ANIMALS', 'catid': 'ANMLCat', 'subcategory': 'CAT DOMESTIC', 'synonyms': ['cat', 'meow', 'purr', 'cat meow']}, {'category': 'BIRDS', 'catid': 'BIRDSong', 'subcategory': 'SONGBIRD', 'synonyms': ['bird', 'birdsong', 'chirp', 'tweet', 'bird call']}, {'category': 'GUNS', 'catid': 'GUNPis', 'subcategory': 'PISTOL', 'synonyms': ['gunshot', 'pistol', 'handgun', 'gun fire', 'shot']}, {'category': 'EXPLOSIONS', 'catid': 'EXPLReal', 'subcategory': 'REAL', 'synonyms': ['explosion', 'blast', 'boom', 'detonation', 'explode']}, {'category': 'CLOTH', 'catid': 'CLOTHMvmt', 'subcategory': 'MOVEMENT', 'synonyms': ['cloth', 'cloth movement', 'fabric', 'clothing rustle', 'cloth rustle']}, {'category': 'PAPER', 'catid': 'PAPRHndl', 'subcategory': 'HANDLE', 'synonyms': ['paper', 'paper rustle', 'page turn', 'paper crumple']}, {'category': 'MACHINES', 'catid': 'MACHMisc', 'subcategory': 'MISC', 'synonyms': ['machine', 'motor', 'mechanism', 'machinery', 'servo']}, {'category': 'ELECTRICITY', 'catid': 'ELECBuzz', 'subcategory': 'BUZZ & HUM', 'synonyms': ['electric buzz', 'spark', 'zap', 'electricity', 'arc']}, {'category': 'COMMUNICATIONS', 'catid': 'COMTelph', 'subcategory': 'TELEPHONE', 'synonyms': ['phone ring', 'telephone', 'ringtone', 'cell phone', 'dial tone']}]*
 
-catid, category, subcategory, synonyms
-(lowercased), confident. `confident=False` => APPROXIMATE CatID.
+catid, category,
+subcategory (the master’s), and extra lowercased phrases.
 
 * **Type:**
-  Representative UCS seed. Each row
+  Curated rows, keyed by real UCS v8.2.1 CatIDs. Each row
+
+
+# _autosummary/foley.index.taxonomy.text.html.md
+
+# foley.index.taxonomy.text
+
+The UCS term index: every row’s terms, with the vocabulary’s inflections.
+
+Matching runs over a **closed vocabulary**: the words of the table’s subcategories,
+category names and synonyms. Instead of stemming the query (which mangles words:
+`golden` -> `gold`, `news` -> `new`), the index lists the regular inflections
+of every vocabulary word ([`inflections()`](_autosummary/foley.index.taxonomy.text.html.md#foley.index.taxonomy.text.inflections): `-s`/`-es`/`-ies`, `-ing`,
+`-ed`, with the final `e` dropped and a final consonant doubled where English
+does), so a query word is only lowercased and looked up: `"rattling"` meets the
+`rattle` synonym, `"screens"` the `screen` one, and `"chicken"` never meets
+`chick`. Vocabulary words that are inflections of each other (`door` and
+`doors`, the `DOORS` category) share one *lemma*, so either spelling meets both.
+
+### Module Attributes
+
+| [`MIN_INFLECTED_LENGTH`](_autosummary/foley.index.taxonomy.text.html.md#foley.index.taxonomy.text.MIN_INFLECTED_LENGTH)   | Shorter vocabulary words are not inflected (`be` + `d` is `bed`).                                                                                                                                              |
+|-------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`NOT_INFLECTIONS`](_autosummary/foley.index.taxonomy.text.html.md#foley.index.taxonomy.text.NOT_INFLECTIONS)        | Vocabulary words that look like a regular inflection of another but are not (`news` is not the plural of `new`, `thing` not `the` + `-ing`, a `winding` road not the `WIND`): never linked to that other word. |
+
+### Functions
+
+| [`build_term_index`](_autosummary/foley.index.taxonomy.text.html.md#foley.index.taxonomy.text.build_term_index)(rows, \*[, inflect, ...])   | Index the subcategory, synonyms and category name of each `UcsRow` in `rows`.                                                |
+|-----------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
+| [`category_rows`](_autosummary/foley.index.taxonomy.text.html.md#foley.index.taxonomy.text.category_rows)(rows)                          | `category -> CatID` of the row a category name alone lands on: its first generic (`GENERAL`/`MISC`) row, else its first row. |
+| [`inflections`](_autosummary/foley.index.taxonomy.text.html.md#foley.index.taxonomy.text.inflections)(word)                            | The regular inflections of `word` (`word` itself excluded).                                                                  |
+
+### Classes
+
+| [`Term`](_autosummary/foley.index.taxonomy.text.html.md#foley.index.taxonomy.text.Term)(catid, words, lemmas, kind)        | One matchable term of a UCS row: its words, their lemmas, and where it came from.   |
+|------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
+| [`TermIndex`](_autosummary/foley.index.taxonomy.text.html.md#foley.index.taxonomy.text.TermIndex)(by_lemma, lexicon, row_count) | A table's terms keyed by lemma, the surface-form lexicon, and term sharing.         |
+
+### foley.index.taxonomy.text.MIN_INFLECTED_LENGTH *= 3*
+
+Shorter vocabulary words are not inflected (`be` + `d` is `bed`).
+
+### foley.index.taxonomy.text.NOT_INFLECTIONS *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)* *= frozenset({'bearing', 'casing', 'copses', 'earing', 'lemming', 'news', 'rugged', 'seed', 'singed', 'thing', 'tired', 'weed', 'wicked', 'winding'})*
+
+Vocabulary words that look like a regular inflection of another but are not
+(`news` is not the plural of `new`, `thing` not `the` + `-ing`, a
+`winding` road not the `WIND`): never linked to that other word.
+
+### *class* foley.index.taxonomy.text.Term(catid, words, lemmas, kind)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One matchable term of a UCS row: its words, their lemmas, and where it came from.
+
+`kind` is `"subcategory"`, `"synonym"` or `"category"`.
+
+#### *property* text *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
+
+The term as written (lowercased, single-spaced).
+
+### *class* foley.index.taxonomy.text.TermIndex(by_lemma, lexicon, row_count)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+A table’s terms keyed by lemma, the surface-form lexicon, and term sharing.
+
+#### by_lemma
+
+lemma -> every term with that lemma among its words.
+
+* **Type:**
+  [`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`Term`](_autosummary/foley.index.taxonomy.text.html.md#foley.index.taxonomy.text.Term), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)]]
+
+#### lexicon
+
+surface word (a vocabulary word or an inflection of one) -> its lemmas.
+
+* **Type:**
+  [`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`frozenset`](https://docs.python.org/3/builtins/stdtypes.html#frozenset)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
+
+#### row_count
+
+a term’s lemmas -> in how many rows it appears, whatever its kind.
+
+* **Type:**
+  [`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)], [`int`](https://docs.python.org/3/builtins/functions.html#int)]
+
+#### lemmas(word)
+
+The lemmas a query word can be (empty if no vocabulary word has that form).
+
+* **Return type:**
+  [`frozenset`](https://docs.python.org/3/builtins/stdtypes.html#frozenset)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.index.taxonomy.text.build_term_index(rows, \*, inflect=<function inflections>, not_inflections=frozenset({'bearing', 'casing', 'copses', 'earing', 'lemming', 'news', 'rugged', 'seed', 'singed', 'thing', 'tired', 'weed', 'wicked', 'winding'}))
+
+Index the subcategory, synonyms and category name of each `UcsRow` in `rows`.
+
+A row lists a term once per kind, so a word that is both its category name and
+one of its synonyms counts as both. A category name is one term, on the
+category’s representative row ([`category_rows()`](_autosummary/foley.index.taxonomy.text.html.md#foley.index.taxonomy.text.category_rows)); a matcher lends it to
+the category’s other rows. `inflect` gives a word’s inflections (default
+[`inflections()`](_autosummary/foley.index.taxonomy.text.html.md#foley.index.taxonomy.text.inflections)); `not_inflections` are words never read as an inflection
+(default [`NOT_INFLECTIONS`](_autosummary/foley.index.taxonomy.text.html.md#foley.index.taxonomy.text.NOT_INFLECTIONS)).
+
+* **Return type:**
+  [`TermIndex`](_autosummary/foley.index.taxonomy.text.html.md#foley.index.taxonomy.text.TermIndex)
+
+### foley.index.taxonomy.text.category_rows(rows)
+
+`category -> CatID` of the row a category name alone lands on: its first
+generic (`GENERAL`/`MISC`) row, else its first row.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.index.taxonomy.text.inflections(word)
+
+The regular inflections of `word` (`word` itself excluded).
+
+```pycon
+>>> sorted(inflections("rattle"))
+['rattled', 'rattles', 'rattling']
+>>> sorted(inflections("drip")), sorted(inflections("buzz"))
+(['dripped', 'dripping', 'drips'], ['buzzed', 'buzzes', 'buzzing'])
+>>> sorted(inflections("cry")), sorted(inflections("open"))
+(['cried', 'cries', 'crying'], ['opened', 'opening', 'opens'])
+>>> inflections("up")
+frozenset()
+```
+
+* **Return type:**
+  [`frozenset`](https://docs.python.org/3/builtins/stdtypes.html#frozenset)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 
 # _autosummary/foley.index.taxonomy.ucs.html.md
@@ -16038,34 +16673,46 @@ string-split, since the category prefix is variable-length).
 [`parse_ucs_name()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_name) returns every block ([`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName));
 [`parse_ucs_filename()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_filename) just the category pair; [`format_ucs_name()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.format_ucs_name) is the
 inverse of [`parse_ucs_name()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_name) (it sanitises each block so the name parses back). The
-loader merges the in-code seed with an optional full-table JSON drop under
-`taxonomy/data/ucs_full.json` (JSON wins on CatID collision) — open/closed.
+default table is the shipped UCS v8.2.1 master with the seed’s curated phrases added,
+and an optional house drop under `taxonomy/data/ucs_full.json` on top (it wins on
+CatID collision) — open/closed. A CatID matches case-insensitively only when it is
+mixed-case (`doorwood` is `DOORWood`). An all-capitals one (`RAIN`, `MIX`,
+`RAW`, `REF`) must be written as such, and counts only in a name with every
+mandatory block ([`UCS_MANDATORY_BLOCKS`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.UCS_MANDATORY_BLOCKS)), since `RAW_01.wav` and
+`MIX_final.wav` are ordinary names.
 
 ### Module Attributes
 
 | [`UCS_MASTER_FILE`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.UCS_MASTER_FILE)        | The UCS v8.2.1 master as shipped (`tools/build_ucs_table.py`; #227).                                                                                                                                                     |
 |-------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`BLOCK_SEP`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.BLOCK_SEP)              | The block separator of a UCS filename, and the one that attaches the optional UserCategory to the CatID and VendorCategory to the FXName.                                                                                |
+| [`UCS_MANDATORY_BLOCKS`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.UCS_MANDATORY_BLOCKS)   | The blocks every UCS filename has (`CatID_FXName_CreatorID_SourceID`).                                                                                                                                                   |
 | [`UCS_NAME_BLOCKS`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.UCS_NAME_BLOCKS)        | The blocks of a UCS filename, as [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName) fields (`category` and `subcategory` are not blocks: they come from the CatID's table row). |
 | [`UCS_NAME_MAX_BYTES`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.UCS_NAME_MAX_BYTES)     | The longest filename, in UTF-8 bytes, that [`format_ucs_name()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.format_ucs_name) makes (`NAME_MAX` on ext4, APFS and NTFS-as-seen-by-most-tools).                                           |
 | [`UCS_SHORTENABLE_BLOCKS`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.UCS_SHORTENABLE_BLOCKS) | The blocks [`format_ucs_name()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.format_ucs_name) shortens, longest first, to fit [`UCS_NAME_MAX_BYTES`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.UCS_NAME_MAX_BYTES).                                       |
 
 ### Functions
 
-| [`default_ucs_table`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.default_ucs_table)()                          | The process-wide default UCS table (seed + any JSON drop), built once.                                                                                                                                                                                                                                                                   |
-|-----------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`format_ucs_name`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.format_ucs_name)([name, ext, table, ...])     | The UCS filename of `name` (a [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName) or a mapping of its blocks), with `blocks` ([`UCS_NAME_BLOCKS`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.UCS_NAME_BLOCKS)) overriding it: the inverse of [`parse_ucs_name()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_name). |
-| [`load_ucs_master`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.load_ucs_master)()                            | The authoritative UCS v8.2.1 master (753 rows, 82 categories), without the seed.                                                                                                                                                                                                                                                         |
-| [`load_ucs_table`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.load_ucs_table)(\*[, data_dir, include_seed]) | Build the UCS lookup: the seed rows, overridden/extended by a JSON drop.                                                                                                                                                                                                                                                                 |
-| [`looks_like_vendor_tag`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.looks_like_vendor_tag)(prefix)                | Whether the text before an FXName's first hyphen reads as a VendorCategory.                                                                                                                                                                                                                                                              |
-| [`parse_catid_token`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_catid_token)(filename)                  | Return the CatID candidate of a UCS-style filename, else `None`.                                                                                                                                                                                                                                                                         |
-| [`parse_ucs_filename`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_filename)(filename, \*[, table])    | Parse a UCS-conformant filename to `(ucs_category, ucs_subcategory)`.                                                                                                                                                                                                                                                                    |
-| [`parse_ucs_name`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_name)(filename, \*[, table, ...])   | Every block of a UCS filename as a [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName), else `None`.                                                                                                                                                                                             |
+| [`default_ucs_table`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.default_ucs_table)()                         | The process-wide default UCS table (master + seed phrases + any drop), built once.                                                                                                                                                                                                                                                       |
+|----------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`format_ucs_name`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.format_ucs_name)([name, ext, table, ...])    | The UCS filename of `name` (a [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName) or a mapping of its blocks), with `blocks` ([`UCS_NAME_BLOCKS`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.UCS_NAME_BLOCKS)) overriding it: the inverse of [`parse_ucs_name()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_name). |
+| [`load_ucs_master`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.load_ucs_master)()                           | The UCS v8.2.1 master as shipped (753 rows, 82 categories): no seed, no drop.                                                                                                                                                                                                                                                            |
+| [`load_ucs_table`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.load_ucs_table)(\*[, data_dir, master, ...]) | Build the UCS lookup: the v8.2.1 master, the seed's phrases, then a JSON drop.                                                                                                                                                                                                                                                           |
+| [`looks_like_vendor_tag`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.looks_like_vendor_tag)(prefix)               | Whether the text before an FXName's first hyphen reads as a VendorCategory.                                                                                                                                                                                                                                                              |
+| [`parse_catid_token`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_catid_token)(filename)                 | Return the CatID candidate of a UCS-style filename, else `None`.                                                                                                                                                                                                                                                                         |
+| [`parse_ucs_filename`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_filename)(filename, \*[, table])   | Parse a UCS-conformant filename to `(ucs_category, ucs_subcategory)`.                                                                                                                                                                                                                                                                    |
+| [`parse_ucs_name`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_name)(filename, \*[, table, ...])  | Every block of a UCS filename as a [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName), else `None`.                                                                                                                                                                                             |
 
 ### foley.index.taxonomy.ucs.BLOCK_SEP *= '_'*
 
 The block separator of a UCS filename, and the one that attaches the optional
 UserCategory to the CatID and VendorCategory to the FXName.
+
+### foley.index.taxonomy.ucs.UCS_MANDATORY_BLOCKS *= ('catid', 'fx_name', 'creator_id', 'source_id')*
+
+The blocks every UCS filename has (`CatID_FXName_CreatorID_SourceID`). A name
+whose CatID is all capitals (`RAW`, `MIX`, `RAIN`) must have all of them to
+read as UCS: with fewer, `RAW_01.wav` is just a name.
 
 ### foley.index.taxonomy.ucs.UCS_MASTER_FILE *= PosixPath('/home/runner/work/foley/foley/foley/index/taxonomy/data/ucs_master.json')*
 
@@ -16089,7 +16736,7 @@ The blocks [`format_ucs_name()`](_autosummary/foley.index.taxonomy.ucs.html.md#f
 
 ### foley.index.taxonomy.ucs.default_ucs_table()
 
-The process-wide default UCS table (seed + any JSON drop), built once.
+The process-wide default UCS table (master + seed phrases + any drop), built once.
 
 * **Return type:**
   [`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)
@@ -16109,7 +16756,8 @@ over `max_bytes` has its longest shortenable block
 `format_ucs_name(parse_ucs_name(f))` is `f` for any `f` this function made.
 The CatID is looked up in `table` (default: [`default_ucs_table()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.default_ucs_table)) and
 written in its canonical spelling; an unknown one raises, since the name would
-not parse.
+not parse. An all-capitals CatID keeps every mandatory block, empty if need be
+(`RAIN_Heavy__`), so the name reads back as UCS.
 
 * **Parameters:**
   * **name** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName), [`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – The blocks to format (`category` / `subcategory` are ignored).
@@ -16141,13 +16789,11 @@ not parse.
 
 ### foley.index.taxonomy.ucs.load_ucs_master()
 
-The authoritative UCS v8.2.1 master (753 rows, 82 categories), without the seed.
+The UCS v8.2.1 master as shipped (753 rows, 82 categories): no seed, no drop.
 
-Opt-in for now: the default table ([`default_ucs_table()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.default_ucs_table)) is still the
-in-code seed, whose CatIDs mostly predate the master. Pass it where a table is
-taken (`parse_ucs_name(name, table=load_ucs_master())`). Row fields are the
-master’s, verbatim (`SubCategory` in capitals: `('DOORS', 'WOOD')`), with its
-explanation and synonyms (lowercased).
+Row fields are the master’s, verbatim (`SubCategory` in capitals:
+`('DOORS', 'WOOD')`), with its explanation and synonyms (lowercased). The
+default table ([`default_ucs_table()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.default_ucs_table)) is this plus the seed’s phrases.
 
 ```pycon
 >>> t = load_ucs_master()
@@ -16158,19 +16804,33 @@ explanation and synonyms (lowercased).
 * **Return type:**
   [`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)
 
-### foley.index.taxonomy.ucs.load_ucs_table(, data_dir=None, include_seed=True)
+### foley.index.taxonomy.ucs.load_ucs_table(, data_dir=None, master=PosixPath('/home/runner/work/foley/foley/foley/index/taxonomy/data/ucs_master.json'), include_seed=True, legacy_catids={'AMBNature': 'AMBForst', 'AMBUrban': 'AMBUrbn', 'ANMLBird': 'BIRDSong', 'CLOTHMove': 'CLOTHMvmt', 'COMMPhone': 'COMTelph', 'DESTGeneral': 'DESTRCrsh', 'DOORKnob': 'DOORHdwr', 'DOORMetal': 'DOORMetl', 'EXPLGeneral': 'EXPLReal', 'FIREGeneral': 'FIREBurn', 'FIREWhoosh': 'FIREWhsh', 'FOOTConc': 'FEETHmn', 'FOOTGravel': 'FEETHmn', 'FOOTWood': 'FEETHmn', 'GLASBreak': 'GLASBrk', 'GUIBeep': 'UIBeep', 'GUIWhoosh': 'UIMvmt', 'GUNHandgun': 'GUNPis', 'LIQDPour': 'WATRPour', 'MACHGeneral': 'MACHMisc', 'PAPRHandle': 'PAPRHndl', 'VEHCarExt': 'VEHCar', 'VEHCarInt': 'VEHInt', 'WATRRun': 'WATRFlow', 'WATRSplash': 'WATRSplsh', 'WEATHRain': 'RAIN', 'WEATHThunder': 'THUN', 'WEATHWind': 'WIND'})
 
-Build the UCS lookup: the seed rows, overridden/extended by a JSON drop.
+Build the UCS lookup: the v8.2.1 master, the seed’s phrases, then a JSON drop.
 
 * **Parameters:**
   * **data_dir** – Directory to look for `ucs_full.json` in (defaults to the
-    package’s `taxonomy/data/`). When present, its rows override the
-    seed on CatID collision and add the rest of the ~750-row master.
-  * **include_seed** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Start from the in-code seed table (default `True`).
+    package’s `taxonomy/data/`). Its rows override any row on CatID
+    collision and add new ones (a house extension of UCS).
+  * **master** – The UCS master JSON (default: the shipped v8.2.1 table). `None`,
+    or a path that does not exist, falls back to the seed rows alone.
+  * **include_seed** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Add the seed’s curated phrases to their master rows (default
+    `True`); with no master, the seed rows are the table.
+  * **legacy_catids** ([`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Old CatIDs a stored record may carry, mapped to real ones
+    (default [`LEGACY_CATIDS`](_autosummary/foley.index.taxonomy.seed.html.md#foley.index.taxonomy.seed.LEGACY_CATIDS)); the table’s
+    `get` resolves them.
 * **Return type:**
   [`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)
 * **Returns:**
   A ready [`UcsTable`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable).
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – no master and `include_seed=False`: there would be no rows.
+
+```pycon
+>>> t = load_ucs_table()
+>>> len(t), t.get("RAIN").category, "rain on window" in t.get("RAIN").synonyms
+(753, 'RAIN', True)
+```
 
 ### foley.index.taxonomy.ucs.looks_like_vendor_tag(prefix)
 
@@ -16221,16 +16881,18 @@ its CatID token is unknown (so a wrong subcategory is never emitted).
 
 Every block of a UCS filename as a [`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName), else `None`.
 
-Fail-quiet like [`parse_ucs_filename()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_filename): `None` when the name has no `_` or
-its CatID is not in the table. Blocks past SourceID are the UserData (rejoined
-with `_`); a block the name lacks is `None`. The FXName block’s head before a
-hyphen is the VendorCategory only when `is_vendor_tag` accepts it
-([`looks_like_vendor_tag()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.looks_like_vendor_tag)), so `Sci-Fi Door` stays whole.
+Fail-quiet like [`parse_ucs_filename()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.parse_ucs_filename): `None` when the name has no `_`,
+its CatID is not in the table, or its CatID is all capitals (`RAW`, `MIX`) and
+it lacks a mandatory block ([`UCS_MANDATORY_BLOCKS`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.UCS_MANDATORY_BLOCKS)). Blocks past SourceID
+are the UserData (rejoined with `_`); a block the name lacks is `None`. The
+FXName block’s head before a hyphen is the VendorCategory only when
+`is_vendor_tag` accepts it ([`looks_like_vendor_tag()`](_autosummary/foley.index.taxonomy.ucs.html.md#foley.index.taxonomy.ucs.looks_like_vendor_tag)), so `Sci-Fi Door`
+stays whole.
 
 ```pycon
 >>> n = parse_ucs_name("DOORWood-Gate_SCIFI-Creak Open_JD_NYC_take 2.wav")
 >>> (n.catid, n.category, n.subcategory, n.user_category)
-('DOORWood', 'DOORS', 'Wood', 'Gate')
+('DOORWood', 'DOORS', 'WOOD', 'Gate')
 >>> (n.vendor_category, n.fx_name, n.creator_id, n.source_id, n.user_data)
 ('SCIFI', 'Creak Open', 'JD', 'NYC', 'take 2')
 >>> m = parse_ucs_name("DOORWood_Sci-Fi Slam 5.1_JD_NYC")
@@ -16240,6 +16902,8 @@ hyphen is the VendorCategory only when `is_vendor_tag` accepts it
 True
 >>> parse_ucs_name("NOTACAT_x_y_z.wav") is None, parse_ucs_name("plain.wav") is None
 (True, True)
+>>> parse_ucs_name("MIX_final.wav") is None, parse_ucs_name("RAIN_Heavy_JD_NYC.wav").catid
+(True, 'RAIN')
 ```
 
 * **Return type:**
@@ -18984,7 +19648,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'ta dum', 'netflix chime', 'netflix sound', 'netflix intro', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel chime', 'intel inside', 'intel jingle', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'netflix intro', 'netflix sound', 'ta dum', 'netflix chime', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm roar', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel chime', 'intel jingle', 'intel inside', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -31104,7 +31768,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-22 07:46 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/683d695328d8d0d190282381c6283e5088b08561"><code>683d695</code></a> on branch <code>main</code>, for **foley 0.0.139** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-22 07:55 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/b5d73e4a9793794d49cbd5f9d097081c34c4cba6"><code>b5d73e4</code></a> on branch <code>main</code>, for **foley 0.0.140** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -31113,7 +31777,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/683d695328d8d0d190282381c6283e5088b08561"><code>683d695328d8d0d190282381c6283e5088b08561</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/b5d73e4a9793794d49cbd5f9d097081c34c4cba6"><code>b5d73e4a9793794d49cbd5f9d097081c34c4cba6</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -31124,9 +31788,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/44999464900">44999464900</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/45000138505">45000138505</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>683d695328d8d0d190282381c6283e5088b08561</code> (in the history of the built commit) |
+| Event commit | <code>e127454b49dfc4c48a09b2d82f93723918e01f26</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -31151,13 +31815,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.139/">0.0.139</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.140/">0.0.140</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 683d695328d8d0d190282381c6283e5088b08561
+git checkout b5d73e4a9793794d49cbd5f9d097081c34c4cba6
 pip install "epythet==0.2.23"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

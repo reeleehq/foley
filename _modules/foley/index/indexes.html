@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=8a967ab3"></script>
+    <script src="../../../_static/documentation_options.js?v=e863fa38"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.139" />
+  <meta name="docsearch:version" content="0.0.140" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -743,9 +743,10 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">Counter</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">tokenize</span>
 
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>  <span class="c1"># pragma: no cover - typing only</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">ndarray</span>
@@ -754,23 +755,16 @@ window.runMermaid = runMermaid;</script>
 <span class="n">_BM25_K1</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.5</span>
 <span class="n">_BM25_B</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.75</span>
 
-<span class="n">_WORD_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"[a-z0-9]+"</span><span class="p">)</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_tokenize</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""Lowercase word/number tokens (the shared analyzer for the stdlib BM25)."""</span>
-    <span class="k">return</span> <span class="n">_WORD_RE</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
-
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_fts5_or_match</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Optional[str]"</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Build a crash-safe FTS5 ``MATCH`` string from a raw user query.</span>
 
-<span class="sd">    Tokenizes with the shared analyzer (only ``[a-z0-9]+`` survives) and double-quotes</span>
-<span class="sd">    each token, so no FTS5 metacharacter — a colon, an unbalanced quote, a bare boolean</span>
+<span class="sd">    Tokenizes with the shared analyzer (:func:`foley.analysis.tokenize`: only</span>
+<span class="sd">    ``[a-z0-9]+`` survives) and double-quotes each token, so no FTS5 metacharacter — a colon, an unbalanced quote, a bare boolean</span>
 <span class="sd">    word, parentheses — can reach the FTS5 parser and raise ``sqlite3.OperationalError``.</span>
 <span class="sd">    Returns ``None`` when the query yields no usable token (the caller returns no hits).</span>
 <span class="sd">    """</span>
-    <span class="n">tokens</span> <span class="o">=</span> <span class="n">_tokenize</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+    <span class="n">tokens</span> <span class="o">=</span> <span class="n">tokenize</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">tokens</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
     <span class="k">return</span> <span class="s2">" OR "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">'"</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s1">"'</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">)</span>
@@ -935,13 +929,13 @@ window.runMermaid = runMermaid;</script>
         <span class="n">docs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_texts</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">docs</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">[]</span>
-        <span class="n">tokenized</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">_tokenize</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">docs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">tokenized</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">tokenize</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">docs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
         <span class="n">n_docs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tokenized</span><span class="p">)</span>
         <span class="n">avgdl</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tokenized</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="o">/</span> <span class="n">n_docs</span> <span class="ow">or</span> <span class="mf">1.0</span>
         <span class="n">df</span><span class="p">:</span> <span class="n">Counter</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">toks</span> <span class="ow">in</span> <span class="n">tokenized</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
             <span class="n">df</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">toks</span><span class="p">))</span>
-        <span class="n">q_terms</span> <span class="o">=</span> <span class="n">_tokenize</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+        <span class="n">q_terms</span> <span class="o">=</span> <span class="n">tokenize</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
         <span class="n">scores</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">id_</span><span class="p">,</span> <span class="n">toks</span> <span class="ow">in</span> <span class="n">tokenized</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">tf</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="n">toks</span><span class="p">)</span>

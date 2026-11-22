@@ -4,6 +4,13 @@ foley.index.taxonomy.model
 .. automodule:: foley.index.taxonomy.model
 
    
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      GENERIC_SUBCATEGORIES
+      NON_SOUND_CATEGORIES
+   
    .. rubric:: Classes
 
    .. autosummary::

@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=8a967ab3"></script>
+    <script src="../_static/documentation_options.js?v=e863fa38"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.139" />
+  <meta name="docsearch:version" content="0.0.140" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -401,6 +401,7 @@
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.agent_kit.html">foley.agent_kit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.analysis.html">foley.analysis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.base.html">foley.base</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.cli.html">foley.cli</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.cost.html">foley.cost</a></li>
@@ -594,7 +595,9 @@ subcategory names (foley’s own vocabulary), so tags land in-taxonomy.</p>
 <dd><p>natural UCS <code class="docutils literal notranslate"><span class="pre">category</span> <span class="pre">subcategory</span></code> phrases).</p>
 <p>Natural multi-word phrases (<code class="docutils literal notranslate"><span class="pre">&quot;weather</span> <span class="pre">rain&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;glass</span> <span class="pre">break&quot;</span></code>) are far
 better CLAP prompts — and better BM25 tags / taxonomy-resolver input — than
-bare abstract subcategory words (<code class="docutils literal notranslate"><span class="pre">&quot;Break&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;Buzz&quot;</span></code>), which are a known
+bare abstract subcategory words (<code class="docutils literal notranslate"><span class="pre">&quot;Break&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;Buzz&quot;</span></code>); a generic
+subcategory (<code class="docutils literal notranslate"><span class="pre">GENERAL</span></code>, <code class="docutils literal notranslate"><span class="pre">MISC</span></code>) gives the bare category, and the
+<code class="docutils literal notranslate"><span class="pre">ARCHIVED</span></code> bookkeeping rows give none, which are a known
 zero-shot artifact (anomalously close to everything). Absolute tag-quality
 calibration (thresholds, label curation) is an eval-harness concern (#10).</p>
 <dl class="field-list simple">

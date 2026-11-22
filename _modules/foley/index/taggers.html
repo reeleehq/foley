@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=8a967ab3"></script>
+    <script src="../../../_static/documentation_options.js?v=e863fa38"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.139" />
+  <meta name="docsearch:version" content="0.0.140" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -804,19 +804,23 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">        Natural multi-word phrases (``"weather rain"``, ``"glass break"``) are far</span>
 <span class="sd">        better CLAP prompts — and better BM25 tags / taxonomy-resolver input — than</span>
-<span class="sd">        bare abstract subcategory words (``"Break"``, ``"Buzz"``), which are a known</span>
+<span class="sd">        bare abstract subcategory words (``"Break"``, ``"Buzz"``); a generic</span>
+<span class="sd">        subcategory (``GENERAL``, ``MISC``) gives the bare category, and the</span>
+<span class="sd">        ``ARCHIVED`` bookkeeping rows give none, which are a known</span>
 <span class="sd">        zero-shot artifact (anomalously close to everything). Absolute tag-quality</span>
 <span class="sd">        calibration (thresholds, label curation) is an eval-harness concern (#10).</span>
 <span class="sd">        """</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_labels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_labels</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.taxonomy</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_ucs_table</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.taxonomy</span><span class="w"> </span><span class="kn">import</span> <span class="n">NON_SOUND_CATEGORIES</span><span class="p">,</span> <span class="n">default_ucs_table</span>
 
         <span class="n">seen</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">default_ucs_table</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">row</span><span class="o">.</span><span class="n">category</span> <span class="ow">in</span> <span class="n">NON_SOUND_CATEGORIES</span><span class="p">:</span>
+                <span class="k">continue</span>
             <span class="n">cat</span> <span class="o">=</span> <span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">category</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
             <span class="n">sub</span> <span class="o">=</span> <span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">subcategory</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-            <span class="n">label</span> <span class="o">=</span> <span class="n">cat</span> <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">sub</span> <span class="ow">or</span> <span class="n">sub</span> <span class="o">==</span> <span class="s2">"general"</span><span class="p">)</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">cat</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">sub</span><span class="si">}</span><span class="s2">"</span>
+            <span class="n">label</span> <span class="o">=</span> <span class="n">cat</span> <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">sub</span> <span class="ow">or</span> <span class="n">row</span><span class="o">.</span><span class="n">is_generic</span><span class="p">)</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">cat</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">sub</span><span class="si">}</span><span class="s2">"</span>
             <span class="n">label</span> <span class="o">=</span> <span class="n">label</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">label</span> <span class="ow">and</span> <span class="n">label</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
                 <span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>

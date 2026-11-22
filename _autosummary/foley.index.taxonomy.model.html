@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=8a967ab3"></script>
+    <script src="../_static/documentation_options.js?v=e863fa38"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.139" />
+  <meta name="docsearch:version" content="0.0.140" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -401,6 +401,7 @@
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.agent_kit.html">foley.agent_kit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.analysis.html">foley.analysis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.base.html">foley.base</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.cli.html">foley.cli</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.cost.html">foley.cost</a></li>
@@ -519,6 +520,18 @@
 <a class="reference internal" href="foley.index.taxonomy.resolver.html#module-foley.index.taxonomy.resolver" title="foley.index.taxonomy.resolver"><code class="xref py py-mod docutils literal notranslate"><span class="pre">resolver</span></code></a>. Nothing here imports numpy/torch; the
 whole taxonomy layer is a pure lookup over dicts (report 04 §5.3 — “taxonomies do
 faceting and browse”, the CLAP vector does the heavy retrieval).</p>
+<p class="rubric">Module Attributes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.index.taxonomy.model.GENERIC_SUBCATEGORIES" title="foley.index.taxonomy.model.GENERIC_SUBCATEGORIES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GENERIC_SUBCATEGORIES</span></code></a></p></td>
+<td><p>Subcategories that name no particular sound (<code class="docutils literal notranslate"><span class="pre">RAIN</span></code>/<code class="docutils literal notranslate"><span class="pre">GENERAL</span></code>, <code class="docutils literal notranslate"><span class="pre">AIR</span></code>/<code class="docutils literal notranslate"><span class="pre">MISC</span></code>).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.index.taxonomy.model.NON_SOUND_CATEGORIES" title="foley.index.taxonomy.model.NON_SOUND_CATEGORIES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NON_SOUND_CATEGORIES</span></code></a></p></td>
+<td><p>Categories whose rows are production bookkeeping (<code class="docutils literal notranslate"><span class="pre">TMARK</span></code>, <code class="docutils literal notranslate"><span class="pre">WIP</span></code>, <code class="docutils literal notranslate"><span class="pre">SCNE</span></code>), not kinds of sound: a filename may name them, a tagger or keyword match never does.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
 <p class="rubric">Classes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
@@ -534,8 +547,8 @@ faceting and browse”, the CLAP vector does the heavy retrieval).</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.index.taxonomy.model.UcsRow" title="foley.index.taxonomy.model.UcsRow"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UcsRow</span></code></a>(catid, category, subcategory[, ...])</p></td>
 <td><p>One Universal Category System entry.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.index.taxonomy.model.UcsTable" title="foley.index.taxonomy.model.UcsTable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UcsTable</span></code></a>([by_catid, order, _ci_index])</p></td>
-<td><p>A loaded UCS lookup: by CatID (exact + case-insensitive) and by synonym.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.index.taxonomy.model.UcsTable" title="foley.index.taxonomy.model.UcsTable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UcsTable</span></code></a>([by_catid, order, _ci_index, legacy])</p></td>
+<td><p>A loaded UCS lookup by CatID: exact, case-insensitive, or a legacy CatID.</p></td>
 </tr>
 </tbody>
 </table>
@@ -575,6 +588,19 @@ ingest, and <code class="xref py py-attr docutils literal notranslate"><span cla
 </dl>
 </dd></dl>
 
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.index.taxonomy.model.GENERIC_SUBCATEGORIES">
+<span class="sig-prename descclassname"><span class="pre">foley.index.taxonomy.model.</span></span><span class="sig-name descname"><span class="pre">GENERIC_SUBCATEGORIES</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#frozenset" title="(in Python v3.15)"><span class="pre">frozenset</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">frozenset({'general',</span> <span class="pre">'misc'})</span></span><a class="headerlink" href="#foley.index.taxonomy.model.GENERIC_SUBCATEGORIES" title="Link to this definition">#</a></dt>
+<dd><p>Subcategories that name no particular sound (<code class="docutils literal notranslate"><span class="pre">RAIN</span></code>/<code class="docutils literal notranslate"><span class="pre">GENERAL</span></code>, <code class="docutils literal notranslate"><span class="pre">AIR</span></code>/<code class="docutils literal notranslate"><span class="pre">MISC</span></code>).</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.index.taxonomy.model.NON_SOUND_CATEGORIES">
+<span class="sig-prename descclassname"><span class="pre">foley.index.taxonomy.model.</span></span><span class="sig-name descname"><span class="pre">NON_SOUND_CATEGORIES</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#frozenset" title="(in Python v3.15)"><span class="pre">frozenset</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">frozenset({'ARCHIVED'})</span></span><a class="headerlink" href="#foley.index.taxonomy.model.NON_SOUND_CATEGORIES" title="Link to this definition">#</a></dt>
+<dd><p>Categories whose rows are production bookkeeping (<code class="docutils literal notranslate"><span class="pre">TMARK</span></code>, <code class="docutils literal notranslate"><span class="pre">WIP</span></code>, <code class="docutils literal notranslate"><span class="pre">SCNE</span></code>),
+not kinds of sound: a filename may name them, a tagger or keyword match never does.</p>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.index.taxonomy.model.UcsName">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.index.taxonomy.model.</span></span><span class="sig-name descname"><span class="pre">UcsName</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">catid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">category</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subcategory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">creator_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_category</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vendor_category</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/index/taxonomy/model.html#UcsName"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.index.taxonomy.model.UcsName" title="Link to this definition">#</a></dt>
@@ -597,18 +623,24 @@ have is <code class="docutils literal notranslate"><span class="pre">None</span>
 <p>A <code class="docutils literal notranslate"><span class="pre">catid</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">'DOORWood'</span></code>) is an OPAQUE key — the category prefix is
 variable-length and not reliably splittable — so <code class="docutils literal notranslate"><span class="pre">catid</span> <span class="pre">-&gt;</span> <span class="pre">(category,</span>
 <span class="pre">subcategory)</span></code> is always a table lookup, never a string split (report
-04 §5.2). <code class="docutils literal notranslate"><span class="pre">confident=False</span></code> marks an APPROXIMATE CatID reconstructed for the
-seed table; verify it against the UCS master before treating it as
-authoritative.</p>
+04 §5.2). <code class="docutils literal notranslate"><span class="pre">confident=False</span></code> marks an unverified row (a house drop’s); the
+keyword resolver bands its matches one notch lower.</p>
 <dl class="field-list simple">
 </dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="foley.index.taxonomy.model.UcsRow.is_generic">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">is_generic</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a></span><a class="headerlink" href="#foley.index.taxonomy.model.UcsRow.is_generic" title="Link to this definition">#</a></dt>
+<dd><p>Whether the subcategory names no particular sound (<code class="docutils literal notranslate"><span class="pre">GENERAL</span></code>, <code class="docutils literal notranslate"><span class="pre">MISC</span></code>).</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.index.taxonomy.model.UcsTable">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.index.taxonomy.model.</span></span><span class="sig-name descname"><span class="pre">UcsTable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">by_catid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">dict()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">list()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_ci_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">dict()</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/index/taxonomy/model.html#UcsTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.index.taxonomy.model.UcsTable" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.index.taxonomy.model.</span></span><span class="sig-name descname"><span class="pre">UcsTable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">by_catid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">dict()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">list()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_ci_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">dict()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legacy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">dict()</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/index/taxonomy/model.html#UcsTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.index.taxonomy.model.UcsTable" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>A loaded UCS lookup: by CatID (exact + case-insensitive) and by synonym.</p>
+<p>A loaded UCS lookup by CatID: exact, case-insensitive, or a legacy CatID.</p>
+<p>Plain data, compared by identity (a matcher caches its index per table).</p>
 <dl class="field-list simple">
 </dl>
 <dl class="py attribute">
@@ -633,10 +665,22 @@ authoritative.</p>
 </dl>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="foley.index.taxonomy.model.UcsTable.legacy">
+<span class="sig-name descname"><span class="pre">legacy</span></span><a class="headerlink" href="#foley.index.taxonomy.model.UcsTable.legacy" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">lower(old</span> <span class="pre">CatID)</span> <span class="pre">-&gt;</span> <span class="pre">CatID</span></code> for CatIDs foley once stamped that are
+not UCS (<code class="docutils literal notranslate"><span class="pre">weathrain</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">RAIN</span></code>), so a stored record still finds its row.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="foley.index.taxonomy.model.UcsTable.get">
 <span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">catid</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/index/taxonomy/model.html#UcsTable.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.index.taxonomy.model.UcsTable.get" title="Link to this definition">#</a></dt>
-<dd><p>Look up a row by CatID: exact first, then case-insensitive.</p>
+<dd><p>Look up a row by CatID: exact, then case-insensitive, then a legacy CatID.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="#foley.index.taxonomy.model.UcsRow" title="foley.index.taxonomy.model.UcsRow"><code class="xref py py-class docutils literal notranslate"><span class="pre">UcsRow</span></code></a>]</span></p>
@@ -700,11 +744,17 @@ authoritative.</p>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.taxonomy.model.CatIdResolution"><code class="docutils literal notranslate"><span class="pre">CatIdResolution</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.taxonomy.model.GENERIC_SUBCATEGORIES"><code class="docutils literal notranslate"><span class="pre">GENERIC_SUBCATEGORIES</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.taxonomy.model.NON_SOUND_CATEGORIES"><code class="docutils literal notranslate"><span class="pre">NON_SOUND_CATEGORIES</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.taxonomy.model.UcsName"><code class="docutils literal notranslate"><span class="pre">UcsName</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.taxonomy.model.UcsRow"><code class="docutils literal notranslate"><span class="pre">UcsRow</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.taxonomy.model.UcsRow"><code class="docutils literal notranslate"><span class="pre">UcsRow</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.taxonomy.model.UcsRow.is_generic"><code class="docutils literal notranslate"><span class="pre">UcsRow.is_generic</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.taxonomy.model.UcsTable"><code class="docutils literal notranslate"><span class="pre">UcsTable</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.taxonomy.model.UcsTable.by_catid"><code class="docutils literal notranslate"><span class="pre">UcsTable.by_catid</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.taxonomy.model.UcsTable.order"><code class="docutils literal notranslate"><span class="pre">UcsTable.order</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.taxonomy.model.UcsTable.legacy"><code class="docutils literal notranslate"><span class="pre">UcsTable.legacy</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.taxonomy.model.UcsTable.get"><code class="docutils literal notranslate"><span class="pre">UcsTable.get()</span></code></a></li>
 </ul>
 </li>

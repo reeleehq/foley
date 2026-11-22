@@ -8,14 +8,20 @@ These are plain, immutable-ish records — the resolver logic lives in
 whole taxonomy layer is a pure lookup over dicts (report 04 §5.3 — “taxonomies do
 faceting and browse”, the CLAP vector does the heavy retrieval).
 
+### Module Attributes
+
+| [`GENERIC_SUBCATEGORIES`](#foley.index.taxonomy.model.GENERIC_SUBCATEGORIES)   | Subcategories that name no particular sound (`RAIN`/`GENERAL`, `AIR`/`MISC`).                                                                                  |
+|--------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`NON_SOUND_CATEGORIES`](#foley.index.taxonomy.model.NON_SOUND_CATEGORIES)    | Categories whose rows are production bookkeeping (`TMARK`, `WIP`, `SCNE`), not kinds of sound: a filename may name them, a tagger or keyword match never does. |
+
 ### Classes
 
-| [`AudioSetUcsMap`](#foley.index.taxonomy.model.AudioSetUcsMap)([by_name, by_mid])            | AudioSet-label -> UCS-CatID overlap map (report 04 §5.3).                  |
-|-----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
-| [`CatIdResolution`](#foley.index.taxonomy.model.CatIdResolution)([catid, category, ...])      | The result of resolving free tags/caption/labels to a UCS CatID.           |
-| [`UcsName`](#foley.index.taxonomy.model.UcsName)(catid, category, subcategory[, ...]) | Every field of a UCS filename (`foley.index.taxonomy.ucs.parse_ucs_name`). |
-| [`UcsRow`](#foley.index.taxonomy.model.UcsRow)(catid, category, subcategory[, ...])  | One Universal Category System entry.                                       |
-| [`UcsTable`](#foley.index.taxonomy.model.UcsTable)([by_catid, order, \_ci_index])      | A loaded UCS lookup: by CatID (exact + case-insensitive) and by synonym.   |
+| [`AudioSetUcsMap`](#foley.index.taxonomy.model.AudioSetUcsMap)([by_name, by_mid])               | AudioSet-label -> UCS-CatID overlap map (report 04 §5.3).                  |
+|--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| [`CatIdResolution`](#foley.index.taxonomy.model.CatIdResolution)([catid, category, ...])         | The result of resolving free tags/caption/labels to a UCS CatID.           |
+| [`UcsName`](#foley.index.taxonomy.model.UcsName)(catid, category, subcategory[, ...])    | Every field of a UCS filename (`foley.index.taxonomy.ucs.parse_ucs_name`). |
+| [`UcsRow`](#foley.index.taxonomy.model.UcsRow)(catid, category, subcategory[, ...])     | One Universal Category System entry.                                       |
+| [`UcsTable`](#foley.index.taxonomy.model.UcsTable)([by_catid, order, \_ci_index, legacy]) | A loaded UCS lookup by CatID: exact, case-insensitive, or a legacy CatID.  |
 
 ### *class* foley.index.taxonomy.model.AudioSetUcsMap(by_name=dict(), by_mid=dict())
 
@@ -44,6 +50,15 @@ The result of resolving free tags/caption/labels to a UCS CatID.
 `subcategory` feeds `ucs_subcategory` on
 ingest, and `ucs_catid` on the query side.
 
+### foley.index.taxonomy.model.GENERIC_SUBCATEGORIES *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)* *= frozenset({'general', 'misc'})*
+
+Subcategories that name no particular sound (`RAIN`/`GENERAL`, `AIR`/`MISC`).
+
+### foley.index.taxonomy.model.NON_SOUND_CATEGORIES *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)* *= frozenset({'ARCHIVED'})*
+
+Categories whose rows are production bookkeeping (`TMARK`, `WIP`, `SCNE`),
+not kinds of sound: a filename may name them, a tagger or keyword match never does.
+
 ### *class* foley.index.taxonomy.model.UcsName(catid, category, subcategory, fx_name=None, creator_id=None, source_id=None, user_category=None, vendor_category=None, user_data=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
@@ -65,15 +80,20 @@ One Universal Category System entry.
 A `catid` (e.g. `'DOORWood'`) is an OPAQUE key — the category prefix is
 variable-length and not reliably splittable — so `catid -> (category,
 subcategory)` is always a table lookup, never a string split (report
-04 §5.2). `confident=False` marks an APPROXIMATE CatID reconstructed for the
-seed table; verify it against the UCS master before treating it as
-authoritative.
+04 §5.2). `confident=False` marks an unverified row (a house drop’s); the
+keyword resolver bands its matches one notch lower.
 
-### *class* foley.index.taxonomy.model.UcsTable(by_catid=dict(), order=list(), \_ci_index=dict())
+#### *property* is_generic *: [bool](https://docs.python.org/3/builtins/functions.html#bool)*
+
+Whether the subcategory names no particular sound (`GENERAL`, `MISC`).
+
+### *class* foley.index.taxonomy.model.UcsTable(by_catid=dict(), order=list(), \_ci_index=dict(), legacy=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
-A loaded UCS lookup: by CatID (exact + case-insensitive) and by synonym.
+A loaded UCS lookup by CatID: exact, case-insensitive, or a legacy CatID.
+
+Plain data, compared by identity (a matcher caches its index per table).
 
 #### by_catid
 
@@ -89,9 +109,17 @@ The CatIDs in stable insertion order (deterministic tie-breaking).
 * **Type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
+#### legacy
+
+`lower(old CatID) -> CatID` for CatIDs foley once stamped that are
+not UCS (`weathrain` -> `RAIN`), so a stored record still finds its row.
+
+* **Type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
 #### get(catid)
 
-Look up a row by CatID: exact first, then case-insensitive.
+Look up a row by CatID: exact, then case-insensitive, then a legacy CatID.
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsRow`](#foley.index.taxonomy.model.UcsRow)]

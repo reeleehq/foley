@@ -30,6 +30,7 @@ foley.index.taxonomy
       CatIdResolution
       TaxonomyResolver
       KeywordResolver
+      MatchPolicy
    
 .. rubric:: Modules
 
@@ -41,4 +42,5 @@ foley.index.taxonomy
    model
    resolver
    seed
+   text
    ucs

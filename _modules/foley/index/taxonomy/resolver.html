@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../_static/documentation_options.js?v=8a967ab3"></script>
+    <script src="../../../../_static/documentation_options.js?v=e863fa38"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.139" />
+  <meta name="docsearch:version" content="0.0.140" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -724,128 +724,427 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">A *declared* CatID is one the file states about itself (the iXML ``CATID`` of a pro</span>
 <span class="sd">pack, :mod:`foley.embedded_metadata`); like a filename's, it counts only when the</span>
-<span class="sd">table knows it.</span>
+<span class="sd">table knows it. A keyword match weaker than an AudioSet-map hit (its band is below</span>
+<span class="sd">:attr:`MatchPolicy.audioset_confidence`) yields to one.</span>
 
-<span class="sd">Matching is word-boundary aware (so ``"rain"`` matches "heavy rain" but not</span>
-<span class="sd">"brainstorm"), a subcategory hit outranks a category-name hit, and multi-word</span>
-<span class="sd">phrases outrank single tokens — with a deterministic table-order final tiebreak.</span>
-<span class="sd">The always-available default is this stdlib :class:`KeywordResolver`; a richer</span>
-<span class="sd">CLAP zero-shot resolver (embed once, argmax over UCS label prompts, report</span>
-<span class="sd">03 Part 2) can be dropped in behind the same :class:`TaxonomyResolver` protocol.</span>
+<span class="sd">The keyword stage, in three pure steps over the table's</span>
+<span class="sd">:class:`~foley.index.taxonomy.text.TermIndex` (built once per table):</span>
+
+<span class="sd">1. **collect** — each term (subcategory, category name, synonym) found in one field</span>
+<span class="sd">   of the input, word-boundary aware and across function words, becomes a</span>
+<span class="sd">   :class:`Hit`; the hits of one CatID fold into its :class:`Evidence`;</span>
+<span class="sd">2. **pick** — the highest score wins (one word counts once, whatever it hits); on a</span>
+<span class="sd">   tie, the stronger evidence, with a category name as strong as a subcategory,</span>
+<span class="sd">   then the category's generic (``GENERAL``/``MISC``) row, then table order;</span>
+<span class="sd">3. **band** — the confidence says how much evidence there is</span>
+<span class="sd">   (:meth:`MatchPolicy.band`), not which row won.</span>
+
+<span class="sd">Everything tunable is one frozen :class:`MatchPolicy` (``policy=``). The</span>
+<span class="sd">always-available default is this stdlib :class:`KeywordResolver`; a richer CLAP</span>
+<span class="sd">zero-shot resolver (embed once, argmax over UCS label prompts, report 03 Part 2) can</span>
+<span class="sd">be dropped in behind the same :class:`TaxonomyResolver` protocol.</span>
 <span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">runtime_checkable</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">weakref</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">replace</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">MappingProxyType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">runtime_checkable</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">...analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">tokenize</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.audioset</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_audioset_ucs_map</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">AudioSetUcsMap</span><span class="p">,</span> <span class="n">CatIdResolution</span><span class="p">,</span> <span class="n">UcsTable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">NON_SOUND_CATEGORIES</span><span class="p">,</span>
+    <span class="n">AudioSetUcsMap</span><span class="p">,</span>
+    <span class="n">CatIdResolution</span><span class="p">,</span>
+    <span class="n">UcsRow</span><span class="p">,</span>
+    <span class="n">UcsTable</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.text</span><span class="w"> </span><span class="kn">import</span> <span class="n">TermIndex</span><span class="p">,</span> <span class="n">build_term_index</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.ucs</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_ucs_table</span><span class="p">,</span> <span class="n">parse_ucs_name</span>
 
-<span class="c1"># Coarse per-stage confidence bands.</span>
-<span class="n">_CONF_FILENAME</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
-<span class="n">_CONF_DECLARED</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>  <span class="c1"># the file's own metadata names its CatID</span>
-<span class="n">_CONF_KEYWORD_CONFIDENT</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="mf">0.8</span>  <span class="c1"># strong hit (subcategory/synonym) on a verified row</span>
+<span class="c1">#: A filename's or the file's own metadata's CatID: the sound says what it is.</span>
+<span class="n">STATED_CONFIDENCE</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+<span class="c1">#: English function words, dropped from both sides before matching, so a phrase</span>
+<span class="c1">#: matches across them (``"rain on window"`` in "rain on a window"). Particles that</span>
+<span class="c1">#: carry sound meaning (``up``, ``down``, ``out``, ``off``, ``over``: "wind up" is a</span>
+<span class="c1">#: toy, "the wind picked up" is weather) are not here but in the ambiguous words.</span>
+<span class="n">DEFAULT_STOP_WORDS</span><span class="p">:</span> <span class="nb">frozenset</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span>
+    <span class="p">(</span>
+        <span class="s2">"a an the and or but if of in on at to for from by with without into onto "</span>
+        <span class="s2">"under about as is are was were be been being am do does did has have had it "</span>
+        <span class="s2">"its this that these those there here he she they we you i me him her them us "</span>
+        <span class="s2">"my your his our their who what which when where why how not no nor so than "</span>
+        <span class="s2">"then too very can could will would should may might must just also only all "</span>
+        <span class="s2">"any some each every few more most other such own same"</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
 <span class="p">)</span>
-<span class="n">_CONF_KEYWORD_APPROX</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.6</span>  <span class="c1"># strong hit on an approximate (confident=False) row</span>
-<span class="n">_CONF_KEYWORD_WEAK</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.4</span>  <span class="c1"># category-name-only brush (no subcategory/synonym hit)</span>
-<span class="n">_CONF_AUDIOSET</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span>
 
-<span class="c1"># Common English words that also happen to be a UCS subcategory/synonym token; they</span>
-<span class="c1"># are too ambiguous to resolve a CatID on their own, so they match ONLY inside a</span>
-<span class="c1"># multi-word phrase (e.g. "glass break"), never as a bare single token ("take a</span>
-<span class="c1"># break"). Prevents high-scoring false positives on ordinary narration.</span>
-<span class="n">_AMBIGUOUS_SINGLE_TOKENS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span>
-    <span class="p">{</span><span class="s2">"break"</span><span class="p">,</span> <span class="s2">"shot"</span><span class="p">,</span> <span class="s2">"hit"</span><span class="p">,</span> <span class="s2">"bang"</span><span class="p">,</span> <span class="s2">"run"</span><span class="p">,</span> <span class="s2">"beat"</span><span class="p">,</span> <span class="s2">"arc"</span><span class="p">,</span> <span class="s2">"handle"</span><span class="p">,</span> <span class="s2">"general"</span><span class="p">}</span>
+<span class="c1">#: Common narration words that the UCS master also lists as a subcategory or</span>
+<span class="c1">#: synonym (``quiet`` is ``CRWDQuiet``, ``release`` an ``AIR`` synonym): they count</span>
+<span class="c1">#: inside a multi-word term (``"glass break"``, ``"wind up"``), never alone</span>
+<span class="c1">#: (``"take a break"``, ``"the price went up"``).</span>
+<span class="n">DEFAULT_AMBIGUOUS_WORDS</span><span class="p">:</span> <span class="nb">frozenset</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span>
+    <span class="p">(</span>
+        <span class="s2">"break shot hit bang run beat arc handle general misc sound tone quiet open "</span>
+        <span class="s2">"release work little long big blue set hold catch drop fall person meeting "</span>
+        <span class="s2">"day night time way thing place side part piece light heavy small large "</span>
+        <span class="s2">"up down out off over"</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
 <span class="p">)</span>
 
-<span class="n">_NON_ALNUM</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"[^a-z0-9]+"</span><span class="p">)</span>
+<span class="c1">#: Base weight of a matched term, by where it came from. A category name is its</span>
+<span class="c1">#: rows' own name, as strong as a subcategory.</span>
+<span class="n">DEFAULT_KIND_WEIGHTS</span><span class="p">:</span> <span class="s2">"Mapping[str, float]"</span> <span class="o">=</span> <span class="n">MappingProxyType</span><span class="p">(</span>
+    <span class="p">{</span><span class="s2">"subcategory"</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">,</span> <span class="s2">"category"</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">,</span> <span class="s2">"synonym"</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">}</span>
+<span class="p">)</span>
+
+<span class="c1">#: Evidence strengths, strongest first (indices into :attr:`MatchPolicy.bands`).</span>
+<span class="n">STRONG</span><span class="p">,</span> <span class="n">SINGLE</span><span class="p">,</span> <span class="n">WEAK</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_normalize</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Lowercase and collapse non-alphanumerics to single spaces."""</span>
-    <span class="k">return</span> <span class="n">_NON_ALNUM</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">" "</span><span class="p">,</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+<div class="viewcode-block" id="MatchPolicy">
+<a class="viewcode-back" href="../../../../_autosummary/foley.index.taxonomy.resolver.html#foley.MatchPolicy">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MatchPolicy</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""How the keyword stage matches, ranks and bands (one strategy object).</span>
 
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_search_fields</span><span class="p">(</span><span class="n">tags</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">caption</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">"list[str]"</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Per-field normalized strings (each tag, then the caption).</span>
-
-<span class="sd">    Kept as separate fields so a multi-word phrase can only match *within* one</span>
-<span class="sd">    field — a bigram must never straddle a tag&lt;-&gt;caption (or tag&lt;-&gt;tag) boundary</span>
-<span class="sd">    (e.g. tags=['glass'] + caption='break room' must NOT match 'glass break').</span>
+<span class="sd">    Attributes:</span>
+<span class="sd">        stop_words: Words dropped from both sides before matching.</span>
+<span class="sd">        ambiguous_words: Words that match only inside a multi-word term.</span>
+<span class="sd">        skip_categories: UCS categories the keyword stage never picks (a filename or</span>
+<span class="sd">            declared CatID still may).</span>
+<span class="sd">        kind_weights: Base weight of a hit by term kind (``subcategory``,</span>
+<span class="sd">            ``category``, ``synonym``).</span>
+<span class="sd">        phrase_bonus: Added per content word past the first of a multi-word term.</span>
+<span class="sd">        strong_confidence: Band of strong evidence: a subcategory hit, a multi-word</span>
+<span class="sd">            phrase, or two distinct content words on the row (a category name plus</span>
+<span class="sd">            another word counts).</span>
+<span class="sd">        single_confidence: Band of one content word that only this row lists as a</span>
+<span class="sd">            synonym.</span>
+<span class="sd">        weak_confidence: Band of a brush: a category name alone, or a synonym many</span>
+<span class="sd">            rows share. A ``confident=False`` row drops one band (floored here).</span>
+<span class="sd">        audioset_confidence: Band of an AudioSet-map hit; a weaker keyword match</span>
+<span class="sd">            yields to one.</span>
 <span class="sd">    """</span>
-    <span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="n">_normalize</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">(</span><span class="n">tags</span> <span class="ow">or</span> <span class="p">())</span> <span class="k">if</span> <span class="n">t</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">caption</span><span class="p">:</span>
-        <span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_normalize</span><span class="p">(</span><span class="n">caption</span><span class="p">))</span>
+
+    <span class="n">stop_words</span><span class="p">:</span> <span class="nb">frozenset</span> <span class="o">=</span> <span class="n">DEFAULT_STOP_WORDS</span>
+    <span class="n">ambiguous_words</span><span class="p">:</span> <span class="nb">frozenset</span> <span class="o">=</span> <span class="n">DEFAULT_AMBIGUOUS_WORDS</span>
+    <span class="n">skip_categories</span><span class="p">:</span> <span class="nb">frozenset</span> <span class="o">=</span> <span class="n">NON_SOUND_CATEGORIES</span>
+    <span class="n">kind_weights</span><span class="p">:</span> <span class="s2">"Mapping[str, float]"</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">DEFAULT_KIND_WEIGHTS</span><span class="p">)</span>
+    <span class="n">phrase_bonus</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">strong_confidence</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.8</span>
+    <span class="n">single_confidence</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.6</span>
+    <span class="n">weak_confidence</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.4</span>
+    <span class="n">audioset_confidence</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
+            <span class="n">STATED_CONFIDENCE</span>
+            <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">strong_confidence</span>
+            <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">single_confidence</span>
+            <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weak_confidence</span>
+            <span class="o">&gt;=</span> <span class="mi">0</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"confidence bands must descend within [0, 1]: strong &gt;= single &gt;= weak"</span>
+            <span class="p">)</span>
+        <span class="n">missing</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"subcategory"</span><span class="p">,</span> <span class="s2">"category"</span><span class="p">,</span> <span class="s2">"synonym"</span><span class="p">}</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kind_weights</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"kind_weights lacks </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">missing</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bands</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[float, float, float]"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The keyword bands, by :data:`STRONG`, :data:`SINGLE`, :data:`WEAK`."""</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">strong_confidence</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">single_confidence</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weak_confidence</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MatchPolicy.band">
+<a class="viewcode-back" href="../../../../_autosummary/foley.index.taxonomy.resolver.html#foley.MatchPolicy.band">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">band</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">strength</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">confident</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The band of evidence of ``strength``; an unverified row drops one."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bands</span><span class="p">[</span><span class="nb">min</span><span class="p">(</span><span class="n">strength</span> <span class="o">+</span> <span class="p">(</span><span class="ow">not</span> <span class="n">confident</span><span class="p">),</span> <span class="n">WEAK</span><span class="p">)]</span></div>
+</div>
+
+
+
+<span class="n">DEFAULT_MATCH_POLICY</span> <span class="o">=</span> <span class="n">MatchPolicy</span><span class="p">()</span>
+
+<span class="c1">#: The least confidence worth writing onto a record: an AudioSet-map hit's. A weak</span>
+<span class="c1">#: keyword brush (a category name alone, a synonym many rows share) is below it.</span>
+<span class="n">RECORD_MIN_CONFIDENCE</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DEFAULT_MATCH_POLICY</span><span class="o">.</span><span class="n">audioset_confidence</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># the term index, cached per table (the table stays plain data)</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="n">_TERM_INDEXES</span><span class="p">:</span> <span class="s2">"weakref.WeakKeyDictionary[UcsTable, TermIndex]"</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">weakref</span><span class="o">.</span><span class="n">WeakKeyDictionary</span><span class="p">()</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="term_index">
+<a class="viewcode-back" href="../../../../_autosummary/foley.index.taxonomy.resolver.html#foley.term_index">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">term_index</span><span class="p">(</span><span class="n">table</span><span class="p">:</span> <span class="n">UcsTable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TermIndex</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The :class:`~.text.TermIndex` of ``table``, built once per table."""</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">_TERM_INDEXES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">_TERM_INDEXES</span><span class="p">[</span><span class="n">table</span><span class="p">]</span> <span class="o">=</span> <span class="n">build_term_index</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">index</span></div>
+
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># the keyword stage: collect -&gt; pick -&gt; band</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="Hit">
+<a class="viewcode-back" href="../../../../_autosummary/foley.index.taxonomy.resolver.html#foley.Hit">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Hit</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""One term of a row found in the input.</span>
+
+<span class="sd">    ``words`` are the term's content lemmas (stop words dropped); ``shared_by`` is how</span>
+<span class="sd">    many rows list the term.</span>
+<span class="sd">    """</span>
+
+    <span class="n">catid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">words</span><span class="p">:</span> <span class="s2">"tuple[str, ...]"</span>
+    <span class="n">weight</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">shared_by</span><span class="p">:</span> <span class="nb">int</span></div>
+
+
+
+<div class="viewcode-block" id="Evidence">
+<a class="viewcode-back" href="../../../../_autosummary/foley.index.taxonomy.resolver.html#foley.Evidence">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Evidence</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Everything the input says for one CatID: the folded :class:`Hit` s."""</span>
+
+    <span class="n">catid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">score</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">matched</span><span class="p">:</span> <span class="s2">"tuple[str, ...]"</span>
+    <span class="n">words</span><span class="p">:</span> <span class="nb">frozenset</span>
+    <span class="n">kinds</span><span class="p">:</span> <span class="nb">frozenset</span>
+    <span class="n">phrase</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">unique_synonym</span><span class="p">:</span> <span class="nb">bool</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">strength</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""How much the input says: :data:`STRONG`, :data:`SINGLE` or :data:`WEAK`.</span>
+
+<span class="sd">        A category name alone is a brush (:data:`WEAK`): it says which category,</span>
+<span class="sd">        not which row. See :class:`MatchPolicy` for the bands.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="s2">"subcategory"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">kinds</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">phrase</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">words</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">STRONG</span>
+        <span class="k">return</span> <span class="n">SINGLE</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">unique_synonym</span> <span class="k">else</span> <span class="n">WEAK</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rank_strength</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">""":attr:`strength` for ranking, where a category name is as strong as a</span>
+<span class="sd">        subcategory: it is the row's own name (``"glass"`` is the ``GLASS``</span>
+<span class="sd">        category before it is ``DOORGlas``'s subcategory)."""</span>
+        <span class="k">return</span> <span class="n">STRONG</span> <span class="k">if</span> <span class="s2">"category"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">kinds</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">strength</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_fields</span><span class="p">(</span>
+    <span class="n">tags</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">caption</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">index</span><span class="p">:</span> <span class="n">TermIndex</span><span class="p">,</span> <span class="n">policy</span><span class="p">:</span> <span class="n">MatchPolicy</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[tuple[frozenset, ...]]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Per tag, then the caption: the lemmas each content word can be.</span>
+
+<span class="sd">    Kept apart so a multi-word phrase matches only *within* one text: tags=['glass']</span>
+<span class="sd">    plus caption='break room' must not match 'glass break'. An unknown word keeps</span>
+<span class="sd">    its place (as no lemma), so no phrase reaches across it.</span>
+<span class="sd">    """</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">(</span><span class="n">tags</span> <span class="ow">or</span> <span class="p">())</span> <span class="k">if</span> <span class="n">t</span><span class="p">]</span> <span class="o">+</span> <span class="p">([</span><span class="n">caption</span><span class="p">]</span> <span class="k">if</span> <span class="n">caption</span> <span class="k">else</span> <span class="p">[])</span>
+    <span class="n">fields</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="nb">tuple</span><span class="p">(</span><span class="n">index</span><span class="o">.</span><span class="n">lemmas</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">tokenize</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="k">if</span> <span class="n">w</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">policy</span><span class="o">.</span><span class="n">stop_words</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">texts</span>
+    <span class="p">]</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fields</span> <span class="k">if</span> <span class="n">f</span><span class="p">]</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_keyword_stage</span><span class="p">(</span>
-    <span class="n">tags</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">caption</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">table</span><span class="p">:</span> <span class="n">UcsTable</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Optional[tuple]"</span><span class="p">:</span>
-    <span class="n">fields</span> <span class="o">=</span> <span class="n">_search_fields</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="n">caption</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">fields</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">None</span>
-    <span class="n">padded_fields</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">" </span><span class="si">{</span><span class="n">f</span><span class="si">}</span><span class="s2"> "</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">]</span>
-    <span class="n">tokens</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_contains</span><span class="p">(</span><span class="n">field</span><span class="p">:</span> <span class="s2">"tuple[frozenset, ...]"</span><span class="p">,</span> <span class="n">words</span><span class="p">:</span> <span class="s2">"tuple[str, ...]"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether ``words`` (lemmas) occur one after another in ``field``."""</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">any</span><span class="p">(</span>
+        <span class="nb">all</span><span class="p">(</span><span class="n">w</span> <span class="ow">in</span> <span class="n">field</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">words</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">field</span><span class="p">)</span> <span class="o">-</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_hits</span><span class="p">(</span>
+    <span class="n">fields</span><span class="p">:</span> <span class="s2">"list[tuple[frozenset, ...]]"</span><span class="p">,</span>
+    <span class="n">table</span><span class="p">:</span> <span class="n">UcsTable</span><span class="p">,</span>
+    <span class="n">index</span><span class="p">:</span> <span class="n">TermIndex</span><span class="p">,</span>
+    <span class="n">policy</span><span class="p">:</span> <span class="n">MatchPolicy</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Iterable[Hit]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Every term of ``table`` found in one of ``fields``, as a :class:`Hit`.</span>
+
+<span class="sd">    A term is looked for only in a field holding all its content lemmas, so a field</span>
+<span class="sd">    costs the terms its own words index.</span>
+<span class="sd">    """</span>
+    <span class="n">ambiguous</span> <span class="o">=</span> <span class="p">{</span><span class="n">l</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">policy</span><span class="o">.</span><span class="n">ambiguous_words</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">index</span><span class="o">.</span><span class="n">lemmas</span><span class="p">(</span><span class="n">w</span><span class="p">)}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">content</span><span class="p">(</span><span class="n">term</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Optional[tuple[str, ...]]"</span><span class="p">:</span>  <span class="c1"># None: never matches alone</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">by_catid</span><span class="p">[</span><span class="n">term</span><span class="o">.</span><span class="n">catid</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">row</span><span class="o">.</span><span class="n">category</span> <span class="ow">in</span> <span class="n">policy</span><span class="o">.</span><span class="n">skip_categories</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">term</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"subcategory"</span> <span class="ow">and</span> <span class="n">row</span><span class="o">.</span><span class="n">is_generic</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># GENERAL / MISC name no sound</span>
+        <span class="n">words</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+            <span class="n">l</span> <span class="k">for</span> <span class="n">w</span><span class="p">,</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">term</span><span class="o">.</span><span class="n">words</span><span class="p">,</span> <span class="n">term</span><span class="o">.</span><span class="n">lemmas</span><span class="p">)</span> <span class="k">if</span> <span class="n">w</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">policy</span><span class="o">.</span><span class="n">stop_words</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">words</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">words</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">ambiguous</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">words</span>
+
+    <span class="n">found</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># id(term) -&gt; (term, content); a term counts once</span>
     <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
-        <span class="n">tokens</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">hit</span><span class="p">(</span><span class="n">phrase</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="n">p</span> <span class="o">=</span> <span class="n">_normalize</span><span class="p">(</span><span class="n">phrase</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">p</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">False</span>
-        <span class="k">if</span> <span class="s2">" "</span> <span class="ow">in</span> <span class="n">p</span><span class="p">:</span>  <span class="c1"># multi-word: word-boundary substring within a single field</span>
-            <span class="n">needle</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">" </span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s2"> "</span>
-            <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">needle</span> <span class="ow">in</span> <span class="n">pf</span> <span class="k">for</span> <span class="n">pf</span> <span class="ow">in</span> <span class="n">padded_fields</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">_AMBIGUOUS_SINGLE_TOKENS</span><span class="p">:</span>  <span class="c1"># too ambiguous to match bare</span>
-            <span class="k">return</span> <span class="kc">False</span>
-        <span class="k">return</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">tokens</span>  <span class="c1"># single token: exact word (across fields)</span>
-
-    <span class="c1"># ``strong`` = a subcategory or synonym matched (real evidence); a bare</span>
-    <span class="c1"># category-name brush is ``weak`` and gets a lower reported confidence.</span>
-    <span class="n">best</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># ((score, -order_index), row, matched_terms, strong)</span>
-    <span class="k">for</span> <span class="n">order_index</span><span class="p">,</span> <span class="n">catid</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">order</span><span class="p">):</span>
-        <span class="n">row</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">by_catid</span><span class="p">[</span><span class="n">catid</span><span class="p">]</span>
-        <span class="n">matched</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">score</span> <span class="o">=</span> <span class="mf">0.0</span>
-        <span class="n">strong</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="n">sub</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">subcategory</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">sub</span> <span class="ow">and</span> <span class="n">sub</span> <span class="o">!=</span> <span class="s2">"general"</span> <span class="ow">and</span> <span class="n">hit</span><span class="p">(</span><span class="n">sub</span><span class="p">):</span>
-            <span class="n">score</span> <span class="o">+=</span> <span class="mf">3.0</span> <span class="o">+</span> <span class="n">sub</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
-            <span class="n">matched</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sub</span><span class="p">)</span>
-            <span class="n">strong</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="k">for</span> <span class="n">syn</span> <span class="ow">in</span> <span class="n">row</span><span class="o">.</span><span class="n">synonyms</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">hit</span><span class="p">(</span><span class="n">syn</span><span class="p">):</span>
-                <span class="n">score</span> <span class="o">+=</span> <span class="mf">2.0</span> <span class="o">+</span> <span class="n">syn</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
-                <span class="n">matched</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">syn</span><span class="p">)</span>
-                <span class="n">strong</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="n">cat</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">category</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">cat</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">matched</span> <span class="ow">and</span> <span class="n">hit</span><span class="p">(</span><span class="n">cat</span><span class="p">):</span>
-            <span class="n">score</span> <span class="o">+=</span> <span class="mf">0.5</span>
-            <span class="n">matched</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">score</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">continue</span>
-        <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="o">-</span><span class="n">order_index</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">best</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">key</span> <span class="o">&gt;</span> <span class="n">best</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-            <span class="n">best</span> <span class="o">=</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="n">matched</span><span class="p">,</span> <span class="n">strong</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">best</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">None</span>
-    <span class="k">return</span> <span class="n">best</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">best</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">best</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">present</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">()</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="o">*</span><span class="n">f</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">lemma</span> <span class="ow">in</span> <span class="n">present</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">index</span><span class="o">.</span><span class="n">by_lemma</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lemma</span><span class="p">,</span> <span class="p">()):</span>
+                <span class="k">if</span> <span class="nb">id</span><span class="p">(</span><span class="n">term</span><span class="p">)</span> <span class="ow">in</span> <span class="n">found</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">words</span> <span class="o">=</span> <span class="n">content</span><span class="p">(</span><span class="n">term</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">words</span> <span class="ow">and</span> <span class="n">present</span><span class="o">.</span><span class="n">issuperset</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="ow">and</span> <span class="n">_contains</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">words</span><span class="p">):</span>
+                    <span class="n">found</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="n">term</span><span class="p">)]</span> <span class="o">=</span> <span class="p">(</span><span class="n">term</span><span class="p">,</span> <span class="n">words</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">term</span><span class="p">,</span> <span class="n">words</span> <span class="ow">in</span> <span class="n">found</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="n">shared_by</span> <span class="o">=</span> <span class="n">index</span><span class="o">.</span><span class="n">row_count</span><span class="p">[</span><span class="n">term</span><span class="o">.</span><span class="n">lemmas</span><span class="p">]</span>
+        <span class="n">weight</span> <span class="o">=</span> <span class="n">policy</span><span class="o">.</span><span class="n">kind_weights</span><span class="p">[</span><span class="n">term</span><span class="o">.</span><span class="n">kind</span><span class="p">]</span> <span class="o">+</span> <span class="n">policy</span><span class="o">.</span><span class="n">phrase_bonus</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">term</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"synonym"</span><span class="p">:</span>  <span class="c1"># "car" is a synonym of 32 rows, "doorknob" of one</span>
+            <span class="n">weight</span> <span class="o">/=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">shared_by</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">Hit</span><span class="p">(</span><span class="n">term</span><span class="o">.</span><span class="n">catid</span><span class="p">,</span> <span class="n">term</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span> <span class="n">term</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">weight</span><span class="p">,</span> <span class="n">shared_by</span><span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_audioset_stage</span><span class="p">(</span>
-    <span class="n">labels</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">audioset_map</span><span class="p">:</span> <span class="n">AudioSetUcsMap</span><span class="p">,</span> <span class="n">table</span><span class="p">:</span> <span class="n">UcsTable</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Optional[tuple]"</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_score</span><span class="p">(</span><span class="n">hits</span><span class="p">:</span> <span class="s2">"Sequence[Hit]"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Every phrase hit's weight, plus each single word's best hit.</span>
+
+<span class="sd">    One word is one piece of evidence: ``"vehicles"`` naming the ``VEHICLES``</span>
+<span class="sd">    category does not count again because a row also lists ``vehicle`` as a synonym</span>
+<span class="sd">    (which would carry it past the category's generic row).</span>
+<span class="sd">    """</span>
+    <span class="n">best</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">words</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">best</span><span class="p">[</span><span class="n">h</span><span class="o">.</span><span class="n">words</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">best</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">words</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">),</span> <span class="n">h</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">weight</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hits</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">words</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">best</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_evidence</span><span class="p">(</span><span class="n">catid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">hits</span><span class="p">:</span> <span class="s2">"Sequence[Hit]"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Evidence</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Fold one CatID's hits (in a stable order) into its :class:`Evidence`."""</span>
+    <span class="n">hits</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">hits</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">h</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="n">h</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">h</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">h</span><span class="o">.</span><span class="n">kind</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">Evidence</span><span class="p">(</span>
+        <span class="n">catid</span><span class="o">=</span><span class="n">catid</span><span class="p">,</span>
+        <span class="n">score</span><span class="o">=</span><span class="nb">round</span><span class="p">(</span><span class="n">_score</span><span class="p">(</span><span class="n">hits</span><span class="p">),</span> <span class="mi">6</span><span class="p">),</span>
+        <span class="n">matched</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">text</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">)),</span>
+        <span class="n">words</span><span class="o">=</span><span class="nb">frozenset</span><span class="p">(</span><span class="n">w</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hits</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">h</span><span class="o">.</span><span class="n">words</span><span class="p">),</span>
+        <span class="n">kinds</span><span class="o">=</span><span class="nb">frozenset</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">kind</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">),</span>
+        <span class="n">phrase</span><span class="o">=</span><span class="nb">any</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">words</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">),</span>
+        <span class="n">unique_synonym</span><span class="o">=</span><span class="nb">any</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"synonym"</span> <span class="ow">and</span> <span class="n">h</span><span class="o">.</span><span class="n">shared_by</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">),</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_collect</span><span class="p">(</span><span class="n">hits</span><span class="p">:</span> <span class="s2">"Iterable[Hit]"</span><span class="p">,</span> <span class="n">table</span><span class="p">:</span> <span class="n">UcsTable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[Evidence]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""One :class:`Evidence` per CatID that ``hits`` touch.</span>
+
+<span class="sd">    A category-name hit sits on its category's representative row (the index lists</span>
+<span class="sd">    it once); every other row of that category with a hit of its own gets it too.</span>
+<span class="sd">    """</span>
+    <span class="n">by_catid</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">Hit</span><span class="p">]]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">named</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Hit</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># category -&gt; its name's hit</span>
+    <span class="k">for</span> <span class="n">hit</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">:</span>
+        <span class="n">by_catid</span><span class="p">[</span><span class="n">hit</span><span class="o">.</span><span class="n">catid</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hit</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">hit</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"category"</span><span class="p">:</span>
+            <span class="n">named</span><span class="p">[</span><span class="n">table</span><span class="o">.</span><span class="n">by_catid</span><span class="p">[</span><span class="n">hit</span><span class="o">.</span><span class="n">catid</span><span class="p">]</span><span class="o">.</span><span class="n">category</span><span class="p">]</span> <span class="o">=</span> <span class="n">hit</span>
+    <span class="k">for</span> <span class="n">catid</span><span class="p">,</span> <span class="n">row_hits</span> <span class="ow">in</span> <span class="n">by_catid</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">named</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">by_catid</span><span class="p">[</span><span class="n">catid</span><span class="p">]</span><span class="o">.</span><span class="n">category</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">name</span><span class="o">.</span><span class="n">catid</span> <span class="o">!=</span> <span class="n">catid</span><span class="p">:</span>
+            <span class="n">row_hits</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">replace</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">catid</span><span class="o">=</span><span class="n">catid</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">_evidence</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">hs</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">hs</span> <span class="ow">in</span> <span class="n">by_catid</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_pick</span><span class="p">(</span><span class="n">evidence</span><span class="p">:</span> <span class="s2">"Sequence[Evidence]"</span><span class="p">,</span> <span class="n">table</span><span class="p">:</span> <span class="n">UcsTable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Evidence</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The best :class:`Evidence`: score, then :attr:`~Evidence.rank_strength` (a</span>
+<span class="sd">    shared synonym never beats a named row), then the generic row (a category name</span>
+<span class="sd">    alone lands on ``GENERAL``/``MISC``), then table order."""</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="p">{</span><span class="n">catid</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">catid</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">order</span><span class="p">)}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">rank</span><span class="p">(</span><span class="n">ev</span><span class="p">:</span> <span class="n">Evidence</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">ev</span><span class="o">.</span><span class="n">score</span><span class="p">,</span>
+            <span class="o">-</span><span class="n">ev</span><span class="o">.</span><span class="n">rank_strength</span><span class="p">,</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">by_catid</span><span class="p">[</span><span class="n">ev</span><span class="o">.</span><span class="n">catid</span><span class="p">]</span><span class="o">.</span><span class="n">is_generic</span><span class="p">,</span>
+            <span class="o">-</span><span class="n">order</span><span class="p">[</span><span class="n">ev</span><span class="o">.</span><span class="n">catid</span><span class="p">],</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">evidence</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">rank</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_resolution</span><span class="p">(</span>
+    <span class="n">row</span><span class="p">:</span> <span class="n">UcsRow</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">confidence</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">matched</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CatIdResolution</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">CatIdResolution</span><span class="p">(</span>
+        <span class="n">catid</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">catid</span><span class="p">,</span>
+        <span class="n">category</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">category</span><span class="p">,</span>
+        <span class="n">subcategory</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">subcategory</span><span class="p">,</span>
+        <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span>
+        <span class="n">confidence</span><span class="o">=</span><span class="n">confidence</span><span class="p">,</span>
+        <span class="n">matched_terms</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">matched</span><span class="p">),</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="keyword_resolution">
+<a class="viewcode-back" href="../../../../_autosummary/foley.index.taxonomy.resolver.html#foley.keyword_resolution">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">keyword_resolution</span><span class="p">(</span>
+    <span class="n">tags</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+    <span class="n">caption</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">table</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UcsTable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">policy</span><span class="p">:</span> <span class="n">MatchPolicy</span> <span class="o">=</span> <span class="n">DEFAULT_MATCH_POLICY</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CatIdResolution</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The keyword stage alone: the best row for ``tags``/``caption``, banded.</span>
+
+<span class="sd">    &gt;&gt;&gt; keyword_resolution(caption="a heavy wooden door creaks open").catid</span>
+<span class="sd">    'DOORWood'</span>
+<span class="sd">    &gt;&gt;&gt; r = keyword_resolution(caption="the wind picked up")</span>
+<span class="sd">    &gt;&gt;&gt; r.catid, r.confidence</span>
+<span class="sd">    ('WIND', 0.4)</span>
+<span class="sd">    """</span>
+    <span class="n">table</span> <span class="o">=</span> <span class="n">table</span> <span class="k">if</span> <span class="n">table</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">default_ucs_table</span><span class="p">()</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">term_index</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+    <span class="n">fields</span> <span class="o">=</span> <span class="n">_fields</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="n">caption</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">policy</span><span class="p">)</span>
+    <span class="n">evidence</span> <span class="o">=</span> <span class="n">_collect</span><span class="p">(</span><span class="n">_hits</span><span class="p">(</span><span class="n">fields</span><span class="p">,</span> <span class="n">table</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">policy</span><span class="p">),</span> <span class="n">table</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">evidence</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">CatIdResolution</span><span class="p">()</span>
+    <span class="n">best</span> <span class="o">=</span> <span class="n">_pick</span><span class="p">(</span><span class="n">evidence</span><span class="p">,</span> <span class="n">table</span><span class="p">)</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">by_catid</span><span class="p">[</span><span class="n">best</span><span class="o">.</span><span class="n">catid</span><span class="p">]</span>
+    <span class="n">confidence</span> <span class="o">=</span> <span class="n">policy</span><span class="o">.</span><span class="n">band</span><span class="p">(</span><span class="n">best</span><span class="o">.</span><span class="n">strength</span><span class="p">,</span> <span class="n">confident</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">confident</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_resolution</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="s2">"keyword"</span><span class="p">,</span> <span class="n">confidence</span><span class="p">,</span> <span class="n">best</span><span class="o">.</span><span class="n">matched</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_audioset_resolution</span><span class="p">(</span>
+    <span class="n">labels</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">audioset_map</span><span class="p">:</span> <span class="n">AudioSetUcsMap</span><span class="p">,</span>
+    <span class="n">table</span><span class="p">:</span> <span class="n">UcsTable</span><span class="p">,</span>
+    <span class="n">confidence</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CatIdResolution</span><span class="p">:</span>
     <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">labels</span> <span class="ow">or</span> <span class="p">():</span>
         <span class="n">catid</span> <span class="o">=</span> <span class="n">audioset_map</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">catid</span><span class="p">:</span>
-            <span class="n">row</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">catid</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">row</span><span class="p">,</span> <span class="p">[</span><span class="n">label</span><span class="p">]</span>
-    <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">catid</span><span class="p">)</span> <span class="k">if</span> <span class="n">catid</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_resolution</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="s2">"audioset"</span><span class="p">,</span> <span class="n">confidence</span><span class="p">,</span> <span class="p">[</span><span class="n">label</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">CatIdResolution</span><span class="p">()</span>
 
 
 <div class="viewcode-block" id="resolve_catid">
@@ -859,6 +1158,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">catid</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">table</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UcsTable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">audioset_map</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AudioSetUcsMap</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">policy</span><span class="p">:</span> <span class="n">MatchPolicy</span> <span class="o">=</span> <span class="n">DEFAULT_MATCH_POLICY</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CatIdResolution</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Resolve inputs to a best UCS CatID by the staged precedence.</span>
 
@@ -873,66 +1173,34 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        table: UCS table (defaults to :func:`default_ucs_table`).</span>
 <span class="sd">        audioset_map: AudioSet-&gt;UCS map (defaults to</span>
 <span class="sd">            :func:`~foley.index.taxonomy.audioset.default_audioset_ucs_map`).</span>
+<span class="sd">        policy: How keywords match and band (default :data:`DEFAULT_MATCH_POLICY`;</span>
+<span class="sd">            vary it with ``dataclasses.replace``).</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A :class:`~foley.index.taxonomy.model.CatIdResolution` (falsy when</span>
 <span class="sd">        nothing resolved).</span>
 <span class="sd">    """</span>
-    <span class="n">table</span> <span class="o">=</span> <span class="n">table</span> <span class="ow">or</span> <span class="n">default_ucs_table</span><span class="p">()</span>
-    <span class="n">audioset_map</span> <span class="o">=</span> <span class="n">audioset_map</span> <span class="ow">or</span> <span class="n">default_audioset_ucs_map</span><span class="p">()</span>
+    <span class="n">table</span> <span class="o">=</span> <span class="n">table</span> <span class="k">if</span> <span class="n">table</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">default_ucs_table</span><span class="p">()</span>
 
-    <span class="k">if</span> <span class="n">filename</span><span class="p">:</span>
-        <span class="n">name</span> <span class="o">=</span> <span class="n">parse_ucs_name</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="n">table</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">CatIdResolution</span><span class="p">(</span>
-                <span class="n">catid</span><span class="o">=</span><span class="n">name</span><span class="o">.</span><span class="n">catid</span><span class="p">,</span>
-                <span class="n">category</span><span class="o">=</span><span class="n">name</span><span class="o">.</span><span class="n">category</span><span class="p">,</span>
-                <span class="n">subcategory</span><span class="o">=</span><span class="n">name</span><span class="o">.</span><span class="n">subcategory</span><span class="p">,</span>
-                <span class="n">source</span><span class="o">=</span><span class="s2">"filename"</span><span class="p">,</span>
-                <span class="n">confidence</span><span class="o">=</span><span class="n">_CONF_FILENAME</span><span class="p">,</span>
-                <span class="n">matched_terms</span><span class="o">=</span><span class="p">[</span><span class="n">name</span><span class="o">.</span><span class="n">catid</span><span class="p">],</span>
-            <span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">parse_ucs_name</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="n">table</span><span class="p">)</span> <span class="k">if</span> <span class="n">filename</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">by_catid</span><span class="p">[</span><span class="n">name</span><span class="o">.</span><span class="n">catid</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">_resolution</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="s2">"filename"</span><span class="p">,</span> <span class="n">STATED_CONFIDENCE</span><span class="p">,</span> <span class="p">[</span><span class="n">name</span><span class="o">.</span><span class="n">catid</span><span class="p">])</span>
 
     <span class="n">row</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">catid</span><span class="p">)</span> <span class="k">if</span> <span class="n">catid</span> <span class="k">else</span> <span class="kc">None</span>
     <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">CatIdResolution</span><span class="p">(</span>
-            <span class="n">catid</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">catid</span><span class="p">,</span>
-            <span class="n">category</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">category</span><span class="p">,</span>
-            <span class="n">subcategory</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">subcategory</span><span class="p">,</span>
-            <span class="n">source</span><span class="o">=</span><span class="s2">"metadata"</span><span class="p">,</span>
-            <span class="n">confidence</span><span class="o">=</span><span class="n">_CONF_DECLARED</span><span class="p">,</span>
-            <span class="n">matched_terms</span><span class="o">=</span><span class="p">[</span><span class="n">catid</span><span class="p">],</span>
-        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">_resolution</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="s2">"metadata"</span><span class="p">,</span> <span class="n">STATED_CONFIDENCE</span><span class="p">,</span> <span class="p">[</span><span class="n">catid</span><span class="p">])</span>
 
-    <span class="n">kw</span> <span class="o">=</span> <span class="n">_keyword_stage</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="n">caption</span><span class="p">,</span> <span class="n">table</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">kw</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">row</span><span class="p">,</span> <span class="n">matched</span><span class="p">,</span> <span class="n">strong</span> <span class="o">=</span> <span class="n">kw</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">strong</span><span class="p">:</span>  <span class="c1"># category-name-only brush — weak evidence</span>
-            <span class="n">conf</span> <span class="o">=</span> <span class="n">_CONF_KEYWORD_WEAK</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">conf</span> <span class="o">=</span> <span class="n">_CONF_KEYWORD_CONFIDENT</span> <span class="k">if</span> <span class="n">row</span><span class="o">.</span><span class="n">confident</span> <span class="k">else</span> <span class="n">_CONF_KEYWORD_APPROX</span>
-        <span class="k">return</span> <span class="n">CatIdResolution</span><span class="p">(</span>
-            <span class="n">catid</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">catid</span><span class="p">,</span>
-            <span class="n">category</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">category</span><span class="p">,</span>
-            <span class="n">subcategory</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">subcategory</span><span class="p">,</span>
-            <span class="n">source</span><span class="o">=</span><span class="s2">"keyword"</span><span class="p">,</span>
-            <span class="n">confidence</span><span class="o">=</span><span class="n">conf</span><span class="p">,</span>
-            <span class="n">matched_terms</span><span class="o">=</span><span class="n">matched</span><span class="p">,</span>
-        <span class="p">)</span>
-
-    <span class="n">ash</span> <span class="o">=</span> <span class="n">_audioset_stage</span><span class="p">(</span><span class="n">audioset_labels</span><span class="p">,</span> <span class="n">audioset_map</span><span class="p">,</span> <span class="n">table</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">ash</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">row</span><span class="p">,</span> <span class="n">matched</span> <span class="o">=</span> <span class="n">ash</span>
-        <span class="k">return</span> <span class="n">CatIdResolution</span><span class="p">(</span>
-            <span class="n">catid</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">catid</span><span class="p">,</span>
-            <span class="n">category</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">category</span><span class="p">,</span>
-            <span class="n">subcategory</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">subcategory</span><span class="p">,</span>
-            <span class="n">source</span><span class="o">=</span><span class="s2">"audioset"</span><span class="p">,</span>
-            <span class="n">confidence</span><span class="o">=</span><span class="n">_CONF_AUDIOSET</span><span class="p">,</span>
-            <span class="n">matched_terms</span><span class="o">=</span><span class="n">matched</span><span class="p">,</span>
-        <span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">CatIdResolution</span><span class="p">()</span></div>
+    <span class="n">keyword</span> <span class="o">=</span> <span class="n">keyword_resolution</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="n">caption</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="n">table</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="n">policy</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">keyword</span> <span class="ow">and</span> <span class="n">keyword</span><span class="o">.</span><span class="n">confidence</span> <span class="o">&gt;=</span> <span class="n">policy</span><span class="o">.</span><span class="n">audioset_confidence</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">keyword</span>
+    <span class="n">audioset_map</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">audioset_map</span> <span class="k">if</span> <span class="n">audioset_map</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">default_audioset_ucs_map</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="n">audioset</span> <span class="o">=</span> <span class="n">_audioset_resolution</span><span class="p">(</span>
+        <span class="n">audioset_labels</span><span class="p">,</span> <span class="n">audioset_map</span><span class="p">,</span> <span class="n">table</span><span class="p">,</span> <span class="n">policy</span><span class="o">.</span><span class="n">audioset_confidence</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">audioset</span> <span class="ow">or</span> <span class="n">keyword</span></div>
 
 
 
@@ -964,10 +1232,17 @@ window.runMermaid = runMermaid;</script>
         <span class="o">*</span><span class="p">,</span>
         <span class="n">table</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UcsTable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">audioset_map</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AudioSetUcsMap</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">policy</span><span class="p">:</span> <span class="n">MatchPolicy</span> <span class="o">=</span> <span class="n">DEFAULT_MATCH_POLICY</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">"""Create a resolver over the given (or default) UCS table + AudioSet map."""</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="o">=</span> <span class="n">table</span> <span class="ow">or</span> <span class="n">default_ucs_table</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">audioset_map</span> <span class="o">=</span> <span class="n">audioset_map</span> <span class="ow">or</span> <span class="n">default_audioset_ucs_map</span><span class="p">()</span>
+<span class="w">        </span><span class="sd">"""Create a resolver over the given (or default) UCS table + AudioSet map.</span>
+
+<span class="sd">        ``policy`` is as in :func:`resolve_catid`.</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="o">=</span> <span class="n">table</span> <span class="k">if</span> <span class="n">table</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">default_ucs_table</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">audioset_map</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">audioset_map</span> <span class="k">if</span> <span class="n">audioset_map</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">default_audioset_ucs_map</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">policy</span> <span class="o">=</span> <span class="n">policy</span>
 
 <div class="viewcode-block" id="KeywordResolver.resolve">
 <a class="viewcode-back" href="../../../../_autosummary/foley.index.taxonomy.resolver.html#foley.KeywordResolver.resolve">[docs]</a>
@@ -980,6 +1255,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">filename</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s2">"uri"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
             <span class="n">table</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">,</span>
             <span class="n">audioset_map</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">audioset_map</span><span class="p">,</span>
+            <span class="n">policy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">policy</span><span class="p">,</span>
         <span class="p">)</span></div>
 </div>
 

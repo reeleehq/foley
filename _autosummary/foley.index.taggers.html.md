@@ -61,7 +61,9 @@ natural UCS `category subcategory` phrases).
 
 Natural multi-word phrases (`"weather rain"`, `"glass break"`) are far
 better CLAP prompts — and better BM25 tags / taxonomy-resolver input — than
-bare abstract subcategory words (`"Break"`, `"Buzz"`), which are a known
+bare abstract subcategory words (`"Break"`, `"Buzz"`); a generic
+subcategory (`GENERAL`, `MISC`) gives the bare category, and the
+`ARCHIVED` bookkeeping rows give none, which are a known
 zero-shot artifact (anomalously close to everything). Absolute tag-quality
 calibration (thresholds, label curation) is an eval-harness concern (#10).
 

@@ -451,6 +451,23 @@ Whether a generation fallback is allowed and within budget.
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
+#### *property* overshoot_usd *: [float](https://docs.python.org/3/builtins/functions.html#float)*
+
+Dollars spent above `max_usd` (`0.0` while within the cap) (#293).
+
+The cap is checked before each call against its *estimate*; [`settle()`](#foley.Budget.settle)
+then records the actual cost, which can be higher, so a run can end above the
+cap. This is that excess, so a host can say “at most the cap, plus this” and
+clamp a quote honestly. Once it is above zero every further paid call is refused
+([`check()`](#foley.Budget.check) sees `spent_usd` over the cap).
+
+```pycon
+>>> b = Budget(max_usd=0.5)
+>>> b.reserve(0.4, what="x"); b.settle(0.4, 0.7)
+>>> round(b.overshoot_usd, 10), round(b.spent_usd, 10)
+(0.2, 0.7)
+```
+
 #### refine_ok()
 
 Whether another refine→re-retrieve pass is within budget.
@@ -487,7 +504,9 @@ Replace a reservation with the actual cost (`None` actual: keep the reservation)
 A reservation of unknown cost (`None` reserved, counted as an unknown call)
 settled with a known actual becomes that actual: it is summed, and no longer
 counted as unknown (#186: a source billed per compute second, priced after).
-Settling a known reservation with an equal actual changes nothing.
+Settling a known reservation with an equal actual changes nothing. An actual
+above the reservation can take the run over `max_usd`: it is still recorded
+(never hidden), shows as [`overshoot_usd`](#foley.Budget.overshoot_usd), and the next paid call is refused.
 
 ```pycon
 >>> b = Budget(approve_unknown_cost=True)
@@ -680,7 +699,9 @@ natural UCS `category subcategory` phrases).
 
 Natural multi-word phrases (`"weather rain"`, `"glass break"`) are far
 better CLAP prompts — and better BM25 tags / taxonomy-resolver input — than
-bare abstract subcategory words (`"Break"`, `"Buzz"`), which are a known
+bare abstract subcategory words (`"Break"`, `"Buzz"`); a generic
+subcategory (`GENERAL`, `MISC`) gives the bare category, and the
+`ARCHIVED` bookkeeping rows give none, which are a known
 zero-shot artifact (anomalously close to everything). Absolute tag-quality
 calibration (thresholds, label curation) is an eval-harness concern (#10).
 
@@ -3199,7 +3220,7 @@ UCS filename. See [`foley.index.licensed_library.ingest_licensed_folder()`](fole
   * **\*\*kw** – Forwarded to `ingest_licensed_folder` (`root`, `min_status`,
     taggers, …).
 
-### foley.ingest_one(src, , library=None, sound_id=None, source_uri=None, license=None, tagger=None, zeroshot_tagger=None, captioner=None, do_qc=True, min_status=QCStatus.warn, do_supervised=True, do_zeroshot=True, do_caption=True, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), store=True, allow_ai_training_forbidden=False, seed_tags=None, ucs_catid=None, restamp_duplicate=False, commercial=None)
+### foley.ingest_one(src, , library=None, sound_id=None, source_uri=None, license=None, tagger=None, zeroshot_tagger=None, captioner=None, do_qc=True, min_status=QCStatus.warn, do_supervised=True, do_zeroshot=True, do_caption=True, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), store=True, allow_ai_training_forbidden=False, seed_tags=None, ucs_catid=None, restamp_duplicate=False, commercial=None, catid_min_confidence=0.5)
 
 Ingest one clip into `library` and return an [`IngestResult`](#foley.IngestResult).
 
@@ -3276,6 +3297,11 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
   * **commercial** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`bool`](https://docs.python.org/3/builtins/functions.html#bool)]) – Whether the AI use is for a commercial purpose (decides a
     `nc_open_source_only` scope, #69). `None` (default) means
     [`DEFAULT_INTENDED_USE`](foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE)’s (commercial).
+  * **catid_min_confidence** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The least resolution confidence stamped as the
+    record’s UCS CatID (default
+    `RECORD_MIN_CONFIDENCE`, an AudioSet-map
+    hit’s). A weaker keyword brush (a category name alone, a synonym many
+    rows share) is left off the record, with a note; `0` stamps any.
 * **Return type:**
   [`IngestResult`](foley.index.ingest.html.md#foley.index.ingest.IngestResult)
 * **Returns:**
@@ -3801,7 +3827,7 @@ Resample `samples` to `target_sr` (a no-op when already there).
 
 Lazy dependency: `soxr`.
 
-### foley.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None)
+### foley.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'no', 'have', 'few', 'who', 'his', 'such', 'every', 'the', 'be', 'in', 'their', 'nor', 'to', 'here', 'which', 'our', 'any', 'may', 'more', 'own', 'very', 'all', 'why', 'being', 'under', 'you', 'must', 'an', 'are', 'then', 'those', 'she', 'was', 'other', 'only', 'this', 'for', 'would', 'am', 'them', 'into', 'he', 'your', 'my', 'we', 'should', 'too', 'i', 'is', 'us', 'from', 'had', 'just', 'each', 'that', 'what', 'these', 'where', 'onto', 'do', 'by', 'has', 'without', 'does', 'did', 'will', 'how', 'as', 'been', 'on', 'could', 'me', 'same', 'about', 'but', 'with', 'its', 'when', 'him', 'it', 'there', 'if', 'at', 'most', 'and', 'a', 'or', 'so', 'were', 'they', 'some', 'of', 'also', 'her', 'not', 'than', 'might', 'can'}), ambiguous_words=frozenset({'work', 'set', 'fall', 'blue', 'long', 'misc', 'part', 'general', 'large', 'break', 'tone', 'off', 'arc', 'down', 'hit', 'light', 'piece', 'open', 'meeting', 'hold', 'shot', 'place', 'little', 'day', 'side', 'way', 'person', 'over', 'heavy', 'drop', 'handle', 'beat', 'small', 'release', 'catch', 'sound', 'bang', 'out', 'quiet', 'big', 'up', 'night', 'run', 'thing', 'time'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -3816,6 +3842,8 @@ Resolve inputs to a best UCS CatID by the staged precedence.
   * **table** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsTable`](foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)]) – UCS table (defaults to `default_ucs_table()`).
   * **audioset_map** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`AudioSetUcsMap`](foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.AudioSetUcsMap)]) – AudioSet->UCS map (defaults to
     [`default_audioset_ucs_map()`](foley.index.taxonomy.audioset.html.md#foley.index.taxonomy.audioset.default_audioset_ucs_map)).
+  * **policy** ([`MatchPolicy`](foley.index.taxonomy.resolver.html.md#foley.index.taxonomy.resolver.MatchPolicy)) – How keywords match and band (default `DEFAULT_MATCH_POLICY`;
+    vary it with `dataclasses.replace`).
 * **Return type:**
   [`CatIdResolution`](foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.CatIdResolution)
 * **Returns:**
@@ -4327,6 +4355,7 @@ escalates to the injected/​default judge for that rung and returns *its* verdi
 | [`eval`](foley.eval.html.md#module-foley.eval)                           | Tier-1 retrieval evaluation — metrics, a frozen golden set, and the nDCG gate.                                                                       |
 | [`provenance`](foley.provenance.html.md#module-foley.provenance)               | Provenance layer for foley — attribution/credits (and, later, disclosure).                                                                           |
 | [`agent_kit`](foley.agent_kit.html.md#module-foley.agent_kit)                 | Install foley's shipped agent kit — the consumer skill + Claude slash command + subagent.                                                            |
+| [`analysis`](foley.analysis.html.md#module-foley.analysis)                   | The one text analyzer foley's keyword matchers share: lowercase `[a-z0-9]+` words.                                                                   |
 | [`base`](foley.base.html.md#module-foley.base)                           | Canonical data models for foley — the single source of truth (SSOT) types.                                                                           |
 | [`cli`](foley.cli.html.md#module-foley.cli)                             | The `foley` command-line interface (`argparse`, the verbs generated by `cw`).                                                                        |
 | [`cost`](foley.cost.html.md#module-foley.cost)                           | Cost: what a call will cost before it is made, and a cumulative cap on a run (#57).                                                                  |

@@ -10,6 +10,7 @@ foley.index.taxonomy.ucs
    
       UCS_MASTER_FILE
       BLOCK_SEP
+      UCS_MANDATORY_BLOCKS
       UCS_NAME_BLOCKS
       UCS_NAME_MAX_BYTES
       UCS_SHORTENABLE_BLOCKS

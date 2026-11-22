@@ -1,0 +1,18 @@
+foley.analysis
+==============
+
+.. automodule:: foley.analysis
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      WORD_PATTERN
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      tokenize
+   
