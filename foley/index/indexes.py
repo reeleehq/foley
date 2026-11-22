@@ -39,6 +39,18 @@ _BM25_K1: float = 1.5
 _BM25_B: float = 0.75
 
 
+def bm25_idf(n_docs: int, df: int) -> float:
+    """Okapi BM25's inverse document frequency of a term in ``df`` of ``n_docs``
+    documents (the ``+1`` form, so never negative). The one IDF of foley's keyword
+    scoring: :class:`MemoryIndex` ranks with it, and the UCS keyword stage can weigh
+    a shared synonym by it (``foley.index.taxonomy.resolver.idf_share``).
+
+    >>> round(bm25_idf(753, 1), 3), round(bm25_idf(753, 32), 3)
+    (6.22, 3.144)
+    """
+    return math.log(1 + (n_docs - df + 0.5) / (df + 0.5))
+
+
 def _fts5_or_match(query: str) -> "Optional[str]":
     """Build a crash-safe FTS5 ``MATCH`` string from a raw user query.
 
@@ -206,7 +218,7 @@ class MemoryIndex:
                 freq = tf.get(term, 0)
                 if not freq:
                     continue
-                idf = math.log(1 + (n_docs - df[term] + 0.5) / (df[term] + 0.5))
+                idf = bm25_idf(n_docs, df[term])
                 denom = freq + _BM25_K1 * (1 - _BM25_B + _BM25_B * dlen / avgdl)
                 score += idf * (freq * (_BM25_K1 + 1)) / denom
             if score > 0:

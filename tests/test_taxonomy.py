@@ -516,3 +516,44 @@ def test_the_ucs_build_tool_reads_the_master_layout(tmp_path):
         {"catid": "FOODCook", "category": "FOOD", "subcategory": "COOKING",
          "explanation": "Cooking.", "synonyms": ["fry", "sauté"], "confident": True}
     ]  # fmt: skip
+
+
+# ---------------------------------------------------------------------------
+# the synonym weight strategy (foley#290): 1/sqrt(n) by default, BM25 IDF on offer
+# ---------------------------------------------------------------------------
+
+
+def test_bm25_idf_weighting_passes_the_probe_set_too():
+    """Both strategies pass every pinned probe (and keep the lone-synonym bands)."""
+    from foley.index.taxonomy.resolver import MatchPolicy, idf_share
+
+    policy = MatchPolicy(synonym_weight=idf_share)
+    for caption, (catid, band) in PROBE_POSITIVES.items():
+        res = resolve_catid(caption=caption, policy=policy)
+        assert (res.catid, res.confidence) == (catid, band), (caption, res.matched_terms)
+    for caption in PROBE_NEGATIVES:
+        assert resolve_catid(caption=caption, policy=policy).confidence <= WEAK, caption
+    assert resolve_catid(caption="a doorknob", policy=policy).confidence == SINGLE
+    assert resolve_catid(caption="a coffee", policy=policy).confidence == WEAK
+
+
+def test_why_the_default_is_inverse_sqrt_not_idf():
+    """Over 3000 synonym captions the two disagree on 3 CatIDs and no band; IDF is
+    gentler on a word many rows share, so it lets the shared word win. Pinned here as
+    the evidence behind the default (foley#290)."""
+    from foley.index.taxonomy.resolver import MatchPolicy, idf_share
+
+    caption = "pierce-arrow"  # an antique car's make; "pierce" is also a stab
+    assert resolve_catid(caption=caption).catid == "VEHAntq"
+    assert resolve_catid(caption=caption, policy=MatchPolicy(synonym_weight=idf_share)).catid == "GOREStab"
+
+
+def test_memory_index_and_the_keyword_stage_share_one_idf():
+    import math
+
+    from foley.index.indexes import bm25_idf
+    from foley.index.taxonomy.resolver import idf_share
+
+    assert idf_share(1, 753) == 1.0
+    assert idf_share(32, 753) == bm25_idf(753, 32) / bm25_idf(753, 1)
+    assert bm25_idf(10, 3) == math.log(1 + (10 - 3 + 0.5) / (3 + 0.5))
