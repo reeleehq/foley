@@ -628,3 +628,34 @@ def test_ci_stays_hermetic():
     extras = data["tool"]["wads"]["ci"]["install"]["extras"]
     assert extras == ["test"] and "agent" not in extras
     assert "anthropic" in data["project"]["optional-dependencies"]["agent"]
+
+
+def test_find_layers_restricts_the_events_that_are_searched(monkeypatch):
+    """#285: a host's bed asks for ambience only; None keeps every layer."""
+    from foley.agent import tools
+    from foley.base import Layer
+
+    class Events:
+        def decompose(self, context, *, max_events=6, seconds=None):
+            return [
+                SoundEvent(query="rain", layer=Layer.ambience),
+                SoundEvent(query="door slam", layer=Layer.sfx_fg),
+                SoundEvent(query="theme", layer=Layer.music),
+            ]
+
+    def run(**kw):
+        seen = []
+        monkeypatch.setattr(
+            tools, "search_sounds", lambda queries, **_: seen.append(queries[0]) or []
+        )
+        foley.find(
+            "x", library=_no_retrieval_lib(), decomposer=Events(), verify="clap",
+            budget=Budget(max_refine_loops=0, allow_generate=False), **kw,
+        )  # fmt: skip
+        return seen
+
+    assert run() == ["rain", "door slam", "theme"]
+    assert run(layers={"ambience"}) == ["rain"]
+    assert run(layers=[Layer.sfx_fg, "music"]) == ["door slam", "theme"]
+    with pytest.raises(ValueError):
+        run(layers={"nonsense"})
