@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=2eeefeaa"></script>
+    <script src="../_static/documentation_options.js?v=8a967ab3"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.138" />
+  <meta name="docsearch:version" content="0.0.139" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -519,7 +519,7 @@
 first use from the ungated <code class="docutils literal notranslate"><span class="pre">stabilityai/stable-audio-3-optimized</span></code>). The adapter drives
 that checkout’s <code class="docutils literal notranslate"><span class="pre">scripts/sa3_tflite.py</span></code> with the checkout’s own virtualenv Python, so
 foley takes on no model dependency (the process and venv helpers are <code class="docutils literal notranslate"><span class="pre">ps.isolated</span></code>’s,
-stdlib-only). Setup is two commands
+stdlib-only). The checkout is pinned to <code class="docutils literal notranslate"><span class="pre">repo_commit</span></code> (<a class="reference internal" href="#foley.sources.stable_audio_3.adapter.sa3_runtime" title="foley.sources.stable_audio_3.adapter.sa3_runtime"><code class="xref py py-func docutils literal notranslate"><span class="pre">sa3_runtime()</span></code></a>, #298). Setup is two commands
 (<a class="reference internal" href="#foley.sources.stable_audio_3.adapter.setup_hint" title="foley.sources.stable_audio_3.adapter.setup_hint"><code class="xref py py-func docutils literal notranslate"><span class="pre">setup_hint()</span></code></a>); a missing checkout raises <code class="xref py py-class docutils literal notranslate"><span class="pre">SourceConfigurationError</span></code> with them,
 which the generation order treats as “skip this backend”.</p>
 <ul class="simple">
@@ -555,7 +555,10 @@ negative prompt only acts when CFG is above 1, so it is dropped with a note.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.stable_audio_3.adapter.sa3_home" title="foley.sources.stable_audio_3.adapter.sa3_home"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sa3_home</span></code></a>([config])</p></td>
 <td><p>Where the Stability checkout lives: <code class="docutils literal notranslate"><span class="pre">$FOLEY_SA3_DIR</span></code>, else the config's default.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.stable_audio_3.adapter.setup_hint" title="foley.sources.stable_audio_3.adapter.setup_hint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setup_hint</span></code></a>([config])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.stable_audio_3.adapter.sa3_runtime" title="foley.sources.stable_audio_3.adapter.sa3_runtime"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sa3_runtime</span></code></a>([config, home])</p></td>
+<td><p>The Stability checkout as a <code class="xref py py-class docutils literal notranslate"><span class="pre">ps.isolated.Runtime</span></code> pinned to <code class="docutils literal notranslate"><span class="pre">repo_commit</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.stable_audio_3.adapter.setup_hint" title="foley.sources.stable_audio_3.adapter.setup_hint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setup_hint</span></code></a>([config])</p></td>
 <td><p>The commands that install the runtime and fetch the weights (never run by foley).</p></td>
 </tr>
 </tbody>
@@ -657,6 +660,19 @@ runs (cost, egress): a caller owns those.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.stable_audio_3.adapter.sa3_runtime">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.stable_audio_3.adapter.</span></span><span class="sig-name descname"><span class="pre">sa3_runtime</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">home</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/stable_audio_3/adapter.html#sa3_runtime"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.stable_audio_3.adapter.sa3_runtime" title="Link to this definition">#</a></dt>
+<dd><p>The Stability checkout as a <code class="xref py py-class docutils literal notranslate"><span class="pre">ps.isolated.Runtime</span></code> pinned to <code class="docutils literal notranslate"><span class="pre">repo_commit</span></code>.</p>
+<p>An explicit <code class="docutils literal notranslate"><span class="pre">home</span></code> is the caller’s own installation, so it is not checked
+against the pin (as for a root named by <code class="docutils literal notranslate"><span class="pre">$FOLEY_SA3_DIR</span></code>, which only warns).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Runtime</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.sources.stable_audio_3.adapter.setup_hint">
 <span class="sig-prename descclassname"><span class="pre">foley.sources.stable_audio_3.adapter.</span></span><span class="sig-name descname"><span class="pre">setup_hint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/stable_audio_3/adapter.html#setup_hint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.stable_audio_3.adapter.setup_hint" title="Link to this definition">#</a></dt>
 <dd><p>The commands that install the runtime and fetch the weights (never run by foley).</p>
@@ -724,6 +740,7 @@ runs (cost, egress): a caller owns those.</p>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.stable_audio_3.adapter.runtime_ready"><code class="docutils literal notranslate"><span class="pre">runtime_ready()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.stable_audio_3.adapter.sa3_home"><code class="docutils literal notranslate"><span class="pre">sa3_home()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.stable_audio_3.adapter.sa3_runtime"><code class="docutils literal notranslate"><span class="pre">sa3_runtime()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.stable_audio_3.adapter.setup_hint"><code class="docutils literal notranslate"><span class="pre">setup_hint()</span></code></a></li>
 </ul>
   </nav></div>

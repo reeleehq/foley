@@ -1,4 +1,4 @@
-> built 2026-11-22 07:42 UTC from 37087f1 (main) · foley 0.0.138. Details: build_info.json
+> built 2026-11-22 07:46 UTC from 683d695 (main) · foley 0.0.139. Details: build_info.json
 
 # index.html.md
 
@@ -18984,7 +18984,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'ta dum', 'netflix chime', 'ta-dum', 'netflix intro', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel inside', 'intel chime', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'ta dum', 'netflix chime', 'netflix sound', 'netflix intro', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel chime', 'intel inside', 'intel jingle', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -27486,7 +27486,7 @@ The model is not a pip package: Stability ships it as `optimized/tflite` in
 first use from the ungated `stabilityai/stable-audio-3-optimized`). The adapter drives
 that checkout’s `scripts/sa3_tflite.py` with the checkout’s own virtualenv Python, so
 foley takes on no model dependency (the process and venv helpers are `ps.isolated`’s,
-stdlib-only). Setup is two commands
+stdlib-only). The checkout is pinned to `repo_commit` ([`sa3_runtime()`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.sa3_runtime), #298). Setup is two commands
 ([`setup_hint()`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.setup_hint)); a missing checkout raises `SourceConfigurationError` with them,
 which the generation order treats as “skip this backend”.
 
@@ -27514,6 +27514,7 @@ which the generation order treats as “skip this backend”.
 | [`runtime_ready`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.runtime_ready)([config, home])   | Whether the checkout and its virtualenv are in place (weights download on first use).   |
 |----------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
 | [`sa3_home`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.sa3_home)([config])              | Where the Stability checkout lives: `$FOLEY_SA3_DIR`, else the config's default.        |
+| [`sa3_runtime`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.sa3_runtime)([config, home])     | The Stability checkout as a `ps.isolated.Runtime` pinned to `repo_commit`.              |
 | [`setup_hint`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.setup_hint)([config])            | The commands that install the runtime and fetch the weights (never run by foley).       |
 
 ### Classes
@@ -27583,6 +27584,16 @@ Where the Stability checkout lives: `$FOLEY_SA3_DIR`, else the config’s defaul
 
 * **Return type:**
   [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)
+
+### foley.sources.stable_audio_3.adapter.sa3_runtime(config=None, , home=None)
+
+The Stability checkout as a `ps.isolated.Runtime` pinned to `repo_commit`.
+
+An explicit `home` is the caller’s own installation, so it is not checked
+against the pin (as for a root named by `$FOLEY_SA3_DIR`, which only warns).
+
+* **Return type:**
+  `Runtime`
 
 ### foley.sources.stable_audio_3.adapter.setup_hint(config=None)
 
@@ -31093,18 +31104,16 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-22 07:42 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/37087f15dda669d6721e8a9744dd15761465ca65"><code>37087f1</code></a> on branch <code>main</code>, for **foley 0.0.138** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-22 07:46 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/683d695328d8d0d190282381c6283e5088b08561"><code>683d695</code></a> on branch <code>main</code>, for **foley 0.0.139** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.138) is behind the latest release on PyPI (0.0.139): `pip install foley` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/37087f15dda669d6721e8a9744dd15761465ca65"><code>37087f15dda669d6721e8a9744dd15761465ca65</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/683d695328d8d0d190282381c6283e5088b08561"><code>683d695328d8d0d190282381c6283e5088b08561</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -31115,9 +31124,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/44999229475">44999229475</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/44999464900">44999464900</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>37087f15dda669d6721e8a9744dd15761465ca65</code> (in the history of the built commit) |
+| Event commit | <code>683d695328d8d0d190282381c6283e5088b08561</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -31142,13 +31151,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.139/">0.0.139</a>, newer than the documented version (0.0.138).
+Latest release: <a href="https://pypi.org/project/foley/0.0.139/">0.0.139</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 37087f15dda669d6721e8a9744dd15761465ca65
+git checkout 683d695328d8d0d190282381c6283e5088b08561
 pip install "epythet==0.2.23"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

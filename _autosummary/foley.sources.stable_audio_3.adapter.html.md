@@ -7,7 +7,7 @@ The model is not a pip package: Stability ships it as `optimized/tflite` in
 first use from the ungated `stabilityai/stable-audio-3-optimized`). The adapter drives
 that checkout’s `scripts/sa3_tflite.py` with the checkout’s own virtualenv Python, so
 foley takes on no model dependency (the process and venv helpers are `ps.isolated`’s,
-stdlib-only). Setup is two commands
+stdlib-only). The checkout is pinned to `repo_commit` ([`sa3_runtime()`](#foley.sources.stable_audio_3.adapter.sa3_runtime), #298). Setup is two commands
 ([`setup_hint()`](#foley.sources.stable_audio_3.adapter.setup_hint)); a missing checkout raises `SourceConfigurationError` with them,
 which the generation order treats as “skip this backend”.
 
@@ -35,6 +35,7 @@ which the generation order treats as “skip this backend”.
 | [`runtime_ready`](#foley.sources.stable_audio_3.adapter.runtime_ready)([config, home])   | Whether the checkout and its virtualenv are in place (weights download on first use).   |
 |----------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
 | [`sa3_home`](#foley.sources.stable_audio_3.adapter.sa3_home)([config])              | Where the Stability checkout lives: `$FOLEY_SA3_DIR`, else the config's default.        |
+| [`sa3_runtime`](#foley.sources.stable_audio_3.adapter.sa3_runtime)([config, home])     | The Stability checkout as a `ps.isolated.Runtime` pinned to `repo_commit`.              |
 | [`setup_hint`](#foley.sources.stable_audio_3.adapter.setup_hint)([config])            | The commands that install the runtime and fetch the weights (never run by foley).       |
 
 ### Classes
@@ -104,6 +105,16 @@ Where the Stability checkout lives: `$FOLEY_SA3_DIR`, else the config’s defaul
 
 * **Return type:**
   [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)
+
+### foley.sources.stable_audio_3.adapter.sa3_runtime(config=None, , home=None)
+
+The Stability checkout as a `ps.isolated.Runtime` pinned to `repo_commit`.
+
+An explicit `home` is the caller’s own installation, so it is not checked
+against the pin (as for a root named by `$FOLEY_SA3_DIR`, which only warns).
+
+* **Return type:**
+  `Runtime`
 
 ### foley.sources.stable_audio_3.adapter.setup_hint(config=None)
 

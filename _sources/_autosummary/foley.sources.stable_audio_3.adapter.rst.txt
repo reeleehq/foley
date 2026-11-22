@@ -16,6 +16,7 @@ foley.sources.stable\_audio\_3.adapter
    
       runtime_ready
       sa3_home
+      sa3_runtime
       setup_hint
    
    .. rubric:: Classes
