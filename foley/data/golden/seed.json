@@ -5,7 +5,7 @@
     "expected_events": [
       {
         "query": "steady rain on a window",
-        "ucs_catid": "RAINGnrl",
+        "ucs_catid": "RAIN",
         "audioset": [
           "Rain",
           "Rain on surface"
@@ -21,7 +21,7 @@
       "engine idling"
     ],
     "answer_clip_ids": {
-      "RAINGnrl": [
+      "RAIN": [
         "ring0:rain_on_window"
       ]
     },
@@ -37,7 +37,7 @@
     "expected_events": [
       {
         "query": "heavy wooden door slam",
-        "ucs_catid": "DOORSlam",
+        "ucs_catid": "DOORWood",
         "audioset": [
           "Door",
           "Slam"
@@ -53,7 +53,7 @@
       "typing"
     ],
     "answer_clip_ids": {
-      "DOORSlam": [
+      "DOORWood": [
         "ring0:door_slam"
       ]
     },
@@ -69,7 +69,7 @@
     "expected_events": [
       {
         "query": "footsteps on a hard floor",
-        "ucs_catid": "FOOTHard",
+        "ucs_catid": "FEETHmn",
         "audioset": [
           "Walk, footsteps"
         ],
@@ -84,7 +84,7 @@
       "laughter"
     ],
     "answer_clip_ids": {
-      "FOOTHard": [
+      "FEETHmn": [
         "ring0:footsteps"
       ]
     },
@@ -100,7 +100,7 @@
     "expected_events": [
       {
         "query": "two glasses clink in a toast",
-        "ucs_catid": "GLASClink",
+        "ucs_catid": "GLASImpt",
         "audioset": [
           "Glass",
           "Chink, clink"
@@ -116,7 +116,7 @@
       "footsteps"
     ],
     "answer_clip_ids": {
-      "GLASClink": [
+      "GLASImpt": [
         "ring0:glass_clink"
       ]
     },
@@ -196,7 +196,7 @@
     "expected_events": [
       {
         "query": "old wooden door creaks open",
-        "ucs_catid": "DoorWood",
+        "ucs_catid": "DOORWood",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -205,7 +205,7 @@
       }
     ],
     "answer_clip_ids": {
-      "DoorWood": [
+      "DOORWood": [
         "ring0:door_wood_creak"
       ]
     },
@@ -222,7 +222,7 @@
     "expected_events": [
       {
         "query": "firm knock raps wooden door",
-        "ucs_catid": "DoorWood",
+        "ucs_catid": "DOORWood",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -231,7 +231,7 @@
       }
     ],
     "answer_clip_ids": {
-      "DoorWood": [
+      "DOORWood": [
         "ring0:door_wood_knock"
       ]
     },
@@ -248,7 +248,7 @@
     "expected_events": [
       {
         "query": "wooden door latch clicks shut",
-        "ucs_catid": "DoorWood",
+        "ucs_catid": "DOORWood",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -257,7 +257,7 @@
       }
     ],
     "answer_clip_ids": {
-      "DoorWood": [
+      "DOORWood": [
         "ring0:door_wood_latch"
       ]
     },
@@ -274,7 +274,7 @@
     "expected_events": [
       {
         "query": "wooden door slams hard frame",
-        "ucs_catid": "DoorWood",
+        "ucs_catid": "DOORWood",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -283,7 +283,7 @@
       }
     ],
     "answer_clip_ids": {
-      "DoorWood": [
+      "DOORWood": [
         "ring0:door_wood_slam_shut"
       ]
     },
@@ -300,7 +300,7 @@
     "expected_events": [
       {
         "query": "light rain patters leaves",
-        "ucs_catid": "RainWx",
+        "ucs_catid": "RAINVege",
         "layer": "ambience",
         "diegetic": true,
         "salience": "medium",
@@ -309,7 +309,7 @@
       }
     ],
     "answer_clip_ids": {
-      "RainWx": [
+      "RAINVege": [
         "ring0:rain_light_patter"
       ]
     },
@@ -326,7 +326,7 @@
     "expected_events": [
       {
         "query": "heavy rain pours steady roar",
-        "ucs_catid": "RainWx",
+        "ucs_catid": "RAINVege",
         "layer": "ambience",
         "diegetic": true,
         "salience": "high",
@@ -335,7 +335,7 @@
       }
     ],
     "answer_clip_ids": {
-      "RainWx": [
+      "RAINVege": [
         "ring0:rain_heavy_downpour"
       ]
     },
@@ -352,7 +352,7 @@
     "expected_events": [
       {
         "query": "rainwater drips metal gutter",
-        "ucs_catid": "RainWx",
+        "ucs_catid": "RAINVege",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -361,7 +361,7 @@
       }
     ],
     "answer_clip_ids": {
-      "RainWx": [
+      "RAINVege": [
         "ring0:rain_gutter_drip"
       ]
     },
@@ -378,7 +378,7 @@
     "expected_events": [
       {
         "query": "rain taps rhythmically stretched umbrella",
-        "ucs_catid": "RainWx",
+        "ucs_catid": "RAINVege",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -387,7 +387,7 @@
       }
     ],
     "answer_clip_ids": {
-      "RainWx": [
+      "RAINVege": [
         "ring0:rain_umbrella_patter"
       ]
     },
@@ -404,7 +404,7 @@
     "expected_events": [
       {
         "query": "wind howls bare winter trees",
-        "ucs_catid": "WindWx",
+        "ucs_catid": "WINDTonl",
         "layer": "ambience",
         "diegetic": true,
         "salience": "high",
@@ -413,7 +413,7 @@
       }
     ],
     "answer_clip_ids": {
-      "WindWx": [
+      "WINDTonl": [
         "ring0:wind_howl_trees"
       ]
     },
@@ -430,7 +430,7 @@
     "expected_events": [
       {
         "query": "wind whistles thinly door gap",
-        "ucs_catid": "WindWx",
+        "ucs_catid": "WINDTonl",
         "layer": "ambience",
         "diegetic": true,
         "salience": "medium",
@@ -439,7 +439,7 @@
       }
     ],
     "answer_clip_ids": {
-      "WindWx": [
+      "WINDTonl": [
         "ring0:wind_whistle_gap"
       ]
     },
@@ -456,7 +456,7 @@
     "expected_events": [
       {
         "query": "breeze rustles dry autumn leaves",
-        "ucs_catid": "WindWx",
+        "ucs_catid": "WINDTonl",
         "layer": "ambience",
         "diegetic": true,
         "salience": "low",
@@ -465,7 +465,7 @@
       }
     ],
     "answer_clip_ids": {
-      "WindWx": [
+      "WINDTonl": [
         "ring0:wind_leaves_rustle"
       ]
     },
@@ -482,7 +482,7 @@
     "expected_events": [
       {
         "query": "wind makes hinged door moan creak",
-        "ucs_catid": "WindWx",
+        "ucs_catid": "WINDTonl",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -491,7 +491,7 @@
       }
     ],
     "answer_clip_ids": {
-      "WindWx": [
+      "WINDTonl": [
         "ring0:wind_door_moan"
       ]
     },
@@ -508,7 +508,7 @@
     "expected_events": [
       {
         "query": "hearth fire crackles pops warmly",
-        "ucs_catid": "FireElem",
+        "ucs_catid": "FIRECrkl",
         "layer": "ambience",
         "diegetic": true,
         "salience": "high",
@@ -517,7 +517,7 @@
       }
     ],
     "answer_clip_ids": {
-      "FireElem": [
+      "FIRECrkl": [
         "ring0:fire_crackle_hearth"
       ]
     },
@@ -534,7 +534,7 @@
     "expected_events": [
       {
         "query": "campfire snaps sends sparks",
-        "ucs_catid": "FireElem",
+        "ucs_catid": "FIRECrkl",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -543,7 +543,7 @@
       }
     ],
     "answer_clip_ids": {
-      "FireElem": [
+      "FIRECrkl": [
         "ring0:campfire_pop_snap"
       ]
     },
@@ -560,7 +560,7 @@
     "expected_events": [
       {
         "query": "large fire roars chimney",
-        "ucs_catid": "FireElem",
+        "ucs_catid": "FIRECrkl",
         "layer": "ambience",
         "diegetic": true,
         "salience": "medium",
@@ -569,7 +569,7 @@
       }
     ],
     "answer_clip_ids": {
-      "FireElem": [
+      "FIRECrkl": [
         "ring0:fireplace_roar"
       ]
     },
@@ -586,7 +586,7 @@
     "expected_events": [
       {
         "query": "match strikes flares flame",
-        "ucs_catid": "FireElem",
+        "ucs_catid": "FIRECrkl",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -595,7 +595,7 @@
       }
     ],
     "answer_clip_ids": {
-      "FireElem": [
+      "FIRECrkl": [
         "ring0:match_strike_light"
       ]
     },
@@ -612,7 +612,7 @@
     "expected_events": [
       {
         "query": "ceramic dishes clatter stacked",
-        "ucs_catid": "DishKit",
+        "ucs_catid": "CERMImpt",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -621,7 +621,7 @@
       }
     ],
     "answer_clip_ids": {
-      "DishKit": [
+      "CERMImpt": [
         "ring0:dishes_stack_clatter"
       ]
     },
@@ -638,7 +638,7 @@
     "expected_events": [
       {
         "query": "plate set table",
-        "ucs_catid": "DishKit",
+        "ucs_catid": "CERMImpt",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -647,7 +647,7 @@
       }
     ],
     "answer_clip_ids": {
-      "DishKit": [
+      "CERMImpt": [
         "ring0:plate_set_table"
       ]
     },
@@ -664,7 +664,7 @@
     "expected_events": [
       {
         "query": "cutlery rattles drawer slides open",
-        "ucs_catid": "DishKit",
+        "ucs_catid": "CERMImpt",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -673,7 +673,7 @@
       }
     ],
     "answer_clip_ids": {
-      "DishKit": [
+      "CERMImpt": [
         "ring0:cutlery_drawer_rattle"
       ]
     },
@@ -690,7 +690,7 @@
     "expected_events": [
       {
         "query": "hands wash dishes splashing water",
-        "ucs_catid": "DishKit",
+        "ucs_catid": "CERMImpt",
         "layer": "ambience",
         "diegetic": true,
         "salience": "low",
@@ -699,7 +699,7 @@
       }
     ],
     "answer_clip_ids": {
-      "DishKit": [
+      "CERMImpt": [
         "ring0:sink_dishwash_splash"
       ]
     },
@@ -716,7 +716,7 @@
     "expected_events": [
       {
         "query": "hammer drives nail sharp strikes",
-        "ucs_catid": "ToolWork",
+        "ucs_catid": "TOOLHand",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -725,7 +725,7 @@
       }
     ],
     "answer_clip_ids": {
-      "ToolWork": [
+      "TOOLHand": [
         "ring0:hammer_nail_strike"
       ]
     },
@@ -742,7 +742,7 @@
     "expected_events": [
       {
         "query": "handsaw rasps back forth wood",
-        "ucs_catid": "ToolWork",
+        "ucs_catid": "TOOLHand",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -751,7 +751,7 @@
       }
     ],
     "answer_clip_ids": {
-      "ToolWork": [
+      "TOOLHand": [
         "ring0:handsaw_wood_cut"
       ]
     },
@@ -768,7 +768,7 @@
     "expected_events": [
       {
         "query": "electric drill whirs wall",
-        "ucs_catid": "ToolWork",
+        "ucs_catid": "TOOLHand",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -777,7 +777,7 @@
       }
     ],
     "answer_clip_ids": {
-      "ToolWork": [
+      "TOOLHand": [
         "ring0:drill_electric_whir"
       ]
     },
@@ -794,7 +794,7 @@
     "expected_events": [
       {
         "query": "ratchet wrench clicks tightening bolt",
-        "ucs_catid": "ToolWork",
+        "ucs_catid": "TOOLHand",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -803,7 +803,7 @@
       }
     ],
     "answer_clip_ids": {
-      "ToolWork": [
+      "TOOLHand": [
         "ring0:wrench_bolt_ratchet"
       ]
     },
@@ -820,7 +820,7 @@
     "expected_events": [
       {
         "query": "dog barks alarm",
-        "ucs_catid": "DogAnml",
+        "ucs_catid": "ANMLDog",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -829,7 +829,7 @@
       }
     ],
     "answer_clip_ids": {
-      "DogAnml": [
+      "ANMLDog": [
         "ring0:dog_bark_alert"
       ]
     },
@@ -846,7 +846,7 @@
     "expected_events": [
       {
         "query": "dog growls low throat",
-        "ucs_catid": "DogAnml",
+        "ucs_catid": "ANMLDog",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -855,7 +855,7 @@
       }
     ],
     "answer_clip_ids": {
-      "DogAnml": [
+      "ANMLDog": [
         "ring0:dog_growl_low"
       ]
     },
@@ -872,7 +872,7 @@
     "expected_events": [
       {
         "query": "dog pants heavily running",
-        "ucs_catid": "DogAnml",
+        "ucs_catid": "ANMLDog",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -881,7 +881,7 @@
       }
     ],
     "answer_clip_ids": {
-      "DogAnml": [
+      "ANMLDog": [
         "ring0:dog_pant_heavy"
       ]
     },
@@ -898,7 +898,7 @@
     "expected_events": [
       {
         "query": "dog whines let",
-        "ucs_catid": "DogAnml",
+        "ucs_catid": "ANMLDog",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -907,7 +907,7 @@
       }
     ],
     "answer_clip_ids": {
-      "DogAnml": [
+      "ANMLDog": [
         "ring0:dog_whine_beg"
       ]
     },
@@ -924,7 +924,7 @@
     "expected_events": [
       {
         "query": "car engine turns starts",
-        "ucs_catid": "CarVeh",
+        "ucs_catid": "VEHCar",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -933,7 +933,7 @@
       }
     ],
     "answer_clip_ids": {
-      "CarVeh": [
+      "VEHCar": [
         "ring0:car_engine_start"
       ]
     },
@@ -950,7 +950,7 @@
     "expected_events": [
       {
         "query": "car door thuds closed",
-        "ucs_catid": "CarVeh",
+        "ucs_catid": "VEHCar",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -959,7 +959,7 @@
       }
     ],
     "answer_clip_ids": {
-      "CarVeh": [
+      "VEHCar": [
         "ring0:car_door_shut"
       ]
     },
@@ -976,7 +976,7 @@
     "expected_events": [
       {
         "query": "car horn blares short honk",
-        "ucs_catid": "CarVeh",
+        "ucs_catid": "VEHCar",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -985,7 +985,7 @@
       }
     ],
     "answer_clip_ids": {
-      "CarVeh": [
+      "VEHCar": [
         "ring0:car_horn_honk"
       ]
     },
@@ -1002,7 +1002,7 @@
     "expected_events": [
       {
         "query": "car tires screech pavement",
-        "ucs_catid": "CarVeh",
+        "ucs_catid": "VEHCar",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -1011,7 +1011,7 @@
       }
     ],
     "answer_clip_ids": {
-      "CarVeh": [
+      "VEHCar": [
         "ring0:car_tires_screech"
       ]
     },
@@ -1028,7 +1028,7 @@
     "expected_events": [
       {
         "query": "low murmur voices fills cafe",
-        "ucs_catid": "CrowdHum",
+        "ucs_catid": "CRWDWalla",
         "layer": "ambience",
         "diegetic": false,
         "salience": "medium",
@@ -1037,7 +1037,7 @@
       }
     ],
     "answer_clip_ids": {
-      "CrowdHum": [
+      "CRWDWalla": [
         "ring0:crowd_murmur_cafe"
       ]
     },
@@ -1054,7 +1054,7 @@
     "expected_events": [
       {
         "query": "crowd bursts loud applause",
-        "ucs_catid": "CrowdHum",
+        "ucs_catid": "CRWDWalla",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -1063,7 +1063,7 @@
       }
     ],
     "answer_clip_ids": {
-      "CrowdHum": [
+      "CRWDWalla": [
         "ring0:crowd_applause_burst"
       ]
     },
@@ -1080,7 +1080,7 @@
     "expected_events": [
       {
         "query": "stadium crowd roars cheers",
-        "ucs_catid": "CrowdHum",
+        "ucs_catid": "CRWDWalla",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -1089,7 +1089,7 @@
       }
     ],
     "answer_clip_ids": {
-      "CrowdHum": [
+      "CRWDWalla": [
         "ring0:crowd_cheer_stadium"
       ]
     },
@@ -1106,7 +1106,7 @@
     "expected_events": [
       {
         "query": "crowd gasps sudden shock",
-        "ucs_catid": "CrowdHum",
+        "ucs_catid": "CRWDWalla",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -1115,7 +1115,7 @@
       }
     ],
     "answer_clip_ids": {
-      "CrowdHum": [
+      "CRWDWalla": [
         "ring0:crowd_gasp_shock"
       ]
     },
@@ -1132,7 +1132,7 @@
     "expected_events": [
       {
         "query": "fast whoosh sweeps ear",
-        "ucs_catid": "StingFX",
+        "ucs_catid": "DSGNWhsh",
         "layer": "stinger",
         "diegetic": false,
         "salience": "medium",
@@ -1141,7 +1141,7 @@
       }
     ],
     "answer_clip_ids": {
-      "StingFX": [
+      "DSGNWhsh": [
         "ring0:whoosh_swipe_fast"
       ]
     },
@@ -1158,7 +1158,7 @@
     "expected_events": [
       {
         "query": "deep boom hits like heavy impact",
-        "ucs_catid": "StingFX",
+        "ucs_catid": "DSGNWhsh",
         "layer": "stinger",
         "diegetic": false,
         "salience": "high",
@@ -1167,7 +1167,7 @@
       }
     ],
     "answer_clip_ids": {
-      "StingFX": [
+      "DSGNWhsh": [
         "ring0:impact_boom_hit"
       ]
     },
@@ -1184,7 +1184,7 @@
     "expected_events": [
       {
         "query": "tense riser swells toward climax",
-        "ucs_catid": "StingFX",
+        "ucs_catid": "DSGNWhsh",
         "layer": "music",
         "diegetic": false,
         "salience": "medium",
@@ -1193,7 +1193,7 @@
       }
     ],
     "answer_clip_ids": {
-      "StingFX": [
+      "DSGNWhsh": [
         "ring0:riser_tension_swell"
       ]
     },
@@ -1210,7 +1210,7 @@
     "expected_events": [
       {
         "query": "sharp dramatic stinger punctuates reveal",
-        "ucs_catid": "StingFX",
+        "ucs_catid": "DSGNWhsh",
         "layer": "stinger",
         "diegetic": false,
         "salience": "high",
@@ -1219,7 +1219,7 @@
       }
     ],
     "answer_clip_ids": {
-      "StingFX": [
+      "DSGNWhsh": [
         "ring0:stinger_dramatic_hit"
       ]
     },
@@ -1236,7 +1236,7 @@
     "expected_events": [
       {
         "query": "metal door squeaks rusty hinges",
-        "ucs_catid": "DoorMetal",
+        "ucs_catid": "DOORMetl",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -1245,7 +1245,7 @@
       }
     ],
     "answer_clip_ids": {
-      "DoorMetal": [
+      "DOORMetl": [
         "ring0:door_metal_squeak"
       ]
     },
@@ -1262,7 +1262,7 @@
     "expected_events": [
       {
         "query": "iron gate clangs shut heavily",
-        "ucs_catid": "DoorMetal",
+        "ucs_catid": "DOORMetl",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -1271,7 +1271,7 @@
       }
     ],
     "answer_clip_ids": {
-      "DoorMetal": [
+      "DOORMetl": [
         "ring0:gate_iron_clang"
       ]
     },
@@ -1288,7 +1288,7 @@
     "expected_events": [
       {
         "query": "steel door bangs closed echo",
-        "ucs_catid": "DoorMetal",
+        "ucs_catid": "DOORMetl",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -1297,7 +1297,7 @@
       }
     ],
     "answer_clip_ids": {
-      "DoorMetal": [
+      "DOORMetl": [
         "ring0:door_metal_bang_shut"
       ]
     },
@@ -1314,7 +1314,7 @@
     "expected_events": [
       {
         "query": "footsteps cross creaky wooden floor",
-        "ucs_catid": "FootWood",
+        "ucs_catid": "FEETHmn",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -1323,7 +1323,7 @@
       }
     ],
     "answer_clip_ids": {
-      "FootWood": [
+      "FEETHmn": [
         "ring0:footsteps_wood_floor"
       ]
     },
@@ -1340,7 +1340,7 @@
     "expected_events": [
       {
         "query": "feet climb wooden staircase",
-        "ucs_catid": "FootWood",
+        "ucs_catid": "FEETHmn",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -1349,7 +1349,7 @@
       }
     ],
     "answer_clip_ids": {
-      "FootWood": [
+      "FEETHmn": [
         "ring0:footsteps_stairs_wood"
       ]
     },
@@ -1366,7 +1366,7 @@
     "expected_events": [
       {
         "query": "footsteps make old floorboards creak",
-        "ucs_catid": "FootWood",
+        "ucs_catid": "FEETHmn",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -1375,7 +1375,7 @@
       }
     ],
     "answer_clip_ids": {
-      "FootWood": [
+      "FEETHmn": [
         "ring0:footsteps_creaky_boards"
       ]
     },
@@ -1392,7 +1392,7 @@
     "expected_events": [
       {
         "query": "footsteps crunch along gravel path",
-        "ucs_catid": "FootGrvl",
+        "ucs_catid": "FEETHmn",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -1401,7 +1401,7 @@
       }
     ],
     "answer_clip_ids": {
-      "FootGrvl": [
+      "FEETHmn": [
         "ring0:footsteps_gravel_path"
       ]
     },
@@ -1418,7 +1418,7 @@
     "expected_events": [
       {
         "query": "boots crunch fresh deep snow",
-        "ucs_catid": "FootGrvl",
+        "ucs_catid": "FEETHmn",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -1427,7 +1427,7 @@
       }
     ],
     "answer_clip_ids": {
-      "FootGrvl": [
+      "FEETHmn": [
         "ring0:footsteps_snow_crunch"
       ]
     },
@@ -1444,7 +1444,7 @@
     "expected_events": [
       {
         "query": "feet shuffle dry fallen leaves",
-        "ucs_catid": "FootGrvl",
+        "ucs_catid": "FEETHmn",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -1453,7 +1453,7 @@
       }
     ],
     "answer_clip_ids": {
-      "FootGrvl": [
+      "FEETHmn": [
         "ring0:footsteps_dry_leaves"
       ]
     },
@@ -1470,7 +1470,7 @@
     "expected_events": [
       {
         "query": "high heels click concrete floor",
-        "ucs_catid": "FootConc",
+        "ucs_catid": "FEETHmn",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -1479,7 +1479,7 @@
       }
     ],
     "answer_clip_ids": {
-      "FootConc": [
+      "FEETHmn": [
         "ring0:footsteps_heels_concrete"
       ]
     },
@@ -1496,7 +1496,7 @@
     "expected_events": [
       {
         "query": "footsteps splash shallow puddles",
-        "ucs_catid": "FootConc",
+        "ucs_catid": "FEETHmn",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -1505,7 +1505,7 @@
       }
     ],
     "answer_clip_ids": {
-      "FootConc": [
+      "FEETHmn": [
         "ring0:footsteps_puddle_splash"
       ]
     },
@@ -1522,7 +1522,7 @@
     "expected_events": [
       {
         "query": "runs fast along pavement",
-        "ucs_catid": "FootConc",
+        "ucs_catid": "FEETHmn",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -1531,7 +1531,7 @@
       }
     ],
     "answer_clip_ids": {
-      "FootConc": [
+      "FEETHmn": [
         "ring0:footsteps_running_pavement"
       ]
     },
@@ -1548,7 +1548,7 @@
     "expected_events": [
       {
         "query": "distant thunder rumbles low sky",
-        "ucs_catid": "ThndrWx",
+        "ucs_catid": "THUN",
         "layer": "ambience",
         "diegetic": true,
         "salience": "medium",
@@ -1557,7 +1557,7 @@
       }
     ],
     "answer_clip_ids": {
-      "ThndrWx": [
+      "THUN": [
         "ring0:thunder_distant_rumble"
       ]
     },
@@ -1574,7 +1574,7 @@
     "expected_events": [
       {
         "query": "thunderclap cracks overhead",
-        "ucs_catid": "ThndrWx",
+        "ucs_catid": "THUN",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -1583,7 +1583,7 @@
       }
     ],
     "answer_clip_ids": {
-      "ThndrWx": [
+      "THUN": [
         "ring0:thunder_crack_close"
       ]
     },
@@ -1600,7 +1600,7 @@
     "expected_events": [
       {
         "query": "thunder rolls heavy storm",
-        "ucs_catid": "ThndrWx",
+        "ucs_catid": "THUN",
         "layer": "ambience",
         "diegetic": true,
         "salience": "medium",
@@ -1609,7 +1609,7 @@
       }
     ],
     "answer_clip_ids": {
-      "ThndrWx": [
+      "THUN": [
         "ring0:thunder_rolling_storm"
       ]
     },
@@ -1626,7 +1626,7 @@
     "expected_events": [
       {
         "query": "small brook babbles smooth stones",
-        "ucs_catid": "WtrStrm",
+        "ucs_catid": "WATRFlow",
         "layer": "ambience",
         "diegetic": true,
         "salience": "low",
@@ -1635,7 +1635,7 @@
       }
     ],
     "answer_clip_ids": {
-      "WtrStrm": [
+      "WATRFlow": [
         "ring0:stream_babbling_brook"
       ]
     },
@@ -1652,7 +1652,7 @@
     "expected_events": [
       {
         "query": "river flows bank",
-        "ucs_catid": "WtrStrm",
+        "ucs_catid": "WATRFlow",
         "layer": "ambience",
         "diegetic": true,
         "salience": "low",
@@ -1661,7 +1661,7 @@
       }
     ],
     "answer_clip_ids": {
-      "WtrStrm": [
+      "WATRFlow": [
         "ring0:river_flowing_steady"
       ]
     },
@@ -1678,7 +1678,7 @@
     "expected_events": [
       {
         "query": "waterfall roars somewhere valley",
-        "ucs_catid": "WtrStrm",
+        "ucs_catid": "WATRFlow",
         "layer": "ambience",
         "diegetic": true,
         "salience": "medium",
@@ -1687,7 +1687,7 @@
       }
     ],
     "answer_clip_ids": {
-      "WtrStrm": [
+      "WATRFlow": [
         "ring0:waterfall_roar_distant"
       ]
     },
@@ -1704,7 +1704,7 @@
     "expected_events": [
       {
         "query": "ocean waves wash shore",
-        "ucs_catid": "WtrWave",
+        "ucs_catid": "WATRWave",
         "layer": "ambience",
         "diegetic": true,
         "salience": "medium",
@@ -1713,7 +1713,7 @@
       }
     ],
     "answer_clip_ids": {
-      "WtrWave": [
+      "WATRWave": [
         "ring0:ocean_waves_shore"
       ]
     },
@@ -1730,7 +1730,7 @@
     "expected_events": [
       {
         "query": "waves crash hard jagged rocks",
-        "ucs_catid": "WtrWave",
+        "ucs_catid": "WATRWave",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -1739,7 +1739,7 @@
       }
     ],
     "answer_clip_ids": {
-      "WtrWave": [
+      "WATRWave": [
         "ring0:waves_crashing_rocks"
       ]
     },
@@ -1756,7 +1756,7 @@
     "expected_events": [
       {
         "query": "water laps wooden dock",
-        "ucs_catid": "WtrWave",
+        "ucs_catid": "WATRWave",
         "layer": "ambience",
         "diegetic": true,
         "salience": "low",
@@ -1765,7 +1765,7 @@
       }
     ],
     "answer_clip_ids": {
-      "WtrWave": [
+      "WATRWave": [
         "ring0:waves_lapping_dock"
       ]
     },
@@ -1782,7 +1782,7 @@
     "expected_events": [
       {
         "query": "kettle whistles water boils",
-        "ucs_catid": "Kettle",
+        "ucs_catid": "FOODKware",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -1791,7 +1791,7 @@
       }
     ],
     "answer_clip_ids": {
-      "Kettle": [
+      "FOODKware": [
         "ring0:kettle_whistle_boil"
       ]
     },
@@ -1808,7 +1808,7 @@
     "expected_events": [
       {
         "query": "water bubbles boiling pot",
-        "ucs_catid": "Kettle",
+        "ucs_catid": "FOODKware",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -1817,7 +1817,7 @@
       }
     ],
     "answer_clip_ids": {
-      "Kettle": [
+      "FOODKware": [
         "ring0:pot_water_boiling"
       ]
     },
@@ -1834,7 +1834,7 @@
     "expected_events": [
       {
         "query": "food sizzles hot oiled pan",
-        "ucs_catid": "Kettle",
+        "ucs_catid": "FOODKware",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -1843,7 +1843,7 @@
       }
     ],
     "answer_clip_ids": {
-      "Kettle": [
+      "FOODKware": [
         "ring0:oil_pan_sizzle"
       ]
     },
@@ -1860,7 +1860,7 @@
     "expected_events": [
       {
         "query": "fork knife scrape plate",
-        "ucs_catid": "Cutlery",
+        "ucs_catid": "FOODTware",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -1869,7 +1869,7 @@
       }
     ],
     "answer_clip_ids": {
-      "Cutlery": [
+      "FOODTware": [
         "ring0:fork_knife_scrape"
       ]
     },
@@ -1886,7 +1886,7 @@
     "expected_events": [
       {
         "query": "spoon clinks stirring inside mug",
-        "ucs_catid": "Cutlery",
+        "ucs_catid": "FOODTware",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -1895,7 +1895,7 @@
       }
     ],
     "answer_clip_ids": {
-      "Cutlery": [
+      "FOODTware": [
         "ring0:spoon_stir_mug"
       ]
     },
@@ -1912,7 +1912,7 @@
     "expected_events": [
       {
         "query": "knife chops quickly cutting board",
-        "ucs_catid": "Cutlery",
+        "ucs_catid": "FOODTware",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -1921,7 +1921,7 @@
       }
     ],
     "answer_clip_ids": {
-      "Cutlery": [
+      "FOODTware": [
         "ring0:knife_chop_board"
       ]
     },
@@ -1938,7 +1938,7 @@
     "expected_events": [
       {
         "query": "microwave beeps signal done",
-        "ucs_catid": "Applnce",
+        "ucs_catid": "BEEPAppl",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -1947,7 +1947,7 @@
       }
     ],
     "answer_clip_ids": {
-      "Applnce": [
+      "BEEPAppl": [
         "ring0:microwave_beep_done"
       ]
     },
@@ -1964,7 +1964,7 @@
     "expected_events": [
       {
         "query": "blender whirs grinding ice fruit",
-        "ucs_catid": "Applnce",
+        "ucs_catid": "BEEPAppl",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -1973,7 +1973,7 @@
       }
     ],
     "answer_clip_ids": {
-      "Applnce": [
+      "BEEPAppl": [
         "ring0:blender_whir_grind"
       ]
     },
@@ -1990,7 +1990,7 @@
     "expected_events": [
       {
         "query": "toast pops toaster click",
-        "ucs_catid": "Applnce",
+        "ucs_catid": "BEEPAppl",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -1999,7 +1999,7 @@
       }
     ],
     "answer_clip_ids": {
-      "Applnce": [
+      "BEEPAppl": [
         "ring0:toaster_pop_up"
       ]
     },
@@ -2016,7 +2016,7 @@
     "expected_events": [
       {
         "query": "page book turns soft rasp",
-        "ucs_catid": "PaperDoc",
+        "ucs_catid": "OBJBook",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -2025,7 +2025,7 @@
       }
     ],
     "answer_clip_ids": {
-      "PaperDoc": [
+      "OBJBook": [
         "ring0:paper_page_turn"
       ]
     },
@@ -2042,7 +2042,7 @@
     "expected_events": [
       {
         "query": "sheet paper crumples ball",
-        "ucs_catid": "PaperDoc",
+        "ucs_catid": "OBJBook",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -2051,7 +2051,7 @@
       }
     ],
     "answer_clip_ids": {
-      "PaperDoc": [
+      "OBJBook": [
         "ring0:paper_crumple_ball"
       ]
     },
@@ -2068,7 +2068,7 @@
     "expected_events": [
       {
         "query": "piece paper tears cleanly two",
-        "ucs_catid": "PaperDoc",
+        "ucs_catid": "OBJBook",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -2077,7 +2077,7 @@
       }
     ],
     "answer_clip_ids": {
-      "PaperDoc": [
+      "OBJBook": [
         "ring0:paper_tear_rip"
       ]
     },
@@ -2094,7 +2094,7 @@
     "expected_events": [
       {
         "query": "pen scribbles quickly paper",
-        "ucs_catid": "WritImpl",
+        "ucs_catid": "OBJWrite",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -2103,7 +2103,7 @@
       }
     ],
     "answer_clip_ids": {
-      "WritImpl": [
+      "OBJWrite": [
         "ring0:pen_scribble_note"
       ]
     },
@@ -2120,7 +2120,7 @@
     "expected_events": [
       {
         "query": "pencil scratches shading paper",
-        "ucs_catid": "WritImpl",
+        "ucs_catid": "OBJWrite",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -2129,7 +2129,7 @@
       }
     ],
     "answer_clip_ids": {
-      "WritImpl": [
+      "OBJWrite": [
         "ring0:pencil_sketch_scratch"
       ]
     },
@@ -2146,7 +2146,7 @@
     "expected_events": [
       {
         "query": "typewriter keys clack line text",
-        "ucs_catid": "WritImpl",
+        "ucs_catid": "OBJWrite",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -2155,7 +2155,7 @@
       }
     ],
     "answer_clip_ids": {
-      "WritImpl": [
+      "OBJWrite": [
         "ring0:typewriter_keys_clack"
       ]
     },
@@ -2172,7 +2172,7 @@
     "expected_events": [
       {
         "query": "wine glugs pours glass",
-        "ucs_catid": "GlassPour",
+        "ucs_catid": "FOODPour",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -2181,7 +2181,7 @@
       }
     ],
     "answer_clip_ids": {
-      "GlassPour": [
+      "FOODPour": [
         "ring0:wine_pour_glass"
       ]
     },
@@ -2198,7 +2198,7 @@
     "expected_events": [
       {
         "query": "cork pops bottle neck",
-        "ucs_catid": "GlassPour",
+        "ucs_catid": "FOODPour",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -2207,7 +2207,7 @@
       }
     ],
     "answer_clip_ids": {
-      "GlassPour": [
+      "FOODPour": [
         "ring0:bottle_uncork_pop"
       ]
     },
@@ -2224,7 +2224,7 @@
     "expected_events": [
       {
         "query": "soda fizzes hisses poured",
-        "ucs_catid": "GlassPour",
+        "ucs_catid": "FOODPour",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -2233,7 +2233,7 @@
       }
     ],
     "answer_clip_ids": {
-      "GlassPour": [
+      "FOODPour": [
         "ring0:soda_fizz_pour"
       ]
     },
@@ -2250,7 +2250,7 @@
     "expected_events": [
       {
         "query": "metal pipe clangs concrete",
-        "ucs_catid": "MetalImp",
+        "ucs_catid": "METLImpt",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -2259,7 +2259,7 @@
       }
     ],
     "answer_clip_ids": {
-      "MetalImp": [
+      "METLImpt": [
         "ring0:metal_pipe_clang"
       ]
     },
@@ -2276,7 +2276,7 @@
     "expected_events": [
       {
         "query": "hammer rings striking hot anvil",
-        "ucs_catid": "MetalImp",
+        "ucs_catid": "METLImpt",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -2285,7 +2285,7 @@
       }
     ],
     "answer_clip_ids": {
-      "MetalImp": [
+      "METLImpt": [
         "ring0:anvil_hammer_ring"
       ]
     },
@@ -2302,7 +2302,7 @@
     "expected_events": [
       {
         "query": "thin metal sheet wobbles warble",
-        "ucs_catid": "MetalImp",
+        "ucs_catid": "METLImpt",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -2311,7 +2311,7 @@
       }
     ],
     "answer_clip_ids": {
-      "MetalImp": [
+      "METLImpt": [
         "ring0:metal_sheet_wobble"
       ]
     },
@@ -2328,7 +2328,7 @@
     "expected_events": [
       {
         "query": "fabric rustles folded",
-        "ucs_catid": "ClothFab",
+        "ucs_catid": "CLOTHMvmt",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -2337,7 +2337,7 @@
       }
     ],
     "answer_clip_ids": {
-      "ClothFab": [
+      "CLOTHMvmt": [
         "ring0:cloth_rustle_fold"
       ]
     },
@@ -2354,7 +2354,7 @@
     "expected_events": [
       {
         "query": "strip fabric rips apart",
-        "ucs_catid": "ClothFab",
+        "ucs_catid": "CLOTHMvmt",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -2363,7 +2363,7 @@
       }
     ],
     "answer_clip_ids": {
-      "ClothFab": [
+      "CLOTHMvmt": [
         "ring0:fabric_rip_tear"
       ]
     },
@@ -2380,7 +2380,7 @@
     "expected_events": [
       {
         "query": "jacket zipper zips quickly",
-        "ucs_catid": "ClothFab",
+        "ucs_catid": "CLOTHMvmt",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -2389,7 +2389,7 @@
       }
     ],
     "answer_clip_ids": {
-      "ClothFab": [
+      "CLOTHMvmt": [
         "ring0:zipper_jacket_zip"
       ]
     },
@@ -2406,7 +2406,7 @@
     "expected_events": [
       {
         "query": "cat meows attention",
-        "ucs_catid": "CatAnml",
+        "ucs_catid": "ANMLCat",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -2415,7 +2415,7 @@
       }
     ],
     "answer_clip_ids": {
-      "CatAnml": [
+      "ANMLCat": [
         "ring0:cat_meow_soft"
       ]
     },
@@ -2432,7 +2432,7 @@
     "expected_events": [
       {
         "query": "contented cat purrs low rumble",
-        "ucs_catid": "CatAnml",
+        "ucs_catid": "ANMLCat",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -2441,7 +2441,7 @@
       }
     ],
     "answer_clip_ids": {
-      "CatAnml": [
+      "ANMLCat": [
         "ring0:cat_purr_rumble"
       ]
     },
@@ -2458,7 +2458,7 @@
     "expected_events": [
       {
         "query": "startled cat hisses warning",
-        "ucs_catid": "CatAnml",
+        "ucs_catid": "ANMLCat",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -2467,7 +2467,7 @@
       }
     ],
     "answer_clip_ids": {
-      "CatAnml": [
+      "ANMLCat": [
         "ring0:cat_hiss_warn"
       ]
     },
@@ -2484,7 +2484,7 @@
     "expected_events": [
       {
         "query": "songbirds chirp brightly dawn",
-        "ucs_catid": "BirdAnml",
+        "ucs_catid": "BIRDSong",
         "layer": "ambience",
         "diegetic": true,
         "salience": "medium",
@@ -2493,7 +2493,7 @@
       }
     ],
     "answer_clip_ids": {
-      "BirdAnml": [
+      "BIRDSong": [
         "ring0:birds_chirp_morning"
       ]
     },
@@ -2510,7 +2510,7 @@
     "expected_events": [
       {
         "query": "crow caws harshly branch",
-        "ucs_catid": "BirdAnml",
+        "ucs_catid": "BIRDSong",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -2519,7 +2519,7 @@
       }
     ],
     "answer_clip_ids": {
-      "BirdAnml": [
+      "BIRDSong": [
         "ring0:crow_caw_harsh"
       ]
     },
@@ -2536,7 +2536,7 @@
     "expected_events": [
       {
         "query": "owl hoots dark woods",
-        "ucs_catid": "BirdAnml",
+        "ucs_catid": "BIRDSong",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -2545,7 +2545,7 @@
       }
     ],
     "answer_clip_ids": {
-      "BirdAnml": [
+      "BIRDSong": [
         "ring0:owl_hoot_night"
       ]
     },
@@ -2562,7 +2562,7 @@
     "expected_events": [
       {
         "query": "horse gallops fast packed dirt",
-        "ucs_catid": "HorseAnml",
+        "ucs_catid": "FEETHors",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -2571,7 +2571,7 @@
       }
     ],
     "answer_clip_ids": {
-      "HorseAnml": [
+      "FEETHors": [
         "ring0:horse_gallop_dirt"
       ]
     },
@@ -2588,7 +2588,7 @@
     "expected_events": [
       {
         "query": "horse neighs loud whinny",
-        "ucs_catid": "HorseAnml",
+        "ucs_catid": "FEETHors",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -2597,7 +2597,7 @@
       }
     ],
     "answer_clip_ids": {
-      "HorseAnml": [
+      "FEETHors": [
         "ring0:horse_neigh_whinny"
       ]
     },
@@ -2614,7 +2614,7 @@
     "expected_events": [
       {
         "query": "hooves clop steady trotting rhythm",
-        "ucs_catid": "HorseAnml",
+        "ucs_catid": "FEETHors",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -2623,7 +2623,7 @@
       }
     ],
     "answer_clip_ids": {
-      "HorseAnml": [
+      "FEETHors": [
         "ring0:horse_hooves_trot"
       ]
     },
@@ -2640,7 +2640,7 @@
     "expected_events": [
       {
         "query": "crickets chirp night",
-        "ucs_catid": "InsctAnml",
+        "ucs_catid": "ANMLInsc",
         "layer": "ambience",
         "diegetic": true,
         "salience": "low",
@@ -2649,7 +2649,7 @@
       }
     ],
     "answer_clip_ids": {
-      "InsctAnml": [
+      "ANMLInsc": [
         "ring0:crickets_night_chirp"
       ]
     },
@@ -2666,7 +2666,7 @@
     "expected_events": [
       {
         "query": "bee buzzes lazily flower",
-        "ucs_catid": "InsctAnml",
+        "ucs_catid": "ANMLInsc",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -2675,7 +2675,7 @@
       }
     ],
     "answer_clip_ids": {
-      "InsctAnml": [
+      "ANMLInsc": [
         "ring0:bee_buzz_flower"
       ]
     },
@@ -2692,7 +2692,7 @@
     "expected_events": [
       {
         "query": "mosquito whines close ear",
-        "ucs_catid": "InsctAnml",
+        "ucs_catid": "ANMLInsc",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -2701,7 +2701,7 @@
       }
     ],
     "answer_clip_ids": {
-      "InsctAnml": [
+      "ANMLInsc": [
         "ring0:mosquito_whine_ear"
       ]
     },
@@ -2718,7 +2718,7 @@
     "expected_events": [
       {
         "query": "train horn sounds far line",
-        "ucs_catid": "TrainVeh",
+        "ucs_catid": "TRNHorn",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -2727,7 +2727,7 @@
       }
     ],
     "answer_clip_ids": {
-      "TrainVeh": [
+      "TRNHorn": [
         "ring0:train_horn_distant"
       ]
     },
@@ -2744,7 +2744,7 @@
     "expected_events": [
       {
         "query": "train wheels clatter rail joints",
-        "ucs_catid": "TrainVeh",
+        "ucs_catid": "TRNHorn",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -2753,7 +2753,7 @@
       }
     ],
     "answer_clip_ids": {
-      "TrainVeh": [
+      "TRNHorn": [
         "ring0:train_wheels_clatter"
       ]
     },
@@ -2770,7 +2770,7 @@
     "expected_events": [
       {
         "query": "train brakes screech slows",
-        "ucs_catid": "TrainVeh",
+        "ucs_catid": "TRNHorn",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -2779,7 +2779,7 @@
       }
     ],
     "answer_clip_ids": {
-      "TrainVeh": [
+      "TRNHorn": [
         "ring0:train_brake_screech"
       ]
     },
@@ -2796,7 +2796,7 @@
     "expected_events": [
       {
         "query": "bicycle bell rings bright ding",
-        "ucs_catid": "BikeVeh",
+        "ucs_catid": "BELLHand",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -2805,7 +2805,7 @@
       }
     ],
     "answer_clip_ids": {
-      "BikeVeh": [
+      "BELLHand": [
         "ring0:bicycle_bell_ring"
       ]
     },
@@ -2822,7 +2822,7 @@
     "expected_events": [
       {
         "query": "bicycle chain whirs pedals spin",
-        "ucs_catid": "BikeVeh",
+        "ucs_catid": "BELLHand",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -2831,7 +2831,7 @@
       }
     ],
     "answer_clip_ids": {
-      "BikeVeh": [
+      "BELLHand": [
         "ring0:bike_chain_spin"
       ]
     },
@@ -2848,7 +2848,7 @@
     "expected_events": [
       {
         "query": "small boat motor chugs water",
-        "ucs_catid": "BoatVeh",
+        "ucs_catid": "BOATMotr",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -2857,7 +2857,7 @@
       }
     ],
     "answer_clip_ids": {
-      "BoatVeh": [
+      "BOATMotr": [
         "ring0:boat_motor_chug"
       ]
     },
@@ -2874,7 +2874,7 @@
     "expected_events": [
       {
         "query": "oars dip pull quiet water",
-        "ucs_catid": "BoatVeh",
+        "ucs_catid": "BOATMotr",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -2883,7 +2883,7 @@
       }
     ],
     "answer_clip_ids": {
-      "BoatVeh": [
+      "BOATMotr": [
         "ring0:oars_row_water"
       ]
     },
@@ -2900,7 +2900,7 @@
     "expected_events": [
       {
         "query": "ship foghorn blasts mist",
-        "ucs_catid": "BoatVeh",
+        "ucs_catid": "BOATMotr",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -2909,7 +2909,7 @@
       }
     ],
     "answer_clip_ids": {
-      "BoatVeh": [
+      "BOATMotr": [
         "ring0:ship_horn_foghorn"
       ]
     },
@@ -2926,7 +2926,7 @@
     "expected_events": [
       {
         "query": "heart beats steady thump",
-        "ucs_catid": "BodyHum",
+        "ucs_catid": "HMNHart",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -2935,7 +2935,7 @@
       }
     ],
     "answer_clip_ids": {
-      "BodyHum": [
+      "HMNHart": [
         "ring0:heartbeat_steady_thump"
       ]
     },
@@ -2952,7 +2952,7 @@
     "expected_events": [
       {
         "query": "heavy breathing follows hard run",
-        "ucs_catid": "BodyHum",
+        "ucs_catid": "HMNHart",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -2961,7 +2961,7 @@
       }
     ],
     "answer_clip_ids": {
-      "BodyHum": [
+      "HMNHart": [
         "ring0:breathing_heavy_run"
       ]
     },
@@ -2978,7 +2978,7 @@
     "expected_events": [
       {
         "query": "single hand clap snaps room",
-        "ucs_catid": "BodyHum",
+        "ucs_catid": "HMNHart",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -2987,7 +2987,7 @@
       }
     ],
     "answer_clip_ids": {
-      "BodyHum": [
+      "HMNHart": [
         "ring0:hand_clap_single"
       ]
     },
@@ -3004,7 +3004,7 @@
     "expected_events": [
       {
         "query": "church bell tolls deep",
-        "ucs_catid": "BellsChm",
+        "ucs_catid": "BELLLrg",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -3013,7 +3013,7 @@
       }
     ],
     "answer_clip_ids": {
-      "BellsChm": [
+      "BELLLrg": [
         "ring0:church_bell_toll"
       ]
     },
@@ -3030,7 +3030,7 @@
     "expected_events": [
       {
         "query": "small hand bell rings crisply",
-        "ucs_catid": "BellsChm",
+        "ucs_catid": "BELLLrg",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -3039,7 +3039,7 @@
       }
     ],
     "answer_clip_ids": {
-      "BellsChm": [
+      "BELLLrg": [
         "ring0:hand_bell_ring"
       ]
     },
@@ -3056,7 +3056,7 @@
     "expected_events": [
       {
         "query": "wind chimes tinkle light breeze",
-        "ucs_catid": "BellsChm",
+        "ucs_catid": "BELLLrg",
         "layer": "ambience",
         "diegetic": true,
         "salience": "low",
@@ -3065,7 +3065,7 @@
       }
     ],
     "answer_clip_ids": {
-      "BellsChm": [
+      "BELLLrg": [
         "ring0:wind_chime_tinkle"
       ]
     },
@@ -3082,7 +3082,7 @@
     "expected_events": [
       {
         "query": "wall clock ticks quiet room",
-        "ucs_catid": "ClockTck",
+        "ucs_catid": "CLOCKTick",
         "layer": "ambience",
         "diegetic": true,
         "salience": "low",
@@ -3091,7 +3091,7 @@
       }
     ],
     "answer_clip_ids": {
-      "ClockTck": [
+      "CLOCKTick": [
         "ring0:clock_tick_wall"
       ]
     },
@@ -3108,7 +3108,7 @@
     "expected_events": [
       {
         "query": "alarm clock rings dawn",
-        "ucs_catid": "ClockTck",
+        "ucs_catid": "CLOCKTick",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -3117,7 +3117,7 @@
       }
     ],
     "answer_clip_ids": {
-      "ClockTck": [
+      "CLOCKTick": [
         "ring0:clock_alarm_ring"
       ]
     },
@@ -3134,7 +3134,7 @@
     "expected_events": [
       {
         "query": "grandfather clock chimes hour",
-        "ucs_catid": "ClockTck",
+        "ucs_catid": "CLOCKTick",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -3143,7 +3143,7 @@
       }
     ],
     "answer_clip_ids": {
-      "ClockTck": [
+      "CLOCKTick": [
         "ring0:grandfather_clock_chime"
       ]
     },
@@ -3160,7 +3160,7 @@
     "expected_events": [
       {
         "query": "old telephone rings metal bell",
-        "ucs_catid": "PhoneEl",
+        "ucs_catid": "COMTelph",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -3169,7 +3169,7 @@
       }
     ],
     "answer_clip_ids": {
-      "PhoneEl": [
+      "COMTelph": [
         "ring0:phone_ring_vintage"
       ]
     },
@@ -3186,7 +3186,7 @@
     "expected_events": [
       {
         "query": "phone buzzes vibrating table",
-        "ucs_catid": "PhoneEl",
+        "ucs_catid": "COMTelph",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -3195,7 +3195,7 @@
       }
     ],
     "answer_clip_ids": {
-      "PhoneEl": [
+      "COMTelph": [
         "ring0:phone_vibrate_buzz"
       ]
     },
@@ -3212,7 +3212,7 @@
     "expected_events": [
       {
         "query": "text message pings short notification",
-        "ucs_catid": "PhoneEl",
+        "ucs_catid": "COMTelph",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -3221,7 +3221,7 @@
       }
     ],
     "answer_clip_ids": {
-      "PhoneEl": [
+      "COMTelph": [
         "ring0:text_notification_ping"
       ]
     },
@@ -3238,7 +3238,7 @@
     "expected_events": [
       {
         "query": "forest hums distant birdsong",
-        "ucs_catid": "ForstAmb",
+        "ucs_catid": "AMBForst",
         "layer": "ambience",
         "diegetic": true,
         "salience": "medium",
@@ -3247,7 +3247,7 @@
       }
     ],
     "answer_clip_ids": {
-      "ForstAmb": [
+      "AMBForst": [
         "ring0:forest_birds_ambience"
       ]
     },
@@ -3264,7 +3264,7 @@
     "expected_events": [
       {
         "query": "night forest pulses crickets rustles",
-        "ucs_catid": "ForstAmb",
+        "ucs_catid": "AMBForst",
         "layer": "ambience",
         "diegetic": true,
         "salience": "low",
@@ -3273,7 +3273,7 @@
       }
     ],
     "answer_clip_ids": {
-      "ForstAmb": [
+      "AMBForst": [
         "ring0:forest_night_crickets"
       ]
     },
@@ -3290,7 +3290,7 @@
     "expected_events": [
       {
         "query": "wind sighs high forest canopy",
-        "ucs_catid": "ForstAmb",
+        "ucs_catid": "AMBForst",
         "layer": "ambience",
         "diegetic": true,
         "salience": "low",
@@ -3299,7 +3299,7 @@
       }
     ],
     "answer_clip_ids": {
-      "ForstAmb": [
+      "AMBForst": [
         "ring0:forest_wind_canopy"
       ]
     },
@@ -3316,7 +3316,7 @@
     "expected_events": [
       {
         "query": "sea murmurs along wide beach",
-        "ucs_catid": "OceanAmb",
+        "ucs_catid": "AMBSea",
         "layer": "ambience",
         "diegetic": true,
         "salience": "medium",
@@ -3325,7 +3325,7 @@
       }
     ],
     "answer_clip_ids": {
-      "OceanAmb": [
+      "AMBSea": [
         "ring0:ocean_ambience_beach"
       ]
     },
@@ -3342,7 +3342,7 @@
     "expected_events": [
       {
         "query": "seagulls cry busy harbor",
-        "ucs_catid": "OceanAmb",
+        "ucs_catid": "AMBSea",
         "layer": "ambience",
         "diegetic": true,
         "salience": "medium",
@@ -3351,7 +3351,7 @@
       }
     ],
     "answer_clip_ids": {
-      "OceanAmb": [
+      "AMBSea": [
         "ring0:seagulls_harbor_cry"
       ]
     },
@@ -3368,7 +3368,7 @@
     "expected_events": [
       {
         "query": "buoy bell clangs harbor swell",
-        "ucs_catid": "OceanAmb",
+        "ucs_catid": "AMBSea",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -3377,7 +3377,7 @@
       }
     ],
     "answer_clip_ids": {
-      "OceanAmb": [
+      "AMBSea": [
         "ring0:harbor_buoy_bell"
       ]
     },
@@ -3394,7 +3394,7 @@
     "expected_events": [
       {
         "query": "sandpaper rasps back forth wood",
-        "ucs_catid": "Sanding",
+        "ucs_catid": "WOODFric",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -3403,7 +3403,7 @@
       }
     ],
     "answer_clip_ids": {
-      "Sanding": [
+      "WOODFric": [
         "ring0:sandpaper_rub_wood"
       ]
     },
@@ -3420,7 +3420,7 @@
     "expected_events": [
       {
         "query": "metal file rasps rough edge",
-        "ucs_catid": "Sanding",
+        "ucs_catid": "WOODFric",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -3429,7 +3429,7 @@
       }
     ],
     "answer_clip_ids": {
-      "Sanding": [
+      "WOODFric": [
         "ring0:file_metal_rasp"
       ]
     },
@@ -3446,7 +3446,7 @@
     "expected_events": [
       {
         "query": "heavy log thuds woodpile",
-        "ucs_catid": "WoodImp",
+        "ucs_catid": "WOODImpt",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -3455,7 +3455,7 @@
       }
     ],
     "answer_clip_ids": {
-      "WoodImp": [
+      "WOODImpt": [
         "ring0:wood_log_thud"
       ]
     },
@@ -3472,7 +3472,7 @@
     "expected_events": [
       {
         "query": "wooden plank snaps pressure",
-        "ucs_catid": "WoodImp",
+        "ucs_catid": "WOODImpt",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -3481,7 +3481,7 @@
       }
     ],
     "answer_clip_ids": {
-      "WoodImp": [
+      "WOODImpt": [
         "ring0:wood_plank_snap"
       ]
     },
@@ -3498,7 +3498,7 @@
     "expected_events": [
       {
         "query": "heavy chain drags stone floor",
-        "ucs_catid": "MetlChn",
+        "ucs_catid": "CHAINMvmt",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -3507,7 +3507,7 @@
       }
     ],
     "answer_clip_ids": {
-      "MetlChn": [
+      "CHAINMvmt": [
         "ring0:chain_drag_metal"
       ]
     },
@@ -3524,7 +3524,7 @@
     "expected_events": [
       {
         "query": "bunch keys jingles pocket",
-        "ucs_catid": "MetlChn",
+        "ucs_catid": "CHAINMvmt",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -3533,7 +3533,7 @@
       }
     ],
     "answer_clip_ids": {
-      "MetlChn": [
+      "CHAINMvmt": [
         "ring0:keys_jingle_pocket"
       ]
     },
@@ -3550,7 +3550,7 @@
     "expected_events": [
       {
         "query": "doorbell rings two note chime",
-        "ucs_catid": "Doorbell",
+        "ucs_catid": "BELLDoor",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -3559,7 +3559,7 @@
       }
     ],
     "answer_clip_ids": {
-      "Doorbell": [
+      "BELLDoor": [
         "ring0:doorbell_chime_ring"
       ]
     },
@@ -3576,7 +3576,7 @@
     "expected_events": [
       {
         "query": "two knuckle knocks land front door",
-        "ucs_catid": "Doorbell",
+        "ucs_catid": "BELLDoor",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -3585,7 +3585,7 @@
       }
     ],
     "answer_clip_ids": {
-      "Doorbell": [
+      "BELLDoor": [
         "ring0:knock_knock_door"
       ]
     },
@@ -3602,7 +3602,7 @@
     "expected_events": [
       {
         "query": "refrigerator door opens soft suction",
-        "ucs_catid": "Fridge",
+        "ucs_catid": "DOORAppl",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -3611,7 +3611,7 @@
       }
     ],
     "answer_clip_ids": {
-      "Fridge": [
+      "DOORAppl": [
         "ring0:fridge_door_open"
       ]
     },
@@ -3628,7 +3628,7 @@
     "expected_events": [
       {
         "query": "refrigerator hums kitchen",
-        "ucs_catid": "Fridge",
+        "ucs_catid": "DOORAppl",
         "layer": "ambience",
         "diegetic": true,
         "salience": "low",
@@ -3637,7 +3637,7 @@
       }
     ],
     "answer_clip_ids": {
-      "Fridge": [
+      "DOORAppl": [
         "ring0:fridge_hum_steady"
       ]
     },
@@ -3654,7 +3654,7 @@
     "expected_events": [
       {
         "query": "shovel scrapes snow driveway",
-        "ucs_catid": "SnowWx",
+        "ucs_catid": "SNOWFric",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -3663,7 +3663,7 @@
       }
     ],
     "answer_clip_ids": {
-      "SnowWx": [
+      "SNOWFric": [
         "ring0:snow_shovel_scrape"
       ]
     },
@@ -3680,7 +3680,7 @@
     "expected_events": [
       {
         "query": "blizzard wind roars drifting snow",
-        "ucs_catid": "SnowWx",
+        "ucs_catid": "SNOWFric",
         "layer": "ambience",
         "diegetic": true,
         "salience": "high",
@@ -3689,7 +3689,7 @@
       }
     ],
     "answer_clip_ids": {
-      "SnowWx": [
+      "SNOWFric": [
         "ring0:snow_wind_blizzard"
       ]
     },
@@ -3706,7 +3706,7 @@
     "expected_events": [
       {
         "query": "snowball packed thrown thump",
-        "ucs_catid": "SnowWx",
+        "ucs_catid": "SNOWFric",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -3715,7 +3715,7 @@
       }
     ],
     "answer_clip_ids": {
-      "SnowWx": [
+      "SNOWFric": [
         "ring0:snowball_pack_throw"
       ]
     },
@@ -3732,7 +3732,7 @@
     "expected_events": [
       {
         "query": "body dives pool splash",
-        "ucs_catid": "WtrSplsh",
+        "ucs_catid": "WATRSplsh",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -3741,7 +3741,7 @@
       }
     ],
     "answer_clip_ids": {
-      "WtrSplsh": [
+      "WATRSplsh": [
         "ring0:splash_dive_pool"
       ]
     },
@@ -3758,7 +3758,7 @@
     "expected_events": [
       {
         "query": "water runs faucet sink",
-        "ucs_catid": "WtrSplsh",
+        "ucs_catid": "WATRSplsh",
         "layer": "ambience",
         "diegetic": true,
         "salience": "low",
@@ -3767,7 +3767,7 @@
       }
     ],
     "answer_clip_ids": {
-      "WtrSplsh": [
+      "WATRSplsh": [
         "ring0:faucet_running_water"
       ]
     },
@@ -3784,7 +3784,7 @@
     "expected_events": [
       {
         "query": "calm night hums crickets stillness",
-        "ucs_catid": "NightAmb",
+        "ucs_catid": "AMBInsc",
         "layer": "ambience",
         "diegetic": true,
         "salience": "low",
@@ -3793,7 +3793,7 @@
       }
     ],
     "answer_clip_ids": {
-      "NightAmb": [
+      "AMBInsc": [
         "ring0:night_crickets_ambience"
       ]
     },
@@ -3810,7 +3810,7 @@
     "expected_events": [
       {
         "query": "lone owl calls still night",
-        "ucs_catid": "NightAmb",
+        "ucs_catid": "AMBInsc",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -3819,7 +3819,7 @@
       }
     ],
     "answer_clip_ids": {
-      "NightAmb": [
+      "AMBInsc": [
         "ring0:distant_owl_night"
       ]
     },
@@ -3836,7 +3836,7 @@
     "expected_events": [
       {
         "query": "frogs croak chorus pond",
-        "ucs_catid": "NightAmb",
+        "ucs_catid": "AMBInsc",
         "layer": "ambience",
         "diegetic": true,
         "salience": "low",
@@ -3845,7 +3845,7 @@
       }
     ],
     "answer_clip_ids": {
-      "NightAmb": [
+      "AMBInsc": [
         "ring0:frog_croak_pond"
       ]
     },
@@ -3862,7 +3862,7 @@
     "expected_events": [
       {
         "query": "voice whispers secret very close",
-        "ucs_catid": "Whisper",
+        "ucs_catid": "VOXWhsp",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -3871,7 +3871,7 @@
       }
     ],
     "answer_clip_ids": {
-      "Whisper": [
+      "VOXWhsp": [
         "ring0:whisper_secret_close"
       ]
     },
@@ -3888,7 +3888,7 @@
     "expected_events": [
       {
         "query": "hushed voices murmur quiet room",
-        "ucs_catid": "Whisper",
+        "ucs_catid": "VOXWhsp",
         "layer": "ambience",
         "diegetic": true,
         "salience": "low",
@@ -3897,7 +3897,7 @@
       }
     ],
     "answer_clip_ids": {
-      "Whisper": [
+      "VOXWhsp": [
         "ring0:hushed_voices_room"
       ]
     },
@@ -3914,7 +3914,7 @@
     "expected_events": [
       {
         "query": "glass shatters hard floor",
-        "ucs_catid": "GlassBrk",
+        "ucs_catid": "GLASBrk",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -3923,7 +3923,7 @@
       }
     ],
     "answer_clip_ids": {
-      "GlassBrk": [
+      "GLASBrk": [
         "ring0:glass_shatter_floor"
       ]
     },
@@ -3940,7 +3940,7 @@
     "expected_events": [
       {
         "query": "window breaks loud crash",
-        "ucs_catid": "GlassBrk",
+        "ucs_catid": "GLASBrk",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "high",
@@ -3949,7 +3949,7 @@
       }
     ],
     "answer_clip_ids": {
-      "GlassBrk": [
+      "GLASBrk": [
         "ring0:window_break_crash"
       ]
     },
@@ -3966,7 +3966,7 @@
     "expected_events": [
       {
         "query": "mirror cracks splitting snap",
-        "ucs_catid": "GlassBrk",
+        "ucs_catid": "GLASBrk",
         "layer": "stinger",
         "diegetic": true,
         "salience": "medium",
@@ -3975,7 +3975,7 @@
       }
     ],
     "answer_clip_ids": {
-      "GlassBrk": [
+      "GLASBrk": [
         "ring0:mirror_crack_split"
       ]
     },
@@ -3992,7 +3992,7 @@
     "expected_events": [
       {
         "query": "velcro strap rips open tear",
-        "ucs_catid": "Clothing",
+        "ucs_catid": "CLOTHRip",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -4001,7 +4001,7 @@
       }
     ],
     "answer_clip_ids": {
-      "Clothing": [
+      "CLOTHRip": [
         "ring0:velcro_strap_rip"
       ]
     },
@@ -4018,7 +4018,7 @@
     "expected_events": [
       {
         "query": "leather boots creak shifts weight",
-        "ucs_catid": "Clothing",
+        "ucs_catid": "CLOTHRip",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "low",
@@ -4027,7 +4027,7 @@
       }
     ],
     "answer_clip_ids": {
-      "Clothing": [
+      "CLOTHRip": [
         "ring0:boots_leather_creak"
       ]
     },
@@ -4044,7 +4044,7 @@
     "expected_events": [
       {
         "query": "jet plane roars high overhead",
-        "ucs_catid": "PlaneVeh",
+        "ucs_catid": "AEROJet",
         "layer": "sfx_fg",
         "diegetic": true,
         "salience": "medium",
@@ -4053,7 +4053,7 @@
       }
     ],
     "answer_clip_ids": {
-      "PlaneVeh": [
+      "AEROJet": [
         "ring0:plane_jet_overhead"
       ]
     },
@@ -4070,7 +4070,7 @@
     "expected_events": [
       {
         "query": "propeller plane drones",
-        "ucs_catid": "PlaneVeh",
+        "ucs_catid": "AEROJet",
         "layer": "ambience",
         "diegetic": true,
         "salience": "low",
@@ -4079,7 +4079,7 @@
       }
     ],
     "answer_clip_ids": {
-      "PlaneVeh": [
+      "AEROJet": [
         "ring0:propeller_plane_drone"
       ]
     },

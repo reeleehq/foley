@@ -164,18 +164,30 @@ def _event_from_golden(ev_dict: dict):
     )
 
 
+def _family(catid: "Optional[str]") -> str:
+    """The UCS category of ``catid`` (variable-length CatID prefixes: ``AIRBlow`` is AIR,
+    ``RAIN`` is RAIN); the CatID itself when the default table does not list it."""
+    if not catid:
+        return ""
+    from ..index.taxonomy import default_ucs_table
+
+    row = default_ucs_table().get(catid)
+    return row.category if row is not None else catid
+
+
 def _strata_key(event, strata_keys) -> tuple:
     """Derive the stratum tuple from a :class:`SoundEvent` (family × diegetic by default).
 
-    ``family`` is the UCS 4-char category prefix of ``ucs_catid`` (e.g. ``RAINGnrl`` →
-    ``RAIN``), falling back to the mix layer; ``diegetic`` splits story-world vs
+    ``family`` is the UCS category of ``ucs_catid`` read from the table (``DOORWood`` →
+    ``DOORS``, ``RAIN`` → ``RAIN``), falling back to the CatID's own
+    letters when the table does not know it (a custom code), then to the mix layer; ``diegetic`` splits story-world vs
     audience-only cues. No new golden package-data is shipped — strata come from the
     existing ``seed.json``.
     """
     parts = []
     for key in strata_keys:
         if key == "family":
-            fam = (event.ucs_catid or "")[:4] or event.layer.value
+            fam = _family(event.ucs_catid) or event.layer.value
             parts.append(fam)
         elif key == "diegetic":
             parts.append("diegetic" if event.diegetic else "non-diegetic")
