@@ -33,6 +33,13 @@ torch-free [`FakeAligner`](foley.weave.align.html.md#foley.weave.align.FakeAlign
 transcript’s words across the clip); [`WhisperXAligner`](foley.weave.align.html.md#foley.weave.align.WhisperXAligner)
 is the real ≈±50 ms impl behind `foley[align]`.
 
+#### word_timeline(audio, sample_rate, , transcript=None, language='en')
+
+Return per-word timings (`list[dict]`) for `audio`, aligned to `transcript` when given.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
 ### *class* foley.weave.protocols.ApplyStrategy(\*args, \*\*kwargs)
 
 Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
@@ -48,3 +55,10 @@ overlay (fast preview / DSP-free fallback). `item` is already anchor-resolved
 `float32` working arrays at `sample_rate`. A strategy with settings that change
 its output should expose them as a `cache_key` string: the `RenderCache`
 keys on it (default: the class name).
+
+#### apply(item, bus, clip, , sample_rate)
+
+Place `clip` onto `bus` for `item` and return the new bus.
+
+* **Return type:**
+  `ndarray`

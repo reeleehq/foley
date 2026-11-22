@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=cbf0c937"></script>
+    <script src="../_static/documentation_options.js?v=6f884d2e"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.148" />
+  <meta name="docsearch:version" content="0.0.149" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -545,6 +545,17 @@ importing this module pulls no heavy dependency and keeps <code class="docutils 
 torch-free <a class="reference internal" href="foley.weave.align.html#foley.weave.align.FakeAligner" title="foley.weave.align.FakeAligner"><code class="xref py py-class docutils literal notranslate"><span class="pre">FakeAligner</span></code></a> (evenly spaces the
 transcript’s words across the clip); <a class="reference internal" href="foley.weave.align.html#foley.weave.align.WhisperXAligner" title="foley.weave.align.WhisperXAligner"><code class="xref py py-class docutils literal notranslate"><span class="pre">WhisperXAligner</span></code></a>
 is the real ≈±50 ms impl behind <code class="docutils literal notranslate"><span class="pre">foley[align]</span></code>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.weave.protocols.Aligner.word_timeline">
+<span class="sig-name descname"><span class="pre">word_timeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">audio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">transcript</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">language</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'en'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/protocols.html#Aligner.word_timeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.protocols.Aligner.word_timeline" title="Link to this definition">#</a></dt>
+<dd><p>Return per-word timings (<code class="docutils literal notranslate"><span class="pre">list[dict]</span></code>) for <code class="docutils literal notranslate"><span class="pre">audio</span></code>, aligned to <code class="docutils literal notranslate"><span class="pre">transcript</span></code> when given.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -561,6 +572,17 @@ overlay (fast preview / DSP-free fallback). <code class="docutils literal notran
 <code class="docutils literal notranslate"><span class="pre">float32</span></code> working arrays at <code class="docutils literal notranslate"><span class="pre">sample_rate</span></code>. A strategy with settings that change
 its output should expose them as a <code class="docutils literal notranslate"><span class="pre">cache_key</span></code> string: the <code class="xref py py-class docutils literal notranslate"><span class="pre">RenderCache</span></code>
 keys on it (default: the class name).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.weave.protocols.ApplyStrategy.apply">
+<span class="sig-name descname"><span class="pre">apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bus</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/protocols.html#ApplyStrategy.apply"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.protocols.ApplyStrategy.apply" title="Link to this definition">#</a></dt>
+<dd><p>Place <code class="docutils literal notranslate"><span class="pre">clip</span></code> onto <code class="docutils literal notranslate"><span class="pre">bus</span></code> for <code class="docutils literal notranslate"><span class="pre">item</span></code> and return the new bus.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -612,8 +634,14 @@ keys on it (default: the class name).</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.protocols.Aligner"><code class="docutils literal notranslate"><span class="pre">Aligner</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.protocols.ApplyStrategy"><code class="docutils literal notranslate"><span class="pre">ApplyStrategy</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.protocols.Aligner"><code class="docutils literal notranslate"><span class="pre">Aligner</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.protocols.Aligner.word_timeline"><code class="docutils literal notranslate"><span class="pre">Aligner.word_timeline()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.protocols.ApplyStrategy"><code class="docutils literal notranslate"><span class="pre">ApplyStrategy</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.protocols.ApplyStrategy.apply"><code class="docutils literal notranslate"><span class="pre">ApplyStrategy.apply()</span></code></a></li>
+</ul>
+</li>
 </ul>
   </nav></div>
 

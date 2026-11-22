@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=cbf0c937"></script>
+    <script src="../_static/documentation_options.js?v=6f884d2e"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.148" />
+  <meta name="docsearch:version" content="0.0.149" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -559,6 +559,17 @@ clip) to correct that. Pure numpy/stdlib apart from the embedder passed in.</p>
 <p>A measured threshold and what it achieves on the labelled set.</p>
 <dl class="field-list simple">
 </dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.eval.prompt_match.Calibration.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/prompt_match.html#Calibration.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.prompt_match.Calibration.to_dict" title="Link to this definition">#</a></dt>
+<dd><p>Return the fields as a dict, floats rounded to four decimals.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py function">
@@ -670,7 +681,10 @@ was made for another prompt). Embeddings are computed once per prompt and per cl
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.prompt_match.Calibration"><code class="docutils literal notranslate"><span class="pre">Calibration</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.prompt_match.Calibration"><code class="docutils literal notranslate"><span class="pre">Calibration</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.prompt_match.Calibration.to_dict"><code class="docutils literal notranslate"><span class="pre">Calibration.to_dict()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.prompt_match.calibrate_threshold"><code class="docutils literal notranslate"><span class="pre">calibrate_threshold()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.prompt_match.load_labelled_dir"><code class="docutils literal notranslate"><span class="pre">load_labelled_dir()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.prompt_match.save_threshold"><code class="docutils literal notranslate"><span class="pre">save_threshold()</span></code></a></li>

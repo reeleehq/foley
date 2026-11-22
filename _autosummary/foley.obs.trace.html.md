@@ -73,11 +73,39 @@ Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protoco
 
 The minimal mirror-span surface foley code calls (structural).
 
+#### record_exception(exc)
+
+Record `exc` on the span.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+#### set_attribute(key, value)
+
+Set one attribute on the span.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+#### set_status(ok, message=None)
+
+Mark the span ok or failed, with an optional message.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 ### *class* foley.obs.trace.Tracer(\*args, \*\*kwargs)
 
 Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
 
 Starts mirror spans; the DI seam (default no-op, OTel-backed when present).
+
+#### start_as_current_span(name, , kind=None, attributes=None)
+
+Start a span named `name` and make it current for the `with` block.
+
+* **Return type:**
+  [`ContextManager`](https://docs.python.org/3/library/typing.html#typing.ContextManager)[[`Span`](#foley.obs.trace.Span)]
 
 ### foley.obs.trace.get_tracer(, prefer_otel=True)
 

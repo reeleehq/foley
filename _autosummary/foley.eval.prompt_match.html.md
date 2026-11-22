@@ -36,6 +36,13 @@ Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 A measured threshold and what it achieves on the labelled set.
 
+#### to_dict()
+
+Return the fields as a dict, floats rounded to four decimals.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
 ### foley.eval.prompt_match.calibrate_threshold(scores)
 
 The threshold under which a clip is called a mismatch, maximising balanced accuracy.

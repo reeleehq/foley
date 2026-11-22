@@ -30,6 +30,13 @@ enforcing the salience/density budget and the anachronism (`era_place`) guard.
 The default is the deterministic [`KeywordDecomposer`](foley.agent.decompose.html.md#foley.agent.decompose.KeywordDecomposer);
 [`AnthropicDecomposer`](foley.agent.decompose.html.md#foley.agent.decompose.AnthropicDecomposer) is the LLM-backed impl.
 
+#### decompose(context, , max_events=6, seconds=None)
+
+Decompose `context` into at most `max_events` sound events.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SoundEvent`](foley.base.html.md#foley.base.SoundEvent)]
+
 ### *class* foley.agent.protocols.Judge(\*args, \*\*kwargs)
 
 Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
@@ -41,6 +48,13 @@ One rung of the verify ladder: does this candidate match this event? (report 10 
 returned `Verdict` carries `level` == the rung that produced it. Only the
 `judge` rung’s real impl calls the LLM.
 
+#### judge(event, candidate, , level=Ellipsis)
+
+Judge whether `candidate` matches `event` at verify rung `level`.
+
+* **Return type:**
+  [`Verdict`](foley.base.html.md#foley.base.Verdict)
+
 ### *class* foley.agent.protocols.Refiner(\*args, \*\*kwargs)
 
 Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
@@ -51,3 +65,10 @@ One event query → 2–4 paraphrases/expansions (query-expansion for retrieval)
 next paraphrases. v1 feeds the list into a multi-query RRF search (embedding-fusion
 is a later drop-in behind this same seam). The default is the deterministic
 [`KeywordRefiner`](foley.agent.refine.html.md#foley.agent.refine.KeywordRefiner).
+
+#### refine(query, , n=3, hint=None)
+
+Return `n` paraphrases of `query`, steered by `hint` when given.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]

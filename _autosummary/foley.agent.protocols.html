@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=cbf0c937"></script>
+    <script src="../_static/documentation_options.js?v=6f884d2e"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.148" />
+  <meta name="docsearch:version" content="0.0.149" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -544,6 +544,17 @@ keeps <code class="docutils literal notranslate"><span class="pre">import</span>
 enforcing the salience/density budget and the anachronism (<code class="docutils literal notranslate"><span class="pre">era_place</span></code>) guard.
 The default is the deterministic <a class="reference internal" href="foley.agent.decompose.html#foley.agent.decompose.KeywordDecomposer" title="foley.agent.decompose.KeywordDecomposer"><code class="xref py py-class docutils literal notranslate"><span class="pre">KeywordDecomposer</span></code></a>;
 <a class="reference internal" href="foley.agent.decompose.html#foley.agent.decompose.AnthropicDecomposer" title="foley.agent.decompose.AnthropicDecomposer"><code class="xref py py-class docutils literal notranslate"><span class="pre">AnthropicDecomposer</span></code></a> is the LLM-backed impl.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.agent.protocols.Decomposer.decompose">
+<span class="sig-name descname"><span class="pre">decompose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">context</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_events</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seconds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/agent/protocols.html#Decomposer.decompose"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.agent.protocols.Decomposer.decompose" title="Link to this definition">#</a></dt>
+<dd><p>Decompose <code class="docutils literal notranslate"><span class="pre">context</span></code> into at most <code class="docutils literal notranslate"><span class="pre">max_events</span></code> sound events.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference internal" href="foley.base.html#foley.base.SoundEvent" title="foley.base.SoundEvent"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundEvent</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -555,6 +566,17 @@ The default is the deterministic <a class="reference internal" href="foley.agent
 <code class="docutils literal notranslate"><span class="pre">listen</span></code> (audio-LM), <code class="docutils literal notranslate"><span class="pre">judge</span></code> (LLM arbitration + scene consistency). The
 returned <code class="xref py py-class docutils literal notranslate"><span class="pre">Verdict</span></code> carries <code class="docutils literal notranslate"><span class="pre">level</span></code> == the rung that produced it. Only the
 <code class="docutils literal notranslate"><span class="pre">judge</span></code> rung’s real impl calls the LLM.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.agent.protocols.Judge.judge">
+<span class="sig-name descname"><span class="pre">judge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">candidate</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Ellipsis</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/agent/protocols.html#Judge.judge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.agent.protocols.Judge.judge" title="Link to this definition">#</a></dt>
+<dd><p>Judge whether <code class="docutils literal notranslate"><span class="pre">candidate</span></code> matches <code class="docutils literal notranslate"><span class="pre">event</span></code> at verify rung <code class="docutils literal notranslate"><span class="pre">level</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.base.html#foley.base.Verdict" title="foley.base.Verdict"><code class="xref py py-class docutils literal notranslate"><span class="pre">Verdict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -566,6 +588,17 @@ returned <code class="xref py py-class docutils literal notranslate"><span class
 next paraphrases. v1 feeds the list into a multi-query RRF search (embedding-fusion
 is a later drop-in behind this same seam). The default is the deterministic
 <a class="reference internal" href="foley.agent.refine.html#foley.agent.refine.KeywordRefiner" title="foley.agent.refine.KeywordRefiner"><code class="xref py py-class docutils literal notranslate"><span class="pre">KeywordRefiner</span></code></a>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.agent.protocols.Refiner.refine">
+<span class="sig-name descname"><span class="pre">refine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/agent/protocols.html#Refiner.refine"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.agent.protocols.Refiner.refine" title="Link to this definition">#</a></dt>
+<dd><p>Return <code class="docutils literal notranslate"><span class="pre">n</span></code> paraphrases of <code class="docutils literal notranslate"><span class="pre">query</span></code>, steered by <code class="docutils literal notranslate"><span class="pre">hint</span></code> when given.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -617,9 +650,18 @@ is a later drop-in behind this same seam). The default is the deterministic
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.protocols.Decomposer"><code class="docutils literal notranslate"><span class="pre">Decomposer</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.protocols.Judge"><code class="docutils literal notranslate"><span class="pre">Judge</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.protocols.Refiner"><code class="docutils literal notranslate"><span class="pre">Refiner</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.protocols.Decomposer"><code class="docutils literal notranslate"><span class="pre">Decomposer</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.protocols.Decomposer.decompose"><code class="docutils literal notranslate"><span class="pre">Decomposer.decompose()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.protocols.Judge"><code class="docutils literal notranslate"><span class="pre">Judge</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.protocols.Judge.judge"><code class="docutils literal notranslate"><span class="pre">Judge.judge()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.protocols.Refiner"><code class="docutils literal notranslate"><span class="pre">Refiner</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.protocols.Refiner.refine"><code class="docutils literal notranslate"><span class="pre">Refiner.refine()</span></code></a></li>
+</ul>
+</li>
 </ul>
   </nav></div>
 

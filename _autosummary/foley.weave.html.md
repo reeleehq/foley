@@ -111,6 +111,13 @@ torch-free [`FakeAligner`](foley.weave.align.html.md#foley.weave.align.FakeAlign
 transcript’s words across the clip); [`WhisperXAligner`](foley.weave.align.html.md#foley.weave.align.WhisperXAligner)
 is the real ≈±50 ms impl behind `foley[align]`.
 
+#### word_timeline(audio, sample_rate, , transcript=None, language='en')
+
+Return per-word timings (`list[dict]`) for `audio`, aligned to `transcript` when given.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
 ### *class* foley.weave.ApplyStrategy(\*args, \*\*kwargs)
 
 Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
@@ -126,6 +133,13 @@ overlay (fast preview / DSP-free fallback). `item` is already anchor-resolved
 `float32` working arrays at `sample_rate`. A strategy with settings that change
 its output should expose them as a `cache_key` string: the [`RenderCache`](#foley.weave.RenderCache)
 keys on it (default: the class name).
+
+#### apply(item, bus, clip, , sample_rate)
+
+Place `clip` onto `bus` for `item` and return the new bus.
+
+* **Return type:**
+  `ndarray`
 
 ### *class* foley.weave.BroadcastBed(audio, sr, license, sources, treatment, notes=list(), sound_id=None)
 
@@ -236,6 +250,13 @@ onset. Levelling first means the layer gains act on clips of equal loudness, wha
 level each was generated or recorded at (#111); `level_clips=False` renders the
 clips as stored.
 
+#### apply(item, bus, clip, , sample_rate)
+
+Fit, process and overlay `clip` onto `bus` for `item`; return the new bus.
+
+* **Return type:**
+  `ndarray`
+
 #### *property* cache_key *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
 
 What distinguishes this strategy’s output in [`RenderCache`](#foley.weave.RenderCache) keys.
@@ -309,6 +330,13 @@ Dry [`ApplyStrategy`](#foley.weave.ApplyStrategy) — declicked placement, no ga
 
 The fast preview / DSP-free fallback path: fit-duration → declick → overlay at the
 resolved onset, at unity gain.
+
+#### apply(item, bus, clip, , sample_rate)
+
+Fit, declick and overlay `clip` onto `bus` at the item’s onset, at unity gain.
+
+* **Return type:**
+  `ndarray`
 
 ### *class* foley.weave.RenderCache
 

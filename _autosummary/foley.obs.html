@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=cbf0c937"></script>
+    <script src="../_static/documentation_options.js?v=6f884d2e"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.148" />
+  <meta name="docsearch:version" content="0.0.149" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -723,6 +723,50 @@ trace can be replayed against a fresh index.</p>
 <dl class="field-list simple">
 </dl>
 <dl class="py method">
+<dt class="sig sig-object py" id="foley.obs.RunRecorder.add_candidate_scores">
+<span class="sig-name descname"><span class="pre">add_candidate_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scores</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/obs/recorder.html#RunRecorder.add_candidate_scores"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.obs.RunRecorder.add_candidate_scores" title="Link to this definition">#</a></dt>
+<dd><p>Append candidate scores to the manifest.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.obs.RunRecorder.add_disclosure_ref">
+<span class="sig-name descname"><span class="pre">add_disclosure_ref</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sound_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/obs/recorder.html#RunRecorder.add_disclosure_ref"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.obs.RunRecorder.add_disclosure_ref" title="Link to this definition">#</a></dt>
+<dd><p>Record the disclosure reference for <code class="docutils literal notranslate"><span class="pre">sound_id</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.obs.RunRecorder.add_result_ids">
+<span class="sig-name descname"><span class="pre">add_result_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ids</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/obs/recorder.html#RunRecorder.add_result_ids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.obs.RunRecorder.add_result_ids" title="Link to this definition">#</a></dt>
+<dd><p>Append result sound ids to the manifest.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.obs.RunRecorder.add_seed">
+<span class="sig-name descname"><span class="pre">add_seed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sound_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/obs/recorder.html#RunRecorder.add_seed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.obs.RunRecorder.add_seed" title="Link to this definition">#</a></dt>
+<dd><p>Record the (redacted) generation seed for <code class="docutils literal notranslate"><span class="pre">sound_id</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="foley.obs.RunRecorder.add_step">
 <span class="sig-name descname"><span class="pre">add_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/obs/recorder.html#RunRecorder.add_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.obs.RunRecorder.add_step" title="Link to this definition">#</a></dt>
 <dd><p>Append a SELECT-stage <a class="reference internal" href="#foley.obs.Step" title="foley.obs.Step"><code class="xref py py-class docutils literal notranslate"><span class="pre">Step</span></code></a> (#7), deep-redacting <code class="docutils literal notranslate"><span class="pre">detail</span></code> at record time.</p>
@@ -749,9 +793,75 @@ off <code class="docutils literal notranslate"><span class="pre">self.manifest.s
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="foley.obs.RunRecorder.set_credits_ref">
+<span class="sig-name descname"><span class="pre">set_credits_ref</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">credits_manifest</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/obs/recorder.html#RunRecorder.set_credits_ref"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.obs.RunRecorder.set_credits_ref" title="Link to this definition">#</a></dt>
+<dd><p>Record the credits manifest reference.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.obs.RunRecorder.set_error">
+<span class="sig-name descname"><span class="pre">set_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/obs/recorder.html#RunRecorder.set_error"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.obs.RunRecorder.set_error" title="Link to this definition">#</a></dt>
+<dd><p>Mark the manifest as failed with <code class="docutils literal notranslate"><span class="pre">message</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.obs.RunRecorder.set_ingest_report">
+<span class="sig-name descname"><span class="pre">set_ingest_report</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">report_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/obs/recorder.html#RunRecorder.set_ingest_report"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.obs.RunRecorder.set_ingest_report" title="Link to this definition">#</a></dt>
+<dd><p>Record the ingest report on the manifest.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.obs.RunRecorder.set_inputs">
+<span class="sig-name descname"><span class="pre">set_inputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">inputs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/obs/recorder.html#RunRecorder.set_inputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.obs.RunRecorder.set_inputs" title="Link to this definition">#</a></dt>
+<dd><p>Merge <code class="docutils literal notranslate"><span class="pre">inputs</span></code> into the manifest inputs, redacting sensitive text.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.obs.RunRecorder.set_params">
+<span class="sig-name descname"><span class="pre">set_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/obs/recorder.html#RunRecorder.set_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.obs.RunRecorder.set_params" title="Link to this definition">#</a></dt>
+<dd><p>Merge <code class="docutils literal notranslate"><span class="pre">params</span></code> into the manifest parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="foley.obs.RunRecorder.set_plan_ref">
 <span class="sig-name descname"><span class="pre">set_plan_ref</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">plan_ref</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/obs/recorder.html#RunRecorder.set_plan_ref"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.obs.RunRecorder.set_plan_ref" title="Link to this definition">#</a></dt>
 <dd><p>Fill the reserved #8 <code class="docutils literal notranslate"><span class="pre">plan_ref</span></code> slot (a light join dict — no text).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.obs.RunRecorder.set_status">
+<span class="sig-name descname"><span class="pre">set_status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">status</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/obs/recorder.html#RunRecorder.set_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.obs.RunRecorder.set_status" title="Link to this definition">#</a></dt>
+<dd><p>Set the manifest status.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span></p>
@@ -801,6 +911,17 @@ catches it). Rehydrated element-wise by <code class="xref py py-meth docutils li
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.obs.</span></span><span class="sig-name descname"><span class="pre">Tracer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/obs/trace.html#Tracer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.obs.Tracer" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Protocol" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
 <p>Starts mirror spans; the DI seam (default no-op, OTel-backed when present).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.obs.Tracer.start_as_current_span">
+<span class="sig-name descname"><span class="pre">start_as_current_span</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attributes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/obs/trace.html#Tracer.start_as_current_span"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.obs.Tracer.start_as_current_span" title="Link to this definition">#</a></dt>
+<dd><p>Start a span named <code class="docutils literal notranslate"><span class="pre">name</span></code> and make it current for the <code class="docutils literal notranslate"><span class="pre">with</span></code> block.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.ContextManager" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ContextManager</span></code></a>[<a class="reference internal" href="foley.obs.trace.html#foley.obs.trace.Span" title="foley.obs.trace.Span"><code class="xref py py-class docutils literal notranslate"><span class="pre">Span</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py function">
@@ -1074,15 +1195,28 @@ nested <a class="reference internal" href="#foley.obs.run" title="foley.obs.run"
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.RunManifest"><code class="docutils literal notranslate"><span class="pre">RunManifest</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.RunRecorder"><code class="docutils literal notranslate"><span class="pre">RunRecorder</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.RunRecorder.add_candidate_scores"><code class="docutils literal notranslate"><span class="pre">RunRecorder.add_candidate_scores()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.RunRecorder.add_disclosure_ref"><code class="docutils literal notranslate"><span class="pre">RunRecorder.add_disclosure_ref()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.RunRecorder.add_result_ids"><code class="docutils literal notranslate"><span class="pre">RunRecorder.add_result_ids()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.RunRecorder.add_seed"><code class="docutils literal notranslate"><span class="pre">RunRecorder.add_seed()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.RunRecorder.add_step"><code class="docutils literal notranslate"><span class="pre">RunRecorder.add_step()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.RunRecorder.emit"><code class="docutils literal notranslate"><span class="pre">RunRecorder.emit()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.RunRecorder.set_credits_ref"><code class="docutils literal notranslate"><span class="pre">RunRecorder.set_credits_ref()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.RunRecorder.set_error"><code class="docutils literal notranslate"><span class="pre">RunRecorder.set_error()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.RunRecorder.set_ingest_report"><code class="docutils literal notranslate"><span class="pre">RunRecorder.set_ingest_report()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.RunRecorder.set_inputs"><code class="docutils literal notranslate"><span class="pre">RunRecorder.set_inputs()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.RunRecorder.set_params"><code class="docutils literal notranslate"><span class="pre">RunRecorder.set_params()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.RunRecorder.set_plan_ref"><code class="docutils literal notranslate"><span class="pre">RunRecorder.set_plan_ref()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.RunRecorder.set_status"><code class="docutils literal notranslate"><span class="pre">RunRecorder.set_status()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.RunRecorder.span"><code class="docutils literal notranslate"><span class="pre">RunRecorder.span()</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.SpanRecord"><code class="docutils literal notranslate"><span class="pre">SpanRecord</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.Step"><code class="docutils literal notranslate"><span class="pre">Step</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.Tracer"><code class="docutils literal notranslate"><span class="pre">Tracer</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.Tracer"><code class="docutils literal notranslate"><span class="pre">Tracer</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.Tracer.start_as_current_span"><code class="docutils literal notranslate"><span class="pre">Tracer.start_as_current_span()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.configure"><code class="docutils literal notranslate"><span class="pre">configure()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.current_run"><code class="docutils literal notranslate"><span class="pre">current_run()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.obs.disable"><code class="docutils literal notranslate"><span class="pre">disable()</span></code></a></li>

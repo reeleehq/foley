@@ -84,6 +84,10 @@ adds it to both, with no surface code.
 * **Type:**
   The CLI command name
 
+#### *property* name *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
+
+The verb’s name (the wrapped function’s `__name__`).
+
 #### why *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= ''*
 
 Why a surface is off (said where the flag is set, so it is never a silent gap).

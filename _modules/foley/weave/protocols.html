@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=cbf0c937"></script>
+    <script src="../../../_static/documentation_options.js?v=6f884d2e"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.148" />
+  <meta name="docsearch:version" content="0.0.149" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -757,6 +757,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    is the real ≈±50 ms impl behind ``foley[align]``.</span>
 <span class="sd">    """</span>
 
+<div class="viewcode-block" id="Aligner.word_timeline">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.protocols.html#foley.weave.Aligner.word_timeline">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">word_timeline</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">audio</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span>
@@ -764,7 +766,10 @@ window.runMermaid = runMermaid;</script>
         <span class="o">*</span><span class="p">,</span>
         <span class="n">transcript</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"en"</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[dict]"</span><span class="p">:</span> <span class="o">...</span></div>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[dict]"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Return per-word timings (``list[dict]``) for ``audio``, aligned to ``transcript`` when given."""</span>
+        <span class="o">...</span></div>
+</div>
 
 
 
@@ -785,9 +790,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    keys on it (default: the class name).</span>
 <span class="sd">    """</span>
 
+<div class="viewcode-block" id="ApplyStrategy.apply">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.protocols.html#foley.weave.ApplyStrategy.apply">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="s2">"TimelineItem"</span><span class="p">,</span> <span class="n">bus</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span> <span class="n">clip</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ndarray"</span><span class="p">:</span> <span class="o">...</span></div>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ndarray"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Place ``clip`` onto ``bus`` for ``item`` and return the new bus."""</span>
+        <span class="o">...</span></div>
+</div>
 
 </pre></div>
 

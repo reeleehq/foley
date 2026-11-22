@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=cbf0c937"></script>
+    <script src="../../../_static/documentation_options.js?v=6f884d2e"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.148" />
+  <meta name="docsearch:version" content="0.0.149" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -836,9 +836,12 @@ window.runMermaid = runMermaid;</script>
 <span class="w">        </span><span class="sd">"""What distinguishes this strategy's output in :class:`RenderCache` keys."""</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(level_clips=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">level_clips</span><span class="si">}</span><span class="s2">)"</span>
 
+<div class="viewcode-block" id="FullRender.apply">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.html#foley.weave.FullRender.apply">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="s2">"TimelineItem"</span><span class="p">,</span> <span class="n">bus</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span> <span class="n">clip</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ndarray"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Fit, process and overlay ``clip`` onto ``bus`` for ``item``; return the new bus."""</span>
         <span class="n">p</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">processing</span>
         <span class="n">pl</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">placement</span>
         <span class="n">clip</span> <span class="o">=</span> <span class="n">fit_duration</span><span class="p">(</span><span class="n">clip</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
@@ -856,6 +859,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">gain</span> <span class="o">=</span> <span class="n">db_to_lin</span><span class="p">(</span><span class="n">layer_gain_db</span> <span class="o">+</span> <span class="n">p</span><span class="o">.</span><span class="n">gain_db</span><span class="p">)</span>
         <span class="n">stereo</span> <span class="o">=</span> <span class="n">stereo</span> <span class="o">*</span> <span class="n">gain</span>
         <span class="k">return</span> <span class="n">overlay</span><span class="p">(</span><span class="n">bus</span><span class="p">,</span> <span class="n">stereo</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">onset</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">))</span></div>
+</div>
 
 
 
@@ -868,13 +872,17 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    resolved onset, at unity gain.</span>
 <span class="sd">    """</span>
 
+<div class="viewcode-block" id="PlaceOnly.apply">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.html#foley.weave.PlaceOnly.apply">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="s2">"TimelineItem"</span><span class="p">,</span> <span class="n">bus</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span> <span class="n">clip</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ndarray"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Fit, declick and overlay ``clip`` onto ``bus`` at the item's onset, at unity gain."""</span>
         <span class="n">pl</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">placement</span>
         <span class="n">clip</span> <span class="o">=</span> <span class="n">fit_duration</span><span class="p">(</span><span class="n">clip</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
         <span class="n">clip</span> <span class="o">=</span> <span class="n">declick</span><span class="p">(</span><span class="n">clip</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">overlay</span><span class="p">(</span><span class="n">bus</span><span class="p">,</span> <span class="n">clip</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">onset</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">))</span></div>
+</div>
 
 
 

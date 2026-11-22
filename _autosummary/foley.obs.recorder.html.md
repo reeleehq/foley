@@ -60,6 +60,34 @@ Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 Builds one `RunManifest` (span tree + composed shapes), tracer-independent.
 
+#### add_candidate_scores(scores)
+
+Append candidate scores to the manifest.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+#### add_disclosure_ref(sound_id, ref)
+
+Record the disclosure reference for `sound_id`.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+#### add_result_ids(ids)
+
+Append result sound ids to the manifest.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+#### add_seed(sound_id, seed)
+
+Record the (redacted) generation seed for `sound_id`.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 #### add_step(step)
 
 Append a SELECT-stage `Step` (#7), deep-redacting `detail` at record time.
@@ -79,9 +107,51 @@ Persist the manifest to the run store — swallowing any write failure.
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
+#### set_credits_ref(credits_manifest)
+
+Record the credits manifest reference.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+#### set_error(message)
+
+Mark the manifest as failed with `message`.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+#### set_ingest_report(report_dict)
+
+Record the ingest report on the manifest.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+#### set_inputs(\*\*inputs)
+
+Merge `inputs` into the manifest inputs, redacting sensitive text.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+#### set_params(\*\*params)
+
+Merge `params` into the manifest parameters.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 #### set_plan_ref(plan_ref)
 
 Fill the reserved #8 `plan_ref` slot (a light join dict — no text).
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+#### set_status(status)
+
+Set the manifest status.
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)

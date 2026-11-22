@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=cbf0c937"></script>
+    <script src="../../../_static/documentation_options.js?v=6f884d2e"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.148" />
+  <meta name="docsearch:version" content="0.0.149" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -974,29 +974,61 @@ window.runMermaid = runMermaid;</script>
 
     <span class="c1"># -- manifest setters (mutate; never raise) -----------------------------</span>
 
+<div class="viewcode-block" id="RunRecorder.set_inputs">
+<a class="viewcode-back" href="../../../_autosummary/foley.obs.recorder.html#foley.obs.RunRecorder.set_inputs">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">set_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">inputs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_redactor</span><span class="o">.</span><span class="n">redact_attrs</span><span class="p">(</span><span class="n">inputs</span><span class="p">))</span>
+<span class="w">        </span><span class="sd">"""Merge ``inputs`` into the manifest inputs, redacting sensitive text."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_redactor</span><span class="o">.</span><span class="n">redact_attrs</span><span class="p">(</span><span class="n">inputs</span><span class="p">))</span></div>
 
+
+<div class="viewcode-block" id="RunRecorder.set_params">
+<a class="viewcode-back" href="../../../_autosummary/foley.obs.recorder.html#foley.obs.RunRecorder.set_params">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">set_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">"""Merge ``params`` into the manifest parameters."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">params</span><span class="p">)</span></div>
 
+
+<div class="viewcode-block" id="RunRecorder.add_result_ids">
+<a class="viewcode-back" href="../../../_autosummary/foley.obs.recorder.html#foley.obs.RunRecorder.add_result_ids">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">add_result_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ids</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">result_ids</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">"""Append result sound ids to the manifest."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">result_ids</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span></div>
 
+
+<div class="viewcode-block" id="RunRecorder.add_candidate_scores">
+<a class="viewcode-back" href="../../../_autosummary/foley.obs.recorder.html#foley.obs.RunRecorder.add_candidate_scores">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">add_candidate_scores</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scores</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">candidate_scores</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">"""Append candidate scores to the manifest."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">candidate_scores</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span></div>
 
+
+<div class="viewcode-block" id="RunRecorder.set_ingest_report">
+<a class="viewcode-back" href="../../../_autosummary/foley.obs.recorder.html#foley.obs.RunRecorder.set_ingest_report">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">set_ingest_report</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">report_dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">ingest_report</span> <span class="o">=</span> <span class="n">report_dict</span>
+<span class="w">        </span><span class="sd">"""Record the ingest report on the manifest."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">ingest_report</span> <span class="o">=</span> <span class="n">report_dict</span></div>
 
+
+<div class="viewcode-block" id="RunRecorder.set_credits_ref">
+<a class="viewcode-back" href="../../../_autosummary/foley.obs.recorder.html#foley.obs.RunRecorder.set_credits_ref">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">set_credits_ref</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">credits_manifest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">credits_ref</span> <span class="o">=</span> <span class="n">credits_manifest</span>
+<span class="w">        </span><span class="sd">"""Record the credits manifest reference."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">credits_ref</span> <span class="o">=</span> <span class="n">credits_manifest</span></div>
 
+
+<div class="viewcode-block" id="RunRecorder.add_seed">
+<a class="viewcode-back" href="../../../_autosummary/foley.obs.recorder.html#foley.obs.RunRecorder.add_seed">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">add_seed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sound_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">seeds</span><span class="p">[</span><span class="n">sound_id</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redactor</span><span class="o">.</span><span class="n">redact_attrs</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">"""Record the (redacted) generation seed for ``sound_id``."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">seeds</span><span class="p">[</span><span class="n">sound_id</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redactor</span><span class="o">.</span><span class="n">redact_attrs</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span></div>
 
+
+<div class="viewcode-block" id="RunRecorder.add_disclosure_ref">
+<a class="viewcode-back" href="../../../_autosummary/foley.obs.recorder.html#foley.obs.RunRecorder.add_disclosure_ref">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">add_disclosure_ref</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sound_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">disclosure_refs</span><span class="p">[</span><span class="n">sound_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">ref</span>
+<span class="w">        </span><span class="sd">"""Record the disclosure reference for ``sound_id``."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">disclosure_refs</span><span class="p">[</span><span class="n">sound_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">ref</span></div>
+
 
 <div class="viewcode-block" id="RunRecorder.add_step">
 <a class="viewcode-back" href="../../../_autosummary/foley.obs.recorder.html#foley.obs.RunRecorder.add_step">[docs]</a>
@@ -1021,12 +1053,20 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">plan_ref</span> <span class="o">=</span> <span class="n">plan_ref</span></div>
 
 
+<div class="viewcode-block" id="RunRecorder.set_status">
+<a class="viewcode-back" href="../../../_autosummary/foley.obs.recorder.html#foley.obs.RunRecorder.set_status">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">set_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">status</span>
+<span class="w">        </span><span class="sd">"""Set the manifest status."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">status</span></div>
 
+
+<div class="viewcode-block" id="RunRecorder.set_error">
+<a class="viewcode-back" href="../../../_autosummary/foley.obs.recorder.html#foley.obs.RunRecorder.set_error">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">set_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Mark the manifest as failed with ``message``."""</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s2">"error"</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">error</span> <span class="o">=</span> <span class="n">message</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">error</span> <span class="o">=</span> <span class="n">message</span></div>
+
 
 <div class="viewcode-block" id="RunRecorder.emit">
 <a class="viewcode-back" href="../../../_autosummary/foley.obs.recorder.html#foley.obs.RunRecorder.emit">[docs]</a>

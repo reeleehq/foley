@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=cbf0c937"></script>
+    <script src="../../../_static/documentation_options.js?v=6f884d2e"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.148" />
+  <meta name="docsearch:version" content="0.0.149" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -748,9 +748,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    :class:`~foley.agent.decompose.AnthropicDecomposer` is the LLM-backed impl.</span>
 <span class="sd">    """</span>
 
+<div class="viewcode-block" id="Decomposer.decompose">
+<a class="viewcode-back" href="../../../_autosummary/foley.agent.protocols.html#foley.Decomposer.decompose">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">decompose</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_events</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span> <span class="n">seconds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[SoundEvent]"</span><span class="p">:</span> <span class="o">...</span></div>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[SoundEvent]"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Decompose ``context`` into at most ``max_events`` sound events."""</span>
+        <span class="o">...</span></div>
+</div>
 
 
 
@@ -766,13 +771,18 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    ``judge`` rung's real impl calls the LLM.</span>
 <span class="sd">    """</span>
 
+<div class="viewcode-block" id="Judge.judge">
+<a class="viewcode-back" href="../../../_autosummary/foley.agent.protocols.html#foley.Judge.judge">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">judge</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">event</span><span class="p">:</span> <span class="s2">"SoundEvent"</span><span class="p">,</span>
         <span class="n">candidate</span><span class="p">:</span> <span class="s2">"Candidate"</span><span class="p">,</span>
         <span class="o">*</span><span class="p">,</span>
         <span class="n">level</span><span class="p">:</span> <span class="s2">"VerifyLevel"</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Verdict"</span><span class="p">:</span> <span class="o">...</span></div>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Verdict"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Judge whether ``candidate`` matches ``event`` at verify rung ``level``."""</span>
+        <span class="o">...</span></div>
+</div>
 
 
 
@@ -788,9 +798,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    :class:`~foley.agent.refine.KeywordRefiner`.</span>
 <span class="sd">    """</span>
 
+<div class="viewcode-block" id="Refiner.refine">
+<a class="viewcode-back" href="../../../_autosummary/foley.agent.protocols.html#foley.Refiner.refine">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">refine</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">hint</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[str]"</span><span class="p">:</span> <span class="o">...</span></div>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[str]"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Return ``n`` paraphrases of ``query``, steered by ``hint`` when given."""</span>
+        <span class="o">...</span></div>
+</div>
 
 </pre></div>
 

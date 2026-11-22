@@ -1132,6 +1132,13 @@ One rung of the verify ladder: does this candidate match this event? (report 10 
 returned [`Verdict`](#foley.Verdict) carries `level` == the rung that produced it. Only the
 `judge` rung’s real impl calls the LLM.
 
+#### judge(event, candidate, , level=Ellipsis)
+
+Judge whether `candidate` matches `event` at verify rung `level`.
+
+* **Return type:**
+  [`Verdict`](foley.base.html.md#foley.base.Verdict)
+
 ### *class* foley.KeywordIndex(\*args, \*\*kwargs)
 
 Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
@@ -3920,7 +3927,7 @@ Resample `samples` to `target_sr` (a no-op when already there).
 
 Lazy dependency: `soxr`.
 
-### foley.resolve_catid(\*, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'these', 'on', 'do', 'only', 'she', 'why', 'each', 'will', 'of', 'been', 'about', 'my', 'had', 'more', 'but', 'may', 'without', 'nor', 'few', 'am', 'some', 'just', 'most', 'the', 'an', 'who', 'is', 'they', 'too', 'in', 'would', 'very', 'does', 'have', 'here', 'from', 'are', 'me', 'be', 'all', 'at', 'were', 'there', 'must', 'could', 'might', 'under', 'has', 'being', 'other', 'then', 'your', 'how', 'own', 'also', 'so', 'a', 'their', 'you', 'no', 'his', 'not', 'as', 'it', 'them', 'by', 'we', 'did', 'where', 'should', 'which', 'such', 'if', 'or', 'can', 'with', 'its', 'than', 'what', 'to', 'into', 'us', 'her', 'for', 'and', 'same', 'that', 'he', 'i', 'those', 'him', 'onto', 'our', 'any', 'was', 'when', 'every', 'this'}), ambiguous_words=frozenset({'tone', 'hold', 'beat', 'large', 'out', 'drop', 'handle', 'sound', 'fall', 'quiet', 'piece', 'down', 'work', 'general', 'blue', 'side', 'break', 'time', 'release', 'place', 'off', 'over', 'person', 'way', 'meeting', 'arc', 'small', 'part', 'shot', 'open', 'heavy', 'bang', 'catch', 'day', 'night', 'run', 'thing', 'up', 'set', 'long', 'hit', 'big', 'little', 'light', 'misc'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### foley.resolve_catid(\*, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'most', 'nor', 'how', 'those', 'such', 'i', 'own', 'is', 'us', 'should', 'there', 'am', 'does', 'not', 'few', 'in', 'did', 'just', 'from', 'has', 'might', 'every', 'who', 'to', 'have', 'only', 'each', 'as', 'by', 'of', 'a', 'them', 'about', 'were', 'will', 'any', 'on', 'this', 'their', 'your', 'could', 'do', 'she', 'with', 'here', 'for', 'but', 'these', 'an', 'too', 'so', 'why', 'you', 'had', 'without', 'than', 'would', 'all', 'been', 'what', 'very', 'more', 'no', 'was', 'into', 'which', 'are', 'must', 'may', 'other', 'some', 'if', 'me', 'it', 'onto', 'under', 'same', 'at', 'her', 'can', 'be', 'my', 'then', 'and', 'our', 'that', 'him', 'they', 'where', 'also', 'being', 'his', 'when', 'we', 'its', 'he', 'or', 'the'}), ambiguous_words=frozenset({'little', 'up', 'big', 'sound', 'misc', 'work', 'large', 'general', 'set', 'out', 'release', 'place', 'off', 'heavy', 'person', 'long', 'drop', 'part', 'small', 'run', 'night', 'day', 'bang', 'handle', 'tone', 'open', 'catch', 'side', 'light', 'quiet', 'fall', 'beat', 'time', 'piece', 'hit', 'blue', 'down', 'shot', 'over', 'hold', 'arc', 'thing', 'way', 'break', 'meeting'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
