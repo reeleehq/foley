@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "built_at": "2026-11-22T22:18:52Z",
+  "built_at": "2026-11-22T23:38:08Z",
   "package": {
     "name": "foley",
     "version": "0.0.149",
@@ -9,24 +9,24 @@
   },
   "git": {
     "available": true,
-    "commit": "9d162940c6dc60e54a4b10fcaacd2bf0b5afeab9",
-    "short_commit": "9d16294",
+    "commit": "bae9f1e734c338bed3390d79eb906ec024c00d6c",
+    "short_commit": "bae9f1e",
     "branch": "main",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/reeleehq/foley",
-    "commit_url": "https://github.com/reeleehq/foley/commit/9d162940c6dc60e54a4b10fcaacd2bf0b5afeab9",
+    "commit_url": "https://github.com/reeleehq/foley/commit/bae9f1e734c338bed3390d79eb906ec024c00d6c",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "reeleehq/foley",
-    "sha": "9d162940c6dc60e54a4b10fcaacd2bf0b5afeab9",
+    "sha": "bae9f1e734c338bed3390d79eb906ec024c00d6c",
     "sha_in_history": true,
     "ref": "refs/heads/main",
     "ref_name": "main",
-    "run_id": "45076749057",
-    "run_url": "https://github.com/reeleehq/foley/actions/runs/45076749057",
+    "run_id": "45084027901",
+    "run_url": "https://github.com/reeleehq/foley/actions/runs/45084027901",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -64,7 +64,7 @@
     "relation": "same",
     "error": null
   },
-  "reproduce": "git clone https://github.com/reeleehq/foley && cd foley\ngit checkout 9d162940c6dc60e54a4b10fcaacd2bf0b5afeab9\npip install \"epythet==0.2.23\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/reeleehq/foley && cd foley\ngit checkout bae9f1e734c338bed3390d79eb906ec024c00d6c\npip install \"epythet==0.2.23\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
     "aligned": true,
