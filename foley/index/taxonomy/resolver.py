@@ -35,7 +35,7 @@ import weakref
 from collections import defaultdict
 from dataclasses import dataclass, field, replace
 from types import MappingProxyType
-from typing import Iterable, Mapping, Optional, Protocol, Sequence, runtime_checkable
+from typing import Callable, Iterable, Mapping, Optional, Protocol, Sequence, runtime_checkable
 
 from ...analysis import tokenize
 from .audioset import default_audioset_ucs_map
@@ -86,6 +86,22 @@ DEFAULT_KIND_WEIGHTS: "Mapping[str, float]" = MappingProxyType(
     {"subcategory": 3.0, "category": 3.0, "synonym": 2.0}
 )
 
+def inverse_sqrt_share(shared_by: int, n_rows: int) -> float:  # noqa: ARG001
+    """A synonym listed by ``shared_by`` rows weighs ``1/sqrt(shared_by)`` of its kind's
+    weight: "car" (32 rows) a sixth, "doorknob" (one row) all of it."""
+    return 1.0 / math.sqrt(shared_by)
+
+
+def idf_share(shared_by: int, n_rows: int) -> float:
+    """A synonym weighs its BM25 IDF over the ``n_rows`` UCS rows (each row a document),
+    relative to a synonym only one row lists (:func:`foley.index.indexes.bm25_idf`, the
+    IDF ``MemoryIndex`` ranks with). Gentler on shared words than
+    :func:`inverse_sqrt_share`: "car" (32 of 753 rows) keeps about half its weight."""
+    from foley.index.indexes import bm25_idf
+
+    return bm25_idf(n_rows, shared_by) / bm25_idf(n_rows, 1)
+
+
 #: Evidence strengths, strongest first (indices into :attr:`MatchPolicy.bands`).
 STRONG, SINGLE, WEAK = range(3)
 
@@ -102,6 +118,9 @@ class MatchPolicy:
         kind_weights: Base weight of a hit by term kind (``subcategory``,
             ``category``, ``synonym``).
         phrase_bonus: Added per content word past the first of a multi-word term.
+        synonym_weight: ``(rows listing the synonym, rows in the table) -> factor`` on a
+            synonym hit's weight: :func:`inverse_sqrt_share` (default) or
+            :func:`idf_share` (foley#290).
         strong_confidence: Band of strong evidence: a subcategory hit, a multi-word
             phrase, or two distinct content words on the row (a category name plus
             another word counts).
@@ -118,6 +137,7 @@ class MatchPolicy:
     skip_categories: frozenset = NON_SOUND_CATEGORIES
     kind_weights: "Mapping[str, float]" = field(default=DEFAULT_KIND_WEIGHTS)
     phrase_bonus: float = 1.0
+    synonym_weight: "Callable[[int, int], float]" = inverse_sqrt_share
     strong_confidence: float = 0.8
     single_confidence: float = 0.6
     weak_confidence: float = 0.4
@@ -276,6 +296,7 @@ def _hits(
             return None
         return words
 
+    n_rows = len(table.by_catid)
     found: dict[int, tuple] = {}  # id(term) -> (term, content); a term counts once
     for f in fields:
         present = frozenset().union(*f)
@@ -290,7 +311,7 @@ def _hits(
         shared_by = index.row_count[term.lemmas]
         weight = policy.kind_weights[term.kind] + policy.phrase_bonus * (len(words) - 1)
         if term.kind == "synonym":  # "car" is a synonym of 32 rows, "doorknob" of one
-            weight /= math.sqrt(shared_by)
+            weight *= policy.synonym_weight(shared_by, n_rows)
         yield Hit(term.catid, term.kind, term.text, words, weight, shared_by)
 
 
