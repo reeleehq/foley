@@ -255,6 +255,7 @@ def score(
     # find's loop budget turns the fallback off (its pre-flight then counts no
     # generation); the run's spend is still capped by the scope below.
     loop_budget = find_kw.get("budget") or budget or active_budget()
+    find_kw["budget"] = loop_budget  # the budget that is checked is the one that runs
     retrieval_only_kw = {**find_kw, "budget": loop_budget.without_generation()}
     # What each segment may run, fullest first (#281: degrade, do not raise mid-run).
     find_options = (
@@ -281,7 +282,8 @@ def score(
                 find_options,
                 notes=notes,
                 nothing_spent=(
-                    run_budget.spent_usd == spent0
+                    i == 0  # a later segment's refusal must not discard earlier results
+                    and run_budget.spent_usd == spent0
                     and run_budget.unknown_cost_calls == unknown0
                 ),
             )

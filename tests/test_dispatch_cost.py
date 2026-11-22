@@ -1044,3 +1044,15 @@ def test_max_usd_is_shorthand_for_a_budget(paid_source, library):
     assert adapter.calls == 1 and result.spent_usd == pytest.approx(0.60)
     with pytest.raises(TypeError, match="not both"):
         foley.score(TWO, library=library, budget=Budget(), max_usd=1.0)
+
+
+def test_score_inside_an_outer_scope_checks_the_budget_that_runs(paid_source, library):
+    """Review of #289: with only an outer cap in force, score's pre-check and find's own
+    pre-flight must read the same budget (no mid-run BudgetExceeded from a hidden $1)."""
+    from foley.cost import spend_scope
+
+    adapter = paid_source("twousd", amount=2.0)
+    with spend_scope(Budget(max_usd=10.0)) as outer:
+        result = foley.score(TWO[:1], library=library, backend="twousd", max_events=1)
+    assert adapter.calls == 1 and result.spent_usd == pytest.approx(2.0)
+    assert outer.spent_usd == pytest.approx(2.0)
