@@ -111,6 +111,7 @@ class FullRender:
     def apply(
         self, item: "TimelineItem", bus: "ndarray", clip: "ndarray", *, sample_rate: int
     ) -> "ndarray":
+        """Fit, process and overlay ``clip`` onto ``bus`` for ``item``; return the new bus."""
         p = item.processing
         pl = item.placement
         clip = fit_duration(clip, sample_rate, duration=pl.duration, loop=pl.loop)
@@ -140,6 +141,7 @@ class PlaceOnly:
     def apply(
         self, item: "TimelineItem", bus: "ndarray", clip: "ndarray", *, sample_rate: int
     ) -> "ndarray":
+        """Fit, declick and overlay ``clip`` onto ``bus`` at the item's onset, at unity gain."""
         pl = item.placement
         clip = fit_duration(clip, sample_rate, duration=pl.duration, loop=pl.loop)
         clip = declick(clip, sample_rate)

@@ -42,6 +42,7 @@ class Calibration:
     mismatch_mean: float
 
     def to_dict(self) -> dict:
+        """Return the fields as a dict, floats rounded to four decimals."""
         return {
             k: (round(v, 4) if isinstance(v, float) else v)
             for k, v in asdict(self).items()

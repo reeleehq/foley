@@ -42,7 +42,9 @@ class Aligner(Protocol):
         *,
         transcript: Optional[str] = None,
         language: str = "en",
-    ) -> "list[dict]": ...
+    ) -> "list[dict]":
+        """Return per-word timings (``list[dict]``) for ``audio``, aligned to ``transcript`` when given."""
+        ...
 
 
 @runtime_checkable
@@ -62,4 +64,6 @@ class ApplyStrategy(Protocol):
 
     def apply(
         self, item: "TimelineItem", bus: "ndarray", clip: "ndarray", *, sample_rate: int
-    ) -> "ndarray": ...
+    ) -> "ndarray":
+        """Place ``clip`` onto ``bus`` for ``item`` and return the new bus."""
+        ...

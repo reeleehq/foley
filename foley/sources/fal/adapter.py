@@ -108,6 +108,7 @@ class FalAnswer(tuple):
     metrics: Optional[dict]
 
     def __new__(cls, media: bytes, response: dict, metrics: Optional[dict] = None):
+        """Build the ``(media, response)`` pair and attach ``metrics``."""
         answer = super().__new__(cls, (media, response))
         answer.metrics = metrics
         return answer

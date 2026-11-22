@@ -1019,6 +1019,7 @@ class Verb:
 
     @property
     def name(self) -> str:
+        """The verb's name (the wrapped function's ``__name__``)."""
         return self.fn.__name__
 
     @property
