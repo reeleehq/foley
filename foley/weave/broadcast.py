@@ -89,7 +89,23 @@ from ..base import LicenseRecord, SoundRecord
 from .mix import DUCK_ATTACK_S, DUCK_DB, DUCK_RELEASE_S
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
+    from mixing.treatment import Treatment
     from numpy import ndarray
+
+#: The device colouring lives in ``mixing.treatment`` (#284), imported on first use so
+#: that importing ``foley.weave`` stays dol-only (the purity test pins it).
+_MIXING_TREATMENT_NAMES = frozenset(
+    {"TREATMENTS", "TreatmentPreset", "apply_treatment", "resolve_treatment"}
+)
+
+
+def __getattr__(name: str):
+    if name in _MIXING_TREATMENT_NAMES:
+        from mixing import treatment
+
+        return getattr(treatment, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
 
 # --- named defaults (no literal hides in code) -------------------------------------
 #: Silence after each spoken line (s); the 0.6 s that read naturally in the #108 starter.
@@ -104,16 +120,8 @@ ACTIVITY_THRESHOLD: float = 0.5
 LOOP_CROSSFADE_S: float = 0.05
 #: The device a broadcast is heard through when none is named.
 DEFAULT_TREATMENT: str = "am_radio"
-#: Butterworth order of the treatment's band-pass (per edge).
-FILTER_ORDER: int = 4
-#: The band-pass's upper edge is held under this fraction of Nyquist (a low ``sr``).
-MAX_CUTOFF_NYQUIST_FRACTION: float = 0.95
-#: Time constant of the compressor's RMS level detector (s).
-COMPRESSOR_DETECTOR_S: float = 0.02
-#: The treatment's peak ceiling (dBFS) after make-up gain.
+#: The treatment's peak ceiling (dBFS) after make-up gain (the same as mixing.treatment's default).
 TREATMENT_CEILING_DB: float = -1.0
-#: Floor of the compressor's level detector, so silence has a finite level (dBFS).
-DETECTOR_FLOOR_DB: float = -120.0
 #: The ``transformations`` op recorded on the result's licence.
 BROADCAST_OP: str = "broadcast_bed"
 #: The licence id of rights that were not given (fail-closed, never refused).
@@ -134,118 +142,6 @@ STORE_OWNED_INGEST_KWARGS: "frozenset[str]" = frozenset(
 # --- treatment: the device the broadcast is heard through ---------------------------
 
 
-@dataclass(frozen=True)
-class TreatmentPreset:
-    """A diegetic-source colouring: band-pass -> RMS compressor -> make-up -> limiter.
-
-    Callable as ``preset(samples, sample_rate)``, so a preset is just one value of the
-    ``treatment=`` strategy (any ``(samples, sr) -> samples`` callable is another).
-
-    Attributes:
-        name: The preset's name (recorded on the result's licence).
-        highpass_hz: Lower edge of the device's passband (Hz).
-        lowpass_hz: Upper edge of the device's passband (Hz).
-        threshold_db: Compressor threshold (dBFS of the RMS detector).
-        ratio: Compressor ratio above the threshold (``1`` = none).
-        makeup_db: Gain after the compressor (dB).
-        filter_order: Butterworth order of the band-pass.
-        detector_s: RMS detector time constant (s).
-        ceiling_db: Peak ceiling of the final limiter (dBFS).
-    """
-
-    name: str
-    highpass_hz: float
-    lowpass_hz: float
-    threshold_db: float
-    ratio: float
-    makeup_db: float = 0.0
-    filter_order: int = FILTER_ORDER
-    detector_s: float = COMPRESSOR_DETECTOR_S
-    ceiling_db: float = TREATMENT_CEILING_DB
-
-    def __post_init__(self):
-        problems = [
-            why
-            for bad, why in (
-                (
-                    not 0 < self.highpass_hz < self.lowpass_hz,
-                    "0 < highpass_hz < lowpass_hz",
-                ),
-                (not self.ratio >= 1, "ratio >= 1"),
-                (not self.filter_order >= 1, "filter_order >= 1"),
-                (not self.detector_s > 0, "detector_s > 0"),
-            )
-            if bad
-        ]
-        if problems:
-            raise ValueError(f"treatment {self.name!r} needs {', '.join(problems)}")
-
-    def __call__(self, samples: "ndarray", sample_rate: int) -> "ndarray":
-        return apply_treatment(samples, sample_rate, self)
-
-
-#: The named devices. Passbands: ``am_radio`` is the #108 starter's chain (highpass 450,
-#: lowpass 3200); ``phone`` is the narrowband telephone channel (300-3400 Hz, ITU-T
-#: G.712); ``tv`` a small TV speaker; ``pa`` a horn loudspeaker, squashed hardest.
-TREATMENTS: "dict[str, TreatmentPreset]" = {
-    p.name: p
-    for p in (
-        TreatmentPreset(
-            "am_radio", 450.0, 3200.0, threshold_db=-24.0, ratio=4.0, makeup_db=6.0
-        ),
-        TreatmentPreset(
-            "tv", 150.0, 7000.0, threshold_db=-20.0, ratio=3.0, makeup_db=4.0
-        ),
-        TreatmentPreset(
-            "pa", 400.0, 4000.0, threshold_db=-26.0, ratio=6.0, makeup_db=8.0
-        ),
-        TreatmentPreset(
-            "phone", 300.0, 3400.0, threshold_db=-22.0, ratio=4.0, makeup_db=6.0
-        ),
-    )
-}
-
-#: What ``treatment=`` takes: a :data:`TREATMENTS` name, a :class:`TreatmentPreset`,
-#: any ``(samples, sr) -> samples`` callable, or ``None`` (dry, no device).
-Treatment = Union[str, TreatmentPreset, Callable[["ndarray", int], "ndarray"], None]
-
-
-def _band_pass(samples, sample_rate: int, preset: TreatmentPreset):
-    """Butterworth band-pass along axis 0 (causal, as the device is)."""
-    from scipy.signal import butter, sosfilt
-
-    nyquist = sample_rate / 2.0
-    high = min(preset.lowpass_hz, MAX_CUTOFF_NYQUIST_FRACTION * nyquist)
-    if not 0 < preset.highpass_hz < high:
-        raise ValueError(
-            f"treatment {preset.name!r}: passband {preset.highpass_hz}-{high} Hz is empty "
-            f"at {sample_rate} Hz"
-        )
-    sos = butter(
-        preset.filter_order,
-        [preset.highpass_hz, high],
-        btype="bandpass",
-        fs=sample_rate,
-        output="sos",
-    )
-    return sosfilt(sos, samples, axis=0)
-
-
-def _compress(samples, sample_rate: int, preset: TreatmentPreset):
-    """Feed-forward compressor on a one-pole RMS detector (channels linked)."""
-    import numpy as np
-    from scipy.signal import lfilter
-
-    mono = samples if samples.ndim == 1 else samples.mean(axis=1)
-    a = float(np.exp(-1.0 / max(1.0, preset.detector_s * sample_rate)))
-    power = lfilter([1.0 - a], [1.0, -a], mono.astype("float64") ** 2)
-    floor = 10.0 ** (DETECTOR_FLOOR_DB / 10.0)
-    level_db = 10.0 * np.log10(np.maximum(power, floor))
-    over = np.maximum(0.0, level_db - preset.threshold_db)
-    gain = 10.0 ** ((-over * (1.0 - 1.0 / preset.ratio) + preset.makeup_db) / 20.0)
-    return samples * (gain if samples.ndim == 1 else gain[:, None])
-
-
 def _limit(samples, sample_rate: int, ceiling_db: float):
     """Peak-limit to ``ceiling_db`` with the shared lookahead limiter (mixing.loudness)."""
     from ..audio import loudness_component
@@ -257,50 +153,7 @@ def _limit(samples, sample_rate: int, ceiling_db: float):
     return limited if samples.ndim == 2 else limited[:, 0]
 
 
-def apply_treatment(
-    samples: "ndarray", sample_rate: int, preset: TreatmentPreset
-) -> "ndarray":
-    """Colour ``samples`` as heard through ``preset``'s device (mono or ``(n, ch)``).
-
-    Band-pass -> RMS compressor with make-up gain -> lookahead peak limiter
-    (:func:`mixing.loudness.limit_peaks`). Returns ``float32``, same shape.
-
-    Lazy dependencies: numpy, scipy, ``mixing[loudness]`` (all in ``foley[audio]``).
-    """
-    import numpy as np
-
-    if samples.shape[0] == 0:
-        return samples.astype("float32")
-    shaped = _compress(_band_pass(samples, sample_rate, preset), sample_rate, preset)
-    return np.asarray(_limit(shaped, sample_rate, preset.ceiling_db), dtype="float32")
-
-
-def resolve_treatment(treatment: Treatment) -> Callable[["ndarray", int], "ndarray"]:
-    """``treatment=`` as a ``(samples, sr) -> samples`` callable (``None``: dry).
-
-    >>> resolve_treatment("phone").name
-    'phone'
-    >>> resolve_treatment(None)(1, 2)
-    1
-    """
-    if treatment is None:
-        return lambda samples, sample_rate: samples
-    if isinstance(treatment, str):
-        try:
-            return TREATMENTS[treatment]
-        except KeyError:
-            raise ValueError(
-                f"unknown treatment {treatment!r}; one of {sorted(TREATMENTS)}, "
-                "a TreatmentPreset, or a (samples, sr) -> samples callable"
-            ) from None
-    if callable(treatment):
-        return treatment
-    raise TypeError(
-        f"treatment must be a name, a preset or a callable, not {treatment!r}"
-    )
-
-
-def _treatment_name(treatment: Treatment) -> str:
+def _treatment_name(treatment: "Treatment") -> str:
     """The device's name as recorded on the result (``'dry'`` for none)."""
     if treatment is None or isinstance(treatment, str):
         return treatment or "dry"
@@ -1028,7 +881,7 @@ def broadcast_bed(
     *,
     bed=None,
     bed_prompt: Optional[str] = None,
-    treatment: Treatment = DEFAULT_TREATMENT,
+    treatment: "Treatment" = DEFAULT_TREATMENT,
     gap_s: float = LINE_GAP_S,
     duration: Optional[float] = None,
     bed_under_speech_db: float = BED_UNDER_SPEECH_DB,
@@ -1132,6 +985,8 @@ def broadcast_bed(
     from .mix import declick
 
     sr = WORKING_SAMPLE_RATE if sr is None else sr
+    from mixing.treatment import resolve_treatment
+
     device = resolve_treatment(treatment)
     _check_duck_db(duck_db)
     _check_lines(lines, tts)

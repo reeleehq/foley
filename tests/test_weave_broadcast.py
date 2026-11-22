@@ -72,8 +72,8 @@ def test_treatment_band_limits_and_ceilings():
     preset = TREATMENTS["phone"]
     y = apply_treatment(x, SR, preset)
     assert y.dtype == np.float32 and y.shape == x.shape
-    inside = _band_energy(y, preset.highpass_hz, preset.lowpass_hz)
-    assert inside > 0.9 > _band_energy(x, preset.highpass_hz, preset.lowpass_hz)
+    inside = _band_energy(y, preset.low_hz, preset.high_hz)
+    assert inside > 0.9 > _band_energy(x, preset.low_hz, preset.high_hz)
     assert np.abs(y).max() <= 10 ** (preset.ceiling_db / 20) + 1e-4
 
 
@@ -323,13 +323,13 @@ def test_every_preset_at_common_rates(rate, name):
 @pytest.mark.parametrize(
     "kw",
     [
-        dict(highpass_hz=3000.0, lowpass_hz=300.0),
+        dict(low_hz=3000.0, high_hz=300.0),
         dict(ratio=0.0),
         dict(detector_s=0.0),
     ],
 )
 def test_preset_validates_its_values(kw):
-    base = dict(highpass_hz=300.0, lowpass_hz=3000.0, threshold_db=-20.0, ratio=2.0)
+    base = dict(low_hz=300.0, high_hz=3000.0, threshold_db=-20.0, ratio=2.0)
     with pytest.raises(ValueError, match="needs"):
         TreatmentPreset("bad", **{**base, **kw})
 

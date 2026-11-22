@@ -34,13 +34,7 @@ from ..base import (
 
 # Public WEAVE surface (all import-time dol-only) ----------------------------
 from .align import FakeAligner, SegmentedAligner, WhisperXAligner, _default_aligner
-from .broadcast import (
-    TREATMENTS,
-    BroadcastBed,
-    BroadcastRefusal,
-    TreatmentPreset,
-    broadcast_bed,
-)
+from .broadcast import BroadcastBed, BroadcastRefusal, broadcast_bed
 from .cli_aligners import AeneasAligner, MFAAligner
 from .anchor import (
     match_word,
@@ -678,3 +672,12 @@ class _CallableWeaveModule(_types.ModuleType):
 
 
 _sys.modules[__name__].__class__ = _CallableWeaveModule
+
+
+def __getattr__(name: str):
+    """``TREATMENTS`` / ``TreatmentPreset``: mixing's, imported on first use (#284)."""
+    if name in ("TREATMENTS", "TreatmentPreset"):
+        from . import broadcast
+
+        return getattr(broadcast, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
