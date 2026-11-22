@@ -45,9 +45,15 @@ class Span(Protocol):
 
     trace_id: Optional[str]
 
-    def set_attribute(self, key: str, value) -> None: ...
-    def record_exception(self, exc: BaseException) -> None: ...
-    def set_status(self, ok: bool, message: Optional[str] = None) -> None: ...
+    def set_attribute(self, key: str, value) -> None:
+        """Set one attribute on the span."""
+        ...
+    def record_exception(self, exc: BaseException) -> None:
+        """Record ``exc`` on the span."""
+        ...
+    def set_status(self, ok: bool, message: Optional[str] = None) -> None:
+        """Mark the span ok or failed, with an optional message."""
+        ...
 
 
 @runtime_checkable
@@ -60,7 +66,9 @@ class Tracer(Protocol):
         *,
         kind: Optional[str] = None,
         attributes: Optional[dict] = None,
-    ) -> "ContextManager[Span]": ...
+    ) -> "ContextManager[Span]":
+        """Start a span named ``name`` and make it current for the ``with`` block."""
+        ...
 
 
 # ---------------------------------------------------------------------------

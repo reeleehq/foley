@@ -31,7 +31,9 @@ class Decomposer(Protocol):
 
     def decompose(
         self, context: str, *, max_events: int = 6, seconds: Optional[float] = None
-    ) -> "list[SoundEvent]": ...
+    ) -> "list[SoundEvent]":
+        """Decompose ``context`` into at most ``max_events`` sound events."""
+        ...
 
 
 @runtime_checkable
@@ -50,7 +52,9 @@ class Judge(Protocol):
         candidate: "Candidate",
         *,
         level: "VerifyLevel" = ...,
-    ) -> "Verdict": ...
+    ) -> "Verdict":
+        """Judge whether ``candidate`` matches ``event`` at verify rung ``level``."""
+        ...
 
 
 @runtime_checkable
@@ -65,4 +69,6 @@ class Refiner(Protocol):
 
     def refine(
         self, query: str, *, n: int = 3, hint: Optional[str] = None
-    ) -> "list[str]": ...
+    ) -> "list[str]":
+        """Return ``n`` paraphrases of ``query``, steered by ``hint`` when given."""
+        ...

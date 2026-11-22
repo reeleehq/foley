@@ -235,27 +235,35 @@ class RunRecorder:
     # -- manifest setters (mutate; never raise) -----------------------------
 
     def set_inputs(self, **inputs) -> None:
+        """Merge ``inputs`` into the manifest inputs, redacting sensitive text."""
         self.manifest.inputs.update(self._redactor.redact_attrs(inputs))
 
     def set_params(self, **params) -> None:
+        """Merge ``params`` into the manifest parameters."""
         self.manifest.params.update(params)
 
     def add_result_ids(self, ids) -> None:
+        """Append result sound ids to the manifest."""
         self.manifest.result_ids.extend(ids)
 
     def add_candidate_scores(self, scores) -> None:
+        """Append candidate scores to the manifest."""
         self.manifest.candidate_scores.extend(scores)
 
     def set_ingest_report(self, report_dict) -> None:
+        """Record the ingest report on the manifest."""
         self.manifest.ingest_report = report_dict
 
     def set_credits_ref(self, credits_manifest) -> None:
+        """Record the credits manifest reference."""
         self.manifest.credits_ref = credits_manifest
 
     def add_seed(self, sound_id: str, seed: dict) -> None:
+        """Record the (redacted) generation seed for ``sound_id``."""
         self.manifest.seeds[sound_id] = self._redactor.redact_attrs(seed)
 
     def add_disclosure_ref(self, sound_id: str, ref: dict) -> None:
+        """Record the disclosure reference for ``sound_id``."""
         self.manifest.disclosure_refs[sound_id] = ref
 
     def add_step(self, step: Step) -> None:
@@ -276,9 +284,11 @@ class RunRecorder:
         self.manifest.plan_ref = plan_ref
 
     def set_status(self, status: str) -> None:
+        """Set the manifest status."""
         self.manifest.status = status
 
     def set_error(self, message: str) -> None:
+        """Mark the manifest as failed with ``message``."""
         self.manifest.status = "error"
         self.manifest.error = message
 
