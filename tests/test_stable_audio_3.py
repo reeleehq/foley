@@ -22,6 +22,7 @@ from foley.sources.stable_audio_3.adapter import (  # noqa: E402
 )
 
 from ._fakes import make_sa3_home  # noqa: E402
+from foley.sources.stable_audio_3.config import SOURCE_CONFIG  # noqa: E402
 
 SR = 44_100
 
@@ -97,9 +98,10 @@ def test_distilled_ignores_prompt_influence_and_negative_prompt_with_notes(home)
 
 def test_a_missing_runtime_says_how_to_set_it_up(tmp_path):
     ad = StableAudio3Adapter(runner=FakeRunner(), home=tmp_path)
-    with pytest.raises(SourceConfigurationError, match="git clone"):
+    with pytest.raises(SourceConfigurationError, match="uv venv"):
         ad.generate("x")
     assert "uv venv" in setup_hint()
+    assert SOURCE_CONFIG["native_defaults"]["repo_commit"] in setup_hint()  # pinned (#298)
 
 
 def test_runtime_ready_follows_the_env_dir(home, tmp_path, monkeypatch):
@@ -121,7 +123,7 @@ def test_offline_never_downloads_and_missing_weights_name_the_fetch(home, monkey
         code=1, write=False, stderr="huggingface_hub.errors.LocalEntryNotFoundError: x"
     )
     ad = StableAudio3Adapter(runner=run, home=home)
-    with offline(), pytest.raises(ModelNotCached, match="git clone"):
+    with offline(), pytest.raises(ModelNotCached, match="uv venv"):
         ad.generate("x")
     assert run.calls[0]["env"]["HF_HUB_OFFLINE"] == "1"
     online = FakeRunner()
@@ -146,7 +148,8 @@ def test_the_runtime_is_declared_for_check_requirements(home, monkeypatch):
     assert check_requirements(names=(name,)) == {name: False}
     install = verify_and_setup(names=(name,))[name]["install"]
     # the shell hint is POSIX only (.venv/bin); elsewhere it points at the project page
-    assert ("git clone" in install) == sys.platform.startswith(("darwin", "linux"))
+    pin = SOURCE_CONFIG["native_defaults"]["repo_commit"]
+    assert (pin in install) == sys.platform.startswith(("darwin", "linux"))  # #298
 
 
 def test_the_local_default_precedes_stable_audio_open_in_the_order():
@@ -237,7 +240,115 @@ def test_provider_flag_abbreviations_cannot_override_core_flags(tmp_path):
 
     a = sa3.Adapter()
     cmd = a._command(
-        tmp_path, "p", {"see": 7, "seconds": 2.0, "steps": 8, "cfg": 1.0, "seed": 3}, tmp_path / "o.wav"
+        tmp_path / "python", tmp_path, "p", {"see": 7, "seconds": 2.0, "steps": 8, "cfg": 1.0, "seed": 3}, tmp_path / "o.wav"
     )
     assert cmd.index("--see") < cmd.index("--seed")
     assert cmd[cmd.index("--seed") + 1] == "3"
+
+
+
+def test_the_default_runner_is_ps_isolated_and_env_holds_only_foleys_additions(home):
+    """#294: the process boundary is ``ps.isolated.run_process``; ``env`` is a delta."""
+    from ps.isolated import run_process
+
+    assert StableAudio3Adapter(home=home)._runner is run_process
+    run = FakeRunner()
+    with offline():
+        StableAudio3Adapter(runner=run, home=home).generate("x")
+    assert run.calls[0]["env"] == {"PYTHONUNBUFFERED": "1", "HF_HUB_OFFLINE": "1"}
+
+
+def test_a_timeout_is_an_error_naming_the_backend_and_the_limit(home):
+    import subprocess
+
+    def runner(cmd, *, cwd, env, timeout):
+        raise subprocess.TimeoutExpired(cmd, timeout)
+
+    with pytest.raises(RuntimeError, match="stable_audio_3.*within 900 s"):
+        StableAudio3Adapter(runner=runner, home=home).generate("x")
+
+
+def _stand_in_home(tmp_path, script):
+    """A Stability checkout whose venv Python is this one and whose script is ``script``."""
+    home = tmp_path / "sa3"
+    tflite = home / "optimized" / "tflite"
+    (tflite / "scripts").mkdir(parents=True)
+    (tflite / ".venv" / "bin").mkdir(parents=True)
+    (tflite / ".venv" / "bin" / "python").symlink_to(sys.executable)
+    (tflite / "scripts" / "sa3_tflite.py").write_text(script)
+    return home
+
+
+_NATIVE = {"seconds": 1, "steps": 1, "cfg": 1.0, "seed": 0}
+_POSIX_VENV = pytest.mark.skipif(
+    sys.platform == "win32", reason="symlinks a POSIX venv layout"
+)
+
+
+@_POSIX_VENV
+def test_the_default_runner_drives_a_real_script_without_the_hosts_pythonpath(
+    tmp_path, monkeypatch
+):
+    """The real (default) runner on a stand-in script: no model, no weights."""
+    home = _stand_in_home(
+        tmp_path,
+        "import os, sys\n"
+        "print('progress on stdout')\n"
+        "out = sys.argv[sys.argv.index('--out') + 1]\n"
+        "if os.environ.get('PYTHONPATH') or not os.environ.get('HF_HUB_OFFLINE'):\n"
+        "    print('host PYTHONPATH leaked or offline flag missing', file=sys.stderr)\n"
+        "    sys.exit(3)\n"
+        "open(out, 'wb').write(b'RIFF-fake')\n",
+    )
+    monkeypatch.setenv("PYTHONPATH", "/host/packages")
+    with offline():
+        audio = StableAudio3Adapter(home=home).invoke_native("x", _NATIVE)
+    assert audio == b"RIFF-fake"
+
+
+@_POSIX_VENV
+def test_an_error_logged_before_exit_ends_the_tail_despite_stdout_progress(tmp_path):
+    """Unbuffered: stdout progress written first cannot land after the logged error."""
+    home = _stand_in_home(
+        tmp_path,
+        "import logging, sys\n"
+        "for i in range(5):\n"
+        "    print(f'progress {i}')\n"
+        "logging.error('the decoder crashed')\n"
+        "sys.exit(2)\n",
+    )
+    with pytest.raises(RuntimeError, match="code 2") as err:
+        StableAudio3Adapter(home=home).invoke_native("x", _NATIVE)
+    assert str(err.value).endswith("ERROR:root:the decoder crashed")
+
+
+_MISSING_WEIGHTS_ON_STDOUT = (
+    "import sys\n"
+    "print('huggingface_hub.errors.LocalEntryNotFoundError: no sm-sfx in the cache')\n"
+    "sys.exit(1)\n"
+)
+
+
+@_POSIX_VENV
+def test_missing_weights_named_on_stdout_are_model_not_cached_offline(tmp_path):
+    home = _stand_in_home(tmp_path, _MISSING_WEIGHTS_ON_STDOUT)
+    with offline(), pytest.raises(ModelNotCached, match="uv venv") as err:
+        StableAudio3Adapter(home=home).invoke_native("x", _NATIVE)
+    assert "LocalEntryNotFoundError: no sm-sfx in the cache" in str(err.value)
+
+
+@_POSIX_VENV
+def test_online_the_script_sees_no_offline_flag_and_a_crash_is_not_blamed_on_weights(
+    tmp_path, monkeypatch
+):
+    monkeypatch.delenv("HF_HUB_OFFLINE", raising=False)
+    home = _stand_in_home(
+        tmp_path,
+        "import os, sys\n"
+        "print('offline flag:', os.environ.get('HF_HUB_OFFLINE'))\n"
+        + _MISSING_WEIGHTS_ON_STDOUT,
+    )
+    with pytest.raises(RuntimeError, match="code 1") as err:
+        StableAudio3Adapter(home=home).invoke_native("x", _NATIVE)
+    assert not isinstance(err.value, ModelNotCached)
+    assert "offline flag: None" in str(err.value)

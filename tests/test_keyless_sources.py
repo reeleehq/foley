@@ -122,7 +122,11 @@ COMMONS_PAGES = {
     "7": _page(7, "File:Clip.ogv", short="CC0", mediatype="VIDEO"),
     "8": _page(8, "File:Loose.ogg", short="Attribution"),
     "9": _page(9, "File:Mixed.ogg", license_url="https://creativecommons.org/licenses/by-sa/4.0", short="CC BY 4.0"),
+    "10": _page(10, "File:LL-Q1860 (eng)-Nattes-whoosh.wav", short="CC0", index=4),
+    "11": _page(11, "File:En-us-stumble.ogg", short="CC0", index=5,
+                categories=[{"title": "Category:U.S. English pronunciation"}]),
 }  # fmt: skip
+COMMONS_PAGES["11"]["categories"] = COMMONS_PAGES["11"]["imageinfo"][0].pop("categories")
 
 
 def _commons(**kw):
@@ -818,3 +822,13 @@ def test_add_from_refuses_a_k_that_is_not_a_positive_integer(library, bad):
     with pytest.raises(SearchArgumentError, match="k must be a positive integer"):
         add_from("openverse", query="door", limit=bad, library=library, adapter=ad)
     assert http.calls == []
+
+
+def test_commons_drops_pronunciation_recordings_unless_asked():
+    ad, http = _commons()
+    ids = {c.sound.id for c in ad.search("whoosh", license=None)}
+    assert not ids & {"wikimedia_commons:10", "wikimedia_commons:11"}
+    assert "wikimedia_commons:1" in ids
+    ad, _ = _commons()
+    ids = {c.sound.id for c in ad.search("whoosh", license=None, include_pronunciations=True)}
+    assert {"wikimedia_commons:10", "wikimedia_commons:11"} <= ids
