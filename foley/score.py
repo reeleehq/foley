@@ -120,6 +120,7 @@ def score(
     llm: Optional[str] = None,
     budget=None,
     max_usd: Optional[float] = None,
+    layers=None,
     **weave_kwargs,
 ) -> ScoreResult:
     """Choose sounds for narration text and (optionally) weave them into the narration audio.
@@ -178,6 +179,11 @@ def score(
             to mean is in this module's docstring.
         max_usd: Shorthand for ``budget=Budget(max_usd=max_usd)`` (#283); passing both
             is a ``TypeError``.
+        layers: Restrict the chosen (and so woven) events to these mix layers
+            (:class:`~foley.base.Layer` members or names), e.g. ``{'ambience'}`` for a
+            bed, ``{'sfx_fg', 'stinger'}`` for effects, ``{'music'}`` (#285). ``None``
+            keeps every layer. Applied to the events the decomposer returns (see
+            :func:`foley.find`), so fewer than ``max_events`` may come back.
         **weave_kwargs: Forwarded to :func:`foley.weave` (e.g. ``language``, ``aligner``,
             ``sign_cert``, ``watermark``). Checked against ``weave``'s signature before
             anything runs, so a typo costs nothing.
@@ -241,6 +247,8 @@ def score(
     }
     if budget is not None:
         find_kw["budget"] = budget  # its loop counts and its cap, for every segment
+    if layers is not None:
+        find_kw["layers"] = tuple(layers)
     if library is not None:
         find_kw["library"] = library
 

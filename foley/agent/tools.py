@@ -19,7 +19,7 @@ generation-error hierarchy are imported lazily inside the functions that call th
 from __future__ import annotations
 
 from dataclasses import asdict
-from typing import Iterator, Optional, Union
+from typing import Iterable, Iterator, Optional, Union
 
 from ..base import (
     Candidate,
@@ -318,6 +318,7 @@ def find(
     judge=None,
     refiner=None,
     llm: "Optional[str]" = None,
+    layers: "Optional[Iterable[Union[str, Layer]]]" = None,
 ) -> "Union[list[Candidate], Iterator[Candidate]]":
     """The headline: a narrative context → verified, license-clean sound candidates.
 
@@ -357,6 +358,11 @@ def find(
             ``'fake'`` | ``'local'`` | ``'anthropic'``. ``None`` reads ``$FOLEY_LLM``,
             then falls back to the free default (a configured local endpoint, else the
             deterministic fake). A key being present never opts in to paid calls.
+        layers: Keep only the decomposed events on these mix layers (``Layer`` members
+            or their names: ``'ambience'``, ``'sfx_fg'``, ``'stinger'``, ``'music'``);
+            ``None`` keeps all. The filter applies to the ``max_events`` the decomposer
+            returned, so a host wanting a bed asks for ``layers={'ambience'}`` and may
+            get fewer events than ``max_events``.
 
     Returns:
         ``list[Candidate]`` (``stream=False``) or an ``Iterator[Candidate]``
@@ -379,6 +385,7 @@ def find(
         judge=judge,
         refiner=refiner,
         llm=llm,
+        layers=layers,
     )
     return gen if stream else list(gen)
 
@@ -401,6 +408,7 @@ def _find_stream(
     judge,
     refiner,
     llm=None,
+    layers=None,
 ) -> "Iterator[Candidate]":
     """The streaming body of :func:`find` (``find(stream=False)`` == ``list(_find_stream(...))``)."""
     from ..cost import check, default_max_usd, scoped_iter
@@ -445,6 +453,7 @@ def _find_stream(
             judge=judge,
             refiner=refiner,
             llm=llm,
+            layers=layers,
         )
 
     # The budget is in force only while the stream runs, never between items.
@@ -564,6 +573,7 @@ def _find_events(
     judge,
     refiner,
     llm,
+    layers=None,
 ) -> "Iterator[Candidate]":
     """The per-event loop of :func:`find`, run inside the run's spend scope."""
     library = library if library is not None else default_library()
@@ -592,6 +602,9 @@ def _find_events(
                 decomposer=decomposer,
                 _span=sp,
             )
+            if layers is not None:  # a host's bed: ambience only, sfx only, ...
+                keep = {Layer(x) for x in layers}
+                events = [e for e in events if e.layer in keep]
             _emit_step(run, "decompose", span=sp, detail={"n_events": len(events)})
 
         for i, event in enumerate(events):
