@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=23ea6af5"></script>
+    <script src="../_static/documentation_options.js?v=cbf0c937"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.147" />
+  <meta name="docsearch:version" content="0.0.148" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -547,7 +547,7 @@ later slice behind <code class="docutils literal notranslate"><span class="pre">
 <td><p>Apply a distance recipe: attenuation + air-absorption low-pass (report 06 §3.4).</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.mix.attack_release_envelope" title="foley.weave.mix.attack_release_envelope"><code class="xref py py-obj docutils literal notranslate"><span class="pre">attack_release_envelope</span></code></a>(target, sample_rate, *)</p></td>
-<td><p>Smooth a piecewise-constant gain <code class="docutils literal notranslate"><span class="pre">target</span></code> with a one-pole attack/release follower.</p></td>
+<td><p>Smooth a gain <code class="docutils literal notranslate"><span class="pre">target</span></code> with the one-pole attack/release follower.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.mix.constant_power_pan" title="foley.weave.mix.constant_power_pan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">constant_power_pan</span></code></a>(clip, pan)</p></td>
 <td><p>Pan a (mono or stereo) clip to a stereo image with a constant-power law (report 06 §3.3).</p></td>
@@ -634,20 +634,18 @@ separately via <a class="reference internal" href="#foley.weave.mix.reverb_send"
 <dl class="py function">
 <dt class="sig sig-object py" id="foley.weave.mix.attack_release_envelope">
 <span class="sig-prename descclassname"><span class="pre">foley.weave.mix.</span></span><span class="sig-name descname"><span class="pre">attack_release_envelope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">attack</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.02</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">release</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/mix.html#attack_release_envelope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.mix.attack_release_envelope" title="Link to this definition">#</a></dt>
-<dd><p>Smooth a piecewise-constant gain <code class="docutils literal notranslate"><span class="pre">target</span></code> with a one-pole attack/release follower.</p>
-<p>The recurrence is <code class="docutils literal notranslate"><span class="pre">y[i]</span> <span class="pre">=</span> <span class="pre">t[i]</span> <span class="pre">+</span> <span class="pre">c·(y[i-1]</span> <span class="pre">-</span> <span class="pre">t[i])</span></code> with <code class="docutils literal notranslate"><span class="pre">c</span></code> the attack
-coefficient while the gain falls (<code class="docutils literal notranslate"><span class="pre">t[i]</span> <span class="pre">&lt;</span> <span class="pre">y[i-1]</span></code>) and the release one otherwise,
-starting from <code class="docutils literal notranslate"><span class="pre">y[-1]</span> <span class="pre">=</span> <span class="pre">initial</span></code>. Within a run of equal targets the follower never
-crosses the target, so <code class="docutils literal notranslate"><span class="pre">c</span></code> is fixed for the run and the recurrence has the closed
-form <code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">=</span> <span class="pre">t</span> <span class="pre">+</span> <span class="pre">c**k·(y0</span> <span class="pre">-</span> <span class="pre">t)</span></code>: each run is one vectorised numpy expression, and the
-Python loop is over runs (a handful per speech span), not samples. It is built for
-piecewise-constant targets (on/off gates): one numpy call per stretch means a
-target that changes every sample is slower than a plain per-sample loop.</p>
+<dd><p>Smooth a gain <code class="docutils literal notranslate"><span class="pre">target</span></code> with the one-pole attack/release follower.</p>
+<p><code class="docutils literal notranslate"><span class="pre">mixing.loudness.attack_release</span></code>, the one follower behind mixing’s ducking and
+compressor too (reeleehq/foley#306): <code class="docutils literal notranslate"><span class="pre">y[i]</span> <span class="pre">=</span> <span class="pre">t[i]</span> <span class="pre">+</span> <span class="pre">c·(y[i-1]</span> <span class="pre">-</span> <span class="pre">t[i])</span></code> with <code class="docutils literal notranslate"><span class="pre">c</span></code>
+the attack coefficient while the gain falls and the release one otherwise, from
+<code class="docutils literal notranslate"><span class="pre">y[-1]</span> <span class="pre">=</span> <span class="pre">initial</span></code>. On a piecewise-constant target (an on/off gate) mixing solves
+each run in closed form, so it is fast per sample; a target that changes every
+sample is looped over.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>target</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></span>) – <code class="docutils literal notranslate"><span class="pre">(n,)</span></code> gain the follower chases (linear; piecewise constant).</p></li>
-<li><p><strong>sample_rate</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Sample rate in Hz.</p></li>
+<li><p><strong>sample_rate</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Sample rate in Hz (one step per sample).</p></li>
 <li><p><strong>attack</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Time constant (s) while the gain falls.</p></li>
 <li><p><strong>release</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Time constant (s) while the gain rises.</p></li>
 <li><p><strong>initial</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – The follower’s value before the first sample.</p></li>
