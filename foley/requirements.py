@@ -187,11 +187,15 @@ def build_requirements() -> "dict[str, Requirement]":
     return reqs
 
 
+#: Other names a listed key is also read under, beyond a source's own
+#: ``env_var_aliases`` (same provider, other auth form). FAL_API_KEY: the fal
+#: adapter and falaw read it too.
+_EXTRA_KEY_ALIASES: "dict[str, tuple[str, ...]]" = {
+    "ANTHROPIC_API_KEY": ("ANTHROPIC_AUTH_TOKEN",),
+    "FAL_KEY": ("FAL_API_KEY",),
+}
 #: Credential env vars that are aliases of a listed key (same provider, other auth form).
-_KEY_ALIASES = (
-    "ANTHROPIC_AUTH_TOKEN",
-    "FAL_API_KEY",
-)  # FAL_API_KEY: falaw reads it too
+_KEY_ALIASES = tuple(a for names in _EXTRA_KEY_ALIASES.values() for a in names)
 
 
 def provider_key_env_vars() -> "tuple[str, ...]":
@@ -204,6 +208,48 @@ def provider_key_env_vars() -> "tuple[str, ...]":
     keys = [r.name for r in build_requirements().values() if r.probe == "env"]
     aliases = {alias for key in keys for alias in _key_env_vars(key)}
     return tuple(sorted(set(keys) | aliases | set(_KEY_ALIASES)))
+
+
+def declared_keys() -> "list[dict]":
+    """The credentials foley reads, one row per key, for a workbench to list.
+
+    Exposed under the ``fleet.credentials`` entry-point group. Each row has
+    ``provider``, ``env_vars`` (the canonical name first, then every other name
+    foley also reads it under), ``unlocks`` and ``get_key_url``: the facade kit's
+    table shape (``ocracy.kit.credentials``). Derived from the same SSOT as
+    :func:`check_requirements` (each source's ``config['auth']``), so a newly
+    added paid source is declared with no edit here. Reads no key.
+
+    >>> rows = {r["env_vars"][0]: r for r in declared_keys()}
+    >>> rows["ELEVENLABS_API_KEY"]["env_vars"]
+    ['ELEVENLABS_API_KEY', 'ELEVEN_API_KEY']
+    >>> rows["FAL_KEY"]["env_vars"]
+    ['FAL_KEY', 'FAL_API_KEY']
+    >>> rows["ANTHROPIC_API_KEY"]["provider"], rows["FAL_KEY"]["provider"]
+    ('anthropic', 'fal')
+    """
+    from .sources.registry import SOURCE_REGISTRY, discover_sources
+
+    discover_sources()
+    provider_of = {_ANTHROPIC_KEY.name: "anthropic"}
+    for name, entry in sorted(SOURCE_REGISTRY.items()):
+        auth = entry["config"].get("auth") or {}
+        if auth.get("env_var"):  # the account: a family's extra (fal), else the source
+            provider_of.setdefault(auth["env_var"], auth.get("extra") or name)
+    rows = []
+    for req in build_requirements().values():
+        if req.probe != "env":
+            continue
+        names = [*_key_env_vars(req.name), *_EXTRA_KEY_ALIASES.get(req.name, ())]
+        rows.append(
+            {
+                "provider": provider_of.get(req.name, req.name.lower()),
+                "env_vars": list(dict.fromkeys(names)),
+                "unlocks": f"foley: {req.purpose}",
+                "get_key_url": req.url,
+            }
+        )
+    return rows
 
 
 def _available(req: Requirement) -> bool:

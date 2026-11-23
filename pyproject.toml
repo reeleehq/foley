@@ -56,6 +56,10 @@ text = "mit"
 foley = "foley.cli:main"
 foley-mcp = "foley.agent.mcp:_cli"
 
+# The credentials foley reads, for a workbench to list.
+[project.entry-points."fleet.credentials"]
+foley = "foley.requirements:declared_keys"
+
 [project.urls]
 Homepage = "https://github.com/thorwhalen/foley"
 Repository = "https://github.com/thorwhalen/foley"
