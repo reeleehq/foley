@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=28d4ae65"></script>
+    <script src="../../../_static/documentation_options.js?v=1f2c240f"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.151" />
+  <meta name="docsearch:version" content="0.0.152" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -813,6 +813,11 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="n">usd</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">usd</span><span class="p">))</span>
 
 
+<span class="c1">#: Float noise allowed on the cap: a run that lands on ``max_usd`` through float</span>
+<span class="c1">#: addition is within it, for the next call's check and for ``overshoot_usd`` alike (#316).</span>
+<span class="n">SPEND_TOLERANCE_USD</span> <span class="o">=</span> <span class="mf">1e-12</span>
+
+
 <div class="viewcode-block" id="Budget">
 <a class="viewcode-back" href="../../../_autosummary/foley.agent.policy.html#foley.Budget">[docs]</a>
 <span class="nd">@dataclass</span>
@@ -888,7 +893,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        &gt;&gt;&gt; round(b.overshoot_usd, 10), round(b.spent_usd, 10)</span>
 <span class="sd">        (0.2, 0.7)</span>
 <span class="sd">        """</span>
-        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spent_usd</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_usd</span><span class="p">)</span>
+        <span class="n">excess</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spent_usd</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_usd</span>
+        <span class="k">return</span> <span class="n">excess</span> <span class="k">if</span> <span class="n">excess</span> <span class="o">&gt;</span> <span class="n">SPEND_TOLERANCE_USD</span> <span class="k">else</span> <span class="mf">0.0</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_approves_unknown</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">approve_unknown_cost</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -979,7 +985,7 @@ window.runMermaid = runMermaid;</script>
                     <span class="sa">f</span><span class="s2">"$</span><span class="si">{</span><span class="n">APPROVE_UNKNOWN_COST_ENV</span><span class="si">}</span><span class="s2">=1."</span>
                 <span class="p">)</span>
             <span class="k">return</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spent_usd</span> <span class="o">+</span> <span class="n">estimate_usd</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_usd</span> <span class="o">+</span> <span class="mf">1e-12</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spent_usd</span> <span class="o">+</span> <span class="n">estimate_usd</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_usd</span> <span class="o">+</span> <span class="n">SPEND_TOLERANCE_USD</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">BudgetExceeded</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2"> would cost ~$</span><span class="si">{</span><span class="n">estimate_usd</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, taking this run to "</span>
                 <span class="sa">f</span><span class="s2">"$</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_spent_usd</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">estimate_usd</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, over its $</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">max_usd</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> cap "</span>

@@ -34,11 +34,12 @@ Serialization contract:
 
 ### Functions
 
-| [`check_edit_args`](#foley.base.check_edit_args)(op, affordances, \*[, ...])   | Raise `ValueError` unless `affordances` are a valid call of the edit `op`.                                                       |
-|------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| [`normalize_territory`](#foley.base.normalize_territory)(territory)                | `territory` as an ISO 3166-1 alpha-2 code (or [`WORLDWIDE`](#foley.base.WORLDWIDE)), `None` when unstated. |
-| [`reject_renamed`](#foley.base.reject_renamed)(names[, vocabulary])           | Raise `TypeError` if any of `names` is an affordance's old spelling.                                                             |
-| [`resolve_master`](#foley.base.resolve_master)(master)                        | Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterProfile`.                                          |
+| [`check_edit_args`](#foley.base.check_edit_args)(op, affordances, \*[, ...])   | Raise `ValueError` unless `affordances` are a valid call of the edit `op`.                                                                                                           |
+|------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`checked_layers`](#foley.base.checked_layers)(layers)                        | `layers` (names or [`Layer`](#foley.base.Layer) members) as a set of members, checked up front so a typo raises before any paid call (reeleehq/foley#316). |
+| [`normalize_territory`](#foley.base.normalize_territory)(territory)                | `territory` as an ISO 3166-1 alpha-2 code (or [`WORLDWIDE`](#foley.base.WORLDWIDE)), `None` when unstated.                                                     |
+| [`reject_renamed`](#foley.base.reject_renamed)(names[, vocabulary])           | Raise `TypeError` if any of `names` is an affordance's old spelling.                                                                                                                 |
+| [`resolve_master`](#foley.base.resolve_master)(master)                        | Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterProfile`.                                                                                              |
 
 ### Classes
 
@@ -605,6 +606,26 @@ ValueError: the extend edit's output is 63 s; this backend takes 60 s at most
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### foley.base.checked_layers(layers)
+
+`layers` (names or [`Layer`](#foley.base.Layer) members) as a set of members, checked up
+front so a typo raises before any paid call (reeleehq/foley#316). A single name is
+one layer, not its letters; `None` stays `None` (every layer).
+
+```pycon
+>>> checked_layers(["ambience", Layer.sfx_fg]) == {Layer.ambience, Layer.sfx_fg}
+True
+>>> checked_layers("ambience") == {Layer.ambience}
+True
+>>> checked_layers({"ambiance"})
+Traceback (most recent call last):
+...
+ValueError: 'ambiance' is not a mix layer; the layers are voice, sfx_fg, ambience, stinger, music
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`frozenset`](https://docs.python.org/3/builtins/stdtypes.html#frozenset)[[`Layer`](#foley.base.Layer)]]
 
 ### foley.base.normalize_territory(territory)
 

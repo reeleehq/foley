@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="_static/documentation_options.js?v=28d4ae65"></script>
+    <script src="_static/documentation_options.js?v=1f2c240f"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.151" />
+  <meta name="docsearch:version" content="0.0.152" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -343,8 +343,8 @@
 <blockquote>
 <div><p><strong>Status: v1.</strong> All four stages — source, index, select, weave — plus the MCP server
 and the licensing/provenance, evaluation, and observability layers are implemented
-(Epic #13 complete). The API below is live; see the <a class="reference internal" href="#misc/docs/roadmap.md"><span class="xref myst">roadmap</span></a>
-for what’s next. Follow along in <a class="reference internal" href="#misc/docs/"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">misc/docs/</span></code></span></a>.</p>
+(Epic #13 complete). The API below is live; see the <a class="reference external" href="https://github.com/thorwhalen/foley/blob/HEAD/misc/docs/roadmap.md"><span class="xref myst">roadmap</span></a>
+for what’s next. Follow along in <a class="reference external" href="https://github.com/thorwhalen/foley/tree/HEAD/misc/docs"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">misc/docs/</span></code></span></a>.</p>
 </div></blockquote>
 <section id="install">
 <h2>Install<a class="headerlink" href="#install" title="Link to this heading">#</a></h2>
@@ -387,7 +387,7 @@ foley<span class="w"> </span>agent-install<span class="w">                      
 <td><p>the MCP server · OpenTelemetry export</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fit</span></code></p></td>
-<td><p>the Qwen2-Audio listen judge for Tier-2 fit eval; reference FAD and KAD run <a class="reference internal" href="#misc/docs/fidelity.md"><span class="xref myst">fadtk and kadtk in their own venvs</span></a></p></td>
+<td><p>the Qwen2-Audio listen judge for Tier-2 fit eval; reference FAD and KAD run <a class="reference external" href="https://github.com/thorwhalen/foley/blob/HEAD/misc/docs/fidelity.md"><span class="xref myst">fadtk and kadtk in their own venvs</span></a></p></td>
 </tr>
 </tbody>
 </table>
@@ -502,7 +502,7 @@ foley<span class="w"> </span>agent-install<span class="w">                      
 </tr>
 <tr class="row-odd"><td><p><strong>Weave</strong></p></td>
 <td><p>align to the voice, duck, place, master → mastered mix + editable timeline + captions + credits</p></td>
-<td><p>word timing (WhisperX transcription with <code class="docutils literal notranslate"><span class="pre">foley[align]</span></code>, or <a class="reference internal" href="#misc/docs/aligners.md"><span class="xref myst">MFA / aeneas</span></a> aligning your script; otherwise evenly spaced script words; <code class="docutils literal notranslate"><span class="pre">notes</span></code> says which) · LUFS/EBU-R128</p></td>
+<td><p>word timing (WhisperX transcription with <code class="docutils literal notranslate"><span class="pre">foley[align]</span></code>, or <a class="reference external" href="https://github.com/thorwhalen/foley/blob/HEAD/misc/docs/aligners.md"><span class="xref myst">MFA / aeneas</span></a> aligning your script; otherwise evenly spaced script words; <code class="docutils literal notranslate"><span class="pre">notes</span></code> says which) · LUFS/EBU-R128</p></td>
 </tr>
 </tbody>
 </table>
@@ -549,7 +549,7 @@ foley<span class="w"> </span>agent-install<span class="w">                      
 <span class="n">result</span><span class="o">.</span><span class="n">weave</span><span class="o">.</span><span class="n">credits</span>  <span class="c1"># attribution    result.timeline             # still editable</span>
 </pre></div>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">foley.score(...)</span></code> is the stable contract <code class="docutils literal notranslate"><span class="pre">braidio</span></code>/<code class="docutils literal notranslate"><span class="pre">nw</span></code> call. The same surface is available as <strong>MCP tools</strong> (<code class="docutils literal notranslate"><span class="pre">foley_score</span></code>, <code class="docutils literal notranslate"><span class="pre">foley_guide</span></code>, <code class="docutils literal notranslate"><span class="pre">foley_search</span></code>, <code class="docutils literal notranslate"><span class="pre">foley_preview</span></code>, <code class="docutils literal notranslate"><span class="pre">foley_weave</span></code>, …) — serve them over stdio (<code class="docutils literal notranslate"><span class="pre">foley-mcp</span></code>) or authenticated HTTP (<code class="docutils literal notranslate"><span class="pre">foley-mcp</span> <span class="pre">--http</span> <span class="pre">--token</span> <span class="pre">…</span></code>) — and as <strong>CLI commands</strong> generated from the same verb table (<code class="docutils literal notranslate"><span class="pre">foley.agent.verbs.VERBS</span></code>), JSON in and out. To stand the HTTP server up for remote agents (Docker image, compose file, TLS, token rotation), see <a class="reference internal" href="#misc/docs/deploy-mcp-http.md"><span class="xref myst">Deploy the MCP server</span></a>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">foley.score(...)</span></code> is the stable contract <code class="docutils literal notranslate"><span class="pre">braidio</span></code>/<code class="docutils literal notranslate"><span class="pre">nw</span></code> call. The same surface is available as <strong>MCP tools</strong> (<code class="docutils literal notranslate"><span class="pre">foley_score</span></code>, <code class="docutils literal notranslate"><span class="pre">foley_guide</span></code>, <code class="docutils literal notranslate"><span class="pre">foley_search</span></code>, <code class="docutils literal notranslate"><span class="pre">foley_preview</span></code>, <code class="docutils literal notranslate"><span class="pre">foley_weave</span></code>, …) — serve them over stdio (<code class="docutils literal notranslate"><span class="pre">foley-mcp</span></code>) or authenticated HTTP (<code class="docutils literal notranslate"><span class="pre">foley-mcp</span> <span class="pre">--http</span> <span class="pre">--token</span> <span class="pre">…</span></code>) — and as <strong>CLI commands</strong> generated from the same verb table (<code class="docutils literal notranslate"><span class="pre">foley.agent.verbs.VERBS</span></code>), JSON in and out. To stand the HTTP server up for remote agents (Docker image, compose file, TLS, token rotation), see <a class="reference external" href="https://github.com/thorwhalen/foley/blob/HEAD/misc/docs/deploy-mcp-http.md"><span class="xref myst">Deploy the MCP server</span></a>.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">foley</span> <span class="n">score</span> <span class="s2">"Rain on the roof, then thunder."</span> <span class="o">--</span><span class="n">territory</span> <span class="n">US</span>
 <span class="n">foley</span> <span class="n">generate</span> <span class="s2">"a glass shatters"</span> <span class="o">--</span><span class="n">no</span><span class="o">-</span><span class="n">commercial</span><span class="o">-</span><span class="n">ok</span>
 <span class="n">foley</span> <span class="n">find</span> <span class="o">--</span><span class="n">help</span>
@@ -565,14 +565,14 @@ foley<span class="w"> </span>agent-install<span class="w">                      
 <span id="design--research"></span><h2>Design &amp; research<a class="headerlink" href="#design-research" title="Link to this heading">#</a></h2>
 <p>foley’s design is grounded in five research reports (unified, cited):</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="#misc/docs/design.md"><span class="xref myst">Design</span></a> · <a class="reference internal" href="#misc/docs/roadmap.md"><span class="xref myst">Roadmap</span></a></p></li>
-<li><p><a class="reference internal" href="#misc/docs/research/"><span class="xref myst">Research reports</span></a> — sound sources, SFX generation, recognition/ tagging, embeddings/indexing, and the context-retrieval agent</p></li>
-<li><p><a class="reference internal" href="#misc/docs/research/deep-research-prompts.md"><span class="xref myst">Deep-research prompt library</span></a> — 12 ready-to-run prompts covering every dimension of the project</p></li>
+<li><p><a class="reference external" href="https://github.com/thorwhalen/foley/blob/HEAD/misc/docs/design.md"><span class="xref myst">Design</span></a> · <a class="reference external" href="https://github.com/thorwhalen/foley/blob/HEAD/misc/docs/roadmap.md"><span class="xref myst">Roadmap</span></a></p></li>
+<li><p><a class="reference external" href="https://github.com/thorwhalen/foley/tree/HEAD/misc/docs/research"><span class="xref myst">Research reports</span></a> — sound sources, SFX generation, recognition/ tagging, embeddings/indexing, and the context-retrieval agent</p></li>
+<li><p><a class="reference external" href="https://github.com/thorwhalen/foley/blob/HEAD/misc/docs/research/deep-research-prompts.md"><span class="xref myst">Deep-research prompt library</span></a> — 12 ready-to-run prompts covering every dimension of the project</p></li>
 </ul>
 </section>
 <section id="changelog">
 <h2>Changelog<a class="headerlink" href="#changelog" title="Link to this heading">#</a></h2>
-<p>Per-release changes are in <a class="reference internal" href="#CHANGELOG.md"><span class="xref myst">CHANGELOG.md</span></a>.</p>
+<p>Per-release changes are in <a class="reference external" href="https://github.com/thorwhalen/foley/blob/HEAD/CHANGELOG.md"><span class="xref myst">CHANGELOG.md</span></a>.</p>
 </section>
 <section id="license">
 <h2>License<a class="headerlink" href="#license" title="Link to this heading">#</a></h2>
@@ -583,7 +583,7 @@ foley<span class="w"> </span>agent-install<span class="w">                      
 </section>
 </section>
 
-<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-11-23 04:26 UTC from <a href="https://github.com/reeleehq/foley/commit/9287087e3f24778c6be4d888710d646235418e9a">9287087</a> (main) · foley 0.0.151 · <a href="about-this-build.html">about this build</a></p>
+<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-11-23 23:13 UTC from <a href="https://github.com/reeleehq/foley/commit/f6767ea494b633fa2d7645610574a9380d61b016">f6767ea</a> (main) · foley 0.0.152 · <a href="about-this-build.html">about this build</a></p>
 
                 </article>
               

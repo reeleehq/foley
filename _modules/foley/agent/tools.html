@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=28d4ae65"></script>
+    <script src="../../../_static/documentation_options.js?v=1f2c240f"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.151" />
+  <meta name="docsearch:version" content="0.0.152" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -745,6 +745,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">SoundDesignTimeline</span><span class="p">,</span>
     <span class="n">TimelineItem</span><span class="p">,</span>
     <span class="n">VerifyLevel</span><span class="p">,</span>
+    <span class="n">checked_layers</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..index</span><span class="w"> </span><span class="kn">import</span> <span class="n">RRF_K</span><span class="p">,</span> <span class="n">default_library</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..obs.recorder</span><span class="w"> </span><span class="kn">import</span> <span class="n">current_run</span>
@@ -1096,6 +1097,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        ``list[Candidate]`` (``stream=False``) or an ``Iterator[Candidate]``</span>
 <span class="sd">        (``stream=True``) — one verified, license-clean candidate per resolved event.</span>
 <span class="sd">    """</span>
+    <span class="n">layers</span> <span class="o">=</span> <span class="n">checked_layers</span><span class="p">(</span><span class="n">layers</span><span class="p">)</span>  <span class="c1"># a typo raises here, before any paid call (#316)</span>
     <span class="n">gen</span> <span class="o">=</span> <span class="n">_find_stream</span><span class="p">(</span>
         <span class="n">context</span><span class="p">,</span>
         <span class="n">max_events</span><span class="o">=</span><span class="n">max_events</span><span class="p">,</span>
@@ -1338,7 +1340,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">_span</span><span class="o">=</span><span class="n">sp</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">if</span> <span class="n">layers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># a host's bed: ambience only, sfx only, ...</span>
-                <span class="n">keep</span> <span class="o">=</span> <span class="p">{</span><span class="n">Layer</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">layers</span><span class="p">}</span>
+                <span class="n">keep</span> <span class="o">=</span> <span class="n">checked_layers</span><span class="p">(</span><span class="n">layers</span><span class="p">)</span>
                 <span class="n">events</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">events</span> <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">layer</span> <span class="ow">in</span> <span class="n">keep</span><span class="p">]</span>
             <span class="n">_emit_step</span><span class="p">(</span><span class="n">run</span><span class="p">,</span> <span class="s2">"decompose"</span><span class="p">,</span> <span class="n">span</span><span class="o">=</span><span class="n">sp</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="p">{</span><span class="s2">"n_events"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">events</span><span class="p">)})</span>
 

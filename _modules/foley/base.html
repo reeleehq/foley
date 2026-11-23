@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../_static/documentation_options.js?v=28d4ae65"></script>
+    <script src="../../_static/documentation_options.js?v=1f2c240f"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.151" />
+  <meta name="docsearch:version" content="0.0.152" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -810,6 +810,37 @@ window.runMermaid = runMermaid;</script>
     <span class="n">ambience</span> <span class="o">=</span> <span class="s2">"ambience"</span>
     <span class="n">stinger</span> <span class="o">=</span> <span class="s2">"stinger"</span>
     <span class="n">music</span> <span class="o">=</span> <span class="s2">"music"</span></div>
+
+
+
+<div class="viewcode-block" id="checked_layers">
+<a class="viewcode-back" href="../../_autosummary/foley.base.html#foley.checked_layers">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">checked_layers</span><span class="p">(</span><span class="n">layers</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Optional[frozenset[Layer]]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``layers`` (names or :class:`Layer` members) as a set of members, checked up</span>
+<span class="sd">    front so a typo raises before any paid call (reeleehq/foley#316). A single name is</span>
+<span class="sd">    one layer, not its letters; ``None`` stays ``None`` (every layer).</span>
+
+<span class="sd">    &gt;&gt;&gt; checked_layers(["ambience", Layer.sfx_fg]) == {Layer.ambience, Layer.sfx_fg}</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; checked_layers("ambience") == {Layer.ambience}</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; checked_layers({"ambiance"})</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">    ...</span>
+<span class="sd">    ValueError: 'ambiance' is not a mix layer; the layers are voice, sfx_fg, ambience, stinger, music</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">layers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layers</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">layers</span> <span class="o">=</span> <span class="p">[</span><span class="n">layers</span><span class="p">]</span>
+    <span class="n">known</span> <span class="o">=</span> <span class="p">{</span><span class="n">layer</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="n">Layer</span><span class="p">}</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">layers</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">value</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Layer</span><span class="p">)</span> <span class="k">else</span> <span class="n">x</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">known</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">x</span><span class="si">!r}</span><span class="s2"> is not a mix layer; the layers are "</span>
+                <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">layer</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="n">Layer</span><span class="p">)</span>
+            <span class="p">)</span>
+    <span class="k">return</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">Layer</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">layers</span><span class="p">)</span></div>
 
 
 

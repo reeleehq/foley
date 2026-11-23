@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=28d4ae65"></script>
+    <script src="../_static/documentation_options.js?v=1f2c240f"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.151" />
+  <meta name="docsearch:version" content="0.0.152" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -530,6 +530,15 @@ already-gated+verified set; it never calls <code class="docutils literal notrans
 <p><a class="reference internal" href="#foley.agent.policy.Budget" title="foley.agent.policy.Budget"><code class="xref py py-class docutils literal notranslate"><span class="pre">Budget</span></code></a> bounds the refine→re-retrieve and generate loops so a hard event can’t
 run away. This module is stdlib-only (imports only <a class="reference internal" href="foley.base.html#module-foley.base" title="foley.base"><code class="xref py py-mod docutils literal notranslate"><span class="pre">foley.base</span></code></a> /
 <a class="reference internal" href="foley.licensing.html#module-foley.licensing" title="foley.licensing"><code class="xref py py-mod docutils literal notranslate"><span class="pre">foley.licensing</span></code></a>) and does no I/O and no obs — the loop emits the audit Steps.</p>
+<p class="rubric">Module Attributes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.agent.policy.SPEND_TOLERANCE_USD" title="foley.agent.policy.SPEND_TOLERANCE_USD"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SPEND_TOLERANCE_USD</span></code></a></p></td>
+<td><p>a run that lands on <code class="docutils literal notranslate"><span class="pre">max_usd</span></code> through float addition is within it, for the next call's check and for <code class="docutils literal notranslate"><span class="pre">overshoot_usd</span></code> alike (#316).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
@@ -769,6 +778,18 @@ every enclosing budget (<a class="reference internal" href="foley.cost.html#fole
 </dl>
 </dd></dl>
 
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.agent.policy.SPEND_TOLERANCE_USD">
+<span class="sig-prename descclassname"><span class="pre">foley.agent.policy.</span></span><span class="sig-name descname"><span class="pre">SPEND_TOLERANCE_USD</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1e-12</span></span><a class="headerlink" href="#foley.agent.policy.SPEND_TOLERANCE_USD" title="Link to this definition">#</a></dt>
+<dd><p>a run that lands on <code class="docutils literal notranslate"><span class="pre">max_usd</span></code> through float
+addition is within it, for the next call’s check and for <code class="docutils literal notranslate"><span class="pre">overshoot_usd</span></code> alike (#316).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Float noise allowed on the cap</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="foley.agent.policy.decide">
 <span class="sig-prename descclassname"><span class="pre">foley.agent.policy.</span></span><span class="sig-name descname"><span class="pre">decide</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kept</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verified</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">tau_retrieve</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">budget</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loop</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/agent/policy.html#decide"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.agent.policy.decide" title="Link to this definition">#</a></dt>
@@ -901,6 +922,7 @@ survivors are license-clean.</p>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.policy.DecideAction"><code class="docutils literal notranslate"><span class="pre">DecideAction</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.policy.Decision"><code class="docutils literal notranslate"><span class="pre">Decision</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.policy.SPEND_TOLERANCE_USD"><code class="docutils literal notranslate"><span class="pre">SPEND_TOLERANCE_USD</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.policy.decide"><code class="docutils literal notranslate"><span class="pre">decide()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.policy.gate_candidates"><code class="docutils literal notranslate"><span class="pre">gate_candidates()</span></code></a></li>
 </ul>

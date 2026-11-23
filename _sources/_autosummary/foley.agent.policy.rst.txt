@@ -4,6 +4,12 @@ foley.agent.policy
 .. automodule:: foley.agent.policy
 
    
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      SPEND_TOLERANCE_USD
+   
    .. rubric:: Functions
 
    .. autosummary::

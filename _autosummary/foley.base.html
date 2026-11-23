@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=28d4ae65"></script>
+    <script src="../_static/documentation_options.js?v=1f2c240f"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.151" />
+  <meta name="docsearch:version" content="0.0.152" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -568,13 +568,16 @@ fall back to field defaults.</p></li>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.base.check_edit_args" title="foley.base.check_edit_args"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_edit_args</span></code></a>(op, affordances, *[, ...])</p></td>
 <td><p>Raise <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> unless <code class="docutils literal notranslate"><span class="pre">affordances</span></code> are a valid call of the edit <code class="docutils literal notranslate"><span class="pre">op</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.base.normalize_territory" title="foley.base.normalize_territory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">normalize_territory</span></code></a>(territory)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.base.checked_layers" title="foley.base.checked_layers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">checked_layers</span></code></a>(layers)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">layers</span></code> (names or <a class="reference internal" href="#foley.base.Layer" title="foley.base.Layer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Layer</span></code></a> members) as a set of members, checked up front so a typo raises before any paid call (reeleehq/foley#316).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.base.normalize_territory" title="foley.base.normalize_territory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">normalize_territory</span></code></a>(territory)</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">territory</span></code> as an ISO 3166-1 alpha-2 code (or <a class="reference internal" href="#foley.base.WORLDWIDE" title="foley.base.WORLDWIDE"><code class="xref py py-data docutils literal notranslate"><span class="pre">WORLDWIDE</span></code></a>), <code class="docutils literal notranslate"><span class="pre">None</span></code> when unstated.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.base.reject_renamed" title="foley.base.reject_renamed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reject_renamed</span></code></a>(names[, vocabulary])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.base.reject_renamed" title="foley.base.reject_renamed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reject_renamed</span></code></a>(names[, vocabulary])</p></td>
 <td><p>Raise <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> if any of <code class="docutils literal notranslate"><span class="pre">names</span></code> is an affordance's old spelling.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.base.resolve_master" title="foley.base.resolve_master"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolve_master</span></code></a>(master)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.base.resolve_master" title="foley.base.resolve_master"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolve_master</span></code></a>(master)</p></td>
 <td><p>Resolve a master spec (profile name, explicit profile, or <code class="docutils literal notranslate"><span class="pre">None</span></code>) to a <code class="docutils literal notranslate"><span class="pre">MasterProfile</span></code>.</p></td>
 </tr>
 </tbody>
@@ -1368,6 +1371,29 @@ not checked.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.base.checked_layers">
+<span class="sig-prename descclassname"><span class="pre">foley.base.</span></span><span class="sig-name descname"><span class="pre">checked_layers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">layers</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/base.html#checked_layers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.base.checked_layers" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">layers</span></code> (names or <a class="reference internal" href="#foley.base.Layer" title="foley.base.Layer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Layer</span></code></a> members) as a set of members, checked up
+front so a typo raises before any paid call (reeleehq/foley#316). A single name is
+one layer, not its letters; <code class="docutils literal notranslate"><span class="pre">None</span></code> stays <code class="docutils literal notranslate"><span class="pre">None</span></code> (every layer).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">checked_layers</span><span class="p">([</span><span class="s2">"ambience"</span><span class="p">,</span> <span class="n">Layer</span><span class="o">.</span><span class="n">sfx_fg</span><span class="p">])</span> <span class="o">==</span> <span class="p">{</span><span class="n">Layer</span><span class="o">.</span><span class="n">ambience</span><span class="p">,</span> <span class="n">Layer</span><span class="o">.</span><span class="n">sfx_fg</span><span class="p">}</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">checked_layers</span><span class="p">(</span><span class="s2">"ambience"</span><span class="p">)</span> <span class="o">==</span> <span class="p">{</span><span class="n">Layer</span><span class="o">.</span><span class="n">ambience</span><span class="p">}</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">checked_layers</span><span class="p">({</span><span class="s2">"ambiance"</span><span class="p">})</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="c">...</span>
+<span class="gr">ValueError</span>: <span class="n">'ambiance' is not a mix layer; the layers are voice, sfx_fg, ambience, stinger, music</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#frozenset" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">frozenset</span></code></a>[<a class="reference internal" href="#foley.base.Layer" title="foley.base.Layer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Layer</span></code></a>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.base.normalize_territory">
 <span class="sig-prename descclassname"><span class="pre">foley.base.</span></span><span class="sig-name descname"><span class="pre">normalize_territory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">territory</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/base.html#normalize_territory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.base.normalize_territory" title="Link to this definition">#</a></dt>
 <dd><p><code class="docutils literal notranslate"><span class="pre">territory</span></code> as an ISO 3166-1 alpha-2 code (or <a class="reference internal" href="#foley.base.WORLDWIDE" title="foley.base.WORLDWIDE"><code class="xref py py-data docutils literal notranslate"><span class="pre">WORLDWIDE</span></code></a>), <code class="docutils literal notranslate"><span class="pre">None</span></code> when unstated.</p>
@@ -1557,6 +1583,7 @@ from each <a class="reference internal" href="#foley.base.Affordance" title="fol
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.VerifyLevel"><code class="docutils literal notranslate"><span class="pre">VerifyLevel</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.WORLDWIDE"><code class="docutils literal notranslate"><span class="pre">WORLDWIDE</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.check_edit_args"><code class="docutils literal notranslate"><span class="pre">check_edit_args()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.checked_layers"><code class="docutils literal notranslate"><span class="pre">checked_layers()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.normalize_territory"><code class="docutils literal notranslate"><span class="pre">normalize_territory()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.reject_renamed"><code class="docutils literal notranslate"><span class="pre">reject_renamed()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.resolve_master"><code class="docutils literal notranslate"><span class="pre">resolve_master()</span></code></a></li>

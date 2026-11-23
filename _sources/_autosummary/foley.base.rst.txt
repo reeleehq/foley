@@ -24,6 +24,7 @@ foley.base
    .. autosummary::
    
       check_edit_args
+      checked_layers
       normalize_territory
       reject_renamed
       resolve_master

@@ -1,4 +1,4 @@
-> built 2026-11-23 04:26 UTC from 9287087 (main) · foley 0.0.151. Details: build_info.json
+> built 2026-11-23 23:13 UTC from f6767ea (main) · foley 0.0.152. Details: build_info.json
 
 # index.html.md
 
@@ -1359,6 +1359,11 @@ neither can bypass the other:
 run away. This module is stdlib-only (imports only [`foley.base`](_autosummary/foley.base.html.md#module-foley.base) /
 [`foley.licensing`](_autosummary/foley.licensing.html.md#module-foley.licensing)) and does no I/O and no obs — the loop emits the audit Steps.
 
+### Module Attributes
+
+| [`SPEND_TOLERANCE_USD`](_autosummary/foley.agent.policy.html.md#foley.agent.policy.SPEND_TOLERANCE_USD)   | a run that lands on `max_usd` through float addition is within it, for the next call's check and for `overshoot_usd` alike (#316).   |
+|------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+
 ### Functions
 
 | [`decide`](_autosummary/foley.agent.policy.html.md#foley.agent.policy.decide)(event, kept, verified, \*, ...)    | The single generate-vs-retrieve branch — a PURE function (report 05 §4).   |
@@ -1534,6 +1539,14 @@ What [`decide()`](_autosummary/foley.agent.policy.html.md#foley.agent.policy.dec
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 The tiny result of [`decide()`](_autosummary/foley.agent.policy.html.md#foley.agent.policy.decide); `reason` feeds the refine hint + the audit Step.
+
+### foley.agent.policy.SPEND_TOLERANCE_USD *= 1e-12*
+
+a run that lands on `max_usd` through float
+addition is within it, for the next call’s check and for `overshoot_usd` alike (#316).
+
+* **Type:**
+  Float noise allowed on the cap
 
 ### foley.agent.policy.decide(event, kept, verified, , tau_retrieve, budget, loop)
 
@@ -3349,11 +3362,12 @@ Serialization contract:
 
 ### Functions
 
-| [`check_edit_args`](_autosummary/foley.base.html.md#foley.base.check_edit_args)(op, affordances, \*[, ...])   | Raise `ValueError` unless `affordances` are a valid call of the edit `op`.                                                       |
-|------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| [`normalize_territory`](_autosummary/foley.base.html.md#foley.base.normalize_territory)(territory)                | `territory` as an ISO 3166-1 alpha-2 code (or [`WORLDWIDE`](_autosummary/foley.base.html.md#foley.base.WORLDWIDE)), `None` when unstated. |
-| [`reject_renamed`](_autosummary/foley.base.html.md#foley.base.reject_renamed)(names[, vocabulary])           | Raise `TypeError` if any of `names` is an affordance's old spelling.                                                             |
-| [`resolve_master`](_autosummary/foley.base.html.md#foley.base.resolve_master)(master)                        | Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterProfile`.                                          |
+| [`check_edit_args`](_autosummary/foley.base.html.md#foley.base.check_edit_args)(op, affordances, \*[, ...])   | Raise `ValueError` unless `affordances` are a valid call of the edit `op`.                                                                                                           |
+|------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`checked_layers`](_autosummary/foley.base.html.md#foley.base.checked_layers)(layers)                        | `layers` (names or [`Layer`](_autosummary/foley.base.html.md#foley.base.Layer) members) as a set of members, checked up front so a typo raises before any paid call (reeleehq/foley#316). |
+| [`normalize_territory`](_autosummary/foley.base.html.md#foley.base.normalize_territory)(territory)                | `territory` as an ISO 3166-1 alpha-2 code (or [`WORLDWIDE`](_autosummary/foley.base.html.md#foley.base.WORLDWIDE)), `None` when unstated.                                                     |
+| [`reject_renamed`](_autosummary/foley.base.html.md#foley.base.reject_renamed)(names[, vocabulary])           | Raise `TypeError` if any of `names` is an affordance's old spelling.                                                                                                                 |
+| [`resolve_master`](_autosummary/foley.base.html.md#foley.base.resolve_master)(master)                        | Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterProfile`.                                                                                              |
 
 ### Classes
 
@@ -3920,6 +3934,26 @@ ValueError: the extend edit's output is 63 s; this backend takes 60 s at most
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### foley.base.checked_layers(layers)
+
+`layers` (names or [`Layer`](_autosummary/foley.base.html.md#foley.base.Layer) members) as a set of members, checked up
+front so a typo raises before any paid call (reeleehq/foley#316). A single name is
+one layer, not its letters; `None` stays `None` (every layer).
+
+```pycon
+>>> checked_layers(["ambience", Layer.sfx_fg]) == {Layer.ambience, Layer.sfx_fg}
+True
+>>> checked_layers("ambience") == {Layer.ambience}
+True
+>>> checked_layers({"ambiance"})
+Traceback (most recent call last):
+...
+ValueError: 'ambiance' is not a mix layer; the layers are voice, sfx_fg, ambience, stinger, music
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`frozenset`](https://docs.python.org/3/builtins/stdtypes.html#frozenset)[[`Layer`](_autosummary/foley.base.html.md#foley.base.Layer)]]
 
 ### foley.base.normalize_territory(territory)
 
@@ -11972,7 +12006,7 @@ Resample `samples` to `target_sr` (a no-op when already there).
 
 Lazy dependency: `soxr`.
 
-### foley.resolve_catid(\*, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'such', 'am', 'the', 'him', 'does', 'from', 'we', 'are', 'a', 'for', 'it', 'on', 'but', 'here', 'same', 'more', 'without', 'why', 'was', 'at', 'just', 'under', 'did', 'into', 'other', 'they', 'us', 'how', 'then', 'by', 'there', 'has', 'any', 'that', 'must', 'you', 'me', 'have', 'if', 'would', 'he', 'which', 'who', 'his', 'might', 'few', 'being', 'she', 'those', 'an', 'no', 'our', 'may', 'is', 'to', 'these', 'also', 'own', 'so', 'all', 'her', 'nor', 'my', 'had', 'and', 'when', 'about', 'should', 'every', 'were', 'could', 'most', 'i', 'of', 'be', 'this', 'them', 'will', 'very', 'your', 'each', 'do', 'in', 'its', 'onto', 'been', 'not', 'some', 'can', 'or', 'where', 'too', 'with', 'what', 'their', 'only', 'than', 'as'}), ambiguous_words=frozenset({'break', 'piece', 'time', 'handle', 'misc', 'sound', 'catch', 'day', 'release', 'long', 'quiet', 'light', 'small', 'thing', 'part', 'side', 'fall', 'set', 'way', 'person', 'large', 'big', 'hit', 'work', 'place', 'heavy', 'off', 'open', 'general', 'arc', 'down', 'out', 'little', 'drop', 'hold', 'meeting', 'blue', 'over', 'run', 'tone', 'shot', 'night', 'up', 'bang', 'beat'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### foley.resolve_catid(\*, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'so', 'its', 'each', 'onto', 'must', 'were', 'no', 'then', 'we', 'have', 'other', 'some', 'and', 'how', 'there', 'can', 'all', 'only', 'or', 'as', 'too', 'am', 'from', 'the', 'but', 'a', 'why', 'own', 'which', 'to', 'an', 'are', 'is', 'had', 'what', 'few', 'that', 'their', 'where', 'been', 'your', 'would', 'with', 'does', 'every', 'in', 'being', 'without', 'my', 'here', 'him', 'of', 'be', 'any', 'do', 'these', 'you', 'did', 'may', 'more', 'they', 'she', 'than', 'about', 'under', 'on', 'them', 'could', 'nor', 'it', 'those', 'i', 'by', 'such', 'most', 'at', 'his', 'not', 'our', 'same', 'into', 'he', 'will', 'might', 'very', 'when', 'should', 'also', 'just', 'has', 'who', 'us', 'me', 'for', 'if', 'this', 'her', 'was'}), ambiguous_words=frozenset({'run', 'blue', 'handle', 'little', 'sound', 'out', 'piece', 'hold', 'drop', 'light', 'part', 'down', 'general', 'place', 'small', 'work', 'set', 'fall', 'thing', 'release', 'meeting', 'person', 'up', 'long', 'misc', 'side', 'beat', 'time', 'hit', 'big', 'day', 'shot', 'arc', 'off', 'heavy', 'over', 'catch', 'open', 'tone', 'way', 'night', 'quiet', 'large', 'break', 'bang'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -13844,7 +13878,7 @@ Fuse several ranked id lists into one, by reciprocal rank.
   `[(id, fused_score), ...]` sorted by fused score descending, ties
   broken by `id` ascending (so the fusion is fully deterministic).
 
-### foley.index.resolve_catid(\*, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'such', 'am', 'the', 'him', 'does', 'from', 'we', 'are', 'a', 'for', 'it', 'on', 'but', 'here', 'same', 'more', 'without', 'why', 'was', 'at', 'just', 'under', 'did', 'into', 'other', 'they', 'us', 'how', 'then', 'by', 'there', 'has', 'any', 'that', 'must', 'you', 'me', 'have', 'if', 'would', 'he', 'which', 'who', 'his', 'might', 'few', 'being', 'she', 'those', 'an', 'no', 'our', 'may', 'is', 'to', 'these', 'also', 'own', 'so', 'all', 'her', 'nor', 'my', 'had', 'and', 'when', 'about', 'should', 'every', 'were', 'could', 'most', 'i', 'of', 'be', 'this', 'them', 'will', 'very', 'your', 'each', 'do', 'in', 'its', 'onto', 'been', 'not', 'some', 'can', 'or', 'where', 'too', 'with', 'what', 'their', 'only', 'than', 'as'}), ambiguous_words=frozenset({'break', 'piece', 'time', 'handle', 'misc', 'sound', 'catch', 'day', 'release', 'long', 'quiet', 'light', 'small', 'thing', 'part', 'side', 'fall', 'set', 'way', 'person', 'large', 'big', 'hit', 'work', 'place', 'heavy', 'off', 'open', 'general', 'arc', 'down', 'out', 'little', 'drop', 'hold', 'meeting', 'blue', 'over', 'run', 'tone', 'shot', 'night', 'up', 'bang', 'beat'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### foley.index.resolve_catid(\*, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'so', 'its', 'each', 'onto', 'must', 'were', 'no', 'then', 'we', 'have', 'other', 'some', 'and', 'how', 'there', 'can', 'all', 'only', 'or', 'as', 'too', 'am', 'from', 'the', 'but', 'a', 'why', 'own', 'which', 'to', 'an', 'are', 'is', 'had', 'what', 'few', 'that', 'their', 'where', 'been', 'your', 'would', 'with', 'does', 'every', 'in', 'being', 'without', 'my', 'here', 'him', 'of', 'be', 'any', 'do', 'these', 'you', 'did', 'may', 'more', 'they', 'she', 'than', 'about', 'under', 'on', 'them', 'could', 'nor', 'it', 'those', 'i', 'by', 'such', 'most', 'at', 'his', 'not', 'our', 'same', 'into', 'he', 'will', 'might', 'very', 'when', 'should', 'also', 'just', 'has', 'who', 'us', 'me', 'for', 'if', 'this', 'her', 'was'}), ambiguous_words=frozenset({'run', 'blue', 'handle', 'little', 'sound', 'out', 'piece', 'hold', 'drop', 'light', 'part', 'down', 'general', 'place', 'small', 'work', 'set', 'fall', 'thing', 'release', 'meeting', 'person', 'up', 'long', 'misc', 'side', 'beat', 'time', 'hit', 'big', 'day', 'shot', 'arc', 'off', 'heavy', 'over', 'catch', 'open', 'tone', 'way', 'night', 'quiet', 'large', 'break', 'bang'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -15976,7 +16010,7 @@ The result of resolving free tags/caption/labels to a UCS CatID.
 `subcategory` feeds `ucs_subcategory` on
 ingest, and `ucs_catid` on the query side.
 
-### *class* foley.index.taxonomy.KeywordResolver(\*, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'such', 'am', 'the', 'him', 'does', 'from', 'we', 'are', 'a', 'for', 'it', 'on', 'but', 'here', 'same', 'more', 'without', 'why', 'was', 'at', 'just', 'under', 'did', 'into', 'other', 'they', 'us', 'how', 'then', 'by', 'there', 'has', 'any', 'that', 'must', 'you', 'me', 'have', 'if', 'would', 'he', 'which', 'who', 'his', 'might', 'few', 'being', 'she', 'those', 'an', 'no', 'our', 'may', 'is', 'to', 'these', 'also', 'own', 'so', 'all', 'her', 'nor', 'my', 'had', 'and', 'when', 'about', 'should', 'every', 'were', 'could', 'most', 'i', 'of', 'be', 'this', 'them', 'will', 'very', 'your', 'each', 'do', 'in', 'its', 'onto', 'been', 'not', 'some', 'can', 'or', 'where', 'too', 'with', 'what', 'their', 'only', 'than', 'as'}), ambiguous_words=frozenset({'break', 'piece', 'time', 'handle', 'misc', 'sound', 'catch', 'day', 'release', 'long', 'quiet', 'light', 'small', 'thing', 'part', 'side', 'fall', 'set', 'way', 'person', 'large', 'big', 'hit', 'work', 'place', 'heavy', 'off', 'open', 'general', 'arc', 'down', 'out', 'little', 'drop', 'hold', 'meeting', 'blue', 'over', 'run', 'tone', 'shot', 'night', 'up', 'bang', 'beat'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### *class* foley.index.taxonomy.KeywordResolver(\*, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'so', 'its', 'each', 'onto', 'must', 'were', 'no', 'then', 'we', 'have', 'other', 'some', 'and', 'how', 'there', 'can', 'all', 'only', 'or', 'as', 'too', 'am', 'from', 'the', 'but', 'a', 'why', 'own', 'which', 'to', 'an', 'are', 'is', 'had', 'what', 'few', 'that', 'their', 'where', 'been', 'your', 'would', 'with', 'does', 'every', 'in', 'being', 'without', 'my', 'here', 'him', 'of', 'be', 'any', 'do', 'these', 'you', 'did', 'may', 'more', 'they', 'she', 'than', 'about', 'under', 'on', 'them', 'could', 'nor', 'it', 'those', 'i', 'by', 'such', 'most', 'at', 'his', 'not', 'our', 'same', 'into', 'he', 'will', 'might', 'very', 'when', 'should', 'also', 'just', 'has', 'who', 'us', 'me', 'for', 'if', 'this', 'her', 'was'}), ambiguous_words=frozenset({'run', 'blue', 'handle', 'little', 'sound', 'out', 'piece', 'hold', 'drop', 'light', 'part', 'down', 'general', 'place', 'small', 'work', 'set', 'fall', 'thing', 'release', 'meeting', 'person', 'up', 'long', 'misc', 'side', 'beat', 'time', 'hit', 'big', 'day', 'shot', 'arc', 'off', 'heavy', 'over', 'catch', 'open', 'tone', 'way', 'night', 'quiet', 'large', 'break', 'bang'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -16359,7 +16393,7 @@ True
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsName`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsName)]
 
-### foley.index.taxonomy.resolve_catid(\*, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'such', 'am', 'the', 'him', 'does', 'from', 'we', 'are', 'a', 'for', 'it', 'on', 'but', 'here', 'same', 'more', 'without', 'why', 'was', 'at', 'just', 'under', 'did', 'into', 'other', 'they', 'us', 'how', 'then', 'by', 'there', 'has', 'any', 'that', 'must', 'you', 'me', 'have', 'if', 'would', 'he', 'which', 'who', 'his', 'might', 'few', 'being', 'she', 'those', 'an', 'no', 'our', 'may', 'is', 'to', 'these', 'also', 'own', 'so', 'all', 'her', 'nor', 'my', 'had', 'and', 'when', 'about', 'should', 'every', 'were', 'could', 'most', 'i', 'of', 'be', 'this', 'them', 'will', 'very', 'your', 'each', 'do', 'in', 'its', 'onto', 'been', 'not', 'some', 'can', 'or', 'where', 'too', 'with', 'what', 'their', 'only', 'than', 'as'}), ambiguous_words=frozenset({'break', 'piece', 'time', 'handle', 'misc', 'sound', 'catch', 'day', 'release', 'long', 'quiet', 'light', 'small', 'thing', 'part', 'side', 'fall', 'set', 'way', 'person', 'large', 'big', 'hit', 'work', 'place', 'heavy', 'off', 'open', 'general', 'arc', 'down', 'out', 'little', 'drop', 'hold', 'meeting', 'blue', 'over', 'run', 'tone', 'shot', 'night', 'up', 'bang', 'beat'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### foley.index.taxonomy.resolve_catid(\*, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'so', 'its', 'each', 'onto', 'must', 'were', 'no', 'then', 'we', 'have', 'other', 'some', 'and', 'how', 'there', 'can', 'all', 'only', 'or', 'as', 'too', 'am', 'from', 'the', 'but', 'a', 'why', 'own', 'which', 'to', 'an', 'are', 'is', 'had', 'what', 'few', 'that', 'their', 'where', 'been', 'your', 'would', 'with', 'does', 'every', 'in', 'being', 'without', 'my', 'here', 'him', 'of', 'be', 'any', 'do', 'these', 'you', 'did', 'may', 'more', 'they', 'she', 'than', 'about', 'under', 'on', 'them', 'could', 'nor', 'it', 'those', 'i', 'by', 'such', 'most', 'at', 'his', 'not', 'our', 'same', 'into', 'he', 'will', 'might', 'very', 'when', 'should', 'also', 'just', 'has', 'who', 'us', 'me', 'for', 'if', 'this', 'her', 'was'}), ambiguous_words=frozenset({'run', 'blue', 'handle', 'little', 'sound', 'out', 'piece', 'hold', 'drop', 'light', 'part', 'down', 'general', 'place', 'small', 'work', 'set', 'fall', 'thing', 'release', 'meeting', 'person', 'up', 'long', 'misc', 'side', 'beat', 'time', 'hit', 'big', 'day', 'shot', 'arc', 'off', 'heavy', 'over', 'catch', 'open', 'tone', 'way', 'night', 'quiet', 'large', 'break', 'bang'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -16635,7 +16669,7 @@ One term of a row found in the input.
 `words` are the term’s content lemmas (stop words dropped); `shared_by` is how
 many rows list the term.
 
-### *class* foley.index.taxonomy.resolver.KeywordResolver(\*, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'such', 'am', 'the', 'him', 'does', 'from', 'we', 'are', 'a', 'for', 'it', 'on', 'but', 'here', 'same', 'more', 'without', 'why', 'was', 'at', 'just', 'under', 'did', 'into', 'other', 'they', 'us', 'how', 'then', 'by', 'there', 'has', 'any', 'that', 'must', 'you', 'me', 'have', 'if', 'would', 'he', 'which', 'who', 'his', 'might', 'few', 'being', 'she', 'those', 'an', 'no', 'our', 'may', 'is', 'to', 'these', 'also', 'own', 'so', 'all', 'her', 'nor', 'my', 'had', 'and', 'when', 'about', 'should', 'every', 'were', 'could', 'most', 'i', 'of', 'be', 'this', 'them', 'will', 'very', 'your', 'each', 'do', 'in', 'its', 'onto', 'been', 'not', 'some', 'can', 'or', 'where', 'too', 'with', 'what', 'their', 'only', 'than', 'as'}), ambiguous_words=frozenset({'break', 'piece', 'time', 'handle', 'misc', 'sound', 'catch', 'day', 'release', 'long', 'quiet', 'light', 'small', 'thing', 'part', 'side', 'fall', 'set', 'way', 'person', 'large', 'big', 'hit', 'work', 'place', 'heavy', 'off', 'open', 'general', 'arc', 'down', 'out', 'little', 'drop', 'hold', 'meeting', 'blue', 'over', 'run', 'tone', 'shot', 'night', 'up', 'bang', 'beat'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### *class* foley.index.taxonomy.resolver.KeywordResolver(\*, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'so', 'its', 'each', 'onto', 'must', 'were', 'no', 'then', 'we', 'have', 'other', 'some', 'and', 'how', 'there', 'can', 'all', 'only', 'or', 'as', 'too', 'am', 'from', 'the', 'but', 'a', 'why', 'own', 'which', 'to', 'an', 'are', 'is', 'had', 'what', 'few', 'that', 'their', 'where', 'been', 'your', 'would', 'with', 'does', 'every', 'in', 'being', 'without', 'my', 'here', 'him', 'of', 'be', 'any', 'do', 'these', 'you', 'did', 'may', 'more', 'they', 'she', 'than', 'about', 'under', 'on', 'them', 'could', 'nor', 'it', 'those', 'i', 'by', 'such', 'most', 'at', 'his', 'not', 'our', 'same', 'into', 'he', 'will', 'might', 'very', 'when', 'should', 'also', 'just', 'has', 'who', 'us', 'me', 'for', 'if', 'this', 'her', 'was'}), ambiguous_words=frozenset({'run', 'blue', 'handle', 'little', 'sound', 'out', 'piece', 'hold', 'drop', 'light', 'part', 'down', 'general', 'place', 'small', 'work', 'set', 'fall', 'thing', 'release', 'meeting', 'person', 'up', 'long', 'misc', 'side', 'beat', 'time', 'hit', 'big', 'day', 'shot', 'arc', 'off', 'heavy', 'over', 'catch', 'open', 'tone', 'way', 'night', 'quiet', 'large', 'break', 'bang'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -16815,7 +16849,7 @@ weight: “car” (32 rows) a sixth, “doorknob” (one row) all of it.
 * **Return type:**
   [`float`](https://docs.python.org/3/builtins/functions.html#float)
 
-### foley.index.taxonomy.resolver.keyword_resolution(tags=(), caption=None, \*, table=None, policy=MatchPolicy(stop_words=frozenset({'such', 'am', 'the', 'him', 'does', 'from', 'we', 'are', 'a', 'for', 'it', 'on', 'but', 'here', 'same', 'more', 'without', 'why', 'was', 'at', 'just', 'under', 'did', 'into', 'other', 'they', 'us', 'how', 'then', 'by', 'there', 'has', 'any', 'that', 'must', 'you', 'me', 'have', 'if', 'would', 'he', 'which', 'who', 'his', 'might', 'few', 'being', 'she', 'those', 'an', 'no', 'our', 'may', 'is', 'to', 'these', 'also', 'own', 'so', 'all', 'her', 'nor', 'my', 'had', 'and', 'when', 'about', 'should', 'every', 'were', 'could', 'most', 'i', 'of', 'be', 'this', 'them', 'will', 'very', 'your', 'each', 'do', 'in', 'its', 'onto', 'been', 'not', 'some', 'can', 'or', 'where', 'too', 'with', 'what', 'their', 'only', 'than', 'as'}), ambiguous_words=frozenset({'break', 'piece', 'time', 'handle', 'misc', 'sound', 'catch', 'day', 'release', 'long', 'quiet', 'light', 'small', 'thing', 'part', 'side', 'fall', 'set', 'way', 'person', 'large', 'big', 'hit', 'work', 'place', 'heavy', 'off', 'open', 'general', 'arc', 'down', 'out', 'little', 'drop', 'hold', 'meeting', 'blue', 'over', 'run', 'tone', 'shot', 'night', 'up', 'bang', 'beat'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### foley.index.taxonomy.resolver.keyword_resolution(tags=(), caption=None, \*, table=None, policy=MatchPolicy(stop_words=frozenset({'so', 'its', 'each', 'onto', 'must', 'were', 'no', 'then', 'we', 'have', 'other', 'some', 'and', 'how', 'there', 'can', 'all', 'only', 'or', 'as', 'too', 'am', 'from', 'the', 'but', 'a', 'why', 'own', 'which', 'to', 'an', 'are', 'is', 'had', 'what', 'few', 'that', 'their', 'where', 'been', 'your', 'would', 'with', 'does', 'every', 'in', 'being', 'without', 'my', 'here', 'him', 'of', 'be', 'any', 'do', 'these', 'you', 'did', 'may', 'more', 'they', 'she', 'than', 'about', 'under', 'on', 'them', 'could', 'nor', 'it', 'those', 'i', 'by', 'such', 'most', 'at', 'his', 'not', 'our', 'same', 'into', 'he', 'will', 'might', 'very', 'when', 'should', 'also', 'just', 'has', 'who', 'us', 'me', 'for', 'if', 'this', 'her', 'was'}), ambiguous_words=frozenset({'run', 'blue', 'handle', 'little', 'sound', 'out', 'piece', 'hold', 'drop', 'light', 'part', 'down', 'general', 'place', 'small', 'work', 'set', 'fall', 'thing', 'release', 'meeting', 'person', 'up', 'long', 'misc', 'side', 'beat', 'time', 'hit', 'big', 'day', 'shot', 'arc', 'off', 'heavy', 'over', 'catch', 'open', 'tone', 'way', 'night', 'quiet', 'large', 'break', 'bang'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 The keyword stage alone: the best row for `tags`/`caption`, banded.
 
@@ -16830,7 +16864,7 @@ The keyword stage alone: the best row for `tags`/`caption`, banded.
 * **Return type:**
   [`CatIdResolution`](_autosummary/foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.CatIdResolution)
 
-### foley.index.taxonomy.resolver.resolve_catid(\*, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'such', 'am', 'the', 'him', 'does', 'from', 'we', 'are', 'a', 'for', 'it', 'on', 'but', 'here', 'same', 'more', 'without', 'why', 'was', 'at', 'just', 'under', 'did', 'into', 'other', 'they', 'us', 'how', 'then', 'by', 'there', 'has', 'any', 'that', 'must', 'you', 'me', 'have', 'if', 'would', 'he', 'which', 'who', 'his', 'might', 'few', 'being', 'she', 'those', 'an', 'no', 'our', 'may', 'is', 'to', 'these', 'also', 'own', 'so', 'all', 'her', 'nor', 'my', 'had', 'and', 'when', 'about', 'should', 'every', 'were', 'could', 'most', 'i', 'of', 'be', 'this', 'them', 'will', 'very', 'your', 'each', 'do', 'in', 'its', 'onto', 'been', 'not', 'some', 'can', 'or', 'where', 'too', 'with', 'what', 'their', 'only', 'than', 'as'}), ambiguous_words=frozenset({'break', 'piece', 'time', 'handle', 'misc', 'sound', 'catch', 'day', 'release', 'long', 'quiet', 'light', 'small', 'thing', 'part', 'side', 'fall', 'set', 'way', 'person', 'large', 'big', 'hit', 'work', 'place', 'heavy', 'off', 'open', 'general', 'arc', 'down', 'out', 'little', 'drop', 'hold', 'meeting', 'blue', 'over', 'run', 'tone', 'shot', 'night', 'up', 'bang', 'beat'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### foley.index.taxonomy.resolver.resolve_catid(\*, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'so', 'its', 'each', 'onto', 'must', 'were', 'no', 'then', 'we', 'have', 'other', 'some', 'and', 'how', 'there', 'can', 'all', 'only', 'or', 'as', 'too', 'am', 'from', 'the', 'but', 'a', 'why', 'own', 'which', 'to', 'an', 'are', 'is', 'had', 'what', 'few', 'that', 'their', 'where', 'been', 'your', 'would', 'with', 'does', 'every', 'in', 'being', 'without', 'my', 'here', 'him', 'of', 'be', 'any', 'do', 'these', 'you', 'did', 'may', 'more', 'they', 'she', 'than', 'about', 'under', 'on', 'them', 'could', 'nor', 'it', 'those', 'i', 'by', 'such', 'most', 'at', 'his', 'not', 'our', 'same', 'into', 'he', 'will', 'might', 'very', 'when', 'should', 'also', 'just', 'has', 'who', 'us', 'me', 'for', 'if', 'this', 'her', 'was'}), ambiguous_words=frozenset({'run', 'blue', 'handle', 'little', 'sound', 'out', 'piece', 'hold', 'drop', 'light', 'part', 'down', 'general', 'place', 'small', 'work', 'set', 'fall', 'thing', 'release', 'meeting', 'person', 'up', 'long', 'misc', 'side', 'beat', 'time', 'hit', 'big', 'day', 'shot', 'arc', 'off', 'heavy', 'over', 'catch', 'open', 'tone', 'way', 'night', 'quiet', 'large', 'break', 'bang'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -20210,7 +20244,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix chime', 'ta-dum', 'tudum', 'ta dum', 'netflix intro', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel jingle', 'intel chime', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc three-note', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'tudum', 'ta-dum', 'netflix intro', 'netflix chime', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel chime', 'intel bong', 'intel jingle', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -32197,7 +32231,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-23 04:26 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/9287087e3f24778c6be4d888710d646235418e9a"><code>9287087</code></a> on branch <code>main</code>, for **foley 0.0.151** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-23 23:13 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/f6767ea494b633fa2d7645610574a9380d61b016"><code>f6767ea</code></a> on branch <code>main</code>, for **foley 0.0.152** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -32206,7 +32240,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/9287087e3f24778c6be4d888710d646235418e9a"><code>9287087e3f24778c6be4d888710d646235418e9a</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/f6767ea494b633fa2d7645610574a9380d61b016"><code>f6767ea494b633fa2d7645610574a9380d61b016</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -32217,15 +32251,15 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/45111535183">45111535183</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/45286385841">45286385841</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>9287087e3f24778c6be4d888710d646235418e9a</code> (in the history of the built commit) |
+| Event commit | <code>f6767ea494b633fa2d7645610574a9380d61b016</code> (in the history of the built commit) |
 
 ## Tools
 
 |          |         |
 |----------|---------|
-| epythet  | 0.2.23  |
+| epythet  | 0.2.25  |
 | Sphinx   | 9.1.1   |
 | docutils | 0.22.4  |
 | Python   | 3.12.16 |
@@ -32244,14 +32278,14 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.151/">0.0.151</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.152/">0.0.152</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 9287087e3f24778c6be4d888710d646235418e9a
-pip install "epythet==0.2.23"
+git checkout f6767ea494b633fa2d7645610574a9380d61b016
+pip install "epythet==0.2.25"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
 

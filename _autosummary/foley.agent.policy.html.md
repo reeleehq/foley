@@ -18,6 +18,11 @@ neither can bypass the other:
 run away. This module is stdlib-only (imports only [`foley.base`](foley.base.html.md#module-foley.base) /
 [`foley.licensing`](foley.licensing.html.md#module-foley.licensing)) and does no I/O and no obs — the loop emits the audit Steps.
 
+### Module Attributes
+
+| [`SPEND_TOLERANCE_USD`](#foley.agent.policy.SPEND_TOLERANCE_USD)   | a run that lands on `max_usd` through float addition is within it, for the next call's check and for `overshoot_usd` alike (#316).   |
+|------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+
 ### Functions
 
 | [`decide`](#foley.agent.policy.decide)(event, kept, verified, \*, ...)    | The single generate-vs-retrieve branch — a PURE function (report 05 §4).   |
@@ -193,6 +198,14 @@ What [`decide()`](#foley.agent.policy.decide) chose for one event (the single br
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 The tiny result of [`decide()`](#foley.agent.policy.decide); `reason` feeds the refine hint + the audit Step.
+
+### foley.agent.policy.SPEND_TOLERANCE_USD *= 1e-12*
+
+a run that lands on `max_usd` through float
+addition is within it, for the next call’s check and for `overshoot_usd` alike (#316).
+
+* **Type:**
+  Float noise allowed on the cap
 
 ### foley.agent.policy.decide(event, kept, verified, , tau_retrieve, budget, loop)
 
