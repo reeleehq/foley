@@ -185,7 +185,8 @@ def score(
             keeps every layer. Applied to the events the decomposer returns (see
             :func:`foley.find`), so fewer than ``max_events`` may come back.
         **weave_kwargs: Forwarded to :func:`foley.weave` (e.g. ``language``, ``aligner``,
-            ``sign_cert``, ``watermark``). Checked against ``weave``'s signature before
+            ``sign_cert``, ``watermark``, or ``sfx_gain_db=-6.0`` to sit the sound
+            design 6 dB further under the voice before mastering, #292). Checked against ``weave``'s signature before
             anything runs, so a typo costs nothing.
 
     Returns:
@@ -208,8 +209,12 @@ def score(
     from .base import resolve_master
     from .licensing import intended_use_for
 
-    # fail fast: a typo raises before any find/verify/generation spend
+    # fail fast: a typo (or an unusable level) raises before any find/verify/generation spend
     _check_weave_kwargs(weave_kwargs)
+    if "sfx_gain_db" in weave_kwargs:
+        from .weave.render import check_sfx_gain_db
+
+        check_sfx_gain_db(weave_kwargs["sfx_gain_db"])
     budget = _budget_from(budget, max_usd)
     master = resolve_master(master)
     segs = [segments] if isinstance(segments, str) else list(segments)

@@ -3,7 +3,8 @@
 ``render(timeline, library)`` is a pure function of ``(narration, timeline, library,
 master)``: it aligns (once, cached), resolves each item's anchor, mixes each layer
 bus (per-item DSP via the :class:`~foley.weave.protocols.ApplyStrategy` seam), ducks
-the ambience/music beds under speech, sums the buses, and masters to the timeline's
+the ambience/music beds under speech, sums the buses, sets the effects bus's level
+against the voice (``sfx_gain_db``), and masters to the timeline's
 :class:`~foley.base.MasterProfile`. Re-running after an edit reproduces exactly that
 change and nothing else.
 
@@ -231,6 +232,7 @@ def render(
     aligner: "Optional[Aligner]" = None,
     apply_strategy: "Optional[ApplyStrategy]" = None,
     cache: Optional[RenderCache] = None,
+    sfx_gain_db: float = 0.0,
 ) -> RenderResult:
     """Render ``timeline`` against ``library`` into a mastered mix (PURE, deterministic).
 
@@ -251,11 +253,17 @@ def render(
             (default :class:`FullRender`).
         cache: An optional :class:`RenderCache` for byte-identical incremental
             re-render (only changed layers recompute).
+        sfx_gain_db: The level of the whole sound-design bus (every non-voice layer,
+            after ducking) relative to the narration, in dB, applied before mastering so
+            the loudness target still holds (#292). ``0.0`` (default) is the mix as
+            before, byte for byte; ``-6.0`` sits the effects 6 dB further under the
+            voice; ``float('-inf')`` mutes them. See :func:`check_sfx_gain_db`.
 
     Returns:
         A :class:`RenderResult` — the mastered stereo mix, the hydrated timeline (with
         ``word_timeline`` cached), and the :class:`~foley.weave.master.MasterReport`.
     """
+    sfx_gain = db_to_lin(check_sfx_gain_db(sfx_gain_db))
     strategy = apply_strategy or FullRender()
     voice_mono = load_clip_mono(library, timeline.narration_ref, sr=sr)
     n = int(voice_mono.shape[0])
@@ -301,6 +309,8 @@ def render(
             if duck_env is None:
                 duck_env = speech_duck_gain(n, sr, _speech_spans(wt))
             bus = bus * duck_env[:, None]
+        if sfx_gain != 1.0:  # skipped at 0 dB: the default mix stays byte-identical
+            bus = bus * sfx_gain
         mix = mix + bus
 
     mastered, report = master(mix, sr, tl.master)
@@ -312,6 +322,34 @@ def render(
         buses=buses,
         alignment=alignment,
     )
+
+
+def check_sfx_gain_db(value) -> float:
+    """``value`` as a float if it is a usable effects-bus level, else ``ValueError``.
+
+    Any finite number of dB, or ``-inf`` (mute the effects). ``nan`` and ``+inf`` are
+    refused: neither is a level, and either would turn the whole mix into ``nan``.
+
+    >>> check_sfx_gain_db(-6), check_sfx_gain_db(0.0), check_sfx_gain_db(float("-inf"))
+    (-6.0, 0.0, -inf)
+    >>> check_sfx_gain_db(float("nan"))
+    Traceback (most recent call last):
+        ...
+    ValueError: sfx_gain_db must be a finite number of dB or -inf (mute), got nan
+    """
+    import math
+
+    try:
+        db = float(value)
+    except (TypeError, ValueError):
+        raise ValueError(
+            f"sfx_gain_db must be a number of dB, got {value!r}"
+        ) from None
+    if math.isnan(db) or db == math.inf:
+        raise ValueError(
+            f"sfx_gain_db must be a finite number of dB or -inf (mute), got {db!r}"
+        )
+    return db
 
 
 # ---------------------------------------------------------------------------
