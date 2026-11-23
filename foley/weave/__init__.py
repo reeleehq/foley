@@ -481,7 +481,9 @@ def weave(
     tl = replace(timeline, master=resolve_master(master))
     if sfx_gain_db is not None:
         tl = replace(tl, sfx_gain_db=sfx_gain_db)
-    check_sfx_gain_db(tl.sfx_gain_db)  # a stored timeline's level, checked before rendering
+    check_sfx_gain_db(
+        tl.sfx_gain_db
+    )  # a stored timeline's level, checked before rendering
     lib, tl = _bind_narration(narration, tl, library, sr)
 
     with obs.run("weave") as run:
@@ -515,7 +517,9 @@ def weave(
             "language": language,
             "run_manifest_ref": run_id,
         }
-        if rendered.sfx_gain_db != 0.0:  # recorded only when set: a default run's record is as before
+        if (
+            rendered.sfx_gain_db != 0.0
+        ):  # recorded only when set: a default run's record is as before
             plan_ref["sfx_gain_db"] = rendered.sfx_gain_db
         run.set_plan_ref(plan_ref)
         records = _used_records(library, rendered)
