@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=6f884d2e"></script>
+    <script src="../../../_static/documentation_options.js?v=8cac2a7c"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.149" />
+  <meta name="docsearch:version" content="0.0.150" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -723,7 +723,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">``render(timeline, library)`` is a pure function of ``(narration, timeline, library,</span>
 <span class="sd">master)``: it aligns (once, cached), resolves each item's anchor, mixes each layer</span>
 <span class="sd">bus (per-item DSP via the :class:`~foley.weave.protocols.ApplyStrategy` seam), ducks</span>
-<span class="sd">the ambience/music beds under speech, sums the buses, and masters to the timeline's</span>
+<span class="sd">the ambience/music beds under speech, sums the buses, sets the effects bus's level</span>
+<span class="sd">against the voice (``sfx_gain_db``), and masters to the timeline's</span>
 <span class="sd">:class:`~foley.base.MasterProfile`. Re-running after an edit reproduces exactly that</span>
 <span class="sd">change and nothing else.</span>
 
@@ -742,7 +743,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">replace</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Optional</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Layer</span><span class="p">,</span> <span class="n">SoundDesignTimeline</span>
@@ -971,6 +972,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">aligner</span><span class="p">:</span> <span class="s2">"Optional[Aligner]"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">apply_strategy</span><span class="p">:</span> <span class="s2">"Optional[ApplyStrategy]"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">cache</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">RenderCache</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">sfx_gain_db</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RenderResult</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Render ``timeline`` against ``library`` into a mastered mix (PURE, deterministic).</span>
 
@@ -991,11 +993,22 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            (default :class:`FullRender`).</span>
 <span class="sd">        cache: An optional :class:`RenderCache` for byte-identical incremental</span>
 <span class="sd">            re-render (only changed layers recompute).</span>
+<span class="sd">        sfx_gain_db: The level of the whole sound-design bus (every non-voice layer,</span>
+<span class="sd">            after ducking) relative to the narration, in dB, applied before mastering so</span>
+<span class="sd">            the loudness target still holds (#292). ``None`` (default) uses the</span>
+<span class="sd">            timeline's own ``sfx_gain_db`` (0 dB unless set: the mix as before, byte</span>
+<span class="sd">            for byte); a number overrides it and is written on the returned timeline.</span>
+<span class="sd">            ``-6.0`` sits the effects 6 dB further under the voice. See</span>
+<span class="sd">            :func:`check_sfx_gain_db` for the range.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A :class:`RenderResult` — the mastered stereo mix, the hydrated timeline (with</span>
 <span class="sd">        ``word_timeline`` cached), and the :class:`~foley.weave.master.MasterReport`.</span>
 <span class="sd">    """</span>
+    <span class="n">level_db</span> <span class="o">=</span> <span class="n">check_sfx_gain_db</span><span class="p">(</span>
+        <span class="n">timeline</span><span class="o">.</span><span class="n">sfx_gain_db</span> <span class="k">if</span> <span class="n">sfx_gain_db</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">sfx_gain_db</span>
+    <span class="p">)</span>
+    <span class="n">sfx_gain</span> <span class="o">=</span> <span class="n">db_to_lin</span><span class="p">(</span><span class="n">level_db</span><span class="p">)</span>
     <span class="n">strategy</span> <span class="o">=</span> <span class="n">apply_strategy</span> <span class="ow">or</span> <span class="n">FullRender</span><span class="p">()</span>
     <span class="n">voice_mono</span> <span class="o">=</span> <span class="n">load_clip_mono</span><span class="p">(</span><span class="n">library</span><span class="p">,</span> <span class="n">timeline</span><span class="o">.</span><span class="n">narration_ref</span><span class="p">,</span> <span class="n">sr</span><span class="o">=</span><span class="n">sr</span><span class="p">)</span>
     <span class="n">n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">voice_mono</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
@@ -1008,6 +1021,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">wt</span> <span class="o">=</span> <span class="n">used</span><span class="o">.</span><span class="n">word_timeline</span><span class="p">(</span><span class="n">voice_mono</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">transcript</span><span class="o">=</span><span class="n">transcript</span><span class="p">,</span> <span class="o">**</span><span class="n">lang</span><span class="p">)</span>
         <span class="n">alignment</span> <span class="o">=</span> <span class="n">aligner_name</span><span class="p">(</span><span class="n">used</span><span class="p">)</span>
     <span class="n">tl</span> <span class="o">=</span> <span class="n">hydrate</span><span class="p">(</span><span class="n">timeline</span><span class="p">,</span> <span class="n">wt</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">tl</span><span class="o">.</span><span class="n">sfx_gain_db</span> <span class="o">!=</span> <span class="n">level_db</span><span class="p">:</span>  <span class="c1"># the seed carries the level it was rendered at</span>
+        <span class="n">tl</span> <span class="o">=</span> <span class="n">replace</span><span class="p">(</span><span class="n">tl</span><span class="p">,</span> <span class="n">sfx_gain_db</span><span class="o">=</span><span class="n">level_db</span><span class="p">)</span>
 
     <span class="c1"># group enabled non-voice items by layer, then render (or reuse) each bus</span>
     <span class="n">by_layer</span><span class="p">:</span> <span class="s2">"dict[Layer, list[TimelineItem]]"</span> <span class="o">=</span> <span class="p">{</span><span class="n">layer</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="n">RENDER_LAYERS</span><span class="p">}</span>
@@ -1041,6 +1056,8 @@ window.runMermaid = runMermaid;</script>
             <span class="k">if</span> <span class="n">duck_env</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">duck_env</span> <span class="o">=</span> <span class="n">speech_duck_gain</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">_speech_spans</span><span class="p">(</span><span class="n">wt</span><span class="p">))</span>
             <span class="n">bus</span> <span class="o">=</span> <span class="n">bus</span> <span class="o">*</span> <span class="n">duck_env</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">sfx_gain</span> <span class="o">!=</span> <span class="mf">1.0</span><span class="p">:</span>  <span class="c1"># skipped at 0 dB: the default mix stays byte-identical</span>
+            <span class="n">bus</span> <span class="o">=</span> <span class="n">bus</span> <span class="o">*</span> <span class="n">sfx_gain</span>
         <span class="n">mix</span> <span class="o">=</span> <span class="n">mix</span> <span class="o">+</span> <span class="n">bus</span>
 
     <span class="n">mastered</span><span class="p">,</span> <span class="n">report</span> <span class="o">=</span> <span class="n">master</span><span class="p">(</span><span class="n">mix</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">tl</span><span class="o">.</span><span class="n">master</span><span class="p">)</span>
@@ -1053,6 +1070,41 @@ window.runMermaid = runMermaid;</script>
         <span class="n">alignment</span><span class="o">=</span><span class="n">alignment</span><span class="p">,</span>
     <span class="p">)</span></div>
 
+
+
+<span class="c1">#: The range :func:`check_sfx_gain_db` accepts, in dB. -120 dB is silence for any</span>
+<span class="c1">#: delivery format (below 24-bit's noise floor), so it is how to mute the effects;</span>
+<span class="c1">#: +40 dB is far past any useful trim, and well short of where a float32 bus</span>
+<span class="c1">#: overflows into a ``nan`` mix.</span>
+<span class="n">MIN_SFX_GAIN_DB</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">120.0</span>
+<span class="n">MAX_SFX_GAIN_DB</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">40.0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">check_sfx_gain_db</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``value`` as a float if it is a usable effects-bus level, else ``ValueError``.</span>
+
+<span class="sd">    A real number (not a bool or a string) of dB in</span>
+<span class="sd">    [:data:`MIN_SFX_GAIN_DB`, :data:`MAX_SFX_GAIN_DB`]. Checked before anything</span>
+<span class="sd">    renders (and, from :func:`foley.score`, before anything is spent).</span>
+
+<span class="sd">    &gt;&gt;&gt; check_sfx_gain_db(-6), check_sfx_gain_db(0.0), check_sfx_gain_db(-120)</span>
+<span class="sd">    (-6.0, 0.0, -120.0)</span>
+<span class="sd">    &gt;&gt;&gt; check_sfx_gain_db(float("nan"))</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">        ...</span>
+<span class="sd">    ValueError: sfx_gain_db must be between -120.0 and 40.0 dB, got nan</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numbers</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">numbers</span><span class="o">.</span><span class="n">Real</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"sfx_gain_db must be a number of dB, got </span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">MIN_SFX_GAIN_DB</span> <span class="o">&lt;=</span> <span class="n">db</span> <span class="o">&lt;=</span> <span class="n">MAX_SFX_GAIN_DB</span><span class="p">:</span>  <span class="c1"># also refuses nan</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"sfx_gain_db must be between </span><span class="si">{</span><span class="n">MIN_SFX_GAIN_DB</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">MAX_SFX_GAIN_DB</span><span class="si">}</span><span class="s2"> dB, "</span>
+            <span class="sa">f</span><span class="s2">"got </span><span class="si">{</span><span class="n">db</span><span class="si">!r}</span><span class="s2">"</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">db</span>
 
 
 <span class="c1"># ---------------------------------------------------------------------------</span>

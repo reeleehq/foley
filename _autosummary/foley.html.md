@@ -1767,7 +1767,7 @@ The rejected sound ids.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
-### *class* foley.SoundDesignTimeline(items=list(), run_manifest_ref=None, transcript_ref=None, schema_version=1, narration_ref=None, word_timeline=list(), master=MasterProfile())
+### *class* foley.SoundDesignTimeline(items=list(), run_manifest_ref=None, transcript_ref=None, schema_version=1, narration_ref=None, word_timeline=list(), master=MasterProfile(), sfx_gain_db=0.0)
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -1781,6 +1781,20 @@ voice audio, `word_timeline` caches the forced alignment (the reproducible seed)
 this data + the library, so editing any field and re-rendering reproduces exactly that
 change. `run_manifest_ref` == `foley.obs.RunManifest.run_id` (the reserved #8
 `plan_ref` join).
+
+#### sfx_gain_db *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.0*
+
+The sound-design bus’s level against the narration, in dB, before mastering
+(#292): part of the seed, so a re-render from this timeline keeps it. Left out
+of [`to_dict()`](#foley.SoundDesignTimeline.to_dict) at its 0 dB default, so a timeline that never set it
+serialises exactly as before.
+
+#### to_dict()
+
+The plain-dict form; `sfx_gain_db` only when it is not 0 dB.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 ### *class* foley.SoundEvent(query, layer=Layer.sfx_fg, diegetic=True, salience=Salience.medium, onset=None, loop=False, ucs_catid=None, audioset=list(), era_place=None)
 
@@ -3927,7 +3941,7 @@ Resample `samples` to `target_sr` (a no-op when already there).
 
 Lazy dependency: `soxr`.
 
-### foley.resolve_catid(\*, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'them', 'where', 'so', 'some', 'who', 'that', 'my', 'there', 'here', 'in', 'had', 'our', 'onto', 'just', 'did', 'very', 'you', 'is', 'will', 'only', 'from', 'but', 'am', 'why', 'also', 'all', 'when', 'than', 'and', 'most', 'how', 'other', 'to', 'does', 'too', 'of', 'an', 'do', 'could', 'such', 'then', 'are', 'his', 'were', 'more', 'under', 'a', 'these', 'with', 'been', 'its', 'they', 'those', 'can', 'for', 'was', 'she', 'same', 'her', 'their', 'should', 'any', 'have', 'every', 'us', 'being', 'this', 'we', 'each', 'might', 'no', 'must', 'into', 'i', 'he', 'on', 'what', 'would', 'as', 'be', 'him', 'your', 'if', 'nor', 'by', 'about', 'me', 'the', 'few', 'without', 'own', 'it', 'may', 'or', 'which', 'not', 'has', 'at'}), ambiguous_words=frozenset({'drop', 'run', 'little', 'fall', 'small', 'night', 'person', 'arc', 'hold', 'tone', 'misc', 'over', 'day', 'large', 'down', 'beat', 'up', 'way', 'heavy', 'piece', 'break', 'off', 'release', 'catch', 'long', 'light', 'open', 'bang', 'sound', 'quiet', 'big', 'handle', 'thing', 'blue', 'out', 'part', 'general', 'shot', 'work', 'side', 'time', 'hit', 'set', 'place', 'meeting'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
+### foley.resolve_catid(\*, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None, policy=MatchPolicy(stop_words=frozenset({'those', 'for', 'from', 'our', 'of', 'being', 'here', 'other', 'must', 'every', 'these', 'who', 'on', 'were', 'most', 'was', 'am', 'their', 'also', 'do', 'would', 'each', 'him', 'did', 'his', 'too', 'same', 'at', 'about', 'does', 'your', 'been', 'you', 'few', 'could', 'this', 'all', 'me', 'as', 'an', 'how', 'we', 'might', 'under', 'but', 'it', 'which', 'more', 'so', 'only', 'there', 'than', 'can', 'should', 'be', 'i', 'such', 'my', 'had', 'its', 'with', 'and', 'own', 'has', 'any', 'he', 'are', 'no', 'then', 'into', 'why', 'or', 'have', 'may', 'us', 'her', 'to', 'very', 'if', 'is', 'she', 'onto', 'by', 'what', 'they', 'nor', 'will', 'a', 'them', 'in', 'not', 'when', 'without', 'the', 'just', 'that', 'some', 'where'}), ambiguous_words=frozenset({'small', 'large', 'blue', 'heavy', 'bang', 'catch', 'tone', 'misc', 'little', 'sound', 'arc', 'side', 'drop', 'release', 'break', 'fall', 'handle', 'big', 'work', 'quiet', 'down', 'long', 'hold', 'off', 'beat', 'meeting', 'over', 'time', 'light', 'shot', 'day', 'place', 'hit', 'set', 'way', 'thing', 'piece', 'up', 'person', 'out', 'part', 'night', 'general', 'open', 'run'}), skip_categories=frozenset({'ARCHIVED'}), kind_weights=mappingproxy({'subcategory': 3.0, 'category': 3.0, 'synonym': 2.0}), phrase_bonus=1.0, synonym_weight=<function inverse_sqrt_share>, strong_confidence=0.8, single_confidence=0.6, weak_confidence=0.4, audioset_confidence=0.5))
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -4118,7 +4132,8 @@ editable [`SoundDesignTimeline`](foley.base.html.md#foley.base.SoundDesignTimeli
     keeps every layer. Applied to the events the decomposer returns (see
     [`foley.find()`](#foley.find)), so fewer than `max_events` may come back.
   * **\*\*weave_kwargs** – Forwarded to [`foley.weave()`](foley.weave.html.md#module-foley.weave) (e.g. `language`, `aligner`,
-    `sign_cert`, `watermark`). Checked against `weave`’s signature before
+    `sign_cert`, `watermark`, or `sfx_gain_db=-6.0` to sit the sound
+    design 6 dB further under the voice before mastering, #292). Checked against `weave`’s signature before
     anything runs, so a typo costs nothing.
 * **Return type:**
   [`ScoreResult`](#foley.ScoreResult)

@@ -661,7 +661,7 @@ sidecar-only, so weaving is never blocked by provenance.
   `content_credential` the sidecar dict (always present unless credential
   construction itself failed).
 
-### foley.weave.render(timeline, library, , sr=48000, transcript=None, language=None, aligner=None, apply_strategy=None, cache=None)
+### foley.weave.render(timeline, library, , sr=48000, transcript=None, language=None, aligner=None, apply_strategy=None, cache=None, sfx_gain_db=None)
 
 Render `timeline` against `library` into a mastered mix (PURE, deterministic).
 
@@ -682,6 +682,13 @@ Render `timeline` against `library` into a mastered mix (PURE, deterministic).
     (default [`FullRender`](#foley.weave.FullRender)).
   * **cache** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`RenderCache`](#foley.weave.RenderCache)]) – An optional [`RenderCache`](#foley.weave.RenderCache) for byte-identical incremental
     re-render (only changed layers recompute).
+  * **sfx_gain_db** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – The level of the whole sound-design bus (every non-voice layer,
+    after ducking) relative to the narration, in dB, applied before mastering so
+    the loudness target still holds (#292). `None` (default) uses the
+    timeline’s own `sfx_gain_db` (0 dB unless set: the mix as before, byte
+    for byte); a number overrides it and is written on the returned timeline.
+    `-6.0` sits the effects 6 dB further under the voice. See
+    `check_sfx_gain_db()` for the range.
 * **Return type:**
   [`RenderResult`](#foley.weave.RenderResult)
 * **Returns:**
@@ -803,7 +810,7 @@ sudo). Surfaces the exact per-platform command so the user can opt in.
 * **Returns:**
   `{name: {'available': bool, 'purpose': str, 'install': str, 'url': str}}`.
 
-### foley.weave.weave(narration, timeline, , master='podcast', library=None, transcript=None, language=None, aligner=None, apply_strategy=None, sr=48000, cache=None, watermark=None, watermarker=None, sign_cert=None, export_captions=True, provenance_store=None, intended_use=None)
+### foley.weave.weave(narration, timeline, , master='podcast', library=None, transcript=None, language=None, aligner=None, apply_strategy=None, sr=48000, cache=None, watermark=None, watermarker=None, sign_cert=None, export_captions=True, provenance_store=None, intended_use=None, sfx_gain_db=None)
 
 Weave the chosen sounds under `narration` into a mastered, editable mix.
 
@@ -845,6 +852,14 @@ an optional keyword.
     renders as before but warns (`FutureWarning`) about what
     [`DEFAULT_INTENDED_USE`](foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE) would refuse: a future
     release gates by default.
+  * **sfx_gain_db** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – The level of the sound-design bus (everything but the narration)
+    relative to the voice, in dB, applied before mastering so the loudness
+    target still holds (#292): how a host honours a person’s level for a bed
+    without re-mixing a second copy. `None` (default) keeps the timeline’s
+    own level (0 dB unless set: the mix as before, byte for byte); a number
+    overrides it and is written on `result.timeline`, so re-weaving that
+    timeline keeps it. `-120` mutes the effects; outside [-120, +40] dB
+    raises `ValueError` before anything renders.
 * **Return type:**
   [`WeaveResult`](#foley.weave.WeaveResult)
 * **Returns:**

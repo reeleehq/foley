@@ -478,7 +478,7 @@ Return a JSON string (str-enums serialize to their `.value`).
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
-### *class* foley.base.SoundDesignTimeline(items=list(), run_manifest_ref=None, transcript_ref=None, schema_version=1, narration_ref=None, word_timeline=list(), master=MasterProfile())
+### *class* foley.base.SoundDesignTimeline(items=list(), run_manifest_ref=None, transcript_ref=None, schema_version=1, narration_ref=None, word_timeline=list(), master=MasterProfile(), sfx_gain_db=0.0)
 
 Bases: [`SerializableMixin`](#foley.base.SerializableMixin)
 
@@ -492,6 +492,20 @@ voice audio, `word_timeline` caches the forced alignment (the reproducible seed)
 this data + the library, so editing any field and re-rendering reproduces exactly that
 change. `run_manifest_ref` == `foley.obs.RunManifest.run_id` (the reserved #8
 `plan_ref` join).
+
+#### sfx_gain_db *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.0*
+
+The sound-design bus’s level against the narration, in dB, before mastering
+(#292): part of the seed, so a re-render from this timeline keeps it. Left out
+of [`to_dict()`](#foley.base.SoundDesignTimeline.to_dict) at its 0 dB default, so a timeline that never set it
+serialises exactly as before.
+
+#### to_dict()
+
+The plain-dict form; `sfx_gain_db` only when it is not 0 dB.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 ### *class* foley.base.SoundEvent(query, layer=Layer.sfx_fg, diegetic=True, salience=Salience.medium, onset=None, loop=False, ucs_catid=None, audioset=list(), era_place=None)
 

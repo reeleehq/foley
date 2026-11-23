@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../_static/documentation_options.js?v=6f884d2e"></script>
+    <script src="../../_static/documentation_options.js?v=8cac2a7c"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.149" />
+  <meta name="docsearch:version" content="0.0.150" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -913,7 +913,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            keeps every layer. Applied to the events the decomposer returns (see</span>
 <span class="sd">            :func:`foley.find`), so fewer than ``max_events`` may come back.</span>
 <span class="sd">        **weave_kwargs: Forwarded to :func:`foley.weave` (e.g. ``language``, ``aligner``,</span>
-<span class="sd">            ``sign_cert``, ``watermark``). Checked against ``weave``'s signature before</span>
+<span class="sd">            ``sign_cert``, ``watermark``, or ``sfx_gain_db=-6.0`` to sit the sound</span>
+<span class="sd">            design 6 dB further under the voice before mastering, #292). Checked against ``weave``'s signature before</span>
 <span class="sd">            anything runs, so a typo costs nothing.</span>
 
 <span class="sd">    Returns:</span>
@@ -936,8 +937,12 @@ window.runMermaid = runMermaid;</script>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_master</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">intended_use_for</span>
 
-    <span class="c1"># fail fast: a typo raises before any find/verify/generation spend</span>
+    <span class="c1"># fail fast: a typo (or an unusable level) raises before any find/verify/generation spend</span>
     <span class="n">_check_weave_kwargs</span><span class="p">(</span><span class="n">weave_kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">weave_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sfx_gain_db"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.weave.render</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_sfx_gain_db</span>
+
+        <span class="n">check_sfx_gain_db</span><span class="p">(</span><span class="n">weave_kwargs</span><span class="p">[</span><span class="s2">"sfx_gain_db"</span><span class="p">])</span>
     <span class="n">budget</span> <span class="o">=</span> <span class="n">_budget_from</span><span class="p">(</span><span class="n">budget</span><span class="p">,</span> <span class="n">max_usd</span><span class="p">)</span>
     <span class="n">master</span> <span class="o">=</span> <span class="n">resolve_master</span><span class="p">(</span><span class="n">master</span><span class="p">)</span>
     <span class="n">segs</span> <span class="o">=</span> <span class="p">[</span><span class="n">segments</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">segments</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">segments</span><span class="p">)</span>

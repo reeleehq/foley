@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=6f884d2e"></script>
+    <script src="../_static/documentation_options.js?v=8cac2a7c"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.149" />
+  <meta name="docsearch:version" content="0.0.150" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -1214,7 +1214,7 @@ subclasses <code class="docutils literal notranslate"><span class="pre">str</spa
 
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.base.SoundDesignTimeline">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.base.</span></span><span class="sig-name descname"><span class="pre">SoundDesignTimeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">items</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">list()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_manifest_ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transcript_ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">schema_version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">narration_ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">word_timeline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">list()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">master</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">MasterProfile()</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/base.html#SoundDesignTimeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.base.SoundDesignTimeline" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.base.</span></span><span class="sig-name descname"><span class="pre">SoundDesignTimeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">items</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">list()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_manifest_ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transcript_ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">schema_version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">narration_ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">word_timeline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">list()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">master</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">MasterProfile()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sfx_gain_db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/base.html#SoundDesignTimeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.base.SoundDesignTimeline" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#foley.base.SerializableMixin" title="foley.base.SerializableMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">SerializableMixin</span></code></a></p>
 <p>The editable, re-renderable sound-design plan — the SELECT→WEAVE bridge and render SSOT.</p>
 <p>SELECT (#7) emits the SPARSE form (just <code class="docutils literal notranslate"><span class="pre">items</span></code> + the run/transcript joins) via
@@ -1227,6 +1227,26 @@ change. <code class="docutils literal notranslate"><span class="pre">run_manifes
 <code class="docutils literal notranslate"><span class="pre">plan_ref</span></code> join).</p>
 <dl class="field-list simple">
 </dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="foley.base.SoundDesignTimeline.sfx_gain_db">
+<span class="sig-name descname"><span class="pre">sfx_gain_db</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#foley.base.SoundDesignTimeline.sfx_gain_db" title="Link to this definition">#</a></dt>
+<dd><p>The sound-design bus’s level against the narration, in dB, before mastering
+(#292): part of the seed, so a re-render from this timeline keeps it. Left out
+of <a class="reference internal" href="#foley.base.SoundDesignTimeline.to_dict" title="foley.base.SoundDesignTimeline.to_dict"><code class="xref py py-meth docutils literal notranslate"><span class="pre">to_dict()</span></code></a> at its 0 dB default, so a timeline that never set it
+serialises exactly as before.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.base.SoundDesignTimeline.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/base.html#SoundDesignTimeline.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.base.SoundDesignTimeline.to_dict" title="Link to this definition">#</a></dt>
+<dd><p>The plain-dict form; <code class="docutils literal notranslate"><span class="pre">sfx_gain_db</span></code> only when it is not 0 dB.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -1523,7 +1543,11 @@ from each <a class="reference internal" href="#foley.base.Affordance" title="fol
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.SerializableMixin.to_json"><code class="docutils literal notranslate"><span class="pre">SerializableMixin.to_json()</span></code></a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.SoundDesignTimeline"><code class="docutils literal notranslate"><span class="pre">SoundDesignTimeline</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.SoundDesignTimeline"><code class="docutils literal notranslate"><span class="pre">SoundDesignTimeline</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.SoundDesignTimeline.sfx_gain_db"><code class="docutils literal notranslate"><span class="pre">SoundDesignTimeline.sfx_gain_db</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.SoundDesignTimeline.to_dict"><code class="docutils literal notranslate"><span class="pre">SoundDesignTimeline.to_dict()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.SoundEvent"><code class="docutils literal notranslate"><span class="pre">SoundEvent</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.SoundRecord"><code class="docutils literal notranslate"><span class="pre">SoundRecord</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.StorageMode"><code class="docutils literal notranslate"><span class="pre">StorageMode</span></code></a></li>

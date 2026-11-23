@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../_static/documentation_options.js?v=6f884d2e"></script>
+    <script src="../../_static/documentation_options.js?v=8cac2a7c"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.149" />
+  <meta name="docsearch:version" content="0.0.150" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1136,6 +1136,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">export_captions</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">provenance_store</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">intended_use</span><span class="p">:</span> <span class="s2">"Optional[IntendedUse]"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">sfx_gain_db</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WeaveResult</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Weave the chosen sounds under ``narration`` into a mastered, editable mix.</span>
 
@@ -1177,6 +1178,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            renders as before but warns (``FutureWarning``) about what</span>
 <span class="sd">            :data:`~foley.licensing.DEFAULT_INTENDED_USE` would refuse: a future</span>
 <span class="sd">            release gates by default.</span>
+<span class="sd">        sfx_gain_db: The level of the sound-design bus (everything but the narration)</span>
+<span class="sd">            relative to the voice, in dB, applied before mastering so the loudness</span>
+<span class="sd">            target still holds (#292): how a host honours a person's level for a bed</span>
+<span class="sd">            without re-mixing a second copy. ``None`` (default) keeps the timeline's</span>
+<span class="sd">            own level (0 dB unless set: the mix as before, byte for byte); a number</span>
+<span class="sd">            overrides it and is written on ``result.timeline``, so re-weaving that</span>
+<span class="sd">            timeline keeps it. ``-120`` mutes the effects; outside [-120, +40] dB</span>
+<span class="sd">            raises ``ValueError`` before anything renders.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A :class:`WeaveResult`.</span>
@@ -1187,11 +1196,17 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..</span><span class="w"> </span><span class="kn">import</span> <span class="n">obs</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_placed</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.render</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_sfx_gain_db</span>
 
+    <span class="k">if</span> <span class="n">sfx_gain_db</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">sfx_gain_db</span> <span class="o">=</span> <span class="n">check_sfx_gain_db</span><span class="p">(</span><span class="n">sfx_gain_db</span><span class="p">)</span>
     <span class="n">check_placed</span><span class="p">(</span>
         <span class="n">_placed_records</span><span class="p">(</span><span class="n">narration</span><span class="p">,</span> <span class="n">timeline</span><span class="p">,</span> <span class="n">library</span><span class="p">),</span> <span class="n">intended_use</span><span class="p">,</span> <span class="n">what</span><span class="o">=</span><span class="s2">"foley.weave"</span>
     <span class="p">)</span>
     <span class="n">tl</span> <span class="o">=</span> <span class="n">replace</span><span class="p">(</span><span class="n">timeline</span><span class="p">,</span> <span class="n">master</span><span class="o">=</span><span class="n">resolve_master</span><span class="p">(</span><span class="n">master</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">sfx_gain_db</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">tl</span> <span class="o">=</span> <span class="n">replace</span><span class="p">(</span><span class="n">tl</span><span class="p">,</span> <span class="n">sfx_gain_db</span><span class="o">=</span><span class="n">sfx_gain_db</span><span class="p">)</span>
+    <span class="n">check_sfx_gain_db</span><span class="p">(</span><span class="n">tl</span><span class="o">.</span><span class="n">sfx_gain_db</span><span class="p">)</span>  <span class="c1"># a stored timeline's level, checked before rendering</span>
     <span class="n">lib</span><span class="p">,</span> <span class="n">tl</span> <span class="o">=</span> <span class="n">_bind_narration</span><span class="p">(</span><span class="n">narration</span><span class="p">,</span> <span class="n">tl</span><span class="p">,</span> <span class="n">library</span><span class="p">,</span> <span class="n">sr</span><span class="p">)</span>
 
     <span class="k">with</span> <span class="n">obs</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"weave"</span><span class="p">)</span> <span class="k">as</span> <span class="n">run</span><span class="p">:</span>
@@ -1217,16 +1232,17 @@ window.runMermaid = runMermaid;</script>
             <span class="p">)</span>
         <span class="n">run_id</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">run</span><span class="p">,</span> <span class="s2">"manifest"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="s2">"run_id"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="n">_emit_weave_steps</span><span class="p">(</span><span class="n">run</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
-        <span class="n">run</span><span class="o">.</span><span class="n">set_plan_ref</span><span class="p">(</span>
-            <span class="p">{</span>
-                <span class="s2">"stage"</span><span class="p">:</span> <span class="s2">"weave"</span><span class="p">,</span>
-                <span class="s2">"n_items"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">rendered</span><span class="o">.</span><span class="n">items</span><span class="p">),</span>
-                <span class="s2">"master"</span><span class="p">:</span> <span class="n">rendered</span><span class="o">.</span><span class="n">master</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
-                <span class="s2">"aligner"</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">alignment</span><span class="p">,</span>
-                <span class="s2">"language"</span><span class="p">:</span> <span class="n">language</span><span class="p">,</span>
-                <span class="s2">"run_manifest_ref"</span><span class="p">:</span> <span class="n">run_id</span><span class="p">,</span>
-            <span class="p">}</span>
-        <span class="p">)</span>
+        <span class="n">plan_ref</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"stage"</span><span class="p">:</span> <span class="s2">"weave"</span><span class="p">,</span>
+            <span class="s2">"n_items"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">rendered</span><span class="o">.</span><span class="n">items</span><span class="p">),</span>
+            <span class="s2">"master"</span><span class="p">:</span> <span class="n">rendered</span><span class="o">.</span><span class="n">master</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+            <span class="s2">"aligner"</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">alignment</span><span class="p">,</span>
+            <span class="s2">"language"</span><span class="p">:</span> <span class="n">language</span><span class="p">,</span>
+            <span class="s2">"run_manifest_ref"</span><span class="p">:</span> <span class="n">run_id</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">rendered</span><span class="o">.</span><span class="n">sfx_gain_db</span> <span class="o">!=</span> <span class="mf">0.0</span><span class="p">:</span>  <span class="c1"># recorded only when set: a default run's record is as before</span>
+            <span class="n">plan_ref</span><span class="p">[</span><span class="s2">"sfx_gain_db"</span><span class="p">]</span> <span class="o">=</span> <span class="n">rendered</span><span class="o">.</span><span class="n">sfx_gain_db</span>
+        <span class="n">run</span><span class="o">.</span><span class="n">set_plan_ref</span><span class="p">(</span><span class="n">plan_ref</span><span class="p">)</span>
         <span class="n">records</span> <span class="o">=</span> <span class="n">_used_records</span><span class="p">(</span><span class="n">library</span><span class="p">,</span> <span class="n">rendered</span><span class="p">)</span>
         <span class="n">credits</span> <span class="o">=</span> <span class="n">_build_credits</span><span class="p">(</span><span class="n">records</span><span class="p">)</span>
         <span class="n">vtt</span> <span class="o">=</span> <span class="n">to_webvtt</span><span class="p">(</span><span class="n">rendered</span><span class="p">)</span> <span class="k">if</span> <span class="n">export_captions</span> <span class="k">else</span> <span class="s2">""</span>
