@@ -3,7 +3,7 @@
 from importlib.metadata import entry_points
 from pathlib import Path
 
-import tomllib
+import pytest
 
 from foley.requirements import declared_keys, provider_key_env_vars
 
@@ -22,6 +22,7 @@ def test_rows_have_the_kit_shape():
 
 
 def test_the_entry_point_is_declared_in_pyproject():
+    tomllib = pytest.importorskip("tomllib")  # 3.11+
     meta = tomllib.loads((Path(__file__).parents[1] / "pyproject.toml").read_text())
     group = meta["project"]["entry-points"]["fleet.credentials"]
     assert group == {"foley": "foley.requirements:declared_keys"}
