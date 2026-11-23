@@ -87,6 +87,11 @@ def _known(usd) -> bool:
     return usd is not None and math.isfinite(float(usd))
 
 
+#: Float noise allowed on the cap: a run that lands on ``max_usd`` through float
+#: addition is within it, for the next call's check and for ``overshoot_usd`` alike (#316).
+SPEND_TOLERANCE_USD = 1e-12
+
+
 @dataclass
 class Budget:
     """Bounded-cost accounting: per-event loop counts, and a cumulative dollar cap (#57).
@@ -157,7 +162,8 @@ class Budget:
         >>> round(b.overshoot_usd, 10), round(b.spent_usd, 10)
         (0.2, 0.7)
         """
-        return max(0.0, self._spent_usd - self.max_usd)
+        excess = self._spent_usd - self.max_usd
+        return excess if excess > SPEND_TOLERANCE_USD else 0.0
 
     def _approves_unknown(self) -> bool:
         if self.approve_unknown_cost is not None:
@@ -236,7 +242,7 @@ class Budget:
                     f"${APPROVE_UNKNOWN_COST_ENV}=1."
                 )
             return
-        if self._spent_usd + estimate_usd > self.max_usd + 1e-12:
+        if self._spent_usd + estimate_usd > self.max_usd + SPEND_TOLERANCE_USD:
             raise BudgetExceeded(
                 f"{what} would cost ~${estimate_usd:.4f}, taking this run to "
                 f"${self._spent_usd + estimate_usd:.4f}, over its ${self.max_usd:.2f} cap "
