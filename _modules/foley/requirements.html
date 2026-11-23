@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../_static/documentation_options.js?v=8cac2a7c"></script>
+    <script src="../../_static/documentation_options.js?v=28d4ae65"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.150" />
+  <meta name="docsearch:version" content="0.0.151" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -907,11 +907,13 @@ window.runMermaid = runMermaid;</script>
 
 
 
-<span class="c1">#: Credential env vars that are aliases of a listed key (same provider, other auth form).</span>
-<span class="n">_KEY_ALIASES</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="s2">"ANTHROPIC_AUTH_TOKEN"</span><span class="p">,</span>
-    <span class="s2">"FAL_API_KEY"</span><span class="p">,</span>
-<span class="p">)</span>  <span class="c1"># FAL_API_KEY: falaw reads it too</span>
+<span class="c1">#: Other names a listed key is also read under, beyond a source's own</span>
+<span class="c1">#: ``env_var_aliases`` (same provider, other auth form). FAL_API_KEY: the fal</span>
+<span class="c1">#: adapter and falaw read it too.</span>
+<span class="n">_EXTRA_KEY_ALIASES</span><span class="p">:</span> <span class="s2">"dict[str, tuple[str, ...]]"</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"ANTHROPIC_API_KEY"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"ANTHROPIC_AUTH_TOKEN"</span><span class="p">,),</span>
+    <span class="s2">"FAL_KEY"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"FAL_API_KEY"</span><span class="p">,),</span>
+<span class="p">}</span>
 
 
 <div class="viewcode-block" id="provider_key_env_vars">
@@ -919,13 +921,56 @@ window.runMermaid = runMermaid;</script>
 <span class="k">def</span><span class="w"> </span><span class="nf">provider_key_env_vars</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">"tuple[str, ...]"</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Every env var that holds a provider credential (the sources' keys + Anthropic's).</span>
 
-<span class="sd">    Derived from the same SSOT as :func:`check_requirements` (each source's</span>
-<span class="sd">    ``config['auth']``), so a newly added paid source is covered automatically — the</span>
-<span class="sd">    test suite scrubs exactly these so no test can spend money by accident.</span>
+<span class="sd">    The union of :func:`declared_keys`' rows, which derive from the same SSOT as</span>
+<span class="sd">    :func:`check_requirements` (each source's ``config['auth']``), so a newly added</span>
+<span class="sd">    paid source is covered automatically: the test suite scrubs exactly these so no</span>
+<span class="sd">    test can spend money by accident.</span>
 <span class="sd">    """</span>
-    <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">build_requirements</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">probe</span> <span class="o">==</span> <span class="s2">"env"</span><span class="p">]</span>
-    <span class="n">aliases</span> <span class="o">=</span> <span class="p">{</span><span class="n">alias</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span> <span class="k">for</span> <span class="n">alias</span> <span class="ow">in</span> <span class="n">_key_env_vars</span><span class="p">(</span><span class="n">key</span><span class="p">)}</span>
-    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span> <span class="o">|</span> <span class="n">aliases</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="n">_KEY_ALIASES</span><span class="p">)))</span></div>
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">({</span><span class="n">name</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">declared_keys</span><span class="p">()</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">row</span><span class="p">[</span><span class="s2">"env_vars"</span><span class="p">]}))</span></div>
+
+
+
+<div class="viewcode-block" id="declared_keys">
+<a class="viewcode-back" href="../../_autosummary/foley.requirements.html#foley.declared_keys">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">declared_keys</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">"list[dict]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The credentials foley reads, one row per key, for a setup tool to list.</span>
+
+<span class="sd">    Exposed under the facade kit's ``ocracy.credentials.v1`` entry-point group</span>
+<span class="sd">    (:data:`ocracy.kit.credentials.CREDENTIALS_ENTRY_POINT_GROUP`) and built with</span>
+<span class="sd">    the kit's own :func:`~ocracy.kit.credentials.credential_rows`: ``provider``</span>
+<span class="sd">    (the account), ``env_vars`` (the canonical name first, then every other name</span>
+<span class="sd">    foley reads it under), ``unlocks`` and ``get_key_url``. Derived from the same</span>
+<span class="sd">    SSOT as :func:`check_requirements` (each source's ``config['auth']``), so a</span>
+<span class="sd">    newly added paid source is declared with no edit here. Reads no key.</span>
+
+<span class="sd">    &gt;&gt;&gt; rows = {r["env_vars"][0]: r for r in declared_keys()}</span>
+<span class="sd">    &gt;&gt;&gt; rows["ELEVENLABS_API_KEY"]["env_vars"]</span>
+<span class="sd">    ['ELEVENLABS_API_KEY', 'ELEVEN_API_KEY']</span>
+<span class="sd">    &gt;&gt;&gt; rows["FAL_KEY"]["env_vars"]</span>
+<span class="sd">    ['FAL_KEY', 'FAL_API_KEY']</span>
+<span class="sd">    &gt;&gt;&gt; rows["ANTHROPIC_API_KEY"]["provider"], rows["FAL_KEY"]["provider"]</span>
+<span class="sd">    ('anthropic', 'fal')</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">ocracy.kit.credentials</span><span class="w"> </span><span class="kn">import</span> <span class="n">credential_rows</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.sources.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_REGISTRY</span><span class="p">,</span> <span class="n">discover_sources</span>
+
+    <span class="n">discover_sources</span><span class="p">()</span>
+    <span class="n">provider_of</span> <span class="o">=</span> <span class="p">{</span><span class="n">_ANTHROPIC_KEY</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="s2">"anthropic"</span><span class="p">}</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">entry</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">SOURCE_REGISTRY</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+        <span class="n">auth</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="s2">"config"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"auth"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">auth</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"env_var"</span><span class="p">):</span>  <span class="c1"># the account: a family's extra (fal), else the source</span>
+            <span class="n">provider_of</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">auth</span><span class="p">[</span><span class="s2">"env_var"</span><span class="p">],</span> <span class="n">auth</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"extra"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">name</span><span class="p">)</span>
+    <span class="n">env_vars</span><span class="p">,</span> <span class="n">guidance</span><span class="p">,</span> <span class="n">unlocks</span> <span class="o">=</span> <span class="p">{},</span> <span class="p">{},</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">req</span> <span class="ow">in</span> <span class="n">build_requirements</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">req</span><span class="o">.</span><span class="n">probe</span> <span class="o">!=</span> <span class="s2">"env"</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">provider</span> <span class="o">=</span> <span class="n">provider_of</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">req</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">req</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="o">*</span><span class="n">_key_env_vars</span><span class="p">(</span><span class="n">req</span><span class="o">.</span><span class="n">name</span><span class="p">),</span> <span class="o">*</span><span class="n">_EXTRA_KEY_ALIASES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">req</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="p">())]</span>
+        <span class="n">env_vars</span><span class="p">[</span><span class="n">provider</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">names</span><span class="p">))</span>
+        <span class="n">guidance</span><span class="p">[</span><span class="n">provider</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"get_key_url"</span><span class="p">:</span> <span class="n">req</span><span class="o">.</span><span class="n">url</span><span class="p">}</span>
+        <span class="n">unlocks</span><span class="p">[</span><span class="n">provider</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"foley: </span><span class="si">{</span><span class="n">req</span><span class="o">.</span><span class="n">purpose</span><span class="si">}</span><span class="s2">"</span>
+    <span class="k">return</span> <span class="n">credential_rows</span><span class="p">(</span><span class="n">env_vars</span><span class="p">,</span> <span class="n">guidance</span><span class="p">,</span> <span class="n">unlocks</span><span class="o">=</span><span class="n">unlocks</span><span class="p">)</span></div>
 
 
 

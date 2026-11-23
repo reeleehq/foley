@@ -19,6 +19,7 @@ dol-only.
 |-------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
 | [`capability_report`](#foley.requirements.capability_report)(\*[, runtime])         | A JSON-safe capability + posture snapshot for the CLI, docs, and the MCP tool.       |
 | [`check_requirements`](#foley.requirements.check_requirements)(\*[, names, verbose]) | Report which optional foley capabilities are available (`{name: is_available}`).     |
+| [`declared_keys`](#foley.requirements.declared_keys)()                          | The credentials foley reads, one row per key, for a setup tool to list.              |
 | [`provider_key_env_vars`](#foley.requirements.provider_key_env_vars)()                  | Every env var that holds a provider credential (the sources' keys + Anthropic's).    |
 | [`verify_and_setup`](#foley.requirements.verify_and_setup)(\*[, names])            | Return a per-requirement status + guidance report (never runs an installer).         |
 
@@ -61,13 +62,39 @@ Report which optional foley capabilities are available (`{name: is_available}`).
   (deterministic fakes, offline mode, in-process DSP); the report just shows what
   each capability would unlock.
 
+### foley.requirements.declared_keys()
+
+The credentials foley reads, one row per key, for a setup tool to list.
+
+Exposed under the facade kit’s `ocracy.credentials.v1` entry-point group
+(`ocracy.kit.credentials.CREDENTIALS_ENTRY_POINT_GROUP`) and built with
+the kit’s own `credential_rows()`: `provider`
+(the account), `env_vars` (the canonical name first, then every other name
+foley reads it under), `unlocks` and `get_key_url`. Derived from the same
+SSOT as [`check_requirements()`](#foley.requirements.check_requirements) (each source’s `config['auth']`), so a
+newly added paid source is declared with no edit here. Reads no key.
+
+```pycon
+>>> rows = {r["env_vars"][0]: r for r in declared_keys()}
+>>> rows["ELEVENLABS_API_KEY"]["env_vars"]
+['ELEVENLABS_API_KEY', 'ELEVEN_API_KEY']
+>>> rows["FAL_KEY"]["env_vars"]
+['FAL_KEY', 'FAL_API_KEY']
+>>> rows["ANTHROPIC_API_KEY"]["provider"], rows["FAL_KEY"]["provider"]
+('anthropic', 'fal')
+```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
 ### foley.requirements.provider_key_env_vars()
 
 Every env var that holds a provider credential (the sources’ keys + Anthropic’s).
 
-Derived from the same SSOT as [`check_requirements()`](#foley.requirements.check_requirements) (each source’s
-`config['auth']`), so a newly added paid source is covered automatically — the
-test suite scrubs exactly these so no test can spend money by accident.
+The union of [`declared_keys()`](#foley.requirements.declared_keys)’ rows, which derive from the same SSOT as
+[`check_requirements()`](#foley.requirements.check_requirements) (each source’s `config['auth']`), so a newly added
+paid source is covered automatically: the test suite scrubs exactly these so no
+test can spend money by accident.
 
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)]

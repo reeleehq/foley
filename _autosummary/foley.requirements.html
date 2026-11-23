@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=8cac2a7c"></script>
+    <script src="../_static/documentation_options.js?v=28d4ae65"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.150" />
+  <meta name="docsearch:version" content="0.0.151" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -531,10 +531,13 @@ dol-only.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.requirements.check_requirements" title="foley.requirements.check_requirements"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_requirements</span></code></a>(*[, names, verbose])</p></td>
 <td><p>Report which optional foley capabilities are available (<code class="docutils literal notranslate"><span class="pre">{name:</span> <span class="pre">is_available}</span></code>).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.requirements.provider_key_env_vars" title="foley.requirements.provider_key_env_vars"><code class="xref py py-obj docutils literal notranslate"><span class="pre">provider_key_env_vars</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.requirements.declared_keys" title="foley.requirements.declared_keys"><code class="xref py py-obj docutils literal notranslate"><span class="pre">declared_keys</span></code></a>()</p></td>
+<td><p>The credentials foley reads, one row per key, for a setup tool to list.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.requirements.provider_key_env_vars" title="foley.requirements.provider_key_env_vars"><code class="xref py py-obj docutils literal notranslate"><span class="pre">provider_key_env_vars</span></code></a>()</p></td>
 <td><p>Every env var that holds a provider credential (the sources' keys + Anthropic's).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.requirements.verify_and_setup" title="foley.requirements.verify_and_setup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">verify_and_setup</span></code></a>(*[, names])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.requirements.verify_and_setup" title="foley.requirements.verify_and_setup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">verify_and_setup</span></code></a>(*[, names])</p></td>
 <td><p>Return a per-requirement status + guidance report (never runs an installer).</p></td>
 </tr>
 </tbody>
@@ -597,12 +600,40 @@ each capability would unlock.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.requirements.declared_keys">
+<span class="sig-prename descclassname"><span class="pre">foley.requirements.</span></span><span class="sig-name descname"><span class="pre">declared_keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/requirements.html#declared_keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.requirements.declared_keys" title="Link to this definition">#</a></dt>
+<dd><p>The credentials foley reads, one row per key, for a setup tool to list.</p>
+<p>Exposed under the facade kit’s <code class="docutils literal notranslate"><span class="pre">ocracy.credentials.v1</span></code> entry-point group
+(<code class="xref py py-data docutils literal notranslate"><span class="pre">ocracy.kit.credentials.CREDENTIALS_ENTRY_POINT_GROUP</span></code>) and built with
+the kit’s own <code class="xref py py-func docutils literal notranslate"><span class="pre">credential_rows()</span></code>: <code class="docutils literal notranslate"><span class="pre">provider</span></code>
+(the account), <code class="docutils literal notranslate"><span class="pre">env_vars</span></code> (the canonical name first, then every other name
+foley reads it under), <code class="docutils literal notranslate"><span class="pre">unlocks</span></code> and <code class="docutils literal notranslate"><span class="pre">get_key_url</span></code>. Derived from the same
+SSOT as <a class="reference internal" href="#foley.requirements.check_requirements" title="foley.requirements.check_requirements"><code class="xref py py-func docutils literal notranslate"><span class="pre">check_requirements()</span></code></a> (each source’s <code class="docutils literal notranslate"><span class="pre">config['auth']</span></code>), so a
+newly added paid source is declared with no edit here. Reads no key.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">rows</span> <span class="o">=</span> <span class="p">{</span><span class="n">r</span><span class="p">[</span><span class="s2">"env_vars"</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span> <span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">declared_keys</span><span class="p">()}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">rows</span><span class="p">[</span><span class="s2">"ELEVENLABS_API_KEY"</span><span class="p">][</span><span class="s2">"env_vars"</span><span class="p">]</span>
+<span class="go">['ELEVENLABS_API_KEY', 'ELEVEN_API_KEY']</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">rows</span><span class="p">[</span><span class="s2">"FAL_KEY"</span><span class="p">][</span><span class="s2">"env_vars"</span><span class="p">]</span>
+<span class="go">['FAL_KEY', 'FAL_API_KEY']</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">rows</span><span class="p">[</span><span class="s2">"ANTHROPIC_API_KEY"</span><span class="p">][</span><span class="s2">"provider"</span><span class="p">],</span> <span class="n">rows</span><span class="p">[</span><span class="s2">"FAL_KEY"</span><span class="p">][</span><span class="s2">"provider"</span><span class="p">]</span>
+<span class="go">('anthropic', 'fal')</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.requirements.provider_key_env_vars">
 <span class="sig-prename descclassname"><span class="pre">foley.requirements.</span></span><span class="sig-name descname"><span class="pre">provider_key_env_vars</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/requirements.html#provider_key_env_vars"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.requirements.provider_key_env_vars" title="Link to this definition">#</a></dt>
 <dd><p>Every env var that holds a provider credential (the sources’ keys + Anthropic’s).</p>
-<p>Derived from the same SSOT as <a class="reference internal" href="#foley.requirements.check_requirements" title="foley.requirements.check_requirements"><code class="xref py py-func docutils literal notranslate"><span class="pre">check_requirements()</span></code></a> (each source’s
-<code class="docutils literal notranslate"><span class="pre">config['auth']</span></code>), so a newly added paid source is covered automatically — the
-test suite scrubs exactly these so no test can spend money by accident.</p>
+<p>The union of <a class="reference internal" href="#foley.requirements.declared_keys" title="foley.requirements.declared_keys"><code class="xref py py-func docutils literal notranslate"><span class="pre">declared_keys()</span></code></a>’ rows, which derive from the same SSOT as
+<a class="reference internal" href="#foley.requirements.check_requirements" title="foley.requirements.check_requirements"><code class="xref py py-func docutils literal notranslate"><span class="pre">check_requirements()</span></code></a> (each source’s <code class="docutils literal notranslate"><span class="pre">config['auth']</span></code>), so a newly added
+paid source is covered automatically: the test suite scrubs exactly these so no
+test can spend money by accident.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#Ellipsis" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code></a>]</span></p>
@@ -676,6 +707,7 @@ test suite scrubs exactly these so no test can spend money by accident.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.requirements.build_requirements"><code class="docutils literal notranslate"><span class="pre">build_requirements()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.requirements.capability_report"><code class="docutils literal notranslate"><span class="pre">capability_report()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.requirements.check_requirements"><code class="docutils literal notranslate"><span class="pre">check_requirements()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.requirements.declared_keys"><code class="docutils literal notranslate"><span class="pre">declared_keys()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.requirements.provider_key_env_vars"><code class="docutils literal notranslate"><span class="pre">provider_key_env_vars()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.requirements.verify_and_setup"><code class="docutils literal notranslate"><span class="pre">verify_and_setup()</span></code></a></li>
 </ul>

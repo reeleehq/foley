@@ -11,6 +11,7 @@ foley.requirements
       build_requirements
       capability_report
       check_requirements
+      declared_keys
       provider_key_env_vars
       verify_and_setup
    
