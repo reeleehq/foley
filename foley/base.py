@@ -81,6 +81,34 @@ class Layer(str, Enum):
     music = "music"
 
 
+def checked_layers(layers) -> "Optional[frozenset[Layer]]":
+    """``layers`` (names or :class:`Layer` members) as a set of members, checked up
+    front so a typo raises before any paid call (reeleehq/foley#316). A single name is
+    one layer, not its letters; ``None`` stays ``None`` (every layer).
+
+    >>> checked_layers(["ambience", Layer.sfx_fg]) == {Layer.ambience, Layer.sfx_fg}
+    True
+    >>> checked_layers("ambience") == {Layer.ambience}
+    True
+    >>> checked_layers({"ambiance"})
+    Traceback (most recent call last):
+    ...
+    ValueError: 'ambiance' is not a mix layer; the layers are voice, sfx_fg, ambience, stinger, music
+    """
+    if layers is None:
+        return None
+    if isinstance(layers, str):
+        layers = [layers]
+    known = {layer.value for layer in Layer}
+    for x in layers:
+        if (x.value if isinstance(x, Layer) else x) not in known:
+            raise ValueError(
+                f"{x!r} is not a mix layer; the layers are "
+                + ", ".join(layer.value for layer in Layer)
+            )
+    return frozenset(Layer(x) for x in layers)
+
+
 class Anchor(str, Enum):
     """How a WEAVE ``Placement`` binds its symbolic time to the narration (report 06 §2.4).
 

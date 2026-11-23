@@ -28,6 +28,7 @@ from ..base import (
     SoundDesignTimeline,
     TimelineItem,
     VerifyLevel,
+    checked_layers,
 )
 from ..index import RRF_K, default_library
 from ..obs.recorder import current_run
@@ -368,6 +369,7 @@ def find(
         ``list[Candidate]`` (``stream=False``) or an ``Iterator[Candidate]``
         (``stream=True``) — one verified, license-clean candidate per resolved event.
     """
+    layers = checked_layers(layers)  # a typo raises here, before any paid call (#316)
     gen = _find_stream(
         context,
         max_events=max_events,
@@ -603,7 +605,7 @@ def _find_events(
                 _span=sp,
             )
             if layers is not None:  # a host's bed: ambience only, sfx only, ...
-                keep = {Layer(x) for x in layers}
+                keep = checked_layers(layers)
                 events = [e for e in events if e.layer in keep]
             _emit_step(run, "decompose", span=sp, detail={"n_events": len(events)})
 

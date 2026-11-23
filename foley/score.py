@@ -253,7 +253,9 @@ def score(
     if budget is not None:
         find_kw["budget"] = budget  # its loop counts and its cap, for every segment
     if layers is not None:
-        find_kw["layers"] = tuple(layers)
+        from .base import checked_layers
+
+        find_kw["layers"] = checked_layers(layers)
     if library is not None:
         find_kw["library"] = library
 
