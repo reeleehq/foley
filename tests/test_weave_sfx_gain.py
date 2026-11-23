@@ -1,7 +1,6 @@
 """The effects-bus level under the narration: ``sfx_gain_db`` (#292)."""
 
 import importlib
-import math
 
 import pytest
 
@@ -84,9 +83,9 @@ def test_the_gain_scales_the_effects_bus_and_leaves_the_voice(unmastered):
     np.testing.assert_allclose(effects_quieter, effects * 10 ** (-12 / 20), atol=1e-6)
 
 
-def test_minus_inf_mutes_the_effects():
+def test_the_floor_mutes_the_effects():
     voice_only = _render(_tl(items=False)).audio
-    muted = _render(sfx_gain_db=float("-inf")).audio
+    muted = _render(sfx_gain_db=-120.0).audio
     np.testing.assert_allclose(muted, voice_only, atol=1e-6)
 
 
@@ -109,7 +108,9 @@ def test_the_cache_holds_pre_gain_buses():
     assert np.array_equal(warm.audio, _render(sfx_gain_db=-9.0).audio)
 
 
-@pytest.mark.parametrize("bad", [float("nan"), float("inf"), "loud", None])
+@pytest.mark.parametrize(
+    "bad", [float("nan"), float("inf"), float("-inf"), 40.5, -121, 800, True, "-6", "loud"]
+)
 def test_unusable_levels_are_refused(bad):
     with pytest.raises(ValueError, match="sfx_gain_db"):
         check_sfx_gain_db(bad)
@@ -117,10 +118,28 @@ def test_unusable_levels_are_refused(bad):
         _render(sfx_gain_db=bad)
 
 
-def test_numeric_strings_and_ints_are_levels():
-    assert check_sfx_gain_db("-3") == -3.0
+def test_ints_and_numpy_numbers_are_levels():
     assert check_sfx_gain_db(-6) == -6.0
-    assert check_sfx_gain_db(float("-inf")) == -math.inf
+    assert check_sfx_gain_db(np.float32(-3.0)) == -3.0
+    assert check_sfx_gain_db(np.int64(0)) == 0.0
+    assert check_sfx_gain_db(40) == 40.0 and check_sfx_gain_db(-120) == -120.0
+
+
+def test_the_level_rides_on_the_returned_timeline_and_survives_a_re_render():
+    first = _render(sfx_gain_db=-9.0)
+    assert first.timeline.sfx_gain_db == -9.0
+    again = render(first.timeline, _Lib(), sr=SR)  # from the seed, no kwarg
+    assert np.array_equal(again.audio, first.audio)
+    assert render(first.timeline, _Lib(), sr=SR, sfx_gain_db=0.0).timeline.sfx_gain_db == 0.0
+
+
+def test_the_timeline_serialises_as_before_at_0_db_and_round_trips_a_level():
+    assert "sfx_gain_db" not in _tl().to_dict()
+    tl = _render(sfx_gain_db=-9.0).timeline
+    d = tl.to_dict()
+    assert d["sfx_gain_db"] == -9.0
+    assert SoundDesignTimeline.from_dict(d).sfx_gain_db == -9.0
+    assert "sfx_gain_db" not in _render().timeline.to_dict()
 
 
 def _weave(**kw):
@@ -140,10 +159,17 @@ def test_weave_forwards_the_level_and_records_it_only_when_set():
     with foley.obs.run("session") as run:
         quieter = _weave(sfx_gain_db=-12.0)
         assert run.manifest.plan_ref["sfx_gain_db"] == -12.0
-    with foley.obs.run("session") as run:
-        _weave(sfx_gain_db=float("-inf"))
-        assert run.manifest.plan_ref["sfx_gain_db"] == "-inf"  # JSON has no -Infinity
     assert not np.array_equal(default.audio, quieter.audio)
+
+
+def test_weave_keeps_the_level_of_a_timeline_it_is_given_again():
+    first = _weave(sfx_gain_db=-12.0)
+    assert first.timeline.sfx_gain_db == -12.0
+    rng = np.random.default_rng(2)
+    voice = (0.1 * rng.standard_normal(2 * SR)).astype("float32")
+    again = foley.weave(voice, first.timeline, library=_Lib(), aligner=FakeAligner())
+    assert again.timeline.sfx_gain_db == -12.0
+    assert np.array_equal(again.audio, first.audio)
 
 
 def test_weave_refuses_a_bad_level_before_rendering(monkeypatch):

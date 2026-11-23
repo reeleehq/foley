@@ -1171,3 +1171,15 @@ class SoundDesignTimeline(SerializableMixin):
         default_factory=list
     )  # [{'word','start','end'}, ...] from forced alignment (the reproducible seed)
     master: MasterProfile = field(default_factory=MasterProfile)  # loudness target
+    #: The sound-design bus's level against the narration, in dB, before mastering
+    #: (#292): part of the seed, so a re-render from this timeline keeps it. Left out
+    #: of :meth:`to_dict` at its 0 dB default, so a timeline that never set it
+    #: serialises exactly as before.
+    sfx_gain_db: float = 0.0
+
+    def to_dict(self) -> dict:
+        """The plain-dict form; ``sfx_gain_db`` only when it is not 0 dB."""
+        d = super().to_dict()
+        if d.get("sfx_gain_db") == 0.0:
+            del d["sfx_gain_db"]
+        return d

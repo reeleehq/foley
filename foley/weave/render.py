@@ -23,7 +23,7 @@ This module also owns the timeline **export adapters**: a pure-stdlib CMX3600
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Optional
 
 from ..base import Layer, SoundDesignTimeline
@@ -232,7 +232,7 @@ def render(
     aligner: "Optional[Aligner]" = None,
     apply_strategy: "Optional[ApplyStrategy]" = None,
     cache: Optional[RenderCache] = None,
-    sfx_gain_db: float = 0.0,
+    sfx_gain_db: Optional[float] = None,
 ) -> RenderResult:
     """Render ``timeline`` against ``library`` into a mastered mix (PURE, deterministic).
 
@@ -255,15 +255,20 @@ def render(
             re-render (only changed layers recompute).
         sfx_gain_db: The level of the whole sound-design bus (every non-voice layer,
             after ducking) relative to the narration, in dB, applied before mastering so
-            the loudness target still holds (#292). ``0.0`` (default) is the mix as
-            before, byte for byte; ``-6.0`` sits the effects 6 dB further under the
-            voice; ``float('-inf')`` mutes them. See :func:`check_sfx_gain_db`.
+            the loudness target still holds (#292). ``None`` (default) uses the
+            timeline's own ``sfx_gain_db`` (0 dB unless set: the mix as before, byte
+            for byte); a number overrides it and is written on the returned timeline.
+            ``-6.0`` sits the effects 6 dB further under the voice. See
+            :func:`check_sfx_gain_db` for the range.
 
     Returns:
         A :class:`RenderResult` — the mastered stereo mix, the hydrated timeline (with
         ``word_timeline`` cached), and the :class:`~foley.weave.master.MasterReport`.
     """
-    sfx_gain = db_to_lin(check_sfx_gain_db(sfx_gain_db))
+    level_db = check_sfx_gain_db(
+        timeline.sfx_gain_db if sfx_gain_db is None else sfx_gain_db
+    )
+    sfx_gain = db_to_lin(level_db)
     strategy = apply_strategy or FullRender()
     voice_mono = load_clip_mono(library, timeline.narration_ref, sr=sr)
     n = int(voice_mono.shape[0])
@@ -276,6 +281,8 @@ def render(
         wt = used.word_timeline(voice_mono, sr, transcript=transcript, **lang)
         alignment = aligner_name(used)
     tl = hydrate(timeline, wt)
+    if tl.sfx_gain_db != level_db:  # the seed carries the level it was rendered at
+        tl = replace(tl, sfx_gain_db=level_db)
 
     # group enabled non-voice items by layer, then render (or reuse) each bus
     by_layer: "dict[Layer, list[TimelineItem]]" = {layer: [] for layer in RENDER_LAYERS}
@@ -324,30 +331,37 @@ def render(
     )
 
 
+#: The range :func:`check_sfx_gain_db` accepts, in dB. -120 dB is silence for any
+#: delivery format (below 24-bit's noise floor), so it is how to mute the effects;
+#: +40 dB is far past any useful trim, and well short of where a float32 bus
+#: overflows into a ``nan`` mix.
+MIN_SFX_GAIN_DB: float = -120.0
+MAX_SFX_GAIN_DB: float = 40.0
+
+
 def check_sfx_gain_db(value) -> float:
     """``value`` as a float if it is a usable effects-bus level, else ``ValueError``.
 
-    Any finite number of dB, or ``-inf`` (mute the effects). ``nan`` and ``+inf`` are
-    refused: neither is a level, and either would turn the whole mix into ``nan``.
+    A real number (not a bool or a string) of dB in
+    [:data:`MIN_SFX_GAIN_DB`, :data:`MAX_SFX_GAIN_DB`]. Checked before anything
+    renders (and, from :func:`foley.score`, before anything is spent).
 
-    >>> check_sfx_gain_db(-6), check_sfx_gain_db(0.0), check_sfx_gain_db(float("-inf"))
-    (-6.0, 0.0, -inf)
+    >>> check_sfx_gain_db(-6), check_sfx_gain_db(0.0), check_sfx_gain_db(-120)
+    (-6.0, 0.0, -120.0)
     >>> check_sfx_gain_db(float("nan"))
     Traceback (most recent call last):
         ...
-    ValueError: sfx_gain_db must be a finite number of dB or -inf (mute), got nan
+    ValueError: sfx_gain_db must be between -120.0 and 40.0 dB, got nan
     """
-    import math
+    import numbers
 
-    try:
-        db = float(value)
-    except (TypeError, ValueError):
+    if isinstance(value, bool) or not isinstance(value, numbers.Real):
+        raise ValueError(f"sfx_gain_db must be a number of dB, got {value!r}")
+    db = float(value)
+    if not MIN_SFX_GAIN_DB <= db <= MAX_SFX_GAIN_DB:  # also refuses nan
         raise ValueError(
-            f"sfx_gain_db must be a number of dB, got {value!r}"
-        ) from None
-    if math.isnan(db) or db == math.inf:
-        raise ValueError(
-            f"sfx_gain_db must be a finite number of dB or -inf (mute), got {db!r}"
+            f"sfx_gain_db must be between {MIN_SFX_GAIN_DB} and {MAX_SFX_GAIN_DB} dB, "
+            f"got {db!r}"
         )
     return db
 

@@ -211,7 +211,7 @@ def score(
 
     # fail fast: a typo (or an unusable level) raises before any find/verify/generation spend
     _check_weave_kwargs(weave_kwargs)
-    if "sfx_gain_db" in weave_kwargs:
+    if weave_kwargs.get("sfx_gain_db") is not None:
         from .weave.render import check_sfx_gain_db
 
         check_sfx_gain_db(weave_kwargs["sfx_gain_db"])
