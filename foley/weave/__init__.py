@@ -411,6 +411,7 @@ def weave(
     export_captions: bool = True,
     provenance_store=None,
     intended_use: "Optional[IntendedUse]" = None,
+    sfx_gain_db: Optional[float] = None,
 ) -> WeaveResult:
     """Weave the chosen sounds under ``narration`` into a mastered, editable mix.
 
@@ -452,6 +453,14 @@ def weave(
             renders as before but warns (``FutureWarning``) about what
             :data:`~foley.licensing.DEFAULT_INTENDED_USE` would refuse: a future
             release gates by default.
+        sfx_gain_db: The level of the sound-design bus (everything but the narration)
+            relative to the voice, in dB, applied before mastering so the loudness
+            target still holds (#292): how a host honours a person's level for a bed
+            without re-mixing a second copy. ``None`` (default) keeps the timeline's
+            own level (0 dB unless set: the mix as before, byte for byte); a number
+            overrides it and is written on ``result.timeline``, so re-weaving that
+            timeline keeps it. ``-120`` mutes the effects; outside [-120, +40] dB
+            raises ``ValueError`` before anything renders.
 
     Returns:
         A :class:`WeaveResult`.
@@ -462,11 +471,17 @@ def weave(
     """
     from .. import obs
     from ..licensing import check_placed
+    from .render import check_sfx_gain_db
 
+    if sfx_gain_db is not None:
+        sfx_gain_db = check_sfx_gain_db(sfx_gain_db)
     check_placed(
         _placed_records(narration, timeline, library), intended_use, what="foley.weave"
     )
     tl = replace(timeline, master=resolve_master(master))
+    if sfx_gain_db is not None:
+        tl = replace(tl, sfx_gain_db=sfx_gain_db)
+    check_sfx_gain_db(tl.sfx_gain_db)  # a stored timeline's level, checked before rendering
     lib, tl = _bind_narration(narration, tl, library, sr)
 
     with obs.run("weave") as run:
@@ -492,16 +507,17 @@ def weave(
             )
         run_id = getattr(getattr(run, "manifest", None), "run_id", None)
         _emit_weave_steps(run, result)
-        run.set_plan_ref(
-            {
-                "stage": "weave",
-                "n_items": len(rendered.items),
-                "master": rendered.master.to_dict(),
-                "aligner": result.alignment,
-                "language": language,
-                "run_manifest_ref": run_id,
-            }
-        )
+        plan_ref = {
+            "stage": "weave",
+            "n_items": len(rendered.items),
+            "master": rendered.master.to_dict(),
+            "aligner": result.alignment,
+            "language": language,
+            "run_manifest_ref": run_id,
+        }
+        if rendered.sfx_gain_db != 0.0:  # recorded only when set: a default run's record is as before
+            plan_ref["sfx_gain_db"] = rendered.sfx_gain_db
+        run.set_plan_ref(plan_ref)
         records = _used_records(library, rendered)
         credits = _build_credits(records)
         vtt = to_webvtt(rendered) if export_captions else ""
