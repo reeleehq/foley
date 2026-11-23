@@ -48,9 +48,11 @@ class Span(Protocol):
     def set_attribute(self, key: str, value) -> None:
         """Set one attribute on the span."""
         ...
+
     def record_exception(self, exc: BaseException) -> None:
         """Record ``exc`` on the span."""
         ...
+
     def set_status(self, ok: bool, message: Optional[str] = None) -> None:
         """Mark the span ok or failed, with an optional message."""
         ...
