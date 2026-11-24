@@ -1056,3 +1056,63 @@ def test_score_inside_an_outer_scope_checks_the_budget_that_runs(paid_source, li
         result = foley.score(TWO[:1], library=library, backend="twousd", max_events=1)
     assert adapter.calls == 1 and result.spent_usd == pytest.approx(2.0)
     assert outer.spent_usd == pytest.approx(2.0)
+
+
+def test_a_budget_spent_by_a_concurrent_run_keeps_the_segments_already_scored(monkeypatch):
+    """#317: the per-segment pre-flight reserves nothing, so a run sharing the budget
+    can spend what it saw free. The later segment is noted as stopped; the earlier
+    segments' work is kept rather than the whole score failing."""
+    import importlib
+
+    from foley.cost import charge
+
+    score_module = importlib.import_module("foley.score")
+    monkeypatch.setattr(score_module, "_affordable_find_kw", lambda *a, **k: {})
+
+    def find(seg, **kw):
+        if seg == "a door":
+            charge(0.2)  # the first segment spends
+            return iter(())
+        raise BudgetExceeded("this call would cost ~$0.50, over its $1.00 cap")
+
+    monkeypatch.setattr(foley, "find", find)
+    res = foley.score(["a door", "rain"], weave=False, budget=Budget(max_usd=1.0))
+    assert res.spent_usd == pytest.approx(0.2)
+    assert any(n.startswith("segment 1: stopped") for n in res.notes)
+
+
+def test_a_first_segment_that_spent_nothing_still_fails(monkeypatch):
+    import importlib
+
+    score_module = importlib.import_module("foley.score")
+    monkeypatch.setattr(score_module, "_affordable_find_kw", lambda *a, **k: {})
+
+    def find(seg, **kw):
+        raise BudgetExceeded("over its cap")
+
+    monkeypatch.setattr(foley, "find", find)
+    with pytest.raises(BudgetExceeded):
+        foley.score(["a door", "rain"], weave=False, budget=Budget(max_usd=1.0))
+
+
+def test_the_score_verb_reports_what_the_run_spent(monkeypatch, library):
+    """#317: the MCP/CLI projection of a score carries its spend, not only its sounds."""
+    from foley.agent import mcp, verbs
+    from foley.score import ScoreResult
+    from foley.base import SoundDesignTimeline
+
+    def fake_score(context, **kw):
+        return ScoreResult(
+            timeline=SoundDesignTimeline(),
+            events=[],
+            spent_usd=0.25,
+            unknown_cost_calls=1,
+            notes=["segment 1: skipped: over the cap"],
+        )
+
+    monkeypatch.setattr(foley, "score", fake_score)
+    mcp._configure(library=library)
+    out = verbs.foley_score("a door creaks")
+    assert out["spent_usd"] == 0.25 and out["unknown_cost_calls"] == 1
+    assert out["has_unknown_costs"] is True
+    assert out["notes"] == ["segment 1: skipped: over the cap"]

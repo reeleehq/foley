@@ -883,6 +883,12 @@ def foley_score(
         "events": [e.to_dict() for e in res.events],
         "n_sounds": res.n_sounds,
         "rationale": res.rationale,
+        # What the run spent (#317): a lower bound while unknown_cost_calls > 0,
+        # and which segments the spend cap degraded or skipped.
+        "spent_usd": res.spent_usd,
+        "unknown_cost_calls": res.unknown_cost_calls,
+        "has_unknown_costs": res.has_unknown_costs,
+        "notes": list(res.notes),
     }
 
 

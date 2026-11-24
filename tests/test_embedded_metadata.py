@@ -125,9 +125,11 @@ XXE = (
     "payload", [BILLION_LAUGHS, XXE], ids=["billion-laughs", "xxe"]
 )
 def test_xml_attacks_give_nothing_quickly(tmp_path, payload):
-    start = time.perf_counter()
+    # CPU time, not wall time: the guard bounds the work done, and a loaded machine
+    # stretches wall time without the parser doing any more of it (#317).
+    start = time.process_time()
     assert _read(tmp_path, _wav(_chunk(b"iXML", payload))) == {}
-    assert time.perf_counter() - start < 2
+    assert time.process_time() - start < 2
 
 
 @pytest.mark.parametrize(
