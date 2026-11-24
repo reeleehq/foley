@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=1f2c240f"></script>
+    <script src="../../../_static/documentation_options.js?v=bb54a016"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.152" />
+  <meta name="docsearch:version" content="0.0.153" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -1659,6 +1659,12 @@ window.runMermaid = runMermaid;</script>
         <span class="s2">"events"</span><span class="p">:</span> <span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">res</span><span class="o">.</span><span class="n">events</span><span class="p">],</span>
         <span class="s2">"n_sounds"</span><span class="p">:</span> <span class="n">res</span><span class="o">.</span><span class="n">n_sounds</span><span class="p">,</span>
         <span class="s2">"rationale"</span><span class="p">:</span> <span class="n">res</span><span class="o">.</span><span class="n">rationale</span><span class="p">,</span>
+        <span class="c1"># What the run spent (#317): a lower bound while unknown_cost_calls &gt; 0,</span>
+        <span class="c1"># and which segments the spend cap degraded or skipped.</span>
+        <span class="s2">"spent_usd"</span><span class="p">:</span> <span class="n">res</span><span class="o">.</span><span class="n">spent_usd</span><span class="p">,</span>
+        <span class="s2">"unknown_cost_calls"</span><span class="p">:</span> <span class="n">res</span><span class="o">.</span><span class="n">unknown_cost_calls</span><span class="p">,</span>
+        <span class="s2">"has_unknown_costs"</span><span class="p">:</span> <span class="n">res</span><span class="o">.</span><span class="n">has_unknown_costs</span><span class="p">,</span>
+        <span class="s2">"notes"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">notes</span><span class="p">),</span>
     <span class="p">}</span></div>
 
 

@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../_static/documentation_options.js?v=1f2c240f"></script>
+    <script src="../../_static/documentation_options.js?v=bb54a016"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.152" />
+  <meta name="docsearch:version" content="0.0.153" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -990,7 +990,13 @@ window.runMermaid = runMermaid;</script>
     <span class="n">all_candidates</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">events</span><span class="p">:</span> <span class="s2">"list[ScoredEvent]"</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.agent.policy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Budget</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">.cost</span><span class="w"> </span><span class="kn">import</span> <span class="n">active_budget</span><span class="p">,</span> <span class="n">default_max_usd</span><span class="p">,</span> <span class="n">spend_scope</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.cost</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">BudgetExceeded</span><span class="p">,</span>
+        <span class="n">CostApprovalRequired</span><span class="p">,</span>
+        <span class="n">active_budget</span><span class="p">,</span>
+        <span class="n">default_max_usd</span><span class="p">,</span>
+        <span class="n">spend_scope</span><span class="p">,</span>
+    <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">budget</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">active_budget</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="c1"># One cap for the whole score run, sized to the LLM the caller chose (#88).</span>
@@ -1032,7 +1038,22 @@ window.runMermaid = runMermaid;</script>
             <span class="p">)</span>
             <span class="k">if</span> <span class="n">seg_kw</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">continue</span>
-            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">find</span><span class="p">(</span><span class="n">seg</span><span class="p">,</span> <span class="o">**</span><span class="n">seg_kw</span><span class="p">):</span>
+            <span class="n">found</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">find</span><span class="p">(</span><span class="n">seg</span><span class="p">,</span> <span class="o">**</span><span class="n">seg_kw</span><span class="p">):</span>
+                    <span class="n">found</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">CostApprovalRequired</span><span class="p">:</span>
+                <span class="k">raise</span>  <span class="c1"># a decision the caller must make, not a race: never swallowed</span>
+            <span class="k">except</span> <span class="n">BudgetExceeded</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="c1"># The pre-flight above reserves nothing, so a run sharing this budget</span>
+                <span class="c1"># (two scores on one server budget) can spend what it saw free. The cap</span>
+                <span class="c1"># still held (each call reserves atomically); what must not happen is</span>
+                <span class="c1"># losing the segments already scored (#317). A first segment that spent</span>
+                <span class="c1"># nothing still fails, as the pre-flight would have.</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">run_budget</span><span class="o">.</span><span class="n">spent_usd</span> <span class="o">==</span> <span class="n">spent0</span><span class="p">:</span>
+                    <span class="k">raise</span>
+                <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"segment </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">: stopped: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">found</span><span class="p">:</span>
                 <span class="n">all_candidates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
                 <span class="n">v</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">verdict</span>
                 <span class="n">events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
