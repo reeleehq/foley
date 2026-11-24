@@ -207,7 +207,10 @@ def mcp_wired():
 def test_foley_score_and_guide_tools_are_json_safe(mcp_wired):
     out = mcp.foley_score("A door creaks and rain falls.")
     assert json.dumps(out)
-    assert set(out) == {"timeline", "events", "n_sounds", "rationale"}
+    assert set(out) == {
+        "timeline", "events", "n_sounds", "rationale",
+        "spent_usd", "unknown_cost_calls", "has_unknown_costs", "notes",  # #317
+    }
     assert out["timeline"]["items"] or out["n_sounds"] == 0
     guide = mcp.foley_guide()
     assert json.dumps(guide) and "restraint" in guide["guide"].lower()

@@ -262,7 +262,13 @@ def score(
     all_candidates = []
     events: "list[ScoredEvent]" = []
     from .agent.policy import Budget
-    from .cost import active_budget, default_max_usd, spend_scope
+    from .cost import (
+        BudgetExceeded,
+        CostApprovalRequired,
+        active_budget,
+        default_max_usd,
+        spend_scope,
+    )
 
     if budget is None and active_budget() is None:
         # One cap for the whole score run, sized to the LLM the caller chose (#88).
@@ -304,7 +310,22 @@ def score(
             )
             if seg_kw is None:
                 continue
-            for c in find(seg, **seg_kw):
+            found = []
+            try:
+                for c in find(seg, **seg_kw):
+                    found.append(c)
+            except CostApprovalRequired:
+                raise  # a decision the caller must make, not a race: never swallowed
+            except BudgetExceeded as exc:
+                # The pre-flight above reserves nothing, so a run sharing this budget
+                # (two scores on one server budget) can spend what it saw free. The cap
+                # still held (each call reserves atomically); what must not happen is
+                # losing the segments already scored (#317). A first segment that spent
+                # nothing still fails, as the pre-flight would have.
+                if i == 0 and run_budget.spent_usd == spent0:
+                    raise
+                notes.append(f"segment {i}: stopped: {exc}")
+            for c in found:
                 all_candidates.append(c)
                 v = c.verdict
                 events.append(
